@@ -1,5 +1,7 @@
 This package was debianized by Tilman Koschnick <til@subnetz.org> on
 Sat, 16 Oct 2004 11:40:01 +0200.
+Since Thu, 11 Oct 2007 21:54:52 +0200 it is maintained by Bernd Zeimetz
+<bernd@bzed.de>.
 
 It was downloaded from http://developer.berlios.de/projects/gpsd/.
 
@@ -47,3 +49,4 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+

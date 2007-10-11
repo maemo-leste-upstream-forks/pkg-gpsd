@@ -1,3 +1,18 @@
+gpsd (2.34-1) unstable; urgency=low
+
+  * Hijacking the package as announced on debian-devel@lists.d.o
+    in <470DEE3C.80603@bzed.de> due to the old maintainer beeing MIA.
+  * New upstream version
+  * debian/compat:
+    - Bumping to level 5
+  * debian/control:
+    - Updating the Maintainer field
+    - Adding Homepage field, removing pseudo fields from descriptions
+  * debian/copyright:
+    - Adding note about the new maintainer
+
+ -- Bernd Zeimetz <bernd@bzed.de>  Thu, 11 Oct 2007 21:50:51 +0200
+
 gpsd (2.33-5) unstable; urgency=low
 
   * debian/control:
