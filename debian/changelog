@@ -14,8 +14,10 @@ gpsd (2.34-1) unstable; urgency=low
     - Removing file, not needed anymore
   * debian/rules
     - Rewriting file completely
+  * debian/watch
+    - Adding file
 
- -- Bernd Zeimetz <bernd@bzed.de>  Thu, 11 Oct 2007 23:11:36 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Thu, 11 Oct 2007 23:31:37 +0200
 
 gpsd (2.33-5) unstable; urgency=low
 
