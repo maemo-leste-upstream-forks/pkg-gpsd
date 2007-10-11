@@ -1,52 +1,141 @@
-This package was debianized by Tilman Koschnick <til@subnetz.org> on
-Sat, 16 Oct 2004 11:40:01 +0200.
-Since Thu, 11 Oct 2007 21:54:52 +0200 it is maintained by Bernd Zeimetz
-<bernd@bzed.de>.
+The original version of this package was debianized by Tilman Koschnick
+<til@subnetz.org> on Sat, 16 Oct 2004 11:40:01 +0200.
+
+The package was completely reworked by Bernd Zeimetz <bernd@bzed.de>,
+starting on Thu, 11 Oct 2007 21:54:52 +0200.
 
 It was downloaded from http://developer.berlios.de/projects/gpsd/.
 
 Upstream Authors:
-	Remco Treffkorn <remco@rvt.com>
-	Derrick J. Brashear <shadow@dementia.org>
-	Russ Nelson <nelson@crynwyr.com>
-	Eric S. Raymond <esr@thyrsus.com>
-	Gary E. Miller <gem@rellim.com>
-	Jeff Francis <jeff@gritch.org>
-	Amaury Jacquot <sxpert@esitcom.org>
-	Chris Kuethe <chris.kuethe@gmail.com>
-	Ville Nuorvala <vnuorval@tcs.hut.fi>
+
+    Remco Treffkorn <remco@rvt.com>
+    Derrick J. Brashear <shadow@dementia.org>
+    Russ Nelson <nelson@crynwyr.com>
+    Eric S. Raymond <esr@thyrsus.com>
+    Gary E. Miller <gem@rellim.com> 
+    Jeff Francis <jeff@gritch.org>
+    Amaury Jacquot <sxpert@esitcom.org>
+    Chris Kuethe <chris.kuethe@gmail.com>
+    Ville Nuorvala <vnuorval@tcs.hut.fi>
+
 
 Copyright:
-			BSD LICENSE
 
-The GPSD code is Copyright (c) 1997, 1998, 1999, 2000, 2001, 2002 by
-Remco Treffkorn. Portions of it are also Copyright (c) 2005 by Eric S. 
-Raymond. All rights reserved.
+    The GPSD code is Copyright (c) 1997, 1998, 1999, 2000, 2001, 2002 by
+    Remco Treffkorn. Portions of it are also Copyright (c) 2005 by Eric S. 
+    Raymond. All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
 
-Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
+License:
 
-Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
+                            BSD LICENSE
 
-Neither name of the GPSD project nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
+    The GPSD code is Copyright (c) 1997, 1998, 1999, 2000, 2001, 2002 by
+    Remco Treffkorn. Portions of it are also Copyright (c) 2005 by Eric S.
+    Raymond. All rights reserved.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+    Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+    Neither name of the GPSD project nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR
+    CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+
+Files with different copyrights/licenses:
+
+  * bsd-base64.c:
+
+    Copyright (c) 1996 by Internet Software Consortium.
+
+    Permission to use, copy, modify, and distribute this software for any
+    purpose with or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND INTERNET SOFTWARE CONSORTIUM DISCLAIMS
+    ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES
+    OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL INTERNET SOFTWARE
+    CONSORTIUM BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+    DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+    PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
+    ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+    SOFTWARE.
+    
+
+    Portions Copyright (c) 1995 by International Business Machines, Inc.
+
+    International Business Machines, Inc. (hereinafter called IBM) grants
+    permission under its copyrights to use, copy, modify, and distribute this
+    Software with or without fee, provided that the above copyright notice and
+    all paragraphs of this notice appear in all copies, and that the name of IBM
+    not be used in connection with the marketing of any product incorporating
+    the Software or modifications thereof, without specific, written prior
+    permission.
+
+    To the extent it has a right to do so, IBM grants an immunity from suit
+    under its patents, if any, for the use, sale or manufacture of products to
+    the extent that such products are used for performing Domain Name System
+    dynamic updates in TCP/IP networks by means of the Software.  No immunity is
+    granted for any product per se or for any other function of any product.
+ 
+    THE SOFTWARE IS PROVIDED "AS IS", AND IBM DISCLAIMS ALL WARRANTIES,
+    INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+    PARTICULAR PURPOSE.  IN NO EVENT SHALL IBM BE LIABLE FOR ANY SPECIAL,
+    DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER ARISING
+    OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE, EVEN
+    IF IBM IS APPRISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+
+
+  * cgps.c:
+
+    Copyright (c) 2005 Jeff Francis <jeff@gritch.org>
+ 
+    Permission to use, copy, modify, and distribute this software for any
+    purpose with or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+ 
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+
+  * Tachometer.c:
+
+    Author: Kazuhiko Shutoh, 1989.
+    Revised by Shinji Sumimoto, 1989/9 (xtachos)
+    Modifications : ilham@mit.edu   (July 10 '90)
+    Cleaned up and simplified by Eric S. Raymond, December 2004.
+
+    Permission to use, copy, modify and distribute without charge this software,
+    documentation, images, etc. is granted, provided that this comment and the
+    author's name is retained.  The author assumes no responsibility for lost
+    sleep as a consequence of use of this software.
 
