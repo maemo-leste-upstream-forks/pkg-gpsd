@@ -1,0 +1,131 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+include /usr/share/dpatch/dpatch.make
+
+CONFFLAGS =
+CFLAGS =
+LDFLAGS =
+CPPFLAGS =
+
+
+#let's help configure to figure out our host/build system
+DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
+  CONFFLAGS += --build $(DEB_HOST_GNU_TYPE)
+else
+  CONFFLAGS += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
+endif
+
+
+
+#where our files go
+PREFIX = /usr
+MANDIR = $(PREFIX)/share/man
+INFODIR = $(PREFIX)/share/info
+CONFFLAGS += --prefix=$(PREFIX) --mandir=$(MANDIR) --infodir=$(INFODIR)
+
+
+
+#let's take care of optimization + debug builds
+CFLAGS += -Wall -g
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+CONFFLAGS += CFLAGS="$(CFLAGS)"
+
+
+
+#Disallow undefined symbols in object files
+LDFLAGS += -Wl,-z,defs
+CONFFLAGS += LDFLAGS="$(LDFLAGS)"
+
+
+
+config.status: patch configure
+	dh_testdir
+
+ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+	cp -f /usr/share/misc/config.sub config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+	cp -f /usr/share/misc/config.guess config.guess
+endif
+	./configure $(CONFFLAGS) 
+
+
+build: build-stamp
+build-stamp:  config.status
+	dh_testdir
+
+	# Add here commands to compile the package.
+	$(MAKE)
+
+	touch $@
+
+
+clean: clean-patched unpatch
+clean-patched:
+	dh_testdir
+	dh_testroot
+
+ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+	rm -f config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+	rm -f config.guess
+endif
+	dh_clean 
+
+
+
+install: install-bin install-python install-lib install-lib-dev
+	dh_testdir
+	dh_testroot
+	dh_clean -k 
+	dh_installdirs
+
+	$(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
+
+
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs -i
+	dh_installdocs -i
+	dh_install -i
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i 
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs -s ChangeLog
+	dh_installdocs -s
+	dh_installexamples -s
+	dh_install -s
+	dh_installmenu -s
+	dh_desktop -s
+	dh_installman -s
+	dh_link -s
+	dh_strip -s
+	dh_compress -s
+	dh_fixperms -s
+	dh_installdeb -s
+	dh_shlibdeps -s
+	dh_gencontrol -s
+	dh_md5sums -s
+	dh_builddeb -s
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install 

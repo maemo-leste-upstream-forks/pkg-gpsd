@@ -1,0 +1,56 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## python-setup.dpatch by Bernd Zeimetz <bernd@bzed.de>
+##
+## DP: creating a proper setup.py to be able to install the python
+## DP: files properly
+
+@DPATCH@
+diff -urNad gpsd~/setup.py gpsd/setup.py
+--- gpsd~/setup.py	2006-12-15 00:43:39.000000000 +0100
++++ gpsd/setup.py	2007-10-13 01:15:17.000000000 +0200
+@@ -1,8 +1,41 @@
+ # $Id: setup.py 4076 2006-12-05 02:00:19Z esr $
+ # Creates build/lib.linux-${arch}-${pyvers}/gpspacket.so,
+ # where ${arch} is an architecture and ${pyvers} is a Python version.
++
+ from distutils.core import setup, Extension
+-setup(name="gpspacket", version="1.0",
+-      ext_modules=[Extension("gpspacket",
+-                             ["gpspacket.c", "packet.c",
+-                              "isgps.c", "rtcm.c", "strl.c", "hex.c"])])
++from distutils.command.build_ext import build_ext as _build_ext
++
++import os
++
++class build_ext(_build_ext):
++
++    def run(self):
++	p_names = 'packet_names.h'
++	p_names_created = False
++        if not os.path.exists(p_names):
++            sed = """sed -e '/^ *\\([A-Z][A-Z0-9_]*\\),/s//   "\\1",/' -e '/_states/s//_names/' packet_states.h"""
++	    p_names_created = True
++	    sed_in, sed_out = os.popen2(sed)
++            p_names_fd = open(p_names, 'w')
++            p_names_fd.write(sed_out.read())
++            sed_in.close()
++            sed_out.close()
++            p_names_fd.close()
++
++        _build_ext.run(self)
++
++        if p_names_created:
++            os.remove(p_names)
++
++
++extension_source = ["gpspacket.c", "packet.c", "isgps.c",
++                    "rtcm.c", "strl.c", "hex.c"]
++
++setup( cmdclass={'build_ext': build_ext},
++       name="gpspacket",
++       version="1.0",
++       ext_modules=[Extension("gpspacket", extension_source)],
++       py_modules = ['gpsfake','gps'],
++       data_files=[('bin', ['gpsfake','gps'])]
++     )
++

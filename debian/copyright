@@ -125,7 +125,8 @@ Files with different copyrights/licenses:
     Copyright (c) 2005,2006 Chris Kuethe <chris.kuethe@gmail.com>
 
     License: ISC, see below
-
+    Missing license information in gpsflash.c and sirfflash.c was added in
+    svn, r4420 - http://svn.berlios.de/wsvn/gpsd/
 
   * strl.c:
 
