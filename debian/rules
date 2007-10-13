@@ -1,9 +1,17 @@
 #!/usr/bin/make -f
 
-# Uncomment this to turn on verbose mode.
+include /usr/share/dpatch/dpatch.make
+
+#uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
 
-include /usr/share/dpatch/dpatch.make
+#package names
+PACKAGE_GPSD := gpsd
+PACKAGE_CLIENTS := gpsd-clients
+PACKAGE_LIB = FIXME
+PACKAGE_LIB_DEV := libgps-dev
+PACKAGE_PY := python-gps
+
 
 CONFFLAGS =
 CONFENV =
@@ -11,6 +19,8 @@ CFLAGS =
 LDFLAGS =
 CPPFLAGS =
 
+#python versions
+PYVERS := $(shell pyversions -r)
 
 #let's help configure to figure out our host/build system
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
@@ -48,7 +58,7 @@ CONFENV += LDFLAGS="$(LDFLAGS)"
 
 
 
-config.status: patch configure
+autotools-dev-stamp:
 	dh_testdir
 
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
@@ -57,23 +67,36 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	$(CONFENV) ./configure $(CONFFLAGS) 
-
-
-build: build-stamp
-build-stamp:  config.status
-	dh_testdir
-
-	# Add here commands to compile the package.
-	$(MAKE)
-
 	touch $@
 
+
+build: build-gpsd build-python build-lib-static
+build-gpsd: build-gpsd-stamp
+build-lib-static: build-lib-static-stamp
+build-python: build-python-stamp
+
+build-gpsd-stamp: patch-stamp autotools-dev-stamp
+	dh_testdir
+
+build-lib-static-stamp: patch-stamp autotools-dev-stamp
+	dh_testdir
+
+build-python-stamp: build-gpsd-stamp
+	dh_testdir
+	set -e; \
+	for py in $(PYVERS); do  \
+	    $$py setup.py build; \
+	    $$py setup.py install --root=debian/$(PACKAGE_PY); \
+	done
 
 clean: clean-patched unpatch
 clean-patched:
 	dh_testdir
 	dh_testroot
+	dh_clean
+
+	rm -f autotools-dev-stamp
+	rm -f build-gpsd-stamp build-lib-static-stamp build-python-stamp
 
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
 	rm -f config.sub
@@ -81,35 +104,14 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	rm -f config.guess
 endif
-	dh_clean 
-        
+
 	python setup.py clean
 	rm -rf build
 	[ ! -r Makefile ] || $(MAKE) distclean
 
 
-install: install-bin install-python install-lib install-lib-dev
-	dh_testdir
-	dh_testroot
-	dh_clean -k 
-	dh_installdirs
-
-	$(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
-
-
-binary-indep: build install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs -i
-	dh_installdocs -i
-	dh_install -i
-	dh_link -i
-	dh_compress -i
-	dh_fixperms -i 
-	dh_installdeb -i
-	dh_gencontrol -i
-	dh_md5sums -i
-	dh_builddeb -i
+binary-indep: 
+#nothing to do here.
 
 binary-arch: build install
 	dh_testdir
@@ -132,4 +134,14 @@ binary-arch: build install
 	dh_builddeb -s
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install 
+
+get-orig-source:
+	if ! which uscan; then \
+            echo "Please install the devscripts package." ;\
+            exit 1 ;\
+        fi
+	uscan --verbose --force-download
+
+.PHONY: build build-gpsd build-python build-lib-static \
+        clean binary-indep binary-arch binary install \
+        get-orig-source 
