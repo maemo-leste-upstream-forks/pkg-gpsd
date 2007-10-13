@@ -1,0 +1,90 @@
+# gpsd po-debconf translation to Spanish
+# Copyright (C) 2005 Software in the Public Interest
+# This file is distributed under the same license as the gpsd package.
+#
+# Changes:
+#  - Initial translation
+#         César Gómez Martín <cesar.gomez@gmail.com>
+#
+#   Traductores, si no conoce el formato PO, merece la pena leer la
+#   documentación de gettext, especialmente las secciones dedicadas a este
+#   formato, por ejemplo ejecutando:
+#          info -n '(gettext)PO Files'
+#          info -n '(gettext)Header Entry'
+# Equipo de traducción al español, por favor, lean antes de traducir
+# los siguientes documentos:
+#
+#  - El proyecto de traducción de Debian al español
+#    http://www.debian.org/intl/spanish/
+#    especialmente las notas de traducción en
+#    http://www.debian.org/intl/spanish/notas
+#
+#  - La guía de traducción de po's de debconf:
+#    /usr/share/doc/po-debconf/README-trans
+#    o http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gpsd 2.33\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-02-27 04:32+0100\n"
+"PO-Revision-Date: 2007-05-26 17:30-0500\n"
+"Last-Translator: César Gómez Martín <cesar.gomez@gmail.com>\n"
+"Language-Team: Debian l10n spanish <debian-l10n-spanish@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Spanish\n"
+"X-Poedit-Country: SPAIN\n"
+"X-Poedit-SourceCharset: utf-8\n"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:1001
+msgid "Which device is your GPS receiver attached to?"
+msgstr "¿A qué dispositivo está asociado su receptor GPS?"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:1001
+msgid ""
+"Enter the device your GPS is attached to; this will probably be something "
+"like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr ""
+"Introduzca el dispositivo en el que está conectado su GPS; probablemente "
+"será algo como /dev/ttyS0 o /dev/ttyUSB0."
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:1001
+msgid "You can enter several devices, separated by spaces."
+msgstr "Puede introducir varios dispositivos separados con espacios."
+
+#. Type: boolean
+#. Description
+#: ../gpsd.templates:2001
+msgid "Should gpsd start on boot?"
+msgstr "¿Desea iniciar gpsd en el arranque del sistema?"
+
+#. Type: boolean
+#. Description
+#: ../gpsd.templates:2001
+msgid ""
+"If your GPS receiver is permanently attached to your computer, you might "
+"want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
+"(1) at any time, or you can use the hotplug interface for USB devices."
+msgstr "Si su receptor GPS está permanentemente conectado a su ordenador, quizás quiera iniciar gpsd en el arranque del sistema. De otro modo, puede ejecutarlo invocando a gpsd(1) cuando quiera, o puede usar la interfaz «hotplug» para dispositivos USB."
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid "Options to gpsd:"
+msgstr "Opciones para gpsd:"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid ""
+"You can give additional arguments when starting gpsd; see gpsd(1) for a list "
+"of options."
+msgstr "Puede proporcionar argumentos adicionales al iniciar gpsd; consulte la página de manual de gpsd(1) para ver una lista de opciones."

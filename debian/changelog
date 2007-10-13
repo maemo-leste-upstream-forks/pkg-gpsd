@@ -1,21 +1,34 @@
-gpsd (2.34-1) unstable; urgency=low
+gpsd (2.34.dfsg-1) unstable; urgency=low
 
   * Hijacking the package as announced on debian-devel@lists.d.o
     in <470DEE3C.80603@bzed.de> due to the old maintainer beeing MIA.
   * New upstream version
+  * Removing Tachometer.c due to an unclear licensing, this introduces
+    .dfsg to the version number.
+  * Building new packages:
+    - python-gps containing the python modules, this also fixes a bug
+      complaining about missing python-support (Closes: #413925)
+    - Splitting libgps and the according devel files in seperate packages
+      (Closes: #295375)
   * debian/compat:
     - Bumping to level 5
   * debian/control:
     - Updating the Maintainer field
     - Adding Homepage field, removing pseudo fields from descriptions
   * debian/copyright:
-    - Adding note about the new maintainer
+    - Reworking the whole file
   * debian/gpsd.lintian-overrides
     - Removing file, not needed anymore
+  * debian/po:
+    - Adding several new translations, thanks to
+      * cobaco (aka Bart Cornelis) - Dutch translation (Closes: #415519)
+      * Rudy Godoy Guillén - Spanish translation (Closes: #426172)
+      * Kenshi Muto - Japanese translation (Closes: #412507)
   * debian/rules
     - Rewriting file completely
-  * debian/watch
-    - Adding file
+  * debian/watch, debian/dfsg-clean.sh:
+    - Adding files to watch for upstream versions and handle the removal of
+      non-free material automatically.
 
  -- Bernd Zeimetz <bernd@bzed.de>  Thu, 11 Oct 2007 23:31:37 +0200
 

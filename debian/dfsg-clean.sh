@@ -20,6 +20,8 @@ mv ${dir} ${dir}.dfsg.orig
 
 tar cf - ${dir}.dfsg.orig | gzip -9 > ${dfsgfilename}
 
+rm -rf ${dir}.dfsg.orig
+
 echo "${dfsgfilename} created."
 
 
