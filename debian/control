@@ -17,49 +17,63 @@ Description: GPS (Global Positioning System) daemon
  velocity of the sensors available to be queried on TCP port 2947 of the host
  computer.
  .
- With gpsd, multiple GPS client applications (such as navigational and war-
- driving software) can share access to GPSes without contention or loss of
- data. Also, gpsd responds to queries with a format that is substantially
- easier to parse than the NMEA 0183 emitted by most GPSes.
- .
- The gpsd distribution includes a linkable C service library and a Python
- module that developers of gpsd-aware applications can use to encapsulate
- all communication with gpsd.
- .
- For a couple of clients, install the gpsd-clients package.
+ With gpsd, multiple GPS client applications can share access to GPSes without
+ contention or loss of data. Also, gpsd responds to queries with a format that
+ is substantially easier to parse than the NMEA 0183 emitted by most GPSes.
 
 Package: gpsd-clients
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, python-gps
+Depends: ${shlibs:Depends}, ${misc:Depends}
+recommends: python-gps
 Description: Clients for the GPS daemon
  gpsd is a service daemon that monitors one or more GPSes attached to a host
  computer through serial or USB ports, making all data on the location/course/
  velocity of the sensors available to be queried on TCP port 2947 of the host
  computer.
  .
- With gpsd, multiple GPS client applications (such as navigational and war-
- driving software) can share access to GPSes without contention or loss of
- data. Also, gpsd responds to queries with a format that is substantially
- easier to parse than the NMEA 0183 emitted by most GPSes.
- .
- This package contains auxiliary tools for diagnostic monitoring and profiling
- of GPSes and feeding GPS-aware applications specified track data for
- diagnostic purposes.
+ This package contains auxiliary tools and example clients for monitoring and
+ testing gpsd.
 
 Package: python-gps
-Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}
+Architecture: any
 Section: python
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
 Description: Python interface to gpsd and testing environment
  gpsd is a service daemon that monitors one or more GPSes attached to a host
  computer through serial or USB ports, making all data on the location/course/
  velocity of the sensors available to be queried on TCP port 2947 of the host
  computer.
  .
- With gpsd, multiple GPS client applications (such as navigational and war-
- driving software) can share access to GPSes without contention or loss of
- data. Also, gpsd responds to queries with a format that is substantially
- easier to parse than the NMEA 0183 emitted by most GPSes.
+ This package contains a Python interface to conntect to gpsd, together with
+ a module providing a controlled testing environment. It also ships two tools
+ which utilize the interface: gpsprof for latency-profiling and gpsfake to
+ simulate a GPS by playing back a logfile.
+
+Package: libgps16
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: C library for communicating with GPS devices
+ libgps is a service library for querying GPS devices. There are two
+ interfaces supported by it:
+   * A high-level interface that goes through gpsd, a service daemon that
+     monitors one or more GPS devices. It is intended for concurrent use by
+     several applications.
+   * A low-level interface that speaks directly with the serial or USB
+     device to which the GPS is attached.
+
+Package: libgps-dev
+Architecture: any
+Section: libdevel
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: C library for communicating with GPS devices (development files)
+ libgps is a service library for querying GPS devices. There are two
+ interfaces supported by it:
+   * A high-level interface that goes through gpsd, a service daemon that
+     monitors one or more GPS devices. It is intended for concurrent use by
+     several applications.
+   * A low-level interface that speaks directly with the serial or USB
+     device to which the GPS is attached.
  .
- This package contains a pure Python interface to gpsd, together with a
- module providing a controlled testing environment.
+ This package contains the header and development files needed to build
+ programs and packages using libgps.

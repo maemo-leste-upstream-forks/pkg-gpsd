@@ -6,6 +6,7 @@
 include /usr/share/dpatch/dpatch.make
 
 CONFFLAGS =
+CONFENV =
 CFLAGS =
 LDFLAGS =
 CPPFLAGS =
@@ -37,13 +38,13 @@ ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 else
 	CFLAGS += -O2
 endif
-CONFFLAGS += CFLAGS="$(CFLAGS)"
+CONFENV += CFLAGS="$(CFLAGS)"
 
 
 
 #Disallow undefined symbols in object files
 LDFLAGS += -Wl,-z,defs
-CONFFLAGS += LDFLAGS="$(LDFLAGS)"
+CONFENV += LDFLAGS="$(LDFLAGS)"
 
 
 
@@ -56,7 +57,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	./configure $(CONFFLAGS) 
+	$(CONFENV) ./configure $(CONFFLAGS) 
 
 
 build: build-stamp
@@ -81,7 +82,10 @@ ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	rm -f config.guess
 endif
 	dh_clean 
-
+        
+        python setup.py clean
+	rm -rf build
+	[ ! -r Makefile ] || $(MAKE) distclean
 
 
 install: install-bin install-python install-lib install-lib-dev
