@@ -6,6 +6,8 @@ set -e
 
 [ $# -eq 3 ] || exit 255
 
+echo
+
 version="$2"
 filename="$3"
 dfsgfilename=`echo $3 | sed 's,\.orig\.,.dfsg.orig.,'`
