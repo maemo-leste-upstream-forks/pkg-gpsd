@@ -83,7 +83,7 @@ ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 endif
 	dh_clean 
         
-        python setup.py clean
+	python setup.py clean
 	rm -rf build
 	[ ! -r Makefile ] || $(MAKE) distclean
 
