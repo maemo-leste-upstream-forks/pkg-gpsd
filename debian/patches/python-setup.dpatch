@@ -7,8 +7,8 @@
 @DPATCH@
 diff -urNad gpsd~/setup.py gpsd/setup.py
 --- gpsd~/setup.py	2006-12-15 00:43:39.000000000 +0100
-+++ gpsd/setup.py	2007-10-13 23:58:39.000000000 +0200
-@@ -1,8 +1,41 @@
++++ gpsd/setup.py	2007-10-14 00:00:28.000000000 +0200
+@@ -1,8 +1,43 @@
  # $Id: setup.py 4076 2006-12-05 02:00:19Z esr $
  # Creates build/lib.linux-${arch}-${pyvers}/gpspacket.so,
  # where ${arch} is an architecture and ${pyvers} is a Python version.
@@ -36,6 +36,8 @@ diff -urNad gpsd~/setup.py gpsd/setup.py
 +        if not os.path.exists(p_names):
 +            make_in, make_out = os.popen2('make %s' % p_names)
 +            print make_out.read()
++            make_out.close()
++            make_in.close()
 +
 +        _build_ext.run(self)
 +
