@@ -15,7 +15,7 @@ tar xfz ${filename}
 dir=`tar tfz ${filename} | head -1 | sed 's,/.*,,g'`
 rm -f ${filename}
 
-rm -f ${dir}/Tachometer.c
+rm ${dir}/Tachometer.c
 mv ${dir} ${dir}.dfsg.orig
 
 tar cf - ${dir}.dfsg.orig | gzip -9 > ${dfsgfilename}
