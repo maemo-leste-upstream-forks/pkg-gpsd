@@ -7,8 +7,8 @@
 @DPATCH@
 diff -urNad gpsd~/setup.py gpsd/setup.py
 --- gpsd~/setup.py	2006-12-15 00:43:39.000000000 +0100
-+++ gpsd/setup.py	2007-10-13 01:15:17.000000000 +0200
-@@ -1,8 +1,41 @@
++++ gpsd/setup.py	2007-10-13 07:31:45.000000000 +0200
+@@ -1,8 +1,50 @@
  # $Id: setup.py 4076 2006-12-05 02:00:19Z esr $
  # Creates build/lib.linux-${arch}-${pyvers}/gpspacket.so,
  # where ${arch} is an architecture and ${pyvers} is a Python version.
@@ -25,10 +25,19 @@ diff -urNad gpsd~/setup.py gpsd/setup.py
 +class build_ext(_build_ext):
 +
 +    def run(self):
++        """ We need packet_names.h to build the extension, so
++            create the file if it doesn't exist yet.
++            This allows us to build the py extensions without the need to
++            mess with configure & co.
++
++            Reusing sed here is kinda hacky, but less work then reimplementing
++            this in python properly.
++        """
 +	p_names = 'packet_names.h'
 +	p_names_created = False
 +        if not os.path.exists(p_names):
-+            sed = """sed -e '/^ *\\([A-Z][A-Z0-9_]*\\),/s//   "\\1",/' -e '/_states/s//_names/' packet_states.h"""
++            sed = """sed -e '/^ *\\([A-Z][A-Z0-9_]*\\),/s//   "\\1",/' \
++                         -e '/_states/s//_names/' packet_states.h"""
 +	    p_names_created = True
 +	    sed_in, sed_out = os.popen2(sed)
 +            p_names_fd = open(p_names, 'w')
@@ -51,6 +60,6 @@ diff -urNad gpsd~/setup.py gpsd/setup.py
 +       version="1.0",
 +       ext_modules=[Extension("gpspacket", extension_source)],
 +       py_modules = ['gpsfake','gps'],
-+       data_files=[('bin', ['gpsfake','gps'])]
++       data_files=[('bin', ['gpsfake','gpsprof'])]
 +     )
 +
