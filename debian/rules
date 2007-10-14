@@ -218,7 +218,7 @@ binary-arch: build
 	dh_installmenu -s
 	dh_installdebconf -s
 	dh_installinit -s
-	dh_installudev -s
+	dh_installexamples -s
 	dh_link -s
 	dh_strip -s
 	dh_compress -s

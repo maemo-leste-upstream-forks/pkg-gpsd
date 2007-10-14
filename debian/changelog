@@ -13,6 +13,11 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
       (Closes: #295375)
   * Installing gpsd in /usr/sbin again. gpsd is a system daemon and only
     rarely used as user command.
+  * Autodiscovery of USB GPS devices is disables now by default, as the USB
+    devices use nothing but a standard usb to serial converter. This resulted
+    in trouble if you wanted to use a normal serial converter without attached
+    GPS device. A rules file is provided as example now.
+    (Closes: #442467, #404780)
   * debian/compat:
     - Bumping to level 5
   * debian/control:
@@ -28,8 +33,6 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
   * debian/gpsd.init:
     - Changing warnings to make gpsd more quiet if it's not automatically
       startet at bootup, thanks to Kiro Zimmer (Closes: #395297)
-  * debian/gpsd.lintian-overrides
-    - Removing file, not needed anymore
   * debian/gpsd.templates:
     - Replacing the question for gpsd/device by a title, fixing a lintian
       warning
@@ -43,15 +46,15 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
       * Kenshi Muto - Japanese translation (Closes: #412507)
   * debian/rules:
     - Rewriting file completely. This also introduces new files to the
-      packaging:
-      debian/{gpsd,gpsd-clients}.install, debian/gpsd.udev
+      packaging (debian/{gpsd,gpsd-clients}.install, debian/gpsd.examples)
       and removes several unused/obsolete files:
-      debian/{remove_rpath.sh,gpsd-clients.docs}, debian/*.dirs
+      (debian/{remove_rpath.sh,gpsd-clients.docs}, debian/*.dirs,
+       debian/gpsd.lintian-overrides).
   * debian/watch, debian/dfsg-clean.sh:
     - Adding files to watch for upstream versions and handle the removal of
       non-free material automatically.
 
- -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 13:14:28 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 19:37:12 +0200
 
 gpsd (2.33-5) unstable; urgency=low
 

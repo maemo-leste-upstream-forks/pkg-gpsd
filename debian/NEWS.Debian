@@ -1,0 +1,11 @@
+gpsd (2.34.dfsg-1) unstable; urgency=low
+
+  * As the automatic discovery of USB GPS devices resulted in trouble for
+    everybody who is using a 'normal' usb to serial converter, it was
+    disabled by default. An example gpsd.rules file is provided in
+    /usr/share/doc/gpsd/examples. Please modify it to suit your needs and
+    install it into /etc/udev/rules.d.
+    As long as there's no proper way to discover if there was really a GPS
+    device attached, this will stay disabled by default.
+
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 13:14:28 +0200
