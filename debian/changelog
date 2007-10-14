@@ -11,6 +11,8 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
       complaining about missing python-support (Closes: #413925)
     - Splitting libgps and the according devel files in seperate packages
       (Closes: #295375)
+  * Installing gpsd in /usr/sbin again. gpsd is a system daemon and only
+    rarely used as user command.
   * debian/compat:
     - Bumping to level 5
   * debian/control:
