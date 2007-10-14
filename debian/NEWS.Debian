@@ -8,4 +8,7 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
     As long as there's no proper way to discover if there was really a GPS
     device attached, this will stay disabled by default.
 
+  * gpsd was moved to /usr/sbin, as this is a rather a system daemon than a
+    tool for the normal user. Please update your scripts if necessary.
+
  -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 13:14:28 +0200
