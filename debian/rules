@@ -86,7 +86,7 @@ endif
 define CLEAN_BUILDDIR
 	[ ! -r Makefile ] || $(MAKE) distclean
 	[ ! -d $(CURDIR)/debian/tmp ] || rm -rf $(CURDIR)/debian/tmp
-	rm -f *.1 *.3 *.5 *.8
+	rm -f *.1 *.3 *.5 *.8 .1
 endef
 
 build: build-lib-static build-gpsd build-python
@@ -94,11 +94,14 @@ build-gpsd: build-gpsd-stamp
 build-python: build-python-stamp
 build-lib-static: build-lib-static-stamp
 
+#noinst_SCRIPTS and am__python_PYTHON_DIST need to be set as
+#--disable-python is pretty much broken.
 MAKEFLAGS_LIB_DEV = \
 	bin_PROGRAMS=  \
 	sbin_PROGRAMS=  \
 	man_MANS='libgps.3  libgpsd.3  libgpsmm.3 rtcm-104.5 srec.5' \
-	am__python_PYTHON_DIST=
+	am__python_PYTHON_DIST= \
+	noinst_SCRIPTS=setup.py
 
 build-lib-static-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
@@ -127,6 +130,11 @@ build-lib-static-stamp: patch-stamp autotools-dev-stamp
 
 	touch $@
 
+#same here. buggy --disable-python.
+MAKEFLAGS_GPSD= \
+	am__python_PYTHON_DIST= \
+	noinst_SCRIPTS=setup.py
+
 build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
 
@@ -137,8 +145,8 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 
 	LDFLAGS="-Wl,-z,defs" $(CONFENV) ./configure $(CONFFLAGS) --with-pic
 
-	$(MAKE) am__python_PYTHON_DIST=
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+	$(MAKE) $(MAKEFLAGS_GPSD)
+	$(MAKE) install $(MAKEFLAGS_GPSD) DESTDIR=$(CURDIR)/debian/tmp
 	cp INSTALL TROUBLESHOOTING
 
 	#ldconfig link
