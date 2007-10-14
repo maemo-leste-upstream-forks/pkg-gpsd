@@ -147,6 +147,9 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 	dh_install -p$(PACKAGE_LIB_DEV) debian/tmp/usr/lib/libgps.la
 
+	install -d -m 755 debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults
+	install -m 644 xgps.ad debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults/xgps
+
 	touch $@
 
 

@@ -1,3 +1,5 @@
 Tachometer.c-removal
 python-setup
 build-xgps-manpage-only
+default_units.dpatch
+gpsd.hotplug_location.dpatch
