@@ -157,6 +157,11 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	mv $(CURDIR)/debian/tmp/usr/share/man/man1/gps.1 \
            $(CURDIR)/debian/tmp/usr/share/man/man1/xgps.1
 
+	#the build-system creates some really weird files here
+	#(instead of not creating a file at all)
+	rm -f $(CURDIR)/debian/tmp/usr/share/man/man1/cgps.1 \
+	      $(CURDIR)/debian/tmp/usr/share/man/man1/cgpxlogger.1
+
 	dh_link -p$(PACKAGE_CLIENTS) usr/share/man/man1/xgps.1.gz \
 	                             usr/share/man/man1/cgps.1.gz
 	dh_link -p$(PACKAGE_CLIENTS) usr/share/man/man1/xgps.1.gz \
