@@ -1,0 +1,8 @@
+gpsd - source for Debian
+------------------------
+
+In Debian Tachometer.c is removed from the source due to an unclear licensing,
+this introduces .dfsg to the version number and results in not beeing able to
+build xgpsspeed.
+
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 13:14:28 +0200

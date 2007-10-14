@@ -92,12 +92,13 @@ endef
 build: build-lib-static build-gpsd build-python
 build-gpsd: build-gpsd-stamp
 build-python: build-python-stamp
+build-lib-static: build-lib-static-stamp
 
 MAKEFLAGS_LIB_DEV = \
 	bin_PROGRAMS=  \
 	sbin_PROGRAMS=  \
-	man_MANS='libgps.3  libgpsd.3  libgpsmm.3 rtcm-104.5 srec.5'
-build-lib-static: patch-stamp autotools-dev-stamp
+	man_MANS='libgps.3  libgpsd.3  libgpsmm.3 rtcm-104.5 srec.5' 
+build-lib-static-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
 
 	$(CLEAN_BUILDDIR)
@@ -105,6 +106,11 @@ build-lib-static: patch-stamp autotools-dev-stamp
 	$(CONFENV) ./configure $(CONFFLAGS) --without-pic --disable-shared
 
 	$(MAKE) $(MAKEFLAGS_LIB_DEV)
+	
+	#this is a rather ugly hack to work around broken linebreaks
+	#from docbook
+	sed -i 's,^.BI "void gps_set_callback(struct,.warn .BI "void gps_set_callback(struct,' libgps.3
+
 	$(MAKE) install $(MAKEFLAGS_LIB_DEV) DESTDIR=$(CURDIR)/debian/tmp
 
 	#install all files, except libgps.la (will be installed when we
@@ -116,9 +122,8 @@ build-lib-static: patch-stamp autotools-dev-stamp
 
 	dh_link -p$(PACKAGE_LIB_DEV) usr/lib/libgps.so.$(LIB_major) \
 	                             usr/lib/libgps.so
-	dh_link -p$(PACKAGE_LIB_DEV) usr/lib/libgps.so.$(LIB_version) \
-	                             usr/lib/libgps.so.$(LIB_major)
 
+	touch $@
 
 build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
@@ -133,6 +138,10 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	$(MAKE)
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	cp INSTALL TROUBLESHOOTING
+
+	#ldconfig link
+	dh_link -p$(PACKAGE_LIB) usr/lib/libgps.so.$(LIB_version) \
+	                         usr/lib/libgps.so.$(LIB_major)
 
 	#gps.1 is provided by the gps package unfortunately
 	mv $(CURDIR)/debian/tmp/usr/share/man/man1/gps.1 \
@@ -214,10 +223,10 @@ binary-arch: build
 	dh_strip -s
 	dh_compress -s
 	dh_fixperms -s
-	dh_installdeb -s
 	dh_makeshlibs -s
 	dh_shlibdeps -s
 	dh_gencontrol -s
+	dh_installdeb -s
 	dh_md5sums -s
 	dh_builddeb -s
 
