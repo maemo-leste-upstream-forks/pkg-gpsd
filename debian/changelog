@@ -1,19 +1,19 @@
 gpsd (2.34.dfsg-1) unstable; urgency=low
 
   * Hijacking the package as announced on debian-devel@lists.d.o
-    in <470DEE3C.80603@bzed.de> due to the old maintainer beeing MIA.
+    in <470DEE3C.80603@bzed.de> due to the old maintainer being MIA.
   * New upstream version
   * Removing Tachometer.c due to an unclear licensing, this introduces
-    .dfsg to the version number and results in not beeing able to build
+    .dfsg to the version number and results in not being able to build
     xgpsspeed.
   * Building new packages:
     - python-gps containing the python modules, this also fixes a bug
       complaining about missing python-support (Closes: #413925)
-    - Splitting libgps and the according devel files in seperate packages
+    - Splitting libgps and the according devel files in separate packages
       (Closes: #295375)
   * Installing gpsd in /usr/sbin again. gpsd is a system daemon and only
     rarely used as user command.
-  * Autodiscovery of USB GPS devices is disables now by default, as the USB
+  * Auto discovery of USB GPS devices is disables now by default, as the USB
     devices use nothing but a standard usb to serial converter. This resulted
     in trouble if you wanted to use a normal serial converter without attached
     GPS device. A rules file is provided as example now.
