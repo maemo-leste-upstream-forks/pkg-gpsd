@@ -98,7 +98,7 @@ MAKEFLAGS_LIB_DEV = \
 	bin_PROGRAMS=  \
 	sbin_PROGRAMS=  \
 	man_MANS='libgps.3  libgpsd.3  libgpsmm.3 rtcm-104.5 srec.5' \
-	am__python_PYTHON_DIST =
+	am__python_PYTHON_DIST=
 
 build-lib-static-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
