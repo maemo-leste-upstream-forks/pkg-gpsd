@@ -1,0 +1,54 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## build-xgps-manpage-only.dpatch by Bernd Zeimetz <bernd@bzed.de>
+##
+## DP: no need to build the a manpage more than once
+
+@DPATCH@
+diff -urNad gpsd~/Makefile.am gpsd/Makefile.am
+--- gpsd~/Makefile.am	2007-10-14 13:29:59.000000000 +0200
++++ gpsd/Makefile.am	2007-10-14 13:30:34.000000000 +0200
+@@ -180,10 +180,7 @@
+ #
+ man_MANS = \
+ 	gpsd.8 \
+-	gps.1 \
+ 	xgps.1 \
+-	cgps.1 \
+-	cgpxlogger.1 \
+ 	libgps.3 \
+ 	libgpsmm.3 \
+ 	libgpsd.3 \
+diff -urNad gpsd~/Makefile.in gpsd/Makefile.in
+--- gpsd~/Makefile.in	2007-10-14 13:29:59.000000000 +0200
++++ gpsd/Makefile.in	2007-10-14 13:30:46.000000000 +0200
+@@ -523,10 +523,7 @@
+ #
+ @HAVE_XSLT_PROCESSOR_TRUE@man_MANS = \
+ @HAVE_XSLT_PROCESSOR_TRUE@	gpsd.8 \
+-@HAVE_XSLT_PROCESSOR_TRUE@	gps.1 \
+ @HAVE_XSLT_PROCESSOR_TRUE@	xgps.1 \
+-@HAVE_XSLT_PROCESSOR_TRUE@	cgps.1 \
+-@HAVE_XSLT_PROCESSOR_TRUE@	cgpxlogger.1 \
+ @HAVE_XSLT_PROCESSOR_TRUE@	libgps.3 \
+ @HAVE_XSLT_PROCESSOR_TRUE@	libgpsmm.3 \
+ @HAVE_XSLT_PROCESSOR_TRUE@	libgpsd.3 \
+diff -urNad gpsd~/gps.xml gpsd/gps.xml
+--- gpsd~/gps.xml	2006-12-15 00:43:39.000000000 +0100
++++ gpsd/gps.xml	2007-10-14 13:31:35.000000000 +0200
+@@ -2,14 +2,13 @@
+ <!DOCTYPE refentry PUBLIC 
+    "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "docbook/docbookx.dtd">
+-<refentry id='gps.1'>
++<refentry id='xgps.1'>
+ <refmeta>
+-<refentrytitle>gps</refentrytitle>
++<refentrytitle>xgps</refentrytitle>
+ <manvolnum>1</manvolnum>
+ <refmiscinfo class='date'>9 Aug 2004</refmiscinfo>
+ </refmeta>
+ <refnamediv id='name'>
+-<refname>gps</refname>
+ <refname>xgps</refname>
+ <refname>xgpsspeed</refname>
+ <refname>cgps</refname>
