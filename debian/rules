@@ -94,7 +94,7 @@ build-python: build-python-stamp
 MAKEFLAGS_LIB_STATIC = \
 	bin_PROGRAMS=  \
 	sbin_PROGRAMS=  \
-	man_MANS='libgps.3  libgpsd.3  libgpsmm.3'
+	man_MANS='libgps.3  libgpsd.3  libgpsmm.3 rtcm-104.5 srec.5'
 build-lib-static: patch-stamp autotools-dev-stamp
 	dh_testdir
 
@@ -132,7 +132,7 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	dh_install -p$(PACKAGE_GPSD)
 	dh_install -p$(PACKAGE_CLIENTS)
-	dh_install -p$(PACKAGE_LIB)
+	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 	dh_install -p$(PACKAGE_LIB_DEV) debian/tmp/usr/lib/libgps.la
 
 	touch $@
