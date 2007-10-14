@@ -7,11 +7,11 @@ set -e
 
 if [ "$1" = "configure" ] ; then
 
-	# udev: install symlink to gpsd.rules
-	#   udev handling got introduced in 2.32-2 - only create symlink once
-	#   on new package install or when upgrading from an older version
-	if dpkg --compare-versions "$2" lt "2.32-2" ; then
-		ln -sf ../gpsd.rules /etc/udev/rules.d/025_gpsd.rules
+	#tidy up behind old versions, but only in case the file was not changed
+	if [ -f /etc/X11/app-defaults/xgpsspeed ]; then
+	  oldmd5="f139447f0863774117989deba3c1783d"
+	  curmd5=$(md5sum /etc/X11/app-defaults/xgpsspeed | sed 's, .*,,g')
+	  [ "x$oldmd5" != "x$curmd5" ] || rm /etc/X11/app-defaults/xgpsspeed || true
 	fi
 
 	# generate /etc/default/gpsd
@@ -21,7 +21,8 @@ if [ "$1" = "configure" ] ; then
 	START=$RET
 	db_get gpsd/daemon_options
 	OPTS=$RET
-	cat <<EOF > /etc/default/gpsd
+
+cat <<EOF > /etc/default/gpsd
 # Default settings for gpsd. This file is sourced from
 # /etc/init.d/gpsd.
 START_DAEMON="$START"

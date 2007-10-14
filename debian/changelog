@@ -39,6 +39,9 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
   * debian/patches:
     - General cleanup, removing obsolete patches, adding several new patches
       to suit the new version and packaging.
+  * debian/{postinst,postrm}:
+    - Handle the removal of the now obsolete config file
+      /etc/X11/app-defaults/xgpsspeed sanely.
   * debian/po:
     - Adding several new translations, thanks to
       * cobaco (aka Bart Cornelis) - Dutch translation (Closes: #415519)
@@ -54,7 +57,7 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
     - Adding files to watch for upstream versions and handle the removal of
       non-free material automatically.
 
- -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 19:37:12 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 20:53:15 +0200
 
 gpsd (2.33-5) unstable; urgency=low
 

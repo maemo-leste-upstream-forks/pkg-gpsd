@@ -13,8 +13,10 @@ case "$1" in
     ;;
 
     purge)
-	[ -f /etc/default/gpsd ] && rm /etc/default/gpsd
-	[ -L /etc/udev/rules.d/025_gpsd.rules ] && rm /etc/udev/rules.d/025_gpsd.rules
+	[ ! -f /etc/default/gpsd ] || rm /etc/default/gpsd
+
+	#take care of an old config file from former versions
+	[ ! -f /etc/X11/app-defaults/xgpsspeed ] || rm /etc/X11/app-defaults/xgpsspeed
     ;;
 
     upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
