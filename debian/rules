@@ -215,6 +215,7 @@ binary-arch: build
 	dh_compress -s
 	dh_fixperms -s
 	dh_installdeb -s
+	dh_makeshlibs -s
 	dh_shlibdeps -s
 	dh_gencontrol -s
 	dh_md5sums -s

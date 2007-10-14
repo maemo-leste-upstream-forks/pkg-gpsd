@@ -2,10 +2,11 @@ Source: gpsd
 Section: misc
 Priority: optional
 Maintainer: Bernd Zeimetz <bernd@bzed.de>
-Build-Depends: debhelper (>= 5), po-debconf, dpatch,
- autotools-dev, 
+Build-Depends: debhelper (>= 5), po-debconf, dpatch, autotools-dev, 
  python-all-dev, python-support (>= 0.4),
- xsltproc, docbook-xsl, docbook-xml
+ xsltproc, docbook-xsl, docbook-xml,
+ libxt-dev, lesstif2-dev, libxaw7-dev, libncurses-dev,
+ libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev
 Standards-Version: 3.7.2
 Homepage: http://gpsd.berlios.de/
 XS-Python-Version: all
