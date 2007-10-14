@@ -48,14 +48,15 @@ ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 else
 	CFLAGS += -O2
 endif
+
+#supporting LinuxThreads
+CFLAGS += -D_REENTRANT
+
 CONFENV += CFLAGS="$(CFLAGS)"
 
 
-
-#Disallow undefined symbols in object files
-LDFLAGS += -Wl,-z,defs
-CONFENV += LDFLAGS="$(LDFLAGS)"
-
+#we build the python extension manually
+CONFFLAGS += --disable-python
 
 
 autotools-dev-stamp:
@@ -70,16 +71,48 @@ endif
 	touch $@
 
 
-build: build-gpsd build-python build-lib-static
+define CLEAN_BUILDDIR
+	[ ! -r Makefile ] || $(MAKE) distclean
+	[ ! -d $(CURDIR)/debian/tmp ] || rm -rf $(CURDIR)/debian/tmp
+enddef
+
+build: build-lib-static build-gpsd build-python
 build-gpsd: build-gpsd-stamp
-build-lib-static: build-lib-static-stamp
 build-python: build-python-stamp
+
+MAKEFLAGS_LIB_STATIC = bin_PROGRAMS=  sbin_PROGRAMS=  man_MANS=
+build-lib-static: patch-stamp autotools-dev-stamp
+	dh_testdir
+
+	$(CLEAN_BUILDDIR)
+
+	$(CONFENV) ./configure $(CONFFLAGS) \
+	                       --without-pic \
+	                       --disable-shared \
+	                       --enable-static
+
+	$(MAKE) $(MAKEFLAGS_LIB_STATIC)
+	$(MAKE) install $(MAKEFLAGS_LIB_STATIC) DESTDIR=$(CURDIR)/debian/tmp
+	dh_install -p$(PACKAGE_LIB_DEV)
 
 build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
 
-build-lib-static-stamp: patch-stamp autotools-dev-stamp
-	dh_testdir
+	$(CLEAN_BUILDDIR)
+
+	LDFLAGS="-Wl,-z,defs" $(CONFENV) ./configure $(CONFFLAGS) \
+	                                             --with-pic \
+	                                             --disable-static \
+	                                             --enable-shared
+
+	$(MAKE)
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+	dh_install -p$(PACKAGE_GPSD)
+	dh_install -p$(PACKAGE_CLIENTS)
+	dh_install -p$(PACKAGE_LIB)
+
+	touch $@
+
 
 build-python-stamp: build-gpsd-stamp
 	dh_testdir
@@ -88,6 +121,10 @@ build-python-stamp: build-gpsd-stamp
 	    $$py setup.py build; \
 	    $$py setup.py install --root=debian/$(PACKAGE_PY); \
 	done
+	touch $@
+
+build-lib-static-stamp: patch-stamp autotools-dev-stamp
+        dh_testdir
 
 clean: clean-patched unpatch
 clean-patched:
@@ -96,7 +133,7 @@ clean-patched:
 	dh_clean
 
 	rm -f autotools-dev-stamp
-	rm -f build-gpsd-stamp build-lib-static-stamp build-python-stamp
+	rm -f build-gpsd-stamp build-python-stamp
 
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
 	rm -f config.sub
@@ -113,17 +150,17 @@ endif
 binary-indep: 
 #nothing to do here.
 
-binary-arch: build install
+binary-arch: build
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs -s ChangeLog
 	dh_installdocs -s
 	dh_installexamples -s
-	dh_install -s
 	dh_installmenu -s
 	dh_desktop -s
 	dh_installman -s
 	dh_link -s
+	dh_pysupport -p$(PACKAGE_PY)
 	dh_strip -s
 	dh_compress -s
 	dh_fixperms -s
@@ -143,5 +180,6 @@ get-orig-source:
 	uscan --verbose --force-download
 
 .PHONY: build build-gpsd build-python build-lib-static \
-        clean binary-indep binary-arch binary install \
+        clean clean-patched \
+        binary-indep binary-arch binary install \
         get-orig-source 
