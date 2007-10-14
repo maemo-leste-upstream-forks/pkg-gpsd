@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-05-27 00:33+0200\n"
+"Report-Msgid-Bugs-To: bernd@bzed.de\n"
+"POT-Creation-Date: 2007-10-14 16:21+0200\n"
 "PO-Revision-Date: 2007-02-24 20:15+0100\n"
 "Last-Translator: Jacobo Tarrio <jtarrio@debian.org>\n"
 "Language-Team: Galician <proxecto@trasno.net>\n"
@@ -16,13 +16,15 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3
-msgid "Which device is your GPS receiver attached to?"
+#: ../gpsd.templates:1001
+#, fuzzy
+#| msgid "Which device is your GPS receiver attached to?"
+msgid "Device your GPS receiver is attached to:"
 msgstr "¿A que dispositivo está conectado o seu receptor GPS?"
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3
+#: ../gpsd.templates:1001
 msgid ""
 "Enter the device your GPS is attached to; this will probably be something "
 "like /dev/ttyS0 or /dev/ttyUSB0."
@@ -32,19 +34,19 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3
+#: ../gpsd.templates:1001
 msgid "You can enter several devices, separated by spaces."
 msgstr "Pode introducir varios dispositivos, separados por espazos."
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:12
+#: ../gpsd.templates:2001
 msgid "Should gpsd start on boot?"
 msgstr "¿gpsd debería iniciarse co ordenador?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:12
+#: ../gpsd.templates:2001
 msgid ""
 "If your GPS receiver is permanently attached to your computer, you might "
 "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
@@ -57,13 +59,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:19
+#: ../gpsd.templates:3001
 msgid "Options to gpsd:"
 msgstr "Opcións para gpsd:"
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:19
+#: ../gpsd.templates:3001
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(1) for a list "
 "of options."

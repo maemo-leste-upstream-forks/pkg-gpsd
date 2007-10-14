@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-02-27 04:32+0100\n"
+"Report-Msgid-Bugs-To: bernd@bzed.de\n"
+"POT-Creation-Date: 2007-10-14 16:21+0200\n"
 "PO-Revision-Date: 2007-03-07 20:08+0100\n"
 "Last-Translator: Bart Cornelis <cobaco@skolelinux.no>\n"
 "Language-Team: debian-l10n-dutch <debian-l10n-dutch@lists.debian.org>\n"
@@ -19,14 +19,20 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Which device is your GPS receiver attached to?"
+#, fuzzy
+#| msgid "Which device is your GPS receiver attached to?"
+msgid "Device your GPS receiver is attached to:"
 msgstr "Aan welk apparaat hangt uw GPS-ontvanger?"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Enter the device your GPS is attached to; this will probably be something like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr "Hier geeft u aan via welk apparaat uw GPS aangesloten is; waarschijnlijk is dit iets zoals /dev/ttyS0 of /dev/ttyUSB0."
+msgid ""
+"Enter the device your GPS is attached to; this will probably be something "
+"like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr ""
+"Hier geeft u aan via welk apparaat uw GPS aangesloten is; waarschijnlijk is "
+"dit iets zoals /dev/ttyS0 of /dev/ttyUSB0."
 
 #. Type: string
 #. Description
@@ -43,8 +49,15 @@ msgstr "Wilt u dat gpsd gestart wordt tijdens het opstarten van de machine?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "If your GPS receiver is permanently attached to your computer, you might want to start gpsd at boot time. Otherwise, you can run it by calling gpsd(1) at any time, or you can use the hotplug interface for USB devices."
-msgstr "Als uw GPS-ontvanger permanent op uw computer aangesloten is kan het zijn dat u gpsd tijdens het opstarten van de machine wilt starten. Zoniet kunt u gpsd op elk moment op starten via het commando gpsd(1), of kunt u de hotplug-interface voor USB-apparaten gebruiken."
+msgid ""
+"If your GPS receiver is permanently attached to your computer, you might "
+"want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
+"(1) at any time, or you can use the hotplug interface for USB devices."
+msgstr ""
+"Als uw GPS-ontvanger permanent op uw computer aangesloten is kan het zijn "
+"dat u gpsd tijdens het opstarten van de machine wilt starten. Zoniet kunt u "
+"gpsd op elk moment op starten via het commando gpsd(1), of kunt u de hotplug-"
+"interface voor USB-apparaten gebruiken."
 
 #. Type: string
 #. Description
@@ -55,6 +68,9 @@ msgstr "Opties voor gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "You can give additional arguments when starting gpsd; see gpsd(1) for a list of options."
-msgstr "U kunt aanvullende argumenten meegeven aan het opstarten van gpsd; een lijst met opties vindt u in gpsd(1)."
-
+msgid ""
+"You can give additional arguments when starting gpsd; see gpsd(1) for a list "
+"of options."
+msgstr ""
+"U kunt aanvullende argumenten meegeven aan het opstarten van gpsd; een lijst "
+"met opties vindt u in gpsd(1)."

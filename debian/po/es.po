@@ -26,8 +26,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.33\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-02-27 04:32+0100\n"
+"Report-Msgid-Bugs-To: bernd@bzed.de\n"
+"POT-Creation-Date: 2007-10-14 16:21+0200\n"
 "PO-Revision-Date: 2007-05-26 17:30-0500\n"
 "Last-Translator: César Gómez Martín <cesar.gomez@gmail.com>\n"
 "Language-Team: Debian l10n spanish <debian-l10n-spanish@lists.debian.org>\n"
@@ -41,7 +41,9 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Which device is your GPS receiver attached to?"
+#, fuzzy
+#| msgid "Which device is your GPS receiver attached to?"
+msgid "Device your GPS receiver is attached to:"
 msgstr "¿A qué dispositivo está asociado su receptor GPS?"
 
 #. Type: string
@@ -73,7 +75,11 @@ msgid ""
 "If your GPS receiver is permanently attached to your computer, you might "
 "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
 "(1) at any time, or you can use the hotplug interface for USB devices."
-msgstr "Si su receptor GPS está permanentemente conectado a su ordenador, quizás quiera iniciar gpsd en el arranque del sistema. De otro modo, puede ejecutarlo invocando a gpsd(1) cuando quiera, o puede usar la interfaz «hotplug» para dispositivos USB."
+msgstr ""
+"Si su receptor GPS está permanentemente conectado a su ordenador, quizás "
+"quiera iniciar gpsd en el arranque del sistema. De otro modo, puede "
+"ejecutarlo invocando a gpsd(1) cuando quiera, o puede usar la interfaz "
+"«hotplug» para dispositivos USB."
 
 #. Type: string
 #. Description
@@ -87,4 +93,6 @@ msgstr "Opciones para gpsd:"
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(1) for a list "
 "of options."
-msgstr "Puede proporcionar argumentos adicionales al iniciar gpsd; consulte la página de manual de gpsd(1) para ver una lista de opciones."
+msgstr ""
+"Puede proporcionar argumentos adicionales al iniciar gpsd; consulte la "
+"página de manual de gpsd(1) para ver una lista de opciones."

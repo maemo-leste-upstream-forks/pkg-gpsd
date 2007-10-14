@@ -10,8 +10,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-05-27 00:33+0200\n"
+"Report-Msgid-Bugs-To: bernd@bzed.de\n"
+"POT-Creation-Date: 2007-10-14 16:21+0200\n"
 "PO-Revision-Date: 2005-01-02 20:40MET\n"
 "Last-Translator: Petter Reinholdtsen <pere@hungry.com>\n"
 "Language-Team: Norwegian Bokmål <i18n-nb@lister.ping.uio.no>\n"
@@ -22,13 +22,15 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3
-msgid "Which device is your GPS receiver attached to?"
+#: ../gpsd.templates:1001
+#, fuzzy
+#| msgid "Which device is your GPS receiver attached to?"
+msgid "Device your GPS receiver is attached to:"
 msgstr "Hvilken enhet er din GPS-mottaker koblet til?"
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3
+#: ../gpsd.templates:1001
 #, fuzzy
 msgid ""
 "Enter the device your GPS is attached to; this will probably be something "
@@ -40,19 +42,19 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3
+#: ../gpsd.templates:1001
 msgid "You can enter several devices, separated by spaces."
 msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:12
+#: ../gpsd.templates:2001
 msgid "Should gpsd start on boot?"
 msgstr "Skal gpsd starte når maskinen booter?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:12
+#: ../gpsd.templates:2001
 #, fuzzy
 msgid ""
 "If your GPS receiver is permanently attached to your computer, you might "
@@ -65,13 +67,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:19
+#: ../gpsd.templates:3001
 msgid "Options to gpsd:"
 msgstr "Opsjoner til gpsd:"
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:19
+#: ../gpsd.templates:3001
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(1) for a list "
 "of options."
