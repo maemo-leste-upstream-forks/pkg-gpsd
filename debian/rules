@@ -5,14 +5,6 @@ include /usr/share/dpatch/dpatch.make
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
 
-#package names
-PACKAGE_GPSD := gpsd
-PACKAGE_CLIENTS := gpsd-clients
-PACKAGE_LIB = FIXME
-PACKAGE_LIB_DEV := libgps-dev
-PACKAGE_PY := python-gps
-
-
 CONFFLAGS =
 CONFENV =
 CFLAGS =
@@ -59,6 +51,24 @@ CONFENV += CFLAGS="$(CFLAGS)"
 CONFFLAGS += --disable-python
 
 
+
+#library versions
+LIB_version := $(shell grep '^libgps_la_LDFLAGS' Makefile.am | \
+                           sed 's,^[^0-9]*,,g;s,:,.,g')
+LIB_major := $(shell echo $(LIB_version) | sed 's,\..*,,g')
+
+
+
+#package names
+PACKAGE_GPSD := gpsd
+PACKAGE_CLIENTS := gpsd-clients
+PACKAGE_LIB := $(shell grep '^Package: libgps$(LIB_major)' debian/control | \
+                       awk '{print $$2}')
+PACKAGE_LIB_DEV := libgps-dev
+PACKAGE_PY := python-gps
+
+
+
 autotools-dev-stamp:
 	dh_testdir
 
@@ -74,42 +84,56 @@ endif
 define CLEAN_BUILDDIR
 	[ ! -r Makefile ] || $(MAKE) distclean
 	[ ! -d $(CURDIR)/debian/tmp ] || rm -rf $(CURDIR)/debian/tmp
-enddef
+	rm -f *.1 *.3 *.5 *.8
+endef
 
 build: build-lib-static build-gpsd build-python
 build-gpsd: build-gpsd-stamp
 build-python: build-python-stamp
 
-MAKEFLAGS_LIB_STATIC = bin_PROGRAMS=  sbin_PROGRAMS=  man_MANS=
+MAKEFLAGS_LIB_STATIC = \
+	bin_PROGRAMS=  \
+	sbin_PROGRAMS=  \
+	man_MANS='libgps.3  libgpsd.3  libgpsmm.3'
 build-lib-static: patch-stamp autotools-dev-stamp
 	dh_testdir
 
 	$(CLEAN_BUILDDIR)
 
-	$(CONFENV) ./configure $(CONFFLAGS) \
-	                       --without-pic \
-	                       --disable-shared \
-	                       --enable-static
+	$(CONFENV) ./configure $(CONFFLAGS) --without-pic --disable-shared
 
 	$(MAKE) $(MAKEFLAGS_LIB_STATIC)
 	$(MAKE) install $(MAKEFLAGS_LIB_STATIC) DESTDIR=$(CURDIR)/debian/tmp
+
+	#install all files, except libgps.la (will be installed when we
+	#build a shared library, too)
+	find debian/tmp -name libgps.la -o -type f -print > \
+	    debian/$(PACKAGE_LIB_DEV).install
 	dh_install -p$(PACKAGE_LIB_DEV)
+	rm debian/$(PACKAGE_LIB_DEV).install
+
+	dh_link -p$(PACKAGE_LIB_DEV) usr/lib/libgps.so.$(LIB_major) \
+	                             usr/lib/libgps.so
+	dh_link -p$(PACKAGE_LIB_DEV) usr/lib/libgps.so.$(LIB_version) \
+	                             usr/lib/libgps.so.$(LIB_major)
+
 
 build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
 
 	$(CLEAN_BUILDDIR)
 
-	LDFLAGS="-Wl,-z,defs" $(CONFENV) ./configure $(CONFFLAGS) \
-	                                             --with-pic \
-	                                             --disable-static \
-	                                             --enable-shared
+	#sanity check if debian/control lists the right package name
+	grep -q '^Package: libgps$(LIB_major)' debian/control
+
+	LDFLAGS="-Wl,-z,defs" $(CONFENV) ./configure $(CONFFLAGS) --with-pic
 
 	$(MAKE)
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	dh_install -p$(PACKAGE_GPSD)
 	dh_install -p$(PACKAGE_CLIENTS)
 	dh_install -p$(PACKAGE_LIB)
+	dh_install -p$(PACKAGE_LIB_DEV) debian/tmp/usr/lib/libgps.la
 
 	touch $@
 
@@ -124,7 +148,7 @@ build-python-stamp: build-gpsd-stamp
 	touch $@
 
 build-lib-static-stamp: patch-stamp autotools-dev-stamp
-        dh_testdir
+	dh_testdir
 
 clean: clean-patched unpatch
 clean-patched:
@@ -174,12 +198,12 @@ binary: binary-indep binary-arch
 
 get-orig-source:
 	if ! which uscan; then \
-            echo "Please install the devscripts package." ;\
-            exit 1 ;\
-        fi
+	    echo "Please install the devscripts package." ;\
+	    exit 1 ;\
+	fi
 	uscan --verbose --force-download
 
 .PHONY: build build-gpsd build-python build-lib-static \
-        clean clean-patched \
-        binary-indep binary-arch binary install \
-        get-orig-source 
+	clean clean-patched \
+	binary-indep binary-arch binary install \
+	get-orig-source 
