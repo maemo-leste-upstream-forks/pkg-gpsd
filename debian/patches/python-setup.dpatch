@@ -7,8 +7,8 @@
 @DPATCH@
 diff -urNad gpsd~/setup.py gpsd/setup.py
 --- gpsd~/setup.py	2006-12-15 00:43:39.000000000 +0100
-+++ gpsd/setup.py	2007-10-14 15:12:46.000000000 +0200
-@@ -1,8 +1,48 @@
++++ gpsd/setup.py	2007-10-14 15:29:55.000000000 +0200
+@@ -1,8 +1,40 @@
  # $Id: setup.py 4076 2006-12-05 02:00:19Z esr $
  # Creates build/lib.linux-${arch}-${pyvers}/gpspacket.so,
  # where ${arch} is an architecture and ${pyvers} is a Python version.
@@ -18,46 +18,38 @@ diff -urNad gpsd~/setup.py gpsd/setup.py
 -      ext_modules=[Extension("gpspacket",
 -                             ["gpspacket.c", "packet.c",
 -                              "isgps.c", "rtcm.c", "strl.c", "hex.c"])])
-+from distutils.command.build_ext import build_ext as _build_ext
 +
 +import os
 +import sys
 +
-+class build_ext(_build_ext):
 +
-+    def run(self):
++if not os.path.exists('gpsd_config.h'):
++    sys.stderr.write('\nPlease run configure first!\n')
++    sys.exit(1)
 +
-+        if not os.path.exists('gpsd_config.h'):
-+            sys.stderr.write('\nPlease run configure first!\n')
-+            sys.exit(1)
-+
-+        needed_files = ['packet_names.h', 'gpsfake.1', 'gpsprof.1']
-+        created_files = {}
-+        for f_name in needed_files:
-+            created_files[f_name] = False
-+            if not os.path.exists(f_name):
-+                make_in, make_out = os.popen2('make %s' % f_name)
-+                print make_out.read()
-+                make_out.close()
-+                make_in.close()
-+                created_files[f_name] = True
-+
-+        _build_ext.run(self)
-+
-+        for f_name in needed_files:
-+            if created_files[f_name]:
-+                os.remove(p_names)
-+
++needed_files = ['packet_names.h', 'gpsfake.1', 'gpsprof.1']
++created_files = {}
++for f_name in needed_files:
++    created_files[f_name] = False
++    if not os.path.exists(f_name):
++        make_in, make_out = os.popen2('make %s' % f_name)
++        print make_out.read()
++        make_out.close()
++        make_in.close()
++        created_files[f_name] = True
 +
 +extension_source = ["gpspacket.c", "packet.c", "isgps.c",
-+                    "rtcm.c", "strl.c", "hex.c"]
++            "rtcm.c", "strl.c", "hex.c"]
 +
-+setup( cmdclass={'build_ext': build_ext},
-+       name="gpspacket",
++setup( name="gpspacket",
 +       version="1.0",
 +       ext_modules=[Extension("gpspacket", extension_source)],
 +       py_modules = ['gpsfake','gps'],
 +       data_files=[('bin', ['gpsfake','gpsprof']),
-+                   ('share/man/man1', ['gpsfake.1','gpsprof.1'])]
++           ('share/man/man1', ['gpsfake.1','gpsprof.1'])]
 +     )
++
++for f_name in needed_files:
++    if created_files[f_name]:
++        os.remove(f_name)
 +

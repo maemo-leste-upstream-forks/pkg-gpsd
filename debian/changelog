@@ -30,6 +30,9 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
       startet at bootup, thanks to Kiro Zimmer (Closes: #395297)
   * debian/gpsd.lintian-overrides
     - Removing file, not needed anymore
+  * debian/gpsd.templates:
+    - Replacing the question for gpsd/device by a title, fixing a lintian
+      warning
   * debian/patches:
     - General cleanup, removing obsolete patches, adding several new patches
       to suit the new version and packaging.

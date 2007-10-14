@@ -1,6 +1,6 @@
 Template: gpsd/device
 Type: string
-_Description: Which device is your GPS receiver attached to?
+_Description: Device your GPS receiver is attached to:
  Enter the device your GPS is attached to; this will probably be something
  like /dev/ttyS0 or /dev/ttyUSB0.
  .

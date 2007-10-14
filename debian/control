@@ -12,7 +12,7 @@ XS-Python-Version: all
 
 Package: gpsd
 Architecture: any
-Depends: netbase, lsb-base (>= 3.0-6), ${shlibs:Depends}, ${misc:Depends}
+Depends: python, netbase, lsb-base (>= 3.0-6), ${shlibs:Depends}, ${misc:Depends}
 Recommends: gpsd-clients
 Suggests: udev
 Description: GPS (Global Positioning System) daemon
