@@ -41,8 +41,7 @@ case "$1" in
 			&& log_end_msg 0 \
 			|| log_end_msg 1
 	else
-		log_warning_msg "gpsd is configured not to start automatically at boot time."
-		log_warning_msg "  To change this, run 'dpkg-reconfigure gpsd'."
+		log_daemon_msg "Not starting $DESC" "gpsd" && log_end_msg 0
 	fi		
 	;;
   stop)
@@ -52,8 +51,7 @@ case "$1" in
 		log_end_msg 0
 		[ -n "$WARN" ] && log_warning_msg "$WARN"
 	else
-		log_warning_msg "gpsd is configured not to start automatically at boot time."
-		log_warning_msg "  To change this, run 'dpkg-reconfigure gpsd'."
+		log_daemon_msg "Not stopping $DESC" "gpsd" && log_end_msg 0
 	fi		
 	;;
   reload|force-reload)

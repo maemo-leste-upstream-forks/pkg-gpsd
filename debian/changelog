@@ -20,6 +20,9 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
     - Adding informations for the new packages
   * debian/copyright:
     - Reworking the whole file
+  * debian/gpsd.init:
+    - Changing warnings to make gpsd more quiet if it's not automatically
+      startet at bootup, thanks to Kiro Zimmer (Closes: #395297)
   * debian/gpsd.lintian-overrides
     - Removing file, not needed anymore
   * debian/po:
@@ -34,7 +37,7 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
     - Adding files to watch for upstream versions and handle the removal of
       non-free material automatically.
 
- -- Bernd Zeimetz <bernd@bzed.de>  Thu, 11 Oct 2007 23:31:37 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 12:57:53 +0200
 
 gpsd (2.33-5) unstable; urgency=low
 
