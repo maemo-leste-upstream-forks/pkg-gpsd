@@ -206,7 +206,7 @@ endif
 
 	python setup.py clean
 	rm -rf build
-	[ ! -r Makefile ] || $(MAKE) distclean
+	$(CLEAN_BUILDDIR)
 
 
 binary-indep: 
