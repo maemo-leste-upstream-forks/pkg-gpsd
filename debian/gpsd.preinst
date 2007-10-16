@@ -7,14 +7,16 @@ set -e
 
 case "$1" in
     install)
-	dpkg-divert --package gpsd --add --rename \
-	  --divert /usr/bin/gpsd.gpsdrive /usr/bin/gpsd
-	dpkg-divert --package gpsd --add --rename \
-	  --divert /usr/share/man/man1/gpsd.gpsdrive.1.gz \
-	  /usr/share/man/man1/gpsd.1.gz
     ;;
 
     upgrade)
+	if dpkg --compare-versions "$2" lt 2.34; then
+            dpkg-divert --package gpsd --remove --rename \
+                        --divert /usr/bin/gpsd.gpsdrive /usr/bin/gpsd || true
+            dpkg-divert --package gpsd --remove --rename \
+                        --divert /usr/share/man/man1/gpsd.gpsdrive.1.gz \
+                                 /usr/share/man/man1/gpsd.1.gz || true
+        fi
     ;;
 
     abort-upgrade)

@@ -4,22 +4,21 @@
 set -e
 
 case "$1" in
-    remove)
-	dpkg-divert --package gpsd --remove --rename \
-	  --divert /usr/bin/gpsd.gpsdrive /usr/bin/gpsd
-	dpkg-divert --package gpsd --remove --rename \
-	  --divert /usr/share/man/man1/gpsd.gpsdrive.1.gz \
-	  /usr/share/man/man1/gpsd.1.gz
-    ;;
-
     purge)
 	[ ! -f /etc/default/gpsd ] || rm /etc/default/gpsd
-
-	#take care of an old config file from former versions
-	[ ! -f /etc/X11/app-defaults/xgpsspeed ] || rm /etc/X11/app-defaults/xgpsspeed
     ;;
 
-    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    remove|upgrade|failed-upgrade|abort-install|disappear)
+    ;;
+
+    abort-upgrade)
+        if dpkg --compare-versions "$2" lt 2.34; then
+            dpkg-divert --package gpsd --add --rename \
+                        --divert /usr/bin/gpsd.gpsdrive /usr/bin/gpsd
+            dpkg-divert --package gpsd --add --rename \
+                        --divert /usr/share/man/man1/gpsd.gpsdrive.1.gz \
+                                 /usr/share/man/man1/gpsd.1.gz
+        fi
     ;;
 
     *)

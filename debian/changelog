@@ -12,7 +12,7 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
     - Splitting libgps and the according devel files in separate packages
       (Closes: #295375)
   * Installing gpsd in /usr/sbin again. gpsd is a system daemon and only
-    rarely used as user command.
+    rarely used as user command. 
   * Auto discovery of USB GPS devices is disables now by default, as the USB
     devices use nothing but a standard usb to serial converter. This resulted
     in trouble if you wanted to use a normal serial converter without attached
@@ -32,16 +32,17 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
       not exist anymore)
   * debian/gpsd.init:
     - Changing warnings to make gpsd more quiet if it's not automatically
-      startet at bootup, thanks to Kiro Zimmer (Closes: #395297)
+      startet at bootup, thanks to Kiro Zimmer (Closes: #395297).
+    - Reflecting the change in gpsd's location.
   * debian/gpsd.templates:
     - Replacing the question for gpsd/device by a title, fixing a lintian
       warning
+  * debian/gpsd.{postrm,preinst}:
+    - Remove existing diversions of gpsd while upgrading.
+      Thanks to Andreas Putzo (Closes: #446780).
   * debian/patches:
     - General cleanup, removing obsolete patches, adding several new patches
       to suit the new version and packaging.
-  * debian/{postinst,postrm}:
-    - Handle the removal of the now obsolete config file
-      /etc/X11/app-defaults/xgpsspeed sanely.
   * debian/po:
     - Adding several new translations, thanks to
       * cobaco (aka Bart Cornelis) - Dutch translation (Closes: #415519)
@@ -57,7 +58,7 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
     - Adding files to watch for upstream versions and handle the removal of
       non-free material automatically.
 
- -- Bernd Zeimetz <bernd@bzed.de>  Sun, 14 Oct 2007 20:53:15 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Tue, 16 Oct 2007 14:49:34 +0200
 
 gpsd (2.33-5) unstable; urgency=low
 

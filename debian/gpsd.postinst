@@ -7,13 +7,6 @@ set -e
 
 if [ "$1" = "configure" ] ; then
 
-	#tidy up behind old versions, but only in case the file was not changed
-	if [ -f /etc/X11/app-defaults/xgpsspeed ]; then
-	  oldmd5="f139447f0863774117989deba3c1783d"
-	  curmd5=$(md5sum /etc/X11/app-defaults/xgpsspeed | sed 's, .*,,g')
-	  [ "x$oldmd5" != "x$curmd5" ] || rm /etc/X11/app-defaults/xgpsspeed || true
-	fi
-
 	# generate /etc/default/gpsd
 	db_get gpsd/device
 	DEVICES=$RET

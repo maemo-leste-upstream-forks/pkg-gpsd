@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 #
 #	Author: Tilman Koschnick <til@subnetz.org>.
 #
@@ -15,7 +15,7 @@
 set -e
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/bin/gpsd
+DAEMON=/usr/sbin/gpsd
 DESC="GPS (Global Positioning System) daemon"
 PIDFILE="/var/run/gpsd.pid"
 SELF=$(cd $(dirname $0); pwd -P)/$(basename $0)

@@ -29,7 +29,7 @@ Description: GPS (Global Positioning System) daemon
 Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: python-gps
+Suggests: python-gps, gpsd
 Description: Clients for the GPS daemon
  gpsd is a service daemon that monitors one or more GPSes attached to a host
  computer through serial or USB ports, making all data on the location/course/
