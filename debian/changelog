@@ -1,7 +1,7 @@
 gpsd (2.34.dfsg-2) UNRELEASED; urgency=low
 
   * debian/gpsd.templates:
-    - Updating the manpage kategory of gpsd, thanks to Thijs Kinkhorst for the
+    - Updating the manpage category of gpsd, thanks to Thijs Kinkhorst for the
       hint.
   * debian/patches:
     - Adding INSTALL-description-fix, clarifying which device gpsd uses by
