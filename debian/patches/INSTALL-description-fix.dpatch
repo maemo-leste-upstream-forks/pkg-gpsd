@@ -1,0 +1,22 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## INSTALL-description-fix.dpatch by Bernd Zeimetz <bernd@bzed.de>
+##
+## DP: fixing the INSTALL description (aka TROUBLESHOOTING in the package)
+
+@DPATCH@
+diff -urNad gpsd~/INSTALL gpsd/INSTALL
+--- gpsd~/INSTALL	2006-12-15 00:43:39.000000000 +0100
++++ gpsd/INSTALL	2007-10-18 19:02:00.000000000 +0200
+@@ -52,9 +52,9 @@
+ 
+ 4. Start gpsd.  It should not need any options.
+ 
+-5. Once gpsd is running, telnet to port 2947.  Type 'f' to see what
+-device it will query.  If you need to change the device, use 'f='
+-to do so (see the manual page for details). Now plug in your GPS.
++5. Once gpsd is running, telnet to port 2947. By default gpsd will use
++/dev/ttyS0. If you need to change the device, use 'f=' to do so (see the
++manual page for details). Now plug in your GPS.
+ 
+ 6. Type "wr" to start raw and watcher modes.  You should see NMEA data
+ (text lines beginning with $) spewing out.  You will also see lines
