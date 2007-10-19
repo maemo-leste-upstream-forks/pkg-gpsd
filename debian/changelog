@@ -11,8 +11,11 @@ gpsd (2.34.dfsg-2) unstable; urgency=low
     - Adding gpsfake-logfile-howto.dpatch which adds a comment about creating
       a logfile which is suitable for the use with gpsfake. Thanks to
       Dan Jacobson again. (Closes: #329266)
+  * debian/rules:
+    - We need to use dh_installman to install xgps.1 now, more easy than
+      patching Makefile.*
 
- -- Bernd Zeimetz <bernd@bzed.de>  Fri, 19 Oct 2007 21:40:44 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Fri, 19 Oct 2007 22:51:01 +0200
 
 gpsd (2.34.dfsg-1) unstable; urgency=low
 
