@@ -17,5 +17,5 @@ _Description: Should gpsd start on boot?
 Template: gpsd/daemon_options
 Type: string
 _Description: Options to gpsd:
- You can give additional arguments when starting gpsd; see gpsd(1) for a
+ You can give additional arguments when starting gpsd; see gpsd(8) for a
  list of options.
