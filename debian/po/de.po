@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.33\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
-"POT-Creation-Date: 2007-10-19 22:28+0200\n"
+"POT-Creation-Date: 2007-10-19 23:19+0200\n"
 "PO-Revision-Date: 2006-11-26 22:53+0100\n"
 "Last-Translator: Alwin Meschede <ameschede@gmx.de>\n"
 "Language-Team: german <debian-l10n-german@lists.debian.org>\n"
@@ -72,8 +72,12 @@ msgstr "Optionen für gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
+#| "list of options."
 msgid ""
-"You can give additional arguments when starting gpsd; see gpsd(1) for a list "
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
 "Sie können gpsd beim Start zusätzliche Argumente übergeben. Die man page von "

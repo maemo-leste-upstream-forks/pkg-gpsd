@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.25\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
-"POT-Creation-Date: 2007-10-19 22:28+0200\n"
+"POT-Creation-Date: 2007-10-19 23:19+0200\n"
 "PO-Revision-Date: 2005-06-20 13:07+0200\n"
 "Last-Translator: Jean-Luc Coulon (f5ibh) <jean-luc.coulon@wanadoo.fr>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -77,8 +77,12 @@ msgstr "Options à passer à gpsd :"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
+#| "list of options."
 msgid ""
-"You can give additional arguments when starting gpsd; see gpsd(1) for a list "
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
 "Il est possible de préciser des paramètres supplémentaires lors du lancement "

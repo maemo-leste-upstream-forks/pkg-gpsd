@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.25-1\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
-"POT-Creation-Date: 2007-10-19 22:28+0200\n"
+"POT-Creation-Date: 2007-10-19 23:19+0200\n"
 "PO-Revision-Date: 2005-06-06 11:39+0930\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <gnomevi-list@lists.sourceforge.net>\n"
@@ -72,8 +72,12 @@ msgstr "Tùy chọn với gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
+#| "list of options."
 msgid ""
-"You can give additional arguments when starting gpsd; see gpsd(1) for a list "
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
 "Bạn có thể cung cấp một số đối số thêm khi khởi chạy trình nền gpsd. Hãy xem "

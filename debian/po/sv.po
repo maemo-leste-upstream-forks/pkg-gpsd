@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.28-2\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
-"POT-Creation-Date: 2007-10-19 22:28+0200\n"
+"POT-Creation-Date: 2007-10-19 23:19+0200\n"
 "PO-Revision-Date: 2005-10-14 09:51+0200\n"
 "Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
 "Language-Team: Swedish <sv@li.org>\n"
@@ -79,8 +79,12 @@ msgstr "Inställningar till gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
+#| "list of options."
 msgid ""
-"You can give additional arguments when starting gpsd; see gpsd(1) for a list "
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
 "Du kan ange ytterligare argument när du startar gpsd, se gpsd(1) för en "

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
-"POT-Creation-Date: 2007-10-19 22:28+0200\n"
+"POT-Creation-Date: 2007-10-19 23:19+0200\n"
 "PO-Revision-Date: 2005-05-27 19:22+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
@@ -79,8 +79,12 @@ msgstr "Volby pro gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
+#| "list of options."
 msgid ""
-"You can give additional arguments when starting gpsd; see gpsd(1) for a list "
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
 "Nyní můžete zadat parametry, které se mají používat při startu gpsd; Seznam "
