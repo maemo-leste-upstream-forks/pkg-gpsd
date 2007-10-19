@@ -1,4 +1,4 @@
-gpsd (2.34.dfsg-2) UNRELEASED; urgency=low
+gpsd (2.34.dfsg-2) unstable; urgency=low
 
   * debian/gpsd.templates:
     - Updating the manpage category of gpsd, thanks to Thijs Kinkhorst for the
@@ -6,17 +6,13 @@ gpsd (2.34.dfsg-2) UNRELEASED; urgency=low
   * debian/patches:
     - Adding INSTALL-description-fix.dpatch, clarifying which device gpsd uses
       by default. Thanks to Dan Jacobson for reporting. (Closes: #329267)
-    - Adding no-gps-manpage.dpatch to reflect that gps.1 is renamed to cgps.1
+    - Adding no-gps-manpage.dpatch to reflect that gps.1 is renamed to xgps.1
       due to a name clash with the gps package.
     - Adding gpsfake-logfile-howto.dpatch which adds a comment about creating
       a logfile which is suitable for the use with gpsfake. Thanks to
       Dan Jacobson again. (Closes: #329266)
-  * debian/rules:
-    - Renaming gps.1 to cgps.1 instead of xgps.1, updating the links
-      accordingly, avoising the impression that there're only X related
-      clients available.
 
- -- Bernd Zeimetz <bernd@bzed.de>  Fri, 19 Oct 2007 07:05:25 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Fri, 19 Oct 2007 21:40:44 +0200
 
 gpsd (2.34.dfsg-1) unstable; urgency=low
 
