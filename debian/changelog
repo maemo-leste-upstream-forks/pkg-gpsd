@@ -29,7 +29,7 @@ gpsd (2.34.dfsg-1) unstable; urgency=low
       (Closes: #295375)
   * Installing gpsd in /usr/sbin again. gpsd is a system daemon and only
     rarely used as user command. 
-  * Auto discovery of USB GPS devices is disables now by default, as the USB
+  * Auto discovery of USB GPS devices is disabled by default now, as the USB
     devices use nothing but a standard usb to serial converter. This resulted
     in trouble if you wanted to use a normal serial converter without attached
     GPS device. A rules file is provided as example now.
