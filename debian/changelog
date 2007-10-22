@@ -1,3 +1,14 @@
+gpsd (2.34.dfsg-3) UNRELEASED; urgency=low
+
+  * NOT RELEASED YET
+  * debian/control:
+    - Adding Provides: ${python:Provides} as required by the new Python
+      policy.
+  * Debconf template translation updates:
+    - French translation, thanks to Christian Perrier (Closes: #447428)
+
+ -- Bernd Zeimetz <bernd@bzed.de>  Mon, 22 Oct 2007 09:08:01 +0200
+
 gpsd (2.34.dfsg-2) unstable; urgency=low
 
   * debian/gpsd.templates:

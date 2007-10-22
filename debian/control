@@ -44,6 +44,7 @@ Architecture: any
 Section: python
 Conflicts: gpsd-clients (<< 2.34.dfsg-1)
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
 Description: Python interface to gpsd and testing environment
  gpsd is a service daemon that monitors one or more GPSes attached to a host
  computer through serial or USB ports, making all data on the location/course/

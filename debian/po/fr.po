@@ -23,8 +23,6 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid "Which device is your GPS receiver attached to?"
 msgid "Device your GPS receiver is attached to:"
 msgstr "Fichier de périphérique utilisé par votre récepteur GPS :"
 
@@ -53,11 +51,6 @@ msgstr "Faut-il lancer gpsd au démarrage du système ?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(1) at any time, or you can use the hotplug interface for USB devices."
 msgid ""
 "If your GPS receiver is permanently attached to your computer, you might "
 "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
@@ -65,7 +58,7 @@ msgid ""
 msgstr ""
 "Si votre récepteur GPS est connecté en permanence à votre ordinateur, il "
 "peut être intéressant de lancer gpsd au démarrage du système. Sinon, vous "
-"pourrez le lancer par la commande gpsd(1) à n'importe quel moment ou vous "
+"pourrez le lancer par la commande gpsd(8) à n'importe quel moment ou vous "
 "pourrez utiliser l'interface de hotplug pour les périphériques USB."
 
 #. Type: string
@@ -77,14 +70,10 @@ msgstr "Options à passer à gpsd :"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
 "Il est possible de préciser des paramètres supplémentaires lors du lancement "
-"de gpsd ; veuillez consulter la page de manuel gpsd(1) pour une liste des "
+"de gpsd ; veuillez consulter la page de manuel gpsd(8) pour une liste des "
 "paramètres disponibles."
