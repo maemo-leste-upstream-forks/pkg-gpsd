@@ -1,10 +1,15 @@
 gpsd (2.34.dfsg-4) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
+  * debian/control:
+    - Adding Conflicts to libgps-dev, thanks to Jordà Polo (Closes: #448349).
+    - Changing python-gps' Conflicts to Replaces as it is save to install the
+      more recent python extensions together with older gpsd(-clients)
+      packages.
   * debian/po:
-    - Galician translation update, thanks to Jacobo Tarrio. (Closes: #447933)  
+    - Galician translation update, thanks to Jacobo Tarrio. (Closes: #447933)
 
- -- Bernd Zeimetz <bernd@bzed.de>  Wed, 24 Oct 2007 23:45:55 +0200
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 28 Oct 2007 18:10:25 +0100
 
 gpsd (2.34.dfsg-3) unstable; urgency=low
 

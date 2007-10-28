@@ -42,7 +42,7 @@ Description: Clients for the GPS daemon
 Package: python-gps
 Architecture: any
 Section: python
-Conflicts: gpsd-clients (<< 2.34.dfsg-1)
+Replaces: gpsd-clients (<< 2.34.dfsg-1)
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
 Description: Python interface to gpsd and testing environment
@@ -73,6 +73,7 @@ Package: libgps-dev
 Architecture: any
 Section: libdevel
 Depends: libgps16 (= ${binary:Version}), ${misc:Depends}
+Conflicts: gpsd (<< 2.34.dfsg-1)
 Description: C library for communicating with GPS devices (development files)
  libgps is a service library for querying GPS devices. There are two
  interfaces supported by it:
