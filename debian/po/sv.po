@@ -8,43 +8,38 @@
 # or http://www.debian.org/intl/l10n/po-debconf/README-trans
 # Developers do not need to manually edit POT or PO files.
 # , fuzzy
-# 
-# 
+#
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: gpsd 2.28-2\n"
+"Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
 "POT-Creation-Date: 2007-10-19 23:19+0200\n"
-"PO-Revision-Date: 2005-10-14 09:51+0200\n"
+"PO-Revision-Date: 2007-10-28 19:00+0100\n"
 "Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
-"Language-Team: Swedish <sv@li.org>\n"
+"Language-Team: Swedish <debian-l10n-swedish@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#| msgid "Which device is your GPS receiver attached to?"
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid "Which device is your GPS receiver attached to?"
 msgid "Device your GPS receiver is attached to:"
-msgstr "Vilken enhet är din GPD-mottagare inkopplad på?"
+msgstr "Enhet som din GPS-mottagare är ansluten till:"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid ""
-"Enter the device your GPS is attached to; this will probably be something "
-"like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr ""
-"Ange enheten som din GPS är inkopplad på, detta är antagligen någon "
-"liknande /dev/ttyS0 eller /dev/ttyUSB0."
+msgid "Enter the device your GPS is attached to; this will probably be something like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr "Ange enheten som din GPS är inkopplad på, detta är antagligen någon liknande /dev/ttyS0 eller /dev/ttyUSB0."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
 msgid "You can enter several devices, separated by spaces."
-msgstr "Du kan ange flera enheter, separera med mellanslag."
+msgstr "Du kan ange flera enheter, separera med blanksteg."
 
 #. Type: boolean
 #. Description
@@ -52,40 +47,28 @@ msgstr "Du kan ange flera enheter, separera med mellanslag."
 msgid "Should gpsd start on boot?"
 msgstr "Ska gpsd startas vid systemets uppstart?"
 
-#. Type: boolean
-#. Description
-#: ../gpsd.templates:2001
-#, fuzzy
 #| msgid ""
 #| "If your GPS receiver is permanently attached to your computer, you might "
 #| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
 #| "(1) at any time, or you can use the hotplug interface for USB devices."
-msgid ""
-"If your GPS receiver is permanently attached to your computer, you might "
-"want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-"(8) at any time, or you can use the hotplug interface for USB devices."
-msgstr ""
-"Om din GPD-mottagare är permanent inkopplad på din dator kanske du vill "
-"starta gpsd vid systemets uppstart. Annars kan du köra den genom att starta "
-"gpsd(1) när som helst eller så kan du använda hotplugs gränssnitt för USB-"
-"enheter."
+#. Type: boolean
+#. Description
+#: ../gpsd.templates:2001
+msgid "If your GPS receiver is permanently attached to your computer, you might want to start gpsd at boot time. Otherwise, you can run it by calling gpsd(8) at any time, or you can use the hotplug interface for USB devices."
+msgstr "Om din GPS-mottagare är permanent ansluten i din dator kanske du vill starta gpsd vid systemets uppstart. Annars kan du köra den genom att starta gpsd(1) när som helst eller så kan du använda hotplugs gränssnitt för USB-enheter."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid "Options to gpsd:"
-msgstr "Inställningar till gpsd:"
+msgstr "Flaggor till gpsd:"
 
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
 #| "list of options."
-msgid ""
-"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
-msgstr ""
-"Du kan ange ytterligare argument när du startar gpsd, se gpsd(1) för en "
-"lista av inställningar."
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid "You can give additional arguments when starting gpsd; see gpsd(8) for a list of options."
+msgstr "Du kan ange ytterligare argument när du startar gpsd, se gpsd(8) för en lista över flaggor."
+
