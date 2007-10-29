@@ -11,8 +11,9 @@ gpsd (2.34.dfsg-4) UNRELEASED; urgency=low
     - Portuguese translation, thanks to "Traduz" - Portuguese Translation Team
       and Miguel Figueiredo (Closes: #448387).
     - Swedish translation, thanks to Daniel Nylander.
+    - Durch translation, thanks to cobaco (aka Bart Cornelis).
 
- -- Bernd Zeimetz <bernd@bzed.de>  Sun, 28 Oct 2007 20:18:39 +0100
+ -- Bernd Zeimetz <bernd@bzed.de>  Mon, 29 Oct 2007 17:23:23 +0100
 
 gpsd (2.34.dfsg-3) unstable; urgency=low
 
