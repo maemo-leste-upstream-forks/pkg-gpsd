@@ -7,13 +7,14 @@ gpsd (2.34.dfsg-4) UNRELEASED; urgency=low
       more recent python extensions together with older gpsd(-clients)
       packages.
   * debian/po updates:
-    - Galician translation, thanks to Jacobo Tarrio. (Closes: #447933)
+    - Galician translation, thanks to Jacobo Tarrio. (Closes: #447933).
     - Portuguese translation, thanks to "Traduz" - Portuguese Translation Team
       and Miguel Figueiredo (Closes: #448387).
     - Swedish translation, thanks to Daniel Nylander.
     - Durch translation, thanks to cobaco (aka Bart Cornelis).
+    - Japanese translation, thanks to Kenshi Muto (Closes: #448681).
 
- -- Bernd Zeimetz <bernd@bzed.de>  Mon, 29 Oct 2007 17:23:23 +0100
+ -- Bernd Zeimetz <bernd@bzed.de>  Wed, 31 Oct 2007 03:06:49 +0100
 
 gpsd (2.34.dfsg-3) unstable; urgency=low
 

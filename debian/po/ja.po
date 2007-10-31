@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
 "POT-Creation-Date: 2007-10-19 23:19+0200\n"
-"PO-Revision-Date: 2007-02-27 08:15+0900\n"
+"PO-Revision-Date: 2007-10-31 10:37+0900\n"
 "Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -18,10 +18,8 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid "Which device is your GPS receiver attached to?"
 msgid "Device your GPS receiver is attached to:"
-msgstr "あなたの GPS 受信機が接続しているデバイスはどこですか?"
+msgstr "あなたの GPS 受信機が接続しているデバイス:"
 
 #. Type: string
 #. Description
@@ -48,20 +46,11 @@ msgstr "ブート時に gpsd を開始しますか?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(1) at any time, or you can use the hotplug interface for USB devices."
 msgid ""
 "If your GPS receiver is permanently attached to your computer, you might "
 "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
 "(8) at any time, or you can use the hotplug interface for USB devices."
-msgstr ""
-"あなたの GPS 受信機があなたのコンピュータに永続的に接続されているのであれば、"
-"ブート時に gpsd を起動したいと思うかもしれません。そのほかに、いつでも gpsd"
-"(1) を呼び出すことができますし、USB デバイスならホットプラグインターフェイス"
-"を使うこともできます。"
+msgstr "あなたの GPS 受信機があなたのコンピュータに永続的に接続されているのであれば、ブート時に gpsd を起動したいと思うかもしれません。そのほかに、いつでも gpsd(8) を呼び出すことができますし、USB デバイスならホットプラグインターフェイスを使うこともできます。"
 
 #. Type: string
 #. Description
@@ -72,13 +61,7 @@ msgstr "gpsd に渡すオプション:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
-msgstr ""
-"gpsd の起動時に追加の引数を与えることができます。オプション一覧については "
-"gpsd(1) を参照してください。"
+msgstr "gpsd の起動時に追加の引数を与えることができます。オプション一覧については gpsd(8) を参照してください。"
