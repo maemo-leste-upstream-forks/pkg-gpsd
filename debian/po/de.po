@@ -1,12 +1,12 @@
 # translation of gpsd to german
-# Copyright (C) 2006 Alwin Meschede
+# Alwin Meschede <ameschede@gmx.de>, 2007.
 # This file is distributed under the same license as the gpsd package.
 msgid ""
 msgstr ""
-"Project-Id-Version: gpsd 2.33\n"
+"Project-Id-Version: gpsd_2.34.dfsg-3_de\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
 "POT-Creation-Date: 2007-10-19 23:19+0200\n"
-"PO-Revision-Date: 2006-11-26 22:53+0100\n"
+"PO-Revision-Date: 2007-11-04 18:39+0100\n"
 "Last-Translator: Alwin Meschede <ameschede@gmx.de>\n"
 "Language-Team: german <debian-l10n-german@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -18,10 +18,8 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid "Which device is your GPS receiver attached to?"
 msgid "Device your GPS receiver is attached to:"
-msgstr "An welche Geräteschnittstelle ist Ihr GPS-Empfänger angeschlossen?"
+msgstr "Der GPS-Empfänger ist angeschlossen an:"
 
 #. Type: string
 #. Description
@@ -48,20 +46,15 @@ msgstr "Soll gpsd beim Hochfahren des Rechners gestartet werden?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(1) at any time, or you can use the hotplug interface for USB devices."
 msgid ""
 "If your GPS receiver is permanently attached to your computer, you might "
 "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
 "(8) at any time, or you can use the hotplug interface for USB devices."
 msgstr ""
 "Wenn Ihr GPS-Empfänger ständig an Ihren Computer angeschlossen ist, können "
-"Sie gpsd beim booten starten lassen. Andernfalls können Sie das Programm "
-"jederzeit durch Aufruf von »gpsd« starten, oder Sie nutzen den Hotplug-"
-"Mechanismus für USB-Geräte."
+"Sie gpsd beim Booten starten lassen. Andernfalls können Sie das Programm "
+"jederzeit durch Aufruf von »gpsd« (8) starten, oder Sie nutzen den "
+"Hotplug-Mechanismus für USB-Geräte."
 
 #. Type: string
 #. Description
@@ -72,13 +65,10 @@ msgstr "Optionen für gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
 "Sie können gpsd beim Start zusätzliche Argumente übergeben. Die man page von "
-"gpsd enthält eine Liste der möglichen Optionen."
+"gpsd (8) enthält eine Liste der möglichen Optionen."
+

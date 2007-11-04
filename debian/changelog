@@ -14,8 +14,9 @@ gpsd (2.34.dfsg-4) UNRELEASED; urgency=low
     - Durch translation, thanks to cobaco (aka Bart Cornelis).
     - Japanese translation, thanks to Kenshi Muto (Closes: #448681).
     - Czech translation, thanks to Miroslav Kure (Closes: #449264).
+    - German translation, thanks to Alwin Meschede (Closes: #449279).
 
- -- Bernd Zeimetz <bernd@bzed.de>  Sun, 04 Nov 2007 17:25:58 +0100
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 04 Nov 2007 19:34:10 +0100
 
 gpsd (2.34.dfsg-3) unstable; urgency=low
 
