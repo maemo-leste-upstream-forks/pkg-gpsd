@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
 "POT-Creation-Date: 2007-10-19 23:19+0200\n"
-"PO-Revision-Date: 2005-05-27 19:22+0200\n"
+"PO-Revision-Date: 2007-11-03 19:12+0100\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -26,10 +26,9 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
 #| msgid "Which device is your GPS receiver attached to?"
 msgid "Device your GPS receiver is attached to:"
-msgstr "Ke kterému zařízení je připojen váš GPS přijímač?"
+msgstr "Zařízení, ke kterému je připojen GPS přijímač:"
 
 #. Type: string
 #. Description
@@ -56,7 +55,6 @@ msgstr "Má se gpsd spouštět při zavádění systému?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid ""
 #| "If your GPS receiver is permanently attached to your computer, you might "
 #| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
@@ -67,7 +65,7 @@ msgid ""
 "(8) at any time, or you can use the hotplug interface for USB devices."
 msgstr ""
 "Pokud je váš GPS přijímač připojen k počítači trvale, možná budete chtít "
-"spouštět gpsd hned při zavádění systému. V opačném případě můžete gpsd(1) "
+"spouštět gpsd hned při zavádění systému. V opačném případě můžete gpsd(8) "
 "kdykoliv spustit ručně, resp. pro USB zařízení můžete využít hotplug."
 
 #. Type: string
@@ -79,7 +77,6 @@ msgstr "Volby pro gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
 #| "list of options."
@@ -87,5 +84,5 @@ msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
-"Nyní můžete zadat parametry, které se mají používat při startu gpsd; Seznam "
-"možností naleznete v manuálové stránce gpsd(1)."
+"Nyní můžete zadat parametry, které se mají používat při startu gpsd. Seznam "
+"možností naleznete v manuálové stránce gpsd(8)."
