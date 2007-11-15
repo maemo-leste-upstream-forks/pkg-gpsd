@@ -22,7 +22,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#| msgid "Which device is your GPS receiver attached to?"
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
@@ -32,8 +31,12 @@ msgstr "Enhet som din GPS-mottagare är ansluten till:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Enter the device your GPS is attached to; this will probably be something like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr "Ange enheten som din GPS är inkopplad på, detta är antagligen någon liknande /dev/ttyS0 eller /dev/ttyUSB0."
+msgid ""
+"Enter the device your GPS is attached to; this will probably be something "
+"like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr ""
+"Ange enheten som din GPS är inkopplad på, detta är antagligen någon "
+"liknande /dev/ttyS0 eller /dev/ttyUSB0."
 
 #. Type: string
 #. Description
@@ -47,15 +50,17 @@ msgstr "Du kan ange flera enheter, separera med blanksteg."
 msgid "Should gpsd start on boot?"
 msgstr "Ska gpsd startas vid systemets uppstart?"
 
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(1) at any time, or you can use the hotplug interface for USB devices."
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "If your GPS receiver is permanently attached to your computer, you might want to start gpsd at boot time. Otherwise, you can run it by calling gpsd(8) at any time, or you can use the hotplug interface for USB devices."
-msgstr "Om din GPS-mottagare är permanent ansluten i din dator kanske du vill starta gpsd vid systemets uppstart. Annars kan du köra den genom att starta gpsd(1) när som helst eller så kan du använda hotplugs gränssnitt för USB-enheter."
+msgid ""
+"If your GPS receiver is permanently attached to your computer, you might "
+"want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
+"(8) at any time, or you can use the hotplug interface for USB devices."
+msgstr ""
+"Om din GPS-mottagare är permanent ansluten i din dator kanske du vill starta "
+"gpsd vid systemets uppstart. Annars kan du köra den genom att starta gpsd(1) "
+"när som helst eller så kan du använda hotplugs gränssnitt för USB-enheter."
 
 #. Type: string
 #. Description
@@ -63,12 +68,12 @@ msgstr "Om din GPS-mottagare är permanent ansluten i din dator kanske du vill s
 msgid "Options to gpsd:"
 msgstr "Flaggor till gpsd:"
 
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(1) for a "
-#| "list of options."
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "You can give additional arguments when starting gpsd; see gpsd(8) for a list of options."
-msgstr "Du kan ange ytterligare argument när du startar gpsd, se gpsd(8) för en lista över flaggor."
-
+msgid ""
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
+"of options."
+msgstr ""
+"Du kan ange ytterligare argument när du startar gpsd, se gpsd(8) för en "
+"lista över flaggor."

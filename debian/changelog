@@ -1,4 +1,4 @@
-gpsd (2.34.dfsg-4) UNRELEASED; urgency=low
+gpsd (2.34.dfsg-4) unstable; urgency=low
 
   * debian/control:
     - Adding Conflicts to libgps-dev, thanks to Jordà Polo (Closes: #448349).
