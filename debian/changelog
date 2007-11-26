@@ -1,8 +1,10 @@
 gpsd (2.34.dfsg-5) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
+  * debian/po updates:
+    - Catalan translation, thanks to Jordà Polo (Closes: #452691).
 
- -- Bernd Zeimetz <bernd@bzed.de>  Mon, 26 Nov 2007 15:56:46 +0100
+ -- Bernd Zeimetz <bernd@bzed.de>  Mon, 26 Nov 2007 16:00:17 +0100
 
 gpsd (2.34.dfsg-4) unstable; urgency=low
 
