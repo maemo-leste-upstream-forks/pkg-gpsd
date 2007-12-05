@@ -1,7 +1,7 @@
 Source: gpsd
 Section: misc
 Priority: optional
-Maintainer: Bernd Zeimetz <bernd@bzed.de>
+Maintainer: Bernd Zeimetz <bzed@debian.org>
 Build-Depends: debhelper (>= 5), po-debconf, dpatch, autotools-dev, 
  python-all-dev, python-support (>= 0.4),
  xsltproc, docbook-xsl, docbook-xml,

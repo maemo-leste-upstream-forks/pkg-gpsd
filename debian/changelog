@@ -1,6 +1,5 @@
-gpsd (2.34.dfsg-5) UNRELEASED; urgency=low
+gpsd (2.34.dfsg-5) unstable; urgency=low
 
-  * NOT RELEASED YET
   * debian/po updates:
     - Catalan translation, thanks to Jordà Polo (Closes: #452691).
     - Vietnamese translation, thanks to Clytie Siddall (Closes: #453413).
@@ -10,8 +9,10 @@ gpsd (2.34.dfsg-5) UNRELEASED; urgency=low
       removing include_headers.dpatch as it is not needed anymore due to the
       real fix. Thanks to Petter Reinholdtsen for the bug report
       (Closes: #448837).
+  * debian/control:
+    - Updating my email address.
 
- -- Bernd Zeimetz <bzed@debian.org>  Wed, 05 Dec 2007 21:44:10 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 05 Dec 2007 22:23:06 +0100
 
 gpsd (2.34.dfsg-4) unstable; urgency=low
 
