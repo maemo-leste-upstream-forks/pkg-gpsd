@@ -7,4 +7,4 @@ default_units.dpatch
 gpsd.hotplug_location.dpatch
 gpxlogger-gps.h
 INSTALL-description-fix
-include_headers
+gps.h-fix
