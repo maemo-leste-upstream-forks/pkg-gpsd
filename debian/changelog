@@ -11,8 +11,9 @@ gpsd (2.34.dfsg-5) unstable; urgency=low
       (Closes: #448837).
   * debian/control:
     - Updating my email address.
+    - Bumping Standards-Version to 3.7.3. 
 
- -- Bernd Zeimetz <bzed@debian.org>  Wed, 05 Dec 2007 22:23:06 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 05 Dec 2007 22:37:14 +0100
 
 gpsd (2.34.dfsg-4) unstable; urgency=low
 

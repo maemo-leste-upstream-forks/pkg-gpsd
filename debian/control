@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 5), po-debconf, dpatch, autotools-dev,
  xsltproc, docbook-xsl, docbook-xml,
  libxt-dev, lesstif2-dev, libxaw7-dev, libncurses-dev,
  libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev
-Standards-Version: 3.7.2
+Standards-Version: 3.7.3
 Homepage: http://gpsd.berlios.de/
 XS-Python-Version: all
 
