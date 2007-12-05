@@ -1,3 +1,12 @@
+gpsd (2.34.dfsg-6) unstable; urgency=low
+
+  * debian/patches:
+    - Adding libgpsmm.h-fix.dpatch: There's no need for libgpsmm.h to include
+      gpsd_config.h. This finally closes a bug which was supposed to be fixed
+      the right way before (Closes: #447653).
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 05 Dec 2007 23:06:29 +0100
+
 gpsd (2.34.dfsg-5) unstable; urgency=low
 
   * debian/po updates:

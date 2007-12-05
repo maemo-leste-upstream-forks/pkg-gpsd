@@ -8,3 +8,4 @@ gpsd.hotplug_location.dpatch
 gpxlogger-gps.h
 INSTALL-description-fix
 gps.h-fix
+libgpsmm.h-fix
