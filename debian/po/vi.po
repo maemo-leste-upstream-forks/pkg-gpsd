@@ -3,8 +3,8 @@
 # Clytie Siddall <clytie@riverland.net.au>, 2005-2007.
 # 
 msgid ""
-""
-msgstr "Project-Id-Version: gpsd 2.34.dfsg-3\n"
+msgstr ""
+"Project-Id-Version: gpsd 2.34.dfsg-3\n"
 "Report-Msgid-Bugs-To: bernd@bzed.de\n"
 "POT-Creation-Date: 2007-10-19 23:19+0200\n"
 "PO-Revision-Date: 2007-11-29 22:49+1030\n"
@@ -16,60 +16,67 @@ msgstr "Project-Id-Version: gpsd 2.34.dfsg-3\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: LocFactoryEditor 1.7b1\n"
 
-#.Type: string
-#.Description
 # msgid "Which device is your GPS receiver attached to?"
+#. Type: string
+#. Description
 #: ../gpsd.templates:1001
 msgid "Device your GPS receiver is attached to:"
 msgstr "Thiết bị đến đó máy nhận GPS của bạn có kết nối:"
 
-#.Type: string
-#.Description
+#. Type: string
+#. Description
 #: ../gpsd.templates:1001
 msgid ""
 "Enter the device your GPS is attached to; this will probably be something "
 "like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr "Hãy nhập thiết bị đến đó máy nhận tín hiệu GPS của bạn có kết nối. Rất có thể giống như « /dev/ttyS0 » hay « /dev/ttyUSB0 ». "
+msgstr ""
+"Hãy nhập thiết bị đến đó máy nhận tín hiệu GPS của bạn có kết nối. Rất có "
+"thể giống như « /dev/ttyS0 » hay « /dev/ttyUSB0 ». "
 
-#.Type: string
-#.Description
+#. Type: string
+#. Description
 #: ../gpsd.templates:1001
 msgid "You can enter several devices, separated by spaces."
 msgstr "Bạn có thể nhập nhiều thiết bị, định giới bằng dấu cách."
 
-#.Type: boolean
-#.Description
+#. Type: boolean
+#. Description
 #: ../gpsd.templates:2001
 msgid "Should gpsd start on boot?"
 msgstr "gpsd nên khởi chạy khi khởi động hệ thống không?"
 
-#.Type: boolean
-#.Description
 # msgid ""
 # If your GPS receiver is permanently attached to your computer, you might 
 # want to start gpsd at boot time. Otherwise, you can run it by calling gpsd
 # (1) at any time, or you can use the hotplug interface for USB devices.
+#. Type: boolean
+#. Description
 #: ../gpsd.templates:2001
 msgid ""
 "If your GPS receiver is permanently attached to your computer, you might "
 "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
 "(8) at any time, or you can use the hotplug interface for USB devices."
-msgstr "Máy nhận GPS có kết nối bền bỉ đến máy tính thì bạn có thể khởi chạy trình nền gpsd vào lúc khởi động hệ thống. Không thì bạn có thể chạy nó bằng cách gọi gpsd(8) vào bất cứ lúc nào, hoặc bạn có thể sử dụng giao diện cắm nóng cho thiết bị USB."
+msgstr ""
+"Máy nhận GPS có kết nối bền bỉ đến máy tính thì bạn có thể khởi chạy trình "
+"nền gpsd vào lúc khởi động hệ thống. Không thì bạn có thể chạy nó bằng cách "
+"gọi gpsd(8) vào bất cứ lúc nào, hoặc bạn có thể sử dụng giao diện cắm nóng "
+"cho thiết bị USB."
 
-#.Type: string
-#.Description
+#. Type: string
+#. Description
 #: ../gpsd.templates:3001
 msgid "Options to gpsd:"
 msgstr "Tùy chọn về gpsd:"
 
-#.Type: string
-#.Description
 # msgid ""
 # You can give additional arguments when starting gpsd; see gpsd(1) for a 
 # list of options.
+#. Type: string
+#. Description
 #: ../gpsd.templates:3001
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
-msgstr "Bạn có thể cung cấp một số đối số thêm khi khởi chạy trình nền gpsd. Xem "
+msgstr ""
+"Bạn có thể cung cấp một số đối số thêm khi khởi chạy trình nền gpsd. Xem "
 "trang hướng dẫn (man) về gpsd(8) để tìm biết danh sách các tùy chọn sẵn sàng."
