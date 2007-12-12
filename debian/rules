@@ -137,7 +137,10 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 
 	LDFLAGS="-Wl,-z,defs" $(CONFENV) ./configure $(CONFFLAGS) --with-pic
 
-	$(MAKE) 
+	$(MAKE)
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	$(MAKE) testregress
+endif
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	cp INSTALL TROUBLESHOOTING
 
@@ -234,6 +237,7 @@ binary-arch: build
 	dh_fixperms -s
 	dh_makeshlibs -s
 	dh_shlibdeps -s
+	dpkg-gensymbols -Pdebian/$(PACKAGE_LIB) -p$(PACKAGE_LIB)
 	dh_gencontrol -s
 	dh_installdeb -s
 	dh_md5sums -s
