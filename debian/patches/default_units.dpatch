@@ -6,9 +6,9 @@
 
 @DPATCH@
 diff -urNad gpsd~/xgps.ad gpsd/xgps.ad
---- gpsd~/xgps.ad	2006-12-15 00:43:39.000000000 +0100
-+++ gpsd/xgps.ad	2007-10-14 15:03:10.000000000 +0200
-@@ -10,5 +10,5 @@
+--- gpsd~/xgps.ad	2007-12-09 00:24:16.000000000 +0100
++++ gpsd/xgps.ad	2007-12-12 21:18:27.000000000 +0100
+@@ -10,8 +10,8 @@
  *climb*labelString:      Climb
  *status*labelString: Status   
  !*quit*labelString:       Quit     
@@ -16,9 +16,12 @@ diff -urNad gpsd~/xgps.ad gpsd/xgps.ad
 -*altunits:               feet
 +*speedunits:             kph
 +*altunits:               meters
+ 
+ *renderTable: variable
+ !*renderTable.variable.fontName: Arial
 diff -urNad gpsd~/xgpsspeed.ad gpsd/xgpsspeed.ad
---- gpsd~/xgpsspeed.ad	2006-12-15 00:43:39.000000000 +0100
-+++ gpsd/xgpsspeed.ad	2007-10-14 15:02:34.000000000 +0200
+--- gpsd~/xgpsspeed.ad	2005-01-19 15:46:01.000000000 +0100
++++ gpsd/xgpsspeed.ad	2007-12-12 21:17:40.000000000 +0100
 @@ -15,5 +15,5 @@
  *meter*width:		120
  *meter*height:		120

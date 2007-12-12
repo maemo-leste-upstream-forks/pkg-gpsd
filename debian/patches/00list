@@ -1,11 +1,6 @@
-Tachometer.c-removal
-python-setup
 gpsfake-logfile-howto
-no-xgpsspeed-manpage
 no-gps-manpage
 default_units.dpatch
 gpsd.hotplug_location.dpatch
 gpxlogger-gps.h
 INSTALL-description-fix
-gps.h-fix
-libgpsmm.h-fix

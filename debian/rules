@@ -94,14 +94,10 @@ build-gpsd: build-gpsd-stamp
 build-python: build-python-stamp
 build-lib-static: build-lib-static-stamp
 
-#noinst_SCRIPTS and am__python_PYTHON_DIST need to be set as
-#--disable-python is pretty much broken.
 MAKEFLAGS_LIB_DEV = \
-	bin_PROGRAMS=  \
-	sbin_PROGRAMS=  \
-	man_MANS='libgps.3  libgpsd.3  libgpsmm.3 rtcm-104.5 srec.5' \
-	am__python_PYTHON_DIST= \
-	noinst_SCRIPTS=setup.py
+       bin_PROGRAMS=  \
+       sbin_PROGRAMS=  \
+       man_MANS='libgps.3  libgpsd.3  libgpsmm.3 rtcm-104.5 srec.5' 
 
 build-lib-static-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
@@ -130,10 +126,6 @@ build-lib-static-stamp: patch-stamp autotools-dev-stamp
 
 	touch $@
 
-#same here. buggy --disable-python.
-MAKEFLAGS_GPSD= \
-	am__python_PYTHON_DIST= \
-	noinst_SCRIPTS=setup.py
 
 build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	dh_testdir
@@ -145,8 +137,8 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 
 	LDFLAGS="-Wl,-z,defs" $(CONFENV) ./configure $(CONFFLAGS) --with-pic
 
-	$(MAKE) $(MAKEFLAGS_GPSD)
-	$(MAKE) install $(MAKEFLAGS_GPSD) DESTDIR=$(CURDIR)/debian/tmp
+	$(MAKE) 
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	cp INSTALL TROUBLESHOOTING
 
 	#ldconfig link
@@ -164,6 +156,8 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	dh_link -p$(PACKAGE_CLIENTS) usr/share/man/man1/xgps.1.gz \
 	                             usr/share/man/man1/cgps.1.gz
 	dh_link -p$(PACKAGE_CLIENTS) usr/share/man/man1/xgps.1.gz \
+	                             usr/share/man/man1/xgpsspeed.1.gz
+	dh_link -p$(PACKAGE_CLIENTS) usr/share/man/man1/xgps.1.gz \
 	                             usr/share/man/man1/cgpxlogger.1.gz
 	dh_link -p$(PACKAGE_CLIENTS) usr/share/man/man1/xgps.1.gz \
 	                             usr/share/man/man1/gpxlogger.1.gz
@@ -176,6 +170,7 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 
 	install -d -m 755 debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults
 	install -m 644 xgps.ad debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults/xgps
+	install -m 644 xgpsspeed.ad debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults/xgpsspeed
 
 	touch $@
 
@@ -246,12 +241,6 @@ binary-arch: build
 
 binary: binary-indep binary-arch
 
-get-orig-source:
-	if ! which uscan; then \
-	    echo "Please install the devscripts package." ;\
-	    exit 1 ;\
-	fi
-	uscan --verbose --force-download
 
 .PHONY: build build-gpsd build-python build-lib-static \
 	clean clean-patched \
