@@ -71,6 +71,10 @@ Files with different copyrights/licenses:
     Copyright (C) 2005 Alfredo Pironti
     License: BSD, see above.
 
+  * gpsd.ebuild:
+
+    Copyright 2005 Amaury Jacquot
+    License: BSD (see above)
 
   * gpxlogger.c:
     
@@ -118,15 +122,26 @@ Files with different copyrights/licenses:
  
     License: ISC, see below
 
+  * display.c:
 
-  * cgpxlogger.c, gpsflash.{c,h}, sirfflash.c, floattest.c, gpsd.php,
+    Copyright (c) 2007 Marc Balmer <marc@msys.ch>
+    Copyright (c) 2006 Eric S. Raymond
+
+    License: ISC, see below
+
+  * cgpxlogger.c, gpsflash.h, floattest.c, gpsd.php,
     srecord.c:
 
     Copyright (c) 2005,2006 Chris Kuethe <chris.kuethe@gmail.com>
 
-    License: ISC, see below
-    Missing license information in gpsflash.c and sirfflash.c was added in
-    svn, r4420 - http://svn.berlios.de/wsvn/gpsd/
+    License: ISC, see below.
+
+  * gpsflash.c, sirfflash.c:
+
+    Copyright (c) 2005-2007 Chris Kuethe <chris.kuethe@gmail.com>
+    Copyright (c) 2005-2007 Eric S. Raymond <esr@thyrsus.com>
+
+    License: ISC, see below.
 
   * strl.c:
 
@@ -134,6 +149,12 @@ Files with different copyrights/licenses:
 
     License: ISC, see below.
 
+  * xgps.c:
+
+    Copyright (c) 2007 Marc Balmer <marc@msys.ch>
+    Copyright (c) 2006 Eric S. Raymond
+
+    License: ISC, see below.
 
 The ISC License is:
 
