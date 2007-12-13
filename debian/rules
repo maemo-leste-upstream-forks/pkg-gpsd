@@ -138,9 +138,12 @@ build-gpsd-stamp: patch-stamp autotools-dev-stamp
 	LDFLAGS="-Wl,-z,defs" $(CONFENV) ./configure $(CONFFLAGS) --with-pic
 
 	$(MAKE)
-ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) testregress
-endif
+
+#unfortunately sbuild/pbilder don't support ptys
+#ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+#	$(MAKE) testregress
+#endif
+
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	cp INSTALL TROUBLESHOOTING
 

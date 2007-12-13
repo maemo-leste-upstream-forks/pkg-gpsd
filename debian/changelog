@@ -11,8 +11,6 @@ gpsd (2.36~dev+r4543-1) experimental; urgency=low
     - Adding symbosl file and running dpkg-gensymbols.
   * debian/control:
     - Bumping Standards-Version to 3.7.3.
-  * debian/rules:
-    - Running all regression tests while building.
 
  -- Bernd Zeimetz <bzed@debian.org>  Thu, 13 Dec 2007 00:59:04 +0100
 
