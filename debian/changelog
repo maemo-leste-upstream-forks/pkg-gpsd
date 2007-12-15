@@ -1,18 +1,19 @@
-gpsd (2.36~dev+r4543-1) experimental; urgency=low
+gpsd (2.35-1) UNRELEASED; urgency=low
 
-  * Experimental build based on svn revision 4543.
+  * New upstream version.
   * The license of Tachometer.c was fixed by upstream, so we're able to build
     and ship xgpsspeed again.
   * debian/patches:
-    - Dropping the following patches as they were integrated by upstream:
+    - Dropping the following patches as they are not needed anymore:
       Tachometer.c-removal.dpatch, python-setup.dpatch,
       no-xgpsspeed-manpage.dpatch, gps.h-fix.dpatch, libgpsmm.h-fix.dpatch
+    - Adding gpsd_dbus.h-buildfix.dpatch to fix a build failure.
   * debian/libgps17.symbols, debian/rules:
     - Adding symbosl file and running dpkg-gensymbols.
   * debian/control:
     - Bumping Standards-Version to 3.7.3.
 
- -- Bernd Zeimetz <bzed@debian.org>  Thu, 13 Dec 2007 00:59:04 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Dec 2007 02:14:40 +0100
 
 gpsd (2.34.dfsg-6) unstable; urgency=low
 
