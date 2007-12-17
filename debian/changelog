@@ -1,4 +1,4 @@
-gpsd (2.35-1) UNRELEASED; urgency=low
+gpsd (2.35-1) unstable; urgency=low
 
   * New upstream version, including several bugfixes for bugs reported by
     Steinar H. Gunderson (Closes: #410133, #410138, #410132).
@@ -14,7 +14,7 @@ gpsd (2.35-1) UNRELEASED; urgency=low
   * debian/control:
     - Bumping Standards-Version to 3.7.3.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Dec 2007 02:22:13 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 17 Dec 2007 21:52:10 +0100
 
 gpsd (2.34.dfsg-6) unstable; urgency=low
 
