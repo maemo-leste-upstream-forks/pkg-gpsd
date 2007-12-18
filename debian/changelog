@@ -1,3 +1,12 @@
+gpsd (2.35-3) UNRELEASED; urgency=low
+
+  * NOT RELEASED YET
+  * debian/patches:
+    - Updating gpsfake-gpsd-path.dpatch to let gpsfake exit gracefully if
+      gpsd is not found. Thanks again to Andreas Putzo.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 18 Dec 2007 22:29:37 +0100
+
 gpsd (2.35-2) unstable; urgency=low
 
   * debian/control:
