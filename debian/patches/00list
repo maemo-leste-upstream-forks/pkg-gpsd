@@ -5,3 +5,4 @@ gpsd.hotplug_location.dpatch
 gpxlogger-gps.h
 INSTALL-description-fix
 gpsd_dbus.h-buildfix
+gpsfake-gpsd-path

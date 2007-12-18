@@ -1,0 +1,18 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## gpsfake-gpsd-path.dpatch by Bernd Zeimetz <bzed@debian.org>
+##
+## DP: /usr/sbin is not int $PATH for normal users.
+
+@DPATCH@
+diff -urNad gpsd~/gpsfake.py gpsd/gpsfake.py
+--- gpsd~/gpsfake.py	2007-12-11 00:51:08.000000000 +0100
++++ gpsd/gpsfake.py	2007-12-18 16:28:16.000000000 +0100
+@@ -326,7 +326,7 @@
+         # The -b option to suppress hanging on probe returns is needed to cope
+         # with OpenBSD (and possibly other non-Linux systems) that don't support
+         # anything we can use to implement the FakeGPS.read() method
+-        self.spawncmd = "gpsd -b -N -S %s -F %s -P %s %s" % (port, self.control_socket, self.pidfile, options)
++        self.spawncmd = "/usr/sbin/gpsd -b -N -S %s -F %s -P %s %s" % (port, self.control_socket, self.pidfile, options)
+         if prefix:
+             self.spawncmd = prefix + " " + self.spawncmd.strip()
+         if background:

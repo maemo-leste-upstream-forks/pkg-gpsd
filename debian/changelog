@@ -1,3 +1,15 @@
+gpsd (2.35-2) unstable; urgency=low
+
+  * debian/control:
+    - Adding gpsd to Recommends for python-gps, thanks to Andreas Putzo
+      (Closes: #456929).
+  * debian/patches:
+    - Adding gpsfake-gpsd-path.dpatch to hardcode the path to gpsd into
+      gpsfake.py as /usr/sbin is not in the normal user's path. Thanks again
+      to Andreas Putzo (Closes: #456928).
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 18 Dec 2007 16:34:04 +0100
+
 gpsd (2.35-1) unstable; urgency=low
 
   * New upstream version, including several bugfixes for bugs reported by
