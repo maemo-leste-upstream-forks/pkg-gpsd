@@ -2,12 +2,14 @@
 ## gpsfake-gpsd-path.dpatch by Bernd Zeimetz <bzed@debian.org>
 ##
 ## DP: gpsfake doesn't die gracefully if gpsd can't be executed.
-## DP: Patch from Andreas Putzo.
+## DP: This patch fixes this by looking for gpsd in $PATH,
+## DP: also adding the default install path of gpsd.
+## DP: Based on a patch by Andreas Putzo.
 
 @DPATCH@
 diff -urNad gpsd~/gpsfake.py gpsd/gpsfake.py
 --- gpsd~/gpsfake.py	2007-12-11 00:51:08.000000000 +0100
-+++ gpsd/gpsfake.py	2007-12-18 22:15:56.000000000 +0100
++++ gpsd/gpsfake.py	2007-12-19 21:54:19.000000000 +0100
 @@ -310,6 +310,8 @@
  class DaemonError(exceptions.Exception):
      def __init__(self, msg):
@@ -17,13 +19,21 @@ diff -urNad gpsd~/gpsfake.py gpsd/gpsfake.py
  
  class DaemonInstance:
      "Control a gpsd instance."
-@@ -323,10 +325,13 @@
+@@ -323,10 +325,21 @@
          self.pidfile  = "/tmp/gpsfake_pid-%s" % os.getpid()
      def spawn(self, options, port, background=False, prefix=""):
          "Spawn a daemon instance."
-+        self.spawncmd = "/usr/sbin/gpsd"
-+        if not os.path.isfile(self.spawncmd) or not os.access(self.spawncmd, os.X_OK):
-+            raise DaemonError("Cannot execute %s" % self.spawncmd)
++        self.spawncmd = None
++        if not '/usr/sbin' in os.environ['PATH']:
++            os.environ['PATH']=os.environ['PATH'] + ":/usr/sbin"
++        for path in os.environ['PATH'].split(':'):
++            _spawncmd = "%s/gpsd" % path
++            if os.path.isfile(_spawncmd) and os.access(_spawncmd, os.X_OK):
++                self.spawncmd = _spawncmd
++                break
++
++        if not self.spawncmd:
++            raise DaemonError("Cannot execute gpsd: executeable not found.")
          # The -b option to suppress hanging on probe returns is needed to cope
          # with OpenBSD (and possibly other non-Linux systems) that don't support
          # anything we can use to implement the FakeGPS.read() method
