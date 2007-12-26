@@ -1,3 +1,18 @@
+gpsd (2.35-4) UNRELEASED; urgency=low
+
+  * NOT RELEASED YET
+  * debian/control:
+    - Updating/adding versioned build-deps on debhelper and dpkg-dev to ensure
+      that debian/package.symbols files are supported.
+  * debian/rules:
+    - Removing the call of dpkg-gensymbols as this is handled by dh_makeshlibs
+      now.
+  * debian/libgps17.symbols:
+    - Removing the Debian revision from the minimal version number to make
+      backporter's life more easy.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 26 Dec 2007 18:09:53 +0100
+
 gpsd (2.35-3) unstable; urgency=low
 
   * debian/patches:

@@ -240,7 +240,6 @@ binary-arch: build
 	dh_fixperms -s
 	dh_makeshlibs -s
 	dh_shlibdeps -s
-	dpkg-gensymbols -Pdebian/$(PACKAGE_LIB) -p$(PACKAGE_LIB)
 	dh_gencontrol -s
 	dh_installdeb -s
 	dh_md5sums -s
