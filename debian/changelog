@@ -10,9 +10,10 @@ gpsd (2.36-1) unstable; urgency=low
   * debian/libgps17.symbols:
     - Removing the Debian revision from the minimal version number.
   * debian/patches:
-    - Removing gpsfake-logfile-howto.dpatch - integrated upstream.
+    - Removing gpsfake-logfile-howto.dpatch and gpsfake-gpsd-path.dpatch -
+      integrated upstream. 
 
- -- Bernd Zeimetz <bzed@debian.org>  Wed, 02 Jan 2008 10:35:02 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 02 Jan 2008 10:41:10 +0100
 
 gpsd (2.35-3) unstable; urgency=low
 
