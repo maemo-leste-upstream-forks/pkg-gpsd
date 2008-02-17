@@ -1,3 +1,14 @@
+gpsd (2.37rc1-1) unstable; urgency=low
+
+  * New upstream release candidate, including C++ support again
+    (Closes: #458576).
+  * debian/rules:
+    - A bit of housekeeping and cruft removal.
+  * debian/libgps-dev.install:
+    - File added (instead of handling this in debian/rules).
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 17 Feb 2008 13:00:48 +0100
+
 gpsd (2.36-2) unstable; urgency=low
 
   * debian/patches:
