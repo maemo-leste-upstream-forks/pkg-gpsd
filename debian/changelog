@@ -6,8 +6,11 @@ gpsd (2.37rc1-1) unstable; urgency=low
     - A bit of housekeeping and cruft removal.
   * debian/libgps-dev.install:
     - File added (instead of handling this in debian/rules).
+  * debian/patches:
+    - garmin-usb-fix.dpatch, gpxlogger-gps.h.dpatch,
+      gpsd_dbus.h-buildfix.dpatch: Removed, integrated upstream.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sun, 17 Feb 2008 13:00:48 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 17 Feb 2008 13:15:52 +0100
 
 gpsd (2.36-2) unstable; urgency=low
 
