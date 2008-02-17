@@ -181,7 +181,7 @@ endif
 binary-indep: 
 #nothing to do here.
 
-binary-arch: build
+binary-arch: build install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs -s 
