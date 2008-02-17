@@ -1,4 +1,4 @@
-gpsd (2.37rc1-1) unstable; urgency=low
+gpsd (2.37~rc1-1) unstable; urgency=low
 
   * New upstream release candidate, including C++ support again
     (Closes: #458576).
@@ -12,8 +12,11 @@ gpsd (2.37rc1-1) unstable; urgency=low
   * debian/libgps17.symbols:
     - File updated. ignoring C++ related symbols for now as they should be
       arch-dependent. Will be added after the package was built on all arches.
+  * debian/watch:
+    - Adding uversionmangle as upstream's X.YrcZ versions are greater than the
+      later X.Y version, so rewrite X.YrcZ to X.Y~rcZ.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sun, 17 Feb 2008 16:29:59 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 17 Feb 2008 16:38:19 +0100
 
 gpsd (2.36-2) unstable; urgency=low
 
