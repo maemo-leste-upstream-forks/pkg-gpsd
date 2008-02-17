@@ -19,7 +19,7 @@ libgps.so.17 libgps17 #MINVER#
  garmin_ser_binary@Base 2.35
  garmin_ser_parse@Base 2.35
  garmin_usb_binary@Base 2.35
- garmintxt_parse@Base 2.36
+#MISSING: 2.37rc1-1# garmintxt_parse@Base 2.36
  generic_get@Base 2.35
  gps_clear_fix@Base 2.35
  gps_close@Base 2.35
