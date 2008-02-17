@@ -9,8 +9,11 @@ gpsd (2.37rc1-1) unstable; urgency=low
   * debian/patches:
     - garmin-usb-fix.dpatch, gpxlogger-gps.h.dpatch,
       gpsd_dbus.h-buildfix.dpatch: Removed, integrated upstream.
+  * debian/libgps17.symbols:
+    - File updated. ignoring C++ related symbols for now as they should be
+      arch-dependent. Will be added after the package was built on all arches.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sun, 17 Feb 2008 13:15:52 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 17 Feb 2008 16:29:59 +0100
 
 gpsd (2.36-2) unstable; urgency=low
 
