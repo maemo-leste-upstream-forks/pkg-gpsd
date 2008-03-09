@@ -164,7 +164,7 @@ clean-patched:
 	rm -f autotools-dev-stamp
 	rm -f build-gpsd-stamp build-python-stamp
 	rm -f TROUBLESHOOTING
-	python setup.py clean
+	[ ! -r setup.py ] || python setup.py clean
 	rm -rf build
 	[ ! -r Makefile ] || $(MAKE) distclean
 	rm -f *.1 *.3 *.5 *.8 .1

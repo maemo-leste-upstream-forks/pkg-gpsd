@@ -10,8 +10,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
-"Report-Msgid-Bugs-To: bernd@bzed.de\n"
-"POT-Creation-Date: 2007-10-19 23:19+0200\n"
+"Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
+"POT-Creation-Date: 2008-03-09 22:27+0100\n"
 "PO-Revision-Date: 2005-01-02 20:40MET\n"
 "Last-Translator: Petter Reinholdtsen <pere@hungry.com>\n"
 "Language-Team: Norwegian Bokmål <i18n-nb@lister.ping.uio.no>\n"
@@ -25,7 +25,7 @@ msgstr ""
 #: ../gpsd.templates:1001
 #, fuzzy
 #| msgid "Which device is your GPS receiver attached to?"
-msgid "Device your GPS receiver is attached to:"
+msgid "Device the GPS receiver is attached to:"
 msgstr "Hvilken enhet er din GPS-mottaker koblet til?"
 
 #. Type: string
@@ -33,8 +33,8 @@ msgstr "Hvilken enhet er din GPS-mottaker koblet til?"
 #: ../gpsd.templates:1001
 #, fuzzy
 msgid ""
-"Enter the device your GPS is attached to; this will probably be something "
-"like /dev/ttyS0 or /dev/ttyUSB0."
+"Please enter the device the GPS receiver is attached to. This will probably "
+"be something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
 "Skriv inn enheten din GPS er tilkoblet.  Dette vil sansynligvis være noe "
 "ala /dev/ttyS0 eller /dev/ttyUSB0.  En symbolsk lenke (/dev/gsp) til denne "
@@ -43,13 +43,15 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "You can enter several devices, separated by spaces."
+msgid "Multiple devices may be specified as a space-separated list."
 msgstr ""
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "Should gpsd start on boot?"
+#, fuzzy
+#| msgid "Should gpsd start on boot?"
+msgid "Start gpsd automatically on boot?"
 msgstr "Skal gpsd starte når maskinen booter?"
 
 #. Type: boolean
@@ -57,9 +59,9 @@ msgstr "Skal gpsd starte når maskinen booter?"
 #: ../gpsd.templates:2001
 #, fuzzy
 msgid ""
-"If your GPS receiver is permanently attached to your computer, you might "
-"want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-"(8) at any time, or you can use the hotplug interface for USB devices."
+"If the GPS receiver is permanently attached to this computer, it might be "
+"appropriate for gpsd to start at boot time. Alternatively it can be started "
+"by the hotplug interface for USB devices, or by running gpsd(8) manually."
 msgstr ""
 "Hvis din GPS-mottaker er permanent koblet til maskinen, så ønsker du "
 "muligens å starte gpsd ved boot.  I motsatt tilfelle, så kan du starte den "
@@ -84,6 +86,21 @@ msgid ""
 msgstr ""
 "Du kan gi ekstra argumenter når gpsd starter.  Se gpsd(1) for en lite med "
 "tilgjengelige opsjoner."
+
+#. Type: boolean
+#. Description
+#: ../gpsd.templates:4001
+msgid "Start gpsd automatically on attaching a USB GPS receiver?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../gpsd.templates:4001
+msgid ""
+"This option is disabled by default, because several GPS receivers use common "
+"USB-to-serial converter chips, so gpsd may cause interference with other "
+"attached devices or programs."
+msgstr ""
 
 #~ msgid ""
 #~ "You can leave this blank now and set the device with the -p option when "

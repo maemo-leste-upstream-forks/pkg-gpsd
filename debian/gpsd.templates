@@ -1,7 +1,7 @@
 Template: gpsd/device
 Type: string
 _Description: Device the GPS receiver is attached to:
- Enter the device the GPS receiver is attached to. This will probably be
+ Please enter the device the GPS receiver is attached to. This will probably be
  something like /dev/ttyS0 or /dev/ttyUSB0.
  .
  Multiple devices may be specified as a space-separated list.
@@ -24,7 +24,6 @@ Template: gpsd/autodetection
 Type: boolean
 Default: false
 _Description: Start gpsd automatically on attaching a USB GPS receiver?
- Please note that several GPS receivers use common USB-to-serial converter
- chips. If this computer has non-GPS devices attached with USB-to-serial
- converters, gpsd may misbehave or interfere with tools like gpsbabel, so
- it is recommended to reject this option.
+ This option is disabled by default, because several GPS receivers use common
+ USB-to-serial converter chips, so gpsd may cause interference with
+ other attached devices or programs.

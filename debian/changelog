@@ -1,3 +1,15 @@
+gpsd (2.37-1) UNRELEASED; urgency=low
+
+  * New upstream version.
+  * debian/gpsd.templates:
+    - Adding question about USB autodetection. The file was reviewed and
+      corrected on debian-l10n-english@lists.debian.org - thanks to
+      Christian Perrier, MJ Ray and Justin B Rye.
+  * debian/rules:
+    - Ignore non-existing setup.py in the clean target. 
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 09 Mar 2008 22:29:34 +0100
+
 gpsd (2.37~rc1-1) unstable; urgency=low
 
   * New upstream release candidate, including C++ support again

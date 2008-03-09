@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd_2.34.dfsg-3_de\n"
-"Report-Msgid-Bugs-To: bernd@bzed.de\n"
-"POT-Creation-Date: 2007-10-19 23:19+0200\n"
+"Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
+"POT-Creation-Date: 2008-03-09 22:27+0100\n"
 "PO-Revision-Date: 2007-11-04 18:39+0100\n"
 "Last-Translator: Alwin Meschede <ameschede@gmx.de>\n"
 "Language-Team: german <debian-l10n-german@lists.debian.org>\n"
@@ -18,15 +18,21 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Device your GPS receiver is attached to:"
+#, fuzzy
+#| msgid "Device your GPS receiver is attached to:"
+msgid "Device the GPS receiver is attached to:"
 msgstr "Der GPS-Empfänger ist angeschlossen an:"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
+#, fuzzy
+#| msgid ""
+#| "Enter the device your GPS is attached to; this will probably be something "
+#| "like /dev/ttyS0 or /dev/ttyUSB0."
 msgid ""
-"Enter the device your GPS is attached to; this will probably be something "
-"like /dev/ttyS0 or /dev/ttyUSB0."
+"Please enter the device the GPS receiver is attached to. This will probably "
+"be something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
 "Geben Sie das Gerät an, an das Ihr GPS-Empfänger angeschlossen ist; dies "
 "wird vermutlich etwas wie /dev/ttyS0 oder /dev/ttyUSB0 sein."
@@ -34,27 +40,34 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "You can enter several devices, separated by spaces."
-msgstr "Sie können mehrere Geräte angeben, getrennt durch Leerzeichen."
+msgid "Multiple devices may be specified as a space-separated list."
+msgstr ""
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "Should gpsd start on boot?"
+#, fuzzy
+#| msgid "Should gpsd start on boot?"
+msgid "Start gpsd automatically on boot?"
 msgstr "Soll gpsd beim Hochfahren des Rechners gestartet werden?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
+#, fuzzy
+#| msgid ""
+#| "If your GPS receiver is permanently attached to your computer, you might "
+#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
+#| "(8) at any time, or you can use the hotplug interface for USB devices."
 msgid ""
-"If your GPS receiver is permanently attached to your computer, you might "
-"want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-"(8) at any time, or you can use the hotplug interface for USB devices."
+"If the GPS receiver is permanently attached to this computer, it might be "
+"appropriate for gpsd to start at boot time. Alternatively it can be started "
+"by the hotplug interface for USB devices, or by running gpsd(8) manually."
 msgstr ""
 "Wenn Ihr GPS-Empfänger ständig an Ihren Computer angeschlossen ist, können "
 "Sie gpsd beim Booten starten lassen. Andernfalls können Sie das Programm "
-"jederzeit durch Aufruf von »gpsd« (8) starten, oder Sie nutzen den "
-"Hotplug-Mechanismus für USB-Geräte."
+"jederzeit durch Aufruf von »gpsd« (8) starten, oder Sie nutzen den Hotplug-"
+"Mechanismus für USB-Geräte."
 
 #. Type: string
 #. Description
@@ -72,3 +85,20 @@ msgstr ""
 "Sie können gpsd beim Start zusätzliche Argumente übergeben. Die man page von "
 "gpsd (8) enthält eine Liste der möglichen Optionen."
 
+#. Type: boolean
+#. Description
+#: ../gpsd.templates:4001
+msgid "Start gpsd automatically on attaching a USB GPS receiver?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../gpsd.templates:4001
+msgid ""
+"This option is disabled by default, because several GPS receivers use common "
+"USB-to-serial converter chips, so gpsd may cause interference with other "
+"attached devices or programs."
+msgstr ""
+
+#~ msgid "You can enter several devices, separated by spaces."
+#~ msgstr "Sie können mehrere Geräte angeben, getrennt durch Leerzeichen."
