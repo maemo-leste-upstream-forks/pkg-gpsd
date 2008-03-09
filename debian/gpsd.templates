@@ -1,21 +1,30 @@
 Template: gpsd/device
 Type: string
-_Description: Device your GPS receiver is attached to:
- Enter the device your GPS is attached to; this will probably be something
- like /dev/ttyS0 or /dev/ttyUSB0.
+_Description: Device the GPS receiver is attached to:
+ Enter the device the GPS receiver is attached to. This will probably be
+ something like /dev/ttyS0 or /dev/ttyUSB0.
  .
- You can enter several devices, separated by spaces.
+ Multiple devices may be specified as a space-separated list.
 
 Template: gpsd/start_daemon
 Type: boolean
 Default: false
-_Description: Should gpsd start on boot?
- If your GPS receiver is permanently attached to your computer, you might
- want to start gpsd at boot time. Otherwise, you can run it by calling
- gpsd(8) at any time, or you can use the hotplug interface for USB devices.
+_Description: Start gpsd automatically on boot?
+ If the GPS receiver is permanently attached to this computer, it might be
+ appropriate for gpsd to start at boot time. Alternatively it can be started
+ by the hotplug interface for USB devices, or by running gpsd(8) manually.
 
 Template: gpsd/daemon_options
 Type: string
 _Description: Options to gpsd:
  You can give additional arguments when starting gpsd; see gpsd(8) for a
  list of options.
+
+Template: gpsd/autodetection
+Type: boolean
+Default: false
+_Description: Start gpsd automatically on attaching a USB GPS receiver?
+ Please note that several GPS receivers use common USB-to-serial converter
+ chips. If this computer has non-GPS devices attached with USB-to-serial
+ converters, gpsd may misbehave or interfere with tools like gpsbabel, so
+ it is recommended to reject this option.
