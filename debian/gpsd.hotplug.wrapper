@@ -1,4 +1,17 @@
 #! /bin/sh
+# $Id: gpsd.hotplug.wrapper 4669 2008-01-21 15:07:00Z esr $
+
+#debian addition:
+. /etc/default/gpsd
+[ "$USBAUTO" = "true" ] || exit 0
+
+
+if [ "$ACTION" == "remove" ] ; then
+  if [ $(echo $DEVLINKS | grep -q /dev/gps) ] ; then
+    exec /lib/udev/gpsd.hotplug "$ACTION" "$DEVNAME"
+  fi
+  exit 0
+fi
 
 . /lib/udev/hotplug.functions
 
