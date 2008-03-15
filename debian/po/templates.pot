@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-09 22:27+0100\n"
+"POT-Creation-Date: 2008-03-15 14:57+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,8 +26,8 @@ msgstr ""
 #. Description
 #: ../gpsd.templates:1001
 msgid ""
-"Please enter the device the GPS receiver is attached to. This will probably "
-"be something like /dev/ttyS0 or /dev/ttyUSB0."
+"Please enter the device the GPS receiver is attached to. It will probably be "
+"something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
 
 #. Type: string
