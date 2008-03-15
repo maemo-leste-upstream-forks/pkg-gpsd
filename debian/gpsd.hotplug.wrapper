@@ -2,7 +2,8 @@
 # $Id: gpsd.hotplug.wrapper 4669 2008-01-21 15:07:00Z esr $
 
 #debian addition:
-. /etc/default/gpsd
+[ ! -r /etc/default/gpsd ] || . /etc/default/gpsd
+[ "$START_DAEMON" = "true" ] || exit 0
 [ "$USBAUTO" = "true" ] || exit 0
 
 
