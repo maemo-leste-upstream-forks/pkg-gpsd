@@ -5,6 +5,8 @@ gpsd (2.37-1) UNRELEASED; urgency=low
     - Adding question about USB autodetection. The file was reviewed and
       corrected on debian-l10n-english@lists.debian.org - thanks to
       Christian Perrier, MJ Ray and Justin B Rye.
+  * debian/gpsd.config:
+    - Ask for USB autodetection if the Daemon is started at boot.
   * debian/hotplug.wrappper:
     - Exit gracefully if hotplugging is disabled in /etc/default/gpsd.
   * debian/rules:
@@ -14,8 +16,10 @@ gpsd (2.37-1) UNRELEASED; urgency=low
       (Closes: #455036).
   * debian/gpsd.examples:
     - Deleting file, the example udev rules are installed by default now.
+  * debian/NEWS.Debian debian/gpsd.README.Debian:
+    - Deleting files, no extra information included anymore.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Mar 2008 15:37:17 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Mar 2008 16:24:33 +0100
 
 gpsd (2.37~rc1-1) unstable; urgency=low
 
