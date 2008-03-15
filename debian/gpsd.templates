@@ -23,7 +23,7 @@ _Description: Options to gpsd:
 Template: gpsd/autodetection
 Type: boolean
 Default: false
-_Description: Start gpsd automatically on attaching a USB GPS receiver?
+_Description: Should gpsd handle attached USB GPS receivers automatically?
  This option is disabled by default, because several GPS receivers use common
  USB-to-serial converter chips, so gpsd may cause interference with
  other attached devices or programs.
