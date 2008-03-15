@@ -7,15 +7,20 @@ set -e
 
 if [ "$1" = "configure" ] ; then
 
-	# generate /etc/default/gpsd
-	db_get gpsd/device
-	DEVICES=$RET
-	db_get gpsd/start_daemon
-	START=$RET
-	db_get gpsd/daemon_options
-	OPTS=$RET
-	db_get gpsd/autodetection
-	USBAUTO=$RET
+    #remove the old udev rules link
+    if dpkg --compare-versions "$2" lt "2.37-1"; then
+        [ ! -L /etc/udev/rules.d/025_gpsd.rules ] || rm -f /etc/udev/rules.d/025_gpsd.rules || true
+    fi
+
+    # generate /etc/default/gpsd
+    db_get gpsd/device
+    DEVICES=$RET
+    db_get gpsd/start_daemon
+    START=$RET
+    db_get gpsd/daemon_options
+    OPTS=$RET
+    db_get gpsd/autodetection
+    USBAUTO=$RET
 
 cat <<EOF > /etc/default/gpsd
 # Default settings for gpsd.

@@ -9,7 +9,9 @@ gpsd (2.37-1) UNRELEASED; urgency=low
     - Exit gracefully if hotplugging is disabled in /etc/default/gpsd.
   * debian/rules:
     - Ignore non-existing setup.py in the clean target. 
-    - Installing udev rules again (Closes: #455036). 
+    - Installing udev rules again, also remove the old udev rules
+      symlink /etc/udev/rules.d/025_gpsd.rules, if it still exists
+      (Closes: #455036).
   * debian/gpsd.examples:
     - Deleting file, the example udev rules are installed by default now.
 
