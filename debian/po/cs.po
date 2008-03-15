@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 14:57+0100\n"
+"POT-Creation-Date: 2008-03-15 16:45+0100\n"
 "PO-Revision-Date: 2007-11-03 19:12+0100\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
@@ -95,7 +95,7 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-msgid "Start gpsd automatically on attaching a USB GPS receiver?"
+msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr ""
 
 #. Type: boolean
