@@ -1,4 +1,4 @@
-gpsd (2.37-1) UNRELEASED; urgency=low
+gpsd (2.37-1) unstable; urgency=low
 
   * New upstream version.
   * debian/gpsd.templates:
@@ -8,9 +8,9 @@ gpsd (2.37-1) UNRELEASED; urgency=low
   * debian/gpsd.config, debian/gpsd.postinst:
     - Ask for USB autodetection if the Daemon is started at boot.
       Write /etc/default/gpsd accordingly.
-  * debian/hotplug.wrappper:
+  * debian/gpsd.hotplug.wrappper:
     - Exit gracefully if hotplugging is disabled in /etc/default/gpsd.
-  * debian/rules:
+  * debian/rules, debian/gpsd.udev:
     - Ignore non-existing setup.py in the clean target. 
     - Installing udev rules again, also remove the old udev rules
       symlink /etc/udev/rules.d/025_gpsd.rules, if it still exists
@@ -20,7 +20,7 @@ gpsd (2.37-1) UNRELEASED; urgency=low
   * debian/NEWS.Debian debian/gpsd.README.Debian:
     - Deleting files, no extra information included anymore.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Mar 2008 16:24:33 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Mar 2008 16:56:43 +0100
 
 gpsd (2.37~rc1-1) unstable; urgency=low
 
