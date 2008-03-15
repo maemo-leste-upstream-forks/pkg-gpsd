@@ -191,6 +191,7 @@ binary-arch: build install
 	dh_installexamples -s
 	dh_pysupport -s
 	chmod 755 debian/$(PACKAGE_PY)/usr/share/python-support/python-gps/gps.py
+	dh_installudev -s
 	dh_link -s
 	dh_strip -s
 	dh_compress -s

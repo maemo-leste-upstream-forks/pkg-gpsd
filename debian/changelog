@@ -5,10 +5,13 @@ gpsd (2.37-1) UNRELEASED; urgency=low
     - Adding question about USB autodetection. The file was reviewed and
       corrected on debian-l10n-english@lists.debian.org - thanks to
       Christian Perrier, MJ Ray and Justin B Rye.
+  * debian/hotplug.wrappper:
+    - Exit gracefully if hotplugging is disabled in /etc/default/gpsd.
   * debian/rules:
     - Ignore non-existing setup.py in the clean target. 
+    - Installing udev rules again (Closes: #455036). 
 
- -- Bernd Zeimetz <bzed@debian.org>  Sun, 09 Mar 2008 22:29:34 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Mar 2008 14:45:20 +0100
 
 gpsd (2.37~rc1-1) unstable; urgency=low
 
