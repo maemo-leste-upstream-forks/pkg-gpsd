@@ -10,8 +10,10 @@ gpsd (2.37-1) UNRELEASED; urgency=low
   * debian/rules:
     - Ignore non-existing setup.py in the clean target. 
     - Installing udev rules again (Closes: #455036). 
+  * debian/gpsd.examples:
+    - Deleting file, the example udev rules are installed by default now.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Mar 2008 14:45:20 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 15 Mar 2008 15:37:17 +0100
 
 gpsd (2.37~rc1-1) unstable; urgency=low
 
