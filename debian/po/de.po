@@ -1,14 +1,14 @@
-# translation of gpsd to german
-# Alwin Meschede <ameschede@gmx.de>, 2007.
+# translation of gpsd to German
+# Alwin Meschede <ameschede@gmx.de>, 2007, 2008.
 # This file is distributed under the same license as the gpsd package.
 msgid ""
 msgstr ""
-"Project-Id-Version: gpsd_2.34.dfsg-3_de\n"
+"Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:45+0100\n"
-"PO-Revision-Date: 2007-11-04 18:39+0100\n"
+"POT-Creation-Date: 2008-03-15 16:48+0100\n"
+"PO-Revision-Date: 2008-03-19 19:29+0100\n"
 "Last-Translator: Alwin Meschede <ameschede@gmx.de>\n"
-"Language-Team: german <debian-l10n-german@lists.debian.org>\n"
+"Language-Team: Deutsch <debian-l10n-de@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -18,56 +18,43 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid "Device your GPS receiver is attached to:"
 msgid "Device the GPS receiver is attached to:"
-msgstr "Der GPS-Empfänger ist angeschlossen an:"
+msgstr "Gerät an dem der GPS-Empfänger angeschlossen ist:"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid ""
-#| "Enter the device your GPS is attached to; this will probably be something "
-#| "like /dev/ttyS0 or /dev/ttyUSB0."
 msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
-"Geben Sie das Gerät an, an das Ihr GPS-Empfänger angeschlossen ist; dies "
+"Geben Sie das Gerät an, an das Ihr GPS-Empfänger angeschlossen ist. Dies "
 "wird vermutlich etwas wie /dev/ttyS0 oder /dev/ttyUSB0 sein."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
 msgid "Multiple devices may be specified as a space-separated list."
-msgstr ""
+msgstr "Mehrere Geräte können durch Leerzeichen getrennt angegeben werden."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid "Should gpsd start on boot?"
 msgid "Start gpsd automatically on boot?"
-msgstr "Soll gpsd beim Hochfahren des Rechners gestartet werden?"
+msgstr "Soll gpsd automatisch beim Hochfahren des Rechners gestartet werden?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(8) at any time, or you can use the hotplug interface for USB devices."
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
 "by the hotplug interface for USB devices, or by running gpsd(8) manually."
 msgstr ""
-"Wenn Ihr GPS-Empfänger ständig an Ihren Computer angeschlossen ist, können "
-"Sie gpsd beim Booten starten lassen. Andernfalls können Sie das Programm "
-"jederzeit durch Aufruf von »gpsd« (8) starten, oder Sie nutzen den Hotplug-"
-"Mechanismus für USB-Geräte."
+"Wenn der GPS-Empfänger ständig an Ihren Computer angeschlossen ist könnte "
+"es sinnvoll sein gpsd beim Booten zu starten. Alternativ kann das Programm "
+"durch das Hotplug-Interface für USB-Geräte gestartet werden, oder manuell "
+"über den Befehl gpsd."
 
 #. Type: string
 #. Description
@@ -89,7 +76,7 @@ msgstr ""
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr ""
+msgstr "Soll gpsd angeschlossene GPS-Empfänger automatisch behandeln?"
 
 #. Type: boolean
 #. Description
@@ -99,6 +86,7 @@ msgid ""
 "USB-to-serial converter chips, so gpsd may cause interference with other "
 "attached devices or programs."
 msgstr ""
+"Diese Option ist standardmäßig deaktiviert, weil einige GPS-Empfänger "
+"USB-zu-Seriell-Konverterchips verwenden, so dass gpsd Störungen bei anderen "
+"angeschlossenen Geräten oder Programmen verursachen könnte."
 
-#~ msgid "You can enter several devices, separated by spaces."
-#~ msgstr "Sie können mehrere Geräte angeben, getrennt durch Leerzeichen."

@@ -1,3 +1,19 @@
+gpsd (2.37-2) UNRELEASED; urgency=low
+
+  * debian/po translation updates:
+    - cs.po, thanks to Miroslav Kure (Closes: #473263).
+    - pt.po, thanks to "Traduz" - Portuguese Translation Team and Miguel
+             Figueiredo (Closes: #472838).
+    - fr.po, thanks to Jean-Luc Coulon (f5ibh) (Closes: #472437).
+    - nl.po, thanks to cobaco (aka Bart Cornelis) (Closes: #471807).
+    - vi.po, thanks to Clytie Siddall (vi-VN, Vietnamese free-software
+             translation team / nhóm Việt hóa phần mềm tự do)
+             (Closes: #471795).
+    - de.po, thanks to Alwin Meschede (Closes: #471721).
+    - gl.po, thanks to Jacobo Tarrio (Closes: #471092).
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 30 Mar 2008 13:27:48 +0200
+
 gpsd (2.37-1) unstable; urgency=low
 
   * New upstream version.

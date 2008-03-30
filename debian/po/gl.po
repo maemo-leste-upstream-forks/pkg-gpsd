@@ -1,13 +1,13 @@
 # Galician translation of gpsd's debconf templates
 # This file is distributed under the same license as the gpsd package.
-# Jacobo Tarrio <jtarrio@debian.org>, 2007.
+# Jacobo Tarrio <jtarrio@debian.org>, 2007, 2008.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2008-03-15 16:45+0100\n"
-"PO-Revision-Date: 2007-10-24 22:19+0100\n"
+"PO-Revision-Date: 2008-03-15 21:07+0000\n"
 "Last-Translator: Jacobo Tarrio <jtarrio@debian.org>\n"
 "Language-Team: Galician <proxecto@trasno.net>\n"
 "MIME-Version: 1.0\n"
@@ -17,15 +17,13 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
 #| msgid "Device your GPS receiver is attached to:"
 msgid "Device the GPS receiver is attached to:"
-msgstr "Dispositivo ao que está conectado o seu receptor GPS:"
+msgstr "Dispositivo ao que está conectado o receptor GPS:"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
 #| msgid ""
 #| "Enter the device your GPS is attached to; this will probably be something "
 #| "like /dev/ttyS0 or /dev/ttyUSB0."
@@ -33,27 +31,27 @@ msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
-"Introduza o dispositivo ao que está conectado o seu receptor GPS; "
-"seguramente sexa algo coma /dev/ttyS0 ou /dev/ttyUSB0."
+"Introduza o dispositivo ao que está conectado o receptor GPS. Seguramente "
+"sexa algo coma /dev/ttyS0 ou /dev/ttyUSB0."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
 msgid "Multiple devices may be specified as a space-separated list."
 msgstr ""
+"Pódense especificar varios dispositivos coma unha lista de dispositivos "
+"separados por espazos."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid "Should gpsd start on boot?"
 msgid "Start gpsd automatically on boot?"
-msgstr "¿gpsd debería iniciarse co ordenador?"
+msgstr "¿Iniciar gpsd co ordenador?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid ""
 #| "If your GPS receiver is permanently attached to your computer, you might "
 #| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
@@ -63,10 +61,10 @@ msgid ""
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
 "by the hotplug interface for USB devices, or by running gpsd(8) manually."
 msgstr ""
-"Se o seu receptor GPS está conectado permanentemente ao seu ordenador, pode "
-"que queira iniciar gpsd co ordenador. Se non, pode inicialo executando gpsd"
-"(8) en calquera momento, ou pode empregar a interface de conexión en quente "
-"para dispositivos USB."
+"Se o receptor GPS está conectado permanentemente ao seu ordenador, pode ser "
+"apropiado que se inicie gpsd co ordenador. De xeito alternativo, pode "
+"iniciarse mediante a interface de conexión en quente para dispositivos USB, "
+"ou executando gpsd(8) á man."
 
 #. Type: string
 #. Description
@@ -89,6 +87,7 @@ msgstr ""
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr ""
+"¿Quere que gpsd xestione automaticamente os receptores GPS USB conectados?"
 
 #. Type: boolean
 #. Description
@@ -98,6 +97,9 @@ msgid ""
 "USB-to-serial converter chips, so gpsd may cause interference with other "
 "attached devices or programs."
 msgstr ""
+"Esta opción está desconectada por defecto, porque varios receptors GPS "
+"empregan chips conversores USB a serie, polo que gpsd podería causar "
+"interferencias con outros dispositivos conectados ou programas."
 
 #~ msgid "You can enter several devices, separated by spaces."
 #~ msgstr "Pode introducir varios dispositivos, separados por espazos."
