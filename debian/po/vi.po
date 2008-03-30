@@ -4,9 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gpsd 2.37-1n"
+"Project-Id-Version: gpsd 2.37-1nReport-Msgid-Bugs-To: gpsd@packages.debian."
+"org\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:45+0100\n"
+"POT-Creation-Date: 2008-03-15 16:48+0100\n"
 "PO-Revision-Date: 2008-03-20 19:00+1030\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
@@ -16,83 +17,86 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: LocFactoryEditor 1.7b1\n"
 
-#: ../gpsd.templates:1001
 #. Type: string
 #. Description
-#| msgid "Device your GPS receiver is attached to:"
+#: ../gpsd.templates:1001
 msgid "Device the GPS receiver is attached to:"
 msgstr "Thiết bị đến đó máy nhận GPS có kết nối:"
 
-#: ../gpsd.templates:1001
 #. Type: string
 #. Description
-#| msgid ""
-#| "Enter the device your GPS is attached to; this will probably be something "
-#| "like /dev/ttyS0 or /dev/ttyUSB0."
+#: ../gpsd.templates:1001
 msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
-"Hãy nhập thiết bị đến đó máy nhận tín hiệu GPS có kết nối. Rất có thể giống như « /dev/ttyS0 » hoặc « /dev/ttyUSB0 ». "
+"Hãy nhập thiết bị đến đó máy nhận tín hiệu GPS có kết nối. Rất có thể giống "
+"như « /dev/ttyS0 » hoặc « /dev/ttyUSB0 ». "
 
-#: ../gpsd.templates:1001
 #. Type: string
 #. Description
+#: ../gpsd.templates:1001
 msgid "Multiple devices may be specified as a space-separated list."
-msgstr "Cũng có thể ghi rõ nhiều thiết bị cùng lúc dưới dạng danh sách định giới bằng dấu cách."
+msgstr ""
+"Cũng có thể ghi rõ nhiều thiết bị cùng lúc dưới dạng danh sách định giới "
+"bằng dấu cách."
 
-#: ../gpsd.templates:2001
 #. Type: boolean
 #. Description
-#| msgid "Should gpsd start on boot?"
+#: ../gpsd.templates:2001
 msgid "Start gpsd automatically on boot?"
 msgstr "Tự động khởi chạy gpsd khi khởi động không?"
 
 # If your GPS receiver is permanently attached to your computer, you might
 # want to start gpsd at boot time. Otherwise, you can run it by calling gpsd
 # (1) at any time, or you can use the hotplug interface for USB devices.
-#: ../gpsd.templates:2001
 #. Type: boolean
 #. Description
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(8) at any time, or you can use the hotplug interface for USB devices."
+#: ../gpsd.templates:2001
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
 "by the hotplug interface for USB devices, or by running gpsd(8) manually."
 msgstr ""
-"Máy nhận GPS có kết nối bền bỉ đến máy tính thì bạn cũng có thể khởi chạy trình nền gpsd vào lúc khởi động hệ thống. Không thì bạn có thể khởi chạy nó bằng cách sử dụng giao diện cắm nóng cho thiết bị USB, hoặc khi bạn tự gọi gpsd(8)."
+"Máy nhận GPS có kết nối bền bỉ đến máy tính thì bạn cũng có thể khởi chạy "
+"trình nền gpsd vào lúc khởi động hệ thống. Không thì bạn có thể khởi chạy nó "
+"bằng cách sử dụng giao diện cắm nóng cho thiết bị USB, hoặc khi bạn tự gọi "
+"gpsd(8)."
 
-#: ../gpsd.templates:3001
 #. Type: string
 #. Description
+#: ../gpsd.templates:3001
 msgid "Options to gpsd:"
 msgstr "Tùy chọn về gpsd:"
 
 # You can give additional arguments when starting gpsd; see gpsd(1) for a
 # list of options.
-#: ../gpsd.templates:3001
 #. Type: string
 #. Description
+#: ../gpsd.templates:3001
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
-"Bạn cũng có thể đặt thêm tùy chọn khi khởi chạy trình nền gpsd; xem gpsd(8) để tìm danh sách các tùy chọn sẵn sàng."
+"Bạn cũng có thể đặt thêm tùy chọn khi khởi chạy trình nền gpsd; xem gpsd(8) "
+"để tìm danh sách các tùy chọn sẵn sàng."
 
-#: ../gpsd.templates:4001
 #. Type: boolean
 #. Description
+#: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr "gpsd có nên tự động quản lý các máy nhận tín hiệu GPS được kết nối qua USB không?"
+msgstr ""
+"gpsd có nên tự động quản lý các máy nhận tín hiệu GPS được kết nối qua USB "
+"không?"
 
-#: ../gpsd.templates:4001
 #. Type: boolean
 #. Description
+#: ../gpsd.templates:4001
 msgid ""
 "This option is disabled by default, because several GPS receivers use common "
 "USB-to-serial converter chips, so gpsd may cause interference with other "
 "attached devices or programs."
-msgstr "Tùy chọn này bị tắt theo mặc định, vì vài máy nhận tín hiệu GPS có sử dụng phiến tinh thể chuyển đổi USB-sang-nối-tiếp, trong trường hợp đó gpsd có thể gây trở ngạy cho các thiết bị đã kết nối hoặc chương trình khác."
+msgstr ""
+"Tùy chọn này bị tắt theo mặc định, vì vài máy nhận tín hiệu GPS có sử dụng "
+"phiến tinh thể chuyển đổi USB-sang-nối-tiếp, trong trường hợp đó gpsd có thể "
+"gây trở ngạy cho các thiết bị đã kết nối hoặc chương trình khác."

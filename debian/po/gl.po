@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:45+0100\n"
+"POT-Creation-Date: 2008-03-15 16:48+0100\n"
 "PO-Revision-Date: 2008-03-15 21:07+0000\n"
 "Last-Translator: Jacobo Tarrio <jtarrio@debian.org>\n"
 "Language-Team: Galician <proxecto@trasno.net>\n"
@@ -17,16 +17,12 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#| msgid "Device your GPS receiver is attached to:"
 msgid "Device the GPS receiver is attached to:"
 msgstr "Dispositivo ao que está conectado o receptor GPS:"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#| msgid ""
-#| "Enter the device your GPS is attached to; this will probably be something "
-#| "like /dev/ttyS0 or /dev/ttyUSB0."
 msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
@@ -45,17 +41,12 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid "Should gpsd start on boot?"
 msgid "Start gpsd automatically on boot?"
 msgstr "¿Iniciar gpsd co ordenador?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(8) at any time, or you can use the hotplug interface for USB devices."
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
