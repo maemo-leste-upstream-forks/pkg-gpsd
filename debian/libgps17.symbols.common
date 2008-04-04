@@ -1,4 +1,16 @@
 libgps.so.17 libgps17 #MINVER#
+ _ZN5gpsmm12del_callbackEv@Base 2.37~rc1
+ _ZN5gpsmm4openEPKcS1_@Base 2.37~rc1
+ _ZN5gpsmm4openEv@Base 2.37~rc1
+ _ZN5gpsmm4pollEv@Base 2.37~rc1
+ _ZN5gpsmm5queryEPKc@Base 2.37~rc1
+ _ZN5gpsmm9clear_fixEv@Base 2.37~rc1
+ _ZN5gpsmmD0Ev@Base 2.37~rc1
+ _ZN5gpsmmD1Ev@Base 2.37~rc1
+ _ZN5gpsmmD2Ev@Base 2.37~rc1
+ _ZTI5gpsmm@Base 2.37~rc1
+ _ZTS5gpsmm@Base 2.37~rc1
+ _ZTV5gpsmm@Base 2.37~rc1
  b64_ntop@Base 2.35
  b64_pton@Base 2.35
  bin2srec@Base 2.35
