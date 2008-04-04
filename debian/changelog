@@ -13,7 +13,7 @@ gpsd (2.37-2) unstable; urgency=low
     - gl.po, thanks to Jacobo Tarrio (Closes: #471092).
     - ca.po, thanks to Jordà Polo (Closes: #474133).
   * debian/libgps17.symbols.*
-    - Adding architecture dependant and c++ symbols to the symbol files.
+    - Adding architecture dependent and c++ symbols to the symbol files.
 
  -- Bernd Zeimetz <bzed@debian.org>  Fri, 04 Apr 2008 23:31:03 +0200
 
