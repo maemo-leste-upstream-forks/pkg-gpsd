@@ -1,3 +1,12 @@
+gpsd (2.37-3) unstable; urgency=low
+
+  * debian/rules:
+    - Unset LDFLAGS (and other *FLAGS which are exported to the environment by
+      the new dpkg) to build the python modules, otherwise they FTBFS. Thanks
+      to Lucas Nussbaum for the report (Closes: #475989).
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 15 Apr 2008 00:05:03 +0200
+
 gpsd (2.37-2) unstable; urgency=low
 
   * debian/po translation updates:

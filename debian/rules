@@ -108,6 +108,7 @@ build-python-stamp: build-gpsd-stamp
 	dh_testdir
 	$(MAKE) packet_names.h gpsfake.1 gpsprof.1
 	set -e; \
+	unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	for py in $(PYVERS); do  \
 	  $$py setup.py build; \
 	done
@@ -148,6 +149,7 @@ install-gpsd: build-gpsd-stamp
 
 install-python: build-python-stamp
 	set -e ;\
+	unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	for py in $(PYVERS); do  \
 	  $$py setup.py install --root=debian/$(PACKAGE_PY); \
 	done
