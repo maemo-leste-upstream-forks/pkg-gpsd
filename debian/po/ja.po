@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:45+0100\n"
-"PO-Revision-Date: 2007-10-31 10:37+0900\n"
+"POT-Creation-Date: 2008-03-15 16:48+0100\n"
+"PO-Revision-Date: 2008-05-29 13:58+0900\n"
 "Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -18,56 +18,37 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid "Device your GPS receiver is attached to:"
 msgid "Device the GPS receiver is attached to:"
-msgstr "あなたの GPS 受信機が接続しているデバイス:"
+msgstr "GPS 受信機が接続しているデバイス:"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-#, fuzzy
-#| msgid ""
-#| "Enter the device your GPS is attached to; this will probably be something "
-#| "like /dev/ttyS0 or /dev/ttyUSB0."
 msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr ""
-"GPS を接続しているデバイス名を入力してください。これはおそらく、/dev/ttyS0 あ"
-"るいは /dev/ttyUSB0 のようなものです。"
+msgstr "GPS を接続しているデバイスを入力してください。これはおそらく、/dev/ttyS0 あるいは /dev/ttyUSB0 のようなものです。"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
 msgid "Multiple devices may be specified as a space-separated list."
-msgstr ""
+msgstr "複数のデバイスはスペースで区切ったリストとして指定できます。"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid "Should gpsd start on boot?"
 msgid "Start gpsd automatically on boot?"
-msgstr "ブート時に gpsd を開始しますか?"
+msgstr "起動時に gpsd を自動で開始しますか?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid ""
-#| "If your GPS receiver is permanently attached to your computer, you might "
-#| "want to start gpsd at boot time. Otherwise, you can run it by calling gpsd"
-#| "(8) at any time, or you can use the hotplug interface for USB devices."
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
 "by the hotplug interface for USB devices, or by running gpsd(8) manually."
-msgstr ""
-"あなたの GPS 受信機があなたのコンピュータに永続的に接続されているのであれば、"
-"ブート時に gpsd を起動したいと思うかもしれません。そのほかに、いつでも gpsd"
-"(8) を呼び出すことができますし、USB デバイスならホットプラグインターフェイス"
-"を使うこともできます。"
+msgstr "GPS 受信機がこのコンピュータに永続的に接続されているのであれば、ブート時に gpsd を起動したいと思うかもしれません。そのほかに、USBデバイスならホットプラグインターフェイスで起動することもできますし、gpsd(8) を手動で呼び出すこともできます。"
 
 #. Type: string
 #. Description
@@ -89,7 +70,7 @@ msgstr ""
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr ""
+msgstr "gpsd が接続された USB GPS 受信機を自動で走査できるようにしますか?"
 
 #. Type: boolean
 #. Description
@@ -98,7 +79,4 @@ msgid ""
 "This option is disabled by default, because several GPS receivers use common "
 "USB-to-serial converter chips, so gpsd may cause interference with other "
 "attached devices or programs."
-msgstr ""
-
-#~ msgid "You can enter several devices, separated by spaces."
-#~ msgstr "スペースで区切って複数のデバイスを指定できます。"
+msgstr "この選択肢はデフォルトでは「いいえ」になっています。というのも、いくつかの GPS 受信機は普通の USB/シリアル変換チップを使っており、gpsd がほかの接続されたデバイスやプログラムと干渉を引き起こす可能性があるからです。"

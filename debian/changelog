@@ -1,3 +1,10 @@
+gpsd (2.37-4) unstable; urgency=low
+
+  * debian/po translation updates:
+    - ja.po, thanks to Kenshi Muto (Closes: #483505). 
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 31 May 2008 18:07:16 +0200
+
 gpsd (2.37-3) unstable; urgency=low
 
   * debian/rules:
