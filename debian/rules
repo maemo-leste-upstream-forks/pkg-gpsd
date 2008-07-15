@@ -100,9 +100,9 @@ build-gpsd-stamp: config.status
 	cp INSTALL TROUBLESHOOTING
 	touch $@
 #unfortunately sbuild/pbilder don't support ptys
-#ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
-#	$(MAKE) testregress
-#endif
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	$(MAKE) testregress
+endif
 
 build-python-stamp: build-gpsd-stamp
 	dh_testdir
