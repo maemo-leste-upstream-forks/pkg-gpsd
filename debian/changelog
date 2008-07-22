@@ -1,6 +1,6 @@
 gpsd (2.37-5) unstable; urgency=low
 
-  * debian/patches/holux-m241.dpatch:
+  * debian/gpsd.udev:
     - Adding hotplug support for the Holux m241 (and probably others).
   * debian/po translation updates:
     - svn.po, thanks to "brother" (Closes: #491765)
