@@ -80,10 +80,9 @@ Files with different copyrights/licenses:
     
     Author: Amaury Jacquot
     License: BSD (see above)
-             or GPL, version 2.0 (on Debian systems a copy of the license is available
-                                  in /usr/share/common-licenses/GPL-2)
-
-  
+             or GPL, version 2.0
+             (on Debian systems a copy of the license is available
+                               in /usr/share/common-licenses/GPL-2)
 
   * bsd-base64.c:
 

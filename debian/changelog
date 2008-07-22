@@ -4,8 +4,10 @@ gpsd (2.37-5) unstable; urgency=low
     - Adding hotplug support for the Holux m241 (and probably others).
   * debian/po translation updates:
     - svn.po, thanks to "brother" (Closes: #491765)
+  * debian/copyright:
+    - Adding an additional line break to make lintian happy.
 
- -- Bernd Zeimetz <bzed@debian.org>  Tue, 22 Jul 2008 01:52:50 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 22 Jul 2008 02:29:12 +0200
 
 gpsd (2.37-4) unstable; urgency=low
 
