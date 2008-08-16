@@ -4,22 +4,22 @@
 #
 # Changes:
 #  - Initial translation
-#         César Gómez Martín <cesar.gomez@gmail.com>
+#         CÃ©sar GÃ³mez MartÃ­n <cesar.gomez@gmail.com>
 #
 #   Traductores, si no conoce el formato PO, merece la pena leer la
-#   documentación de gettext, especialmente las secciones dedicadas a este
+#   documentaciÃ³n de gettext, especialmente las secciones dedicadas a este
 #   formato, por ejemplo ejecutando:
 #          info -n '(gettext)PO Files'
 #          info -n '(gettext)Header Entry'
-# Equipo de traducción al español, por favor, lean antes de traducir
+# Equipo de traducciÃ³n al espaÃ±ol, por favor, lean antes de traducir
 # los siguientes documentos:
 #
-#  - El proyecto de traducción de Debian al español
+#  - El proyecto de traducciÃ³n de Debian al espaÃ±ol
 #    http://www.debian.org/intl/spanish/
-#    especialmente las notas de traducción en
+#    especialmente las notas de traducciÃ³n en
 #    http://www.debian.org/intl/spanish/notas
 #
-#  - La guía de traducción de po's de debconf:
+#  - La guÃ­a de traducciÃ³n de po's de debconf:
 #    /usr/share/doc/po-debconf/README-trans
 #    o http://www.debian.org/intl/l10n/po-debconf/README-trans
 #
@@ -42,7 +42,7 @@ msgstr ""
 #. Description
 #: ../gpsd.templates:1001
 msgid "Device the GPS receiver is attached to:"
-msgstr "Dispositivo al cual está asociado su receptor GPS?"
+msgstr "Dispositivo al cual estÃ¡ asociado su receptor GPS?"
 
 #. Type: string
 #. Description
@@ -51,8 +51,8 @@ msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
-"Introduzca el dispositivo en el que está conectado su GPS. Probablemente "
-"será algo como /dev/ttyS0 o /dev/ttyUSB0."
+"Introduzca el dispositivo en el que estÃ¡ conectado su GPS. Probablemente "
+"serÃ¡ algo como /dev/ttyS0 o /dev/ttyUSB0."
 
 #. Type: string
 #. Description
@@ -64,7 +64,7 @@ msgstr "Puede especificar varios dispositivos usando una lista separadas por esp
 #. Description
 #: ../gpsd.templates:2001
 msgid "Start gpsd automatically on boot?"
-msgstr "¿Desea iniciar gpsd en el arranque del sistema?"
+msgstr "Â¿Desea iniciar gpsd en el arranque del sistema?"
 
 #. Type: boolean
 #. Description
@@ -74,9 +74,9 @@ msgid ""
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
 "by the hotplug interface for USB devices, or by running gpsd(8) manually."
 msgstr ""
-"Si su receptor GPS está permanentemente conectado a este ordenador, puede "
+"Si su receptor GPS estÃ¡ permanentemente conectado a este ordenador, puede "
 "iniciar gpsd en el arranque del sistema. Sino, puede puede usar la interfaz "
-"«hotplug» para dispositivos USB, o bien ejecutar gpsd(8) manualmente."
+"Â«hotplugÂ» para dispositivos USB, o bien ejecutar gpsd(8) manualmente."
 
 #. Type: string
 #. Description
@@ -92,13 +92,13 @@ msgid ""
 "of options."
 msgstr ""
 "Puede proporcionar argumentos adicionales al iniciar gpsd; consulte la "
-"página de manual de gpsd(8) para ver una lista de opciones."
+"pÃ¡gina de manual de gpsd(8) para ver una lista de opciones."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr "¿Debe gspd manejar los receptores GPS USB automáticamente?"
+msgstr "Â¿Debe gspd manejar los receptores GPS USB automÃ¡ticamente?"
 
 #. Type: boolean
 #. Description
@@ -108,8 +108,8 @@ msgid ""
 "USB-to-serial converter chips, so gpsd may cause interference with other "
 "attached devices or programs."
 msgstr ""
-"Esta opción esta desactivada por omisión porque varios receptores GPS usan"
-"convertidores de puerto serie a USB, por lo que gspd podría crear conflictos"
+"Esta opciÃ³n esta desactivada por omisiÃ³n porque varios receptores GPS usan"
+"convertidores de puerto serie a USB, por lo que gspd podrÃ­a crear conflictos"
 "con otros dispositivos conectados o programas."
 
 #~ msgid "You can enter several devices, separated by spaces."

@@ -1,7 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
-"POT-Creation-Date: \n"
+"Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
+"POT-Creation-Date: 2008-03-15 16:48+0100\n"
 "PO-Revision-Date: 2008-08-01 19:42+0200\n"
 "Last-Translator: Esko Arajärvi <edu@iki.fi>\n"
 "Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>\n"
@@ -20,8 +21,12 @@ msgstr "Laite, johon GPS-vastaanotin on liitetty:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Please enter the device the GPS receiver is attached to. It will probably be something like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr "Anna laite, johon GPS-vastaanotin on liitetty. Oikea laite on luultavasti /dev/ttyS0 tai /dev/ttyUSB0 tai vastaava."
+msgid ""
+"Please enter the device the GPS receiver is attached to. It will probably be "
+"something like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr ""
+"Anna laite, johon GPS-vastaanotin on liitetty. Oikea laite on luultavasti /"
+"dev/ttyS0 tai /dev/ttyUSB0 tai vastaava."
 
 #. Type: string
 #. Description
@@ -38,8 +43,15 @@ msgstr "Käynnistetäänkö gpsd automaattisesti järjestelmän käynnistyessä?
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "If the GPS receiver is permanently attached to this computer, it might be appropriate for gpsd to start at boot time. Alternatively it can be started by the hotplug interface for USB devices, or by running gpsd(8) manually."
-msgstr "Jos GPS-vastaanotin on pysyvästi liitettynä tietokoneeseen, ohjelma gpsd halutaan ehkä käynnistää järjestelmän käynnistyessä. Vaihtoehtoisesti se voidaan käynnistää USB-laitteiden pikaliitännän (hotplug) avulla tai ajamalla käsin komento gpsd(8)."
+msgid ""
+"If the GPS receiver is permanently attached to this computer, it might be "
+"appropriate for gpsd to start at boot time. Alternatively it can be started "
+"by the hotplug interface for USB devices, or by running gpsd(8) manually."
+msgstr ""
+"Jos GPS-vastaanotin on pysyvästi liitettynä tietokoneeseen, ohjelma gpsd "
+"halutaan ehkä käynnistää järjestelmän käynnistyessä. Vaihtoehtoisesti se "
+"voidaan käynnistää USB-laitteiden pikaliitännän (hotplug) avulla tai "
+"ajamalla käsin komento gpsd(8)."
 
 #. Type: string
 #. Description
@@ -50,18 +62,29 @@ msgstr "gpsd:n valitsimet:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "You can give additional arguments when starting gpsd; see gpsd(8) for a list of options."
-msgstr "Ohjelmalle gpsd voidaan antaa käynnistyksen yhteydessä lisäargumentteja. Luettelo valitsimista löytyy man-ohjesivulta gpsd(8)."
+msgid ""
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
+"of options."
+msgstr ""
+"Ohjelmalle gpsd voidaan antaa käynnistyksen yhteydessä lisäargumentteja. "
+"Luettelo valitsimista löytyy man-ohjesivulta gpsd(8)."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr "Tulisiko gpsd:n hallinnoida USB:n avulla liitettyjä GPS-vastaanottimia automaattisesti?"
+msgstr ""
+"Tulisiko gpsd:n hallinnoida USB:n avulla liitettyjä GPS-vastaanottimia "
+"automaattisesti?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-msgid "This option is disabled by default, because several GPS receivers use common USB-to-serial converter chips, so gpsd may cause interference with other attached devices or programs."
-msgstr "Tämä vaihtoehto ei ole oletuksena käytössä, koska muutamat GPS-vastaanottimet käyttävät yleisiä USB:stä sarjamuotoon muuntavia siruja, ja gpsd saattaisi häiritä muita liitettyjä laitteita tai ohjelmia."
-
+msgid ""
+"This option is disabled by default, because several GPS receivers use common "
+"USB-to-serial converter chips, so gpsd may cause interference with other "
+"attached devices or programs."
+msgstr ""
+"Tämä vaihtoehto ei ole oletuksena käytössä, koska muutamat GPS-"
+"vastaanottimet käyttävät yleisiä USB:stä sarjamuotoon muuntavia siruja, ja "
+"gpsd saattaisi häiritä muita liitettyjä laitteita tai ohjelmia."
