@@ -1,8 +1,11 @@
 gpsd (2.38-1) unstable; urgency=low
 
   * New Upstream Version
+  * Replacing the dpatch patch system by quilt.
+  * Dropping debian/patchts/gpsfake-identation.dpatch,
+    patch applied by upstream. 
 
- -- Bernd Zeimetz <bzed@debian.org>  Tue, 10 Feb 2009 22:57:40 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 10 Feb 2009 23:11:17 +0100
 
 gpsd (2.37-6) unstable; urgency=low
 
