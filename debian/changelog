@@ -3,7 +3,11 @@ gpsd (2.38-1) unstable; urgency=low
   * New Upstream Version
   * Replacing the dpatch patch system by quilt.
   * Dropping debian/patchts/gpsfake-identation.dpatch,
-    patch applied by upstream. 
+    patch applied by upstream.
+  * debian/libgps17.symbols.common: Updating symbols file to the
+    current version. The rtcm symbols were renamed to rtcm2. As they
+    are not used by anyting but gpsd normally, upstream decided not to
+    bump the soname.
 
  -- Bernd Zeimetz <bzed@debian.org>  Tue, 10 Feb 2009 23:11:17 +0100
 
