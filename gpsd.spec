@@ -2,7 +2,7 @@
 
 Name: gpsd
 Summary: Service daemon for mediating access to a GPS
-Version: 2.37
+Version: 2.38
 Release: 1
 License: BSD
 Group: System Environment/Daemons
