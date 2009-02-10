@@ -1,4 +1,6 @@
-/* $Id: ubx.h 4388 2007-06-23 20:00:16Z ckuethe $ */
+/* $Id: ubx.h 4794 2008-08-03 16:42:57Z ckuethe $ */
+#ifndef _GPSD_UBX_H_
+#define _GPSD_UBX_H_
 
 #define UBX_MESSAGE_BASE_SIZE 6
 #define UBX_MESSAGE_DATA_OFFSET UBX_MESSAGE_BASE_SIZE
@@ -96,3 +98,4 @@ typedef enum {
 #define UBX_SOL_VALID_WEEK 0x04
 #define UBX_SOL_VALID_TIME 0x08
 
+#endif /* _GPSD_UBX_H_ */
