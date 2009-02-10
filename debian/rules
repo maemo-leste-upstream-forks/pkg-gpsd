@@ -170,6 +170,8 @@ clean-patched:
 	rm -rf build
 	[ ! -r Makefile ] || $(MAKE) distclean
 	rm -f *.1 *.3 *.5 *.8 .1
+	rm -rf .deps .libs
+
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
 	rm -f config.sub
 endif
