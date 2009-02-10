@@ -13,9 +13,9 @@
  b64_ntop@Base 2.35
  b64_pton@Base 2.35
  bin2srec@Base 2.35
- crc24q_check@Base 2.38-1
- crc24q_hash@Base 2.38-1
- crc24q_sign@Base 2.38-1
+ crc24q_check@Base 2.38
+ crc24q_hash@Base 2.38
+ crc24q_sign@Base 2.38
  deg_to_str@Base 2.35
  dgnss_autoconnect@Base 2.35
  dgnss_open@Base 2.35
@@ -54,8 +54,8 @@
  gpsd_error_model@Base 2.35
  gpsd_get_speed@Base 2.35
  gpsd_hexdump@Base 2.35
- gpsd_hexdump_level@Base 2.38-1
- gpsd_hexdump_wrapper@Base 2.38-1
+ gpsd_hexdump_level@Base 2.38
+ gpsd_hexdump_wrapper@Base 2.38
  gpsd_hexpack@Base 2.35
  gpsd_id@Base 2.35
  gpsd_init@Base 2.35
@@ -76,7 +76,7 @@
  gpstime_to_unix@Base 2.35
  hc@Base 2.35
  hex2bin@Base 2.35
- hex_escapes@Base 2.38-1
+ hex_escapes@Base 2.38
  hexdump@Base 2.35
  isgps_decode@Base 2.35
  isgps_init@Base 2.35
@@ -84,7 +84,7 @@
  iso8601_to_unix@Base 2.35
  italk_binary@Base 2.35
  mkgmtime@Base 2.35
- mkt_reasons@Base 2.38-1
+ mkt_reasons@Base 2.38
  navcom_binary@Base 2.35
  navcom_parse@Base 2.35
  netlib_connectsock@Base 2.35
@@ -92,7 +92,7 @@
  nmea_parse@Base 2.35
  nmea_parse_input@Base 2.35
  nmea_send@Base 2.35
- nmea_write@Base 2.38-1
+ nmea_write@Base 2.38
  ntpd_link_activate@Base 2.35
  ntpshm_alloc@Base 2.35
  ntpshm_free@Base 2.35
@@ -105,21 +105,21 @@
  packet_parse@Base 2.35
  packet_reset@Base 2.35
  pass_rtcm@Base 2.35
- processMKT3301@Base 2.38-1
- rtcm2_decode@Base 2.38-1
- rtcm2_dump@Base 2.38-1
- rtcm2_repack@Base 2.38-1
- rtcm2_undump@Base 2.38-1
- rtcm2_unpack@Base 2.38-1
- rtcm3_dump@Base 2.38-1
- rtcm3_unpack@Base 2.38-1
+ processMKT3301@Base 2.38
+ rtcm2_decode@Base 2.38
+ rtcm2_dump@Base 2.38
+ rtcm2_repack@Base 2.38
+ rtcm2_undump@Base 2.38
+ rtcm2_unpack@Base 2.38
+ rtcm3_dump@Base 2.38
+ rtcm3_unpack@Base 2.38
 #MISSING: 2.38-1# rtcm_decode@Base 2.35
 #MISSING: 2.38-1# rtcm_dump@Base 2.35
  rtcm_relay@Base 2.35
 #MISSING: 2.38-1# rtcm_repack@Base 2.35
 #MISSING: 2.38-1# rtcm_undump@Base 2.35
 #MISSING: 2.38-1# rtcm_unpack@Base 2.35
- sbits@Base 2.38-1
+ sbits@Base 2.38
  sirf_binary@Base 2.35
  sirf_parse@Base 2.35
  sirf_write@Base 2.35
@@ -131,11 +131,11 @@
  strlcpy@Base 2.35
  timestamp@Base 2.35
  tsip_binary@Base 2.35
- ubits@Base 2.38-1
+ ubits@Base 2.38
  ubx_binary@Base 2.35
- ubx_catch_model@Base 2.38-1
- ubx_parse@Base 2.38-1
- ubx_write@Base 2.38-1
+ ubx_catch_model@Base 2.38
+ ubx_parse@Base 2.38
+ ubx_write@Base 2.38
  unix_to_gpstime@Base 2.35
  unix_to_iso8601@Base 2.35
  wgs84_separation@Base 2.35
