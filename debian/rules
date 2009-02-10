@@ -84,7 +84,7 @@ endif
 
 
 configure: config.status
-config.status: patch-stamp autotools-dev-stamp
+config.status: patch autotools-dev-stamp
 	dh_testdir
 	$(CONFENV) ./configure $(CONFFLAGS)
 
