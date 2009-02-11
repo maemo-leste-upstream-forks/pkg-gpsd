@@ -9,8 +9,10 @@ gpsd (2.38-1) unstable; urgency=low
     are not used by anyting but gpsd normally, upstream decided not to
     bump the soname.
   * debian/rules: remove .deps and .libs in the clean target.
+  * debian/README.source: Adding file as required by policy.
+  * debian/control: Bumping Standards-Version to 3.8.0.
 
- -- Bernd Zeimetz <bzed@debian.org>  Wed, 11 Feb 2009 00:33:17 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 11 Feb 2009 01:02:22 +0100
 
 gpsd (2.37-6) unstable; urgency=low
 
