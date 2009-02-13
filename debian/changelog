@@ -1,3 +1,10 @@
+gpsd (2.38-2) unstable; urgency=low
+
+  * debian/rules: Install upstream changelog, thanks to Paul Martin
+    (Closes: #515067).
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 13 Feb 2009 10:17:37 +0100
+
 gpsd (2.38-1) unstable; urgency=low
 
   * New Upstream Version
