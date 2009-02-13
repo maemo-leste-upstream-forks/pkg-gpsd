@@ -187,7 +187,7 @@ binary-indep:
 binary-arch: build install
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs -s 
+	dh_installchangelogs -s NEWS
 	dh_installdocs -s
 	dh_installmenu -s
 	dh_installdebconf -s
