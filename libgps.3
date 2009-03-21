@@ -37,8 +37,8 @@ C:
 .BI "void gps_set_callback(struct\ gps_data_t\ *" "gpsdata" ", void\ (*" "callback" ")(struct\ gps_data_t\ *sentence,\ char\ *buf), pthread_t\ *" "handler" ");"
 .HP 22
 .BI "void gps_del_callback(struct\ gps_data_t\ *" "gpsdata" ", pthread\ *" "handler" ");"
-.HP 17
-.BI "void rtcm_unpack(struct\ rtcm_t\ *" "rtcmp" ", char\ *" "buf" ");"
+.HP 18
+.BI "void rtcm2_unpack(struct\ rtcm_t\ *" "rtcmp" ", char\ *" "buf" ");"
 .sp
 .ft B
 .nf
@@ -66,6 +66,15 @@ is a service library which supports querying GPS devices; link it with the linke
 \fBgpsd\fR(1)
 and is intended for concurrent use by several applications, and one low\-level interface that speaks directly with the serial or USB device to which the GPS is attached\&. This page describes the high\-level interface that is safe for multiple applications to use simultaneously; it is probably the one you want\&. The low\-level interface is documented at
 \fBlibgpsd\fR(3)\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+Warning
+.PP
+The API described below may change incompatibly at API version 4\&. Take care to conditionalize your code on the major and minor API version symbols in
+\fIgps\&.h\fR; ideally, force a compilation failure if the header is not exporting a version you recognize\&. See the GPSD project website for more information on the protocol and API change\&.
 .PP
 Calling
 \fBgps_open()\fR
@@ -136,9 +145,9 @@ is replaced by the initialization of a gps session object; the other calls are m
 .SH "CODE EXAMPLE"
 .PP
 The following is an excerpted and simplified version of the libgps interface code from
-\fBgps\fR(1)\&. The function
+\fBxgps\fR(1)\&. The function
 \fBhandle_input()\fR
-is a trivial pies of code that calls gps_poll(gpsdata)\&.
+is a trivial piece of code that calls gps_poll(gpsdata)\&.
 .sp
 .RS 4
 .nf

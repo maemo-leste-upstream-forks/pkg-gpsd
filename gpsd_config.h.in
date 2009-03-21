@@ -1,5 +1,11 @@
 /* gpsd_config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* AIVDM protocol support) */
+#undef AIVDM_ENABLE
+
+/* Allow gpsd to controlsend device */
+#undef ALLOW_CONTROLSEND
+
 /* Allow gpsd to reconfigure device */
 #undef ALLOW_RECONFIGURE
 
@@ -93,6 +99,9 @@
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
 #undef HAVE_NETINET_TCP_H
+
+/* Define to 1 if you have the <Python.h> header file. */
+#undef HAVE_PYTHON_H
 
 /* Define to 1 if you have the `round' function. */
 #undef HAVE_ROUND

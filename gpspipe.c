@@ -1,4 +1,4 @@
-/* $Id: gpspipe.c 5053 2009-01-21 11:44:35Z esr $ */
+/* $Id: gpspipe.c 5326 2009-03-02 23:24:03Z esr $ */
 /*
  * gpspipe
  *
@@ -38,6 +38,7 @@
 #include <assert.h>
 #include "gpsd_config.h"
 #include "gpsd.h"
+#include "gpsdclient.h"
 
 static int fd_out = 1;		/* output initially goes to standard output */ 
 static void spinner(unsigned int, unsigned int);
@@ -125,7 +126,7 @@ static void open_serial(char* device)
 static void usage(void)
 {
     (void)fprintf(stderr, "Usage: gpspipe [OPTIONS] [server[:port[:device]]]\n\n"
-		  "SVN ID: $Id: gpspipe.c 5053 2009-01-21 11:44:35Z esr $ \n"
+		  "SVN ID: $Id: gpspipe.c 5326 2009-03-02 23:24:03Z esr $ \n"
 		  "-d Run as a daemon.\n"
 		  "-f [file] Write output to file.\n"
 		  "-h Show this help.\n"
@@ -159,7 +160,7 @@ int main( int argc, char **argv)
     unsigned int vflag = 0, l = 0;
     FILE * fp;
 
-    char *arg = NULL, *colon1, *colon2, *device = NULL;
+    struct fixsource_t source;
     char *port = DEFAULT_GPSD_PORT, *server = "127.0.0.1";
     char *serialport = NULL;
     char *filename = NULL;
@@ -196,7 +197,7 @@ int main( int argc, char **argv)
 	    (void)strlcat(buf, "j=1;", sizeof(buf));
 	    break;
 	case 'V':
-	    (void)fprintf(stderr, "%s: SVN ID: $Id: gpspipe.c 5053 2009-01-21 11:44:35Z esr $ \n", argv[0]);
+	    (void)fprintf(stderr, "%s: SVN ID: $Id: gpspipe.c 5326 2009-03-02 23:24:03Z esr $ \n", argv[0]);
 	    exit(0);
 	case 's':
 	    serialport = optarg;
@@ -227,32 +228,15 @@ int main( int argc, char **argv)
 	exit(1);
     }
     /* Grok the server, port, and device. */
-    /*@ -branchstate @*/
     if (optind < argc) {
-	arg = strdup(argv[optind]);
-	/*@i@*/colon1 = strchr(arg, ':');
-	server = arg;
-	if (colon1 != NULL) {
-	    if (colon1 == arg) {
-		server = NULL;
-	    } else {
-		*colon1 = '\0';
-	    }
-	    port = colon1 + 1;
-	    colon2 = strchr(port, ':');
-	    if (colon2 != NULL) {
-		if (colon2 == port) {
-		    port = NULL;
-		} else {
-		    *colon2 = '\0';
-		}
-		device = colon2 + 1;
-		(void)snprintf(buf, sizeof(buf), "%sF=%s\n", buf, device);
-	    }
-	}
-	colon1 = colon2 = NULL;
+	gpsd_source_spec(argv[optind], &source);
+    } else
+	gpsd_source_spec(NULL, &source);
+
+    if (source.device != NULL) {
+	(void)strlcat(buf, "F=", sizeof(buf));
+	(void)strlcat(buf, source.device, sizeof(buf));
     }
-    /*@ +branchstate @*/
 
     /* Daemonize if the user requested it. */
     if (daemon)
@@ -286,7 +270,7 @@ int main( int argc, char **argv)
 	open_serial(serialport);
 
     /*@ -nullpass @*/
-    sock = netlib_connectsock( server, port, "tcp");
+    sock = netlib_connectsock(source.server, source.port, "tcp");
     if (sock < 0) {
 	(void)fprintf(stderr,
 		      "gpspipe: could not connect to gpsd %s:%s, %s(%d)\n",

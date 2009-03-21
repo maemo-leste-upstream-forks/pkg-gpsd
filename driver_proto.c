@@ -1,4 +1,4 @@
-/* $Id: driver_proto.c 5130 2009-02-08 18:09:31Z esr $
+/* $Id: driver_proto.c 5412 2009-03-07 16:11:17Z esr $
  *
  * A prototype driver.  Doesn't run, doesn't even compile.
  *
@@ -57,7 +57,7 @@ static	gps_mask_t _proto__msg_svinfo(struct gps_device_t *, unsigned char *, siz
 /*
  * These methods may be called elsewhere in gpsd
  */
-static	ssize_t _proto__write(struct gps_device_t *, char *, size_t );
+static	ssize_t _proto__control_send(struct gps_device_t *, char *, size_t );
 static	bool _proto__probe_detect(struct gps_device_t *);
 static	void _proto__probe_wakeup(struct gps_device_t *);
 static	void _proto__probe_subtype(struct gps_device_t *, unsigned int );
@@ -187,24 +187,6 @@ _proto__msg_nav_svinfo(struct gps_device_t *session, unsigned char *buf, size_t 
 }
 
 /**
- * Write data to the device, doing any required padding or checksumming
- */
-/*@ +charint -usedef -compdef @*/
-static ssize_t _proto__write(struct gps_device_t *session,
-			   char *msg, size_t msglen)
-{
-   bool ok;
-
-   /* CONSTRUCT THE MESSAGE */
-
-   /* we may need to dump the message */
-   gpsd_report(LOG_IO, "writing _proto_ control type %02x:%s\n",
-	       msg[0], gpsd_hexdump_wrapper(msg, msglen, LOG_IO));
-   return gpsd_write(session, msg, msglen);
-}
-/*@ -charint +usedef +compdef @*/
-
-/**
  * Parse the data from the device
  */
 /*@ +charint @*/
@@ -286,9 +268,43 @@ static void _proto__probe_subtype(struct gps_device_t *session, unsigned int seq
      */
 }
 
+#ifdef ALLOW_CONTROLSEND */
+/**
+ * Write data to the device, doing any required padding or checksumming
+ */
+/*@ +charint -usedef -compdef @*/
+static ssize_t _proto__control_send(struct gps_device_t *session,
+			   char *msg, size_t msglen)
+{
+   bool ok;
+
+   /* CONSTRUCT THE MESSAGE */
+
+   /* 
+    * This copy to a public assembly buffer 
+    * enables gpsmon to snoop the control message
+    * acter it has been sent.
+    */
+   session->msgbuflen = msglen;
+   (void)memcpy(session->msgbuf, msg, msglen);
+
+   /* we may need to dump the message */
+    return gpsd_write(session, session->msgbuf, session->msgbuflen);
+   gpsd_report(LOG_IO, "writing _proto_ control type %02x:%s\n",
+	       msg[0], gpsd_hexdump_wrapper(session->msgbuf, session->msgbuflen, LOG_IO));
+   return gpsd_write(session, session->msgbuf, session->msgbuflen);
+}
+/*@ -charint +usedef +compdef @*/
+#endif /* ALLOW_CONTROLSEND */
+
+#ifdef ALLOW_CONFIGURE
 static void _proto__configurator(struct gps_device_t *session, unsigned int seq)
 {
-    /* Change sentence mix and set reporting modes as needed */
+    /* 
+     * Change sentence mix and set reporting modes as needed.
+     * If your device has a default cycle time other than 1 second,
+     * set session->device->gpsdata.cycle here.
+     */
 }
 
 /*
@@ -314,9 +330,14 @@ static gps_mask_t _proto__parse_input(struct gps_device_t *session)
 	return 0;
 }
 
-static bool _proto__set_speed(struct gps_device_t *session, speed_t speed)
+static bool _proto__set_speed(struct gps_device_t *session, 
+			      speed_t speed, char parity, int stopbits)
 {
-    /* set port operating mode, speed, bits etc. here */
+    /* 
+     * Set port operating mode, speed, parity, stopbits etc. here.
+     * Note: parity is passed as 'N'/'E'/'O', but you should program 
+     * defensively and allow 0/1/2 as well.
+     */
 }
 
 /*
@@ -345,6 +366,7 @@ static void _proto__revert(struct gps_device_t *session)
     * Reverse what the .configurator method changed.
     */
 }
+#endif /* ALLOW_CONFIGURE */
 
 static void _proto__wrapup(struct gps_device_t *session)
 {
@@ -369,7 +391,7 @@ static void _proto__wrapup(struct gps_device_t *session)
 /* any driver must use to compile.                   */
 
 /* This is everything we export */
-struct gps_type_t _proto__binary = {
+const struct gps_type_t _proto__binary = {
     /* Full name of type */
     .type_name        = "_proto_ binary",
     /* associated lexer packet type */
@@ -378,40 +400,38 @@ struct gps_type_t _proto__binary = {
     .trigger          = NULL,
     /* Number of satellite channels supported by the device */
     .channels         = 12,
-    /* Control string sender - should provide checksum and trailer */
-    .control_send     = _proto__write,
     /* Startup-time device detector */
     .probe_detect     = _proto__probe_detect,
     /* Wakeup to be done before each baud hunt */
     .probe_wakeup     = _proto__probe_wakeup,
     /* Initialize the device and get subtype */
     .probe_subtype    = _proto__probe_subtype,
-#ifdef ALLOW_RECONFIGURE
-    /* Enable what reports we need */
-    .configurator     = _proto__configurator,
-#endif /* ALLOW_RECONFIGURE */
     /* Packet getter (using default routine) */
     .get_packet       = generic_get,
     /* Parse message packets */
     .parse_packet     = _proto__parse_input,
     /* RTCM handler (using default routine) */
     .rtcm_writer      = pass_rtcm,
+#ifdef ALLOW_CONTROLSEND
+    /* Control string sender - should provide checksum and headers/trailer */
+    .control_send   = __proto__control_send,
+#endif /* ALLOW_CONTROLSEND */
+#ifdef ALLOW_RECONFIGURE
+    /* Enable what reports we need */
+    .configurator     = _proto__configurator,
     /* Speed (baudrate) switch */
     .speed_switcher   = _proto__set_speed,
     /* Switch to NMEA mode */
     .mode_switcher    = _proto__set_mode,
     /* Message delivery rate switcher (not active) */
     .rate_switcher    = NULL,
-    /* Number of chars per report cycle (not active) */
-    .cycle_chars      = -1,
-#ifdef ALLOW_RECONFIGURE
+    /* Minimum cycle time of the device */
+    .min_cycle        = 1,
     /* Undo the actions of .configurator */
     .revert           = _proto__revert,
 #endif /* ALLOW_RECONFIGURE */
     /* Puts device back to original settings */
     .wrapup           = _proto__wrapup,
-    /* Number of updates per second */
-    .cycle            = 1
 };
 #endif /* defined(_PROTO__ENABLE) && defined(BINARY_ENABLE) */
 

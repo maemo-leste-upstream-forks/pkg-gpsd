@@ -1,6 +1,6 @@
-dnl $Id: configure.ac 5138 2009-02-10 20:17:47Z esr $
+dnl $Id: configure.ac 5502 2009-03-18 21:09:31Z esr $
 AC_INIT
-AM_INIT_AUTOMAKE(gpsd, 2.38)
+AM_INIT_AUTOMAKE(gpsd, 2.39)
 dnl AC_PREFIX_PROGRAM(gcc)
 AM_CONFIG_HEADER(gpsd_config.h)
 AC_LANG([C])
@@ -9,10 +9,77 @@ AC_ARG_ENABLE(python,
   AC_HELP_STRING([--disable-python],
 		 [disable python scripts and library bindings]),
   [try_python="$enableval"], [try_python="yes"])
-ac_python="no"
-if test x"$try_python" = xyes ; then
-AM_PATH_PYTHON
-ac_python="yes"
+if test "x$try_python" = "xyes"; then
+	AM_PATH_PYTHON
+	ac_python=yes
+	if test "x$PYTHON" = "x"; then
+		AC_PATH_PROG(PYTHON, python, none)
+	fi
+
+	if test "x$PYTHON" = "xnone"; then
+	AC_MSG_WARN([*** Python interpreter not found, Python support disabled.])
+		ac_python=no
+	fi
+
+	if test "x$ac_python" = "xyes"; then
+		AC_MSG_CHECKING(Python version and location)
+		PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
+		PYTHON_VERSION_MAJOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[0]);"`]
+		PYTHON_VERSION_MINOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[1]);"`]
+		PYTHON_VERSION="${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
+		AC_MSG_RESULT([$PYTHON, $PYTHON_VERSION, $PYTHON_PREFIX])
+
+		AC_MSG_CHECKING(whether Python is at least 2.4)
+		if test $PYTHON_VERSION_MAJOR -lt 2 -o $PYTHON_VERSION_MAJOR -eq 2 -a $PYTHON_VERSION_MINOR -lt 3; then
+			AC_MSG_RESULT(no)
+			AC_MSG_WARN([*** GPSD requires at least Python 2.3, Python support disabled.])
+			ac_python=no
+		fi
+		if test "x$ac_python" = "xyes"; then
+			AC_MSG_RESULT(yes)
+
+			PYTHON_CFLAGS="-DHAVE_PYTHON -I$PYTHON_PREFIX/include/python$PYTHON_VERSION"
+
+			OLD_CPPFLAGS="$CPPFLAGS"
+			OLD_CXXFLAGS="$CXXFLAGS"
+			CPPFLAGS="$CPPFLAGS $PYTHON_CFLAGS"
+			CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
+
+			AC_CHECK_HEADERS([Python.h],
+					[],
+					[AC_MSG_WARN([*** Python include files not found! You should install the Python development package. Python support disabled]); ac_python=no])
+			CPPFLAGS="$OLD_CPPFLAGS"
+			CXXFLAGS="$OLD_CXXFLAGS"
+
+			if test "x$ac_python" = "xyes"; then
+				AC_SUBST([PYTHON_CFLAGS])
+
+				ac_python=no
+				for pylibpath in '/usr/lib' $PYTHON_PREFIX/lib $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config; do
+					eval `echo unset ac_cv_lib_python$PYTHON_VERSION'___'Py_Finalize | tr '.' '_'`
+
+					save_LIBS=$LIBS
+					LIBS="$LIBS -L$pylibpath $PYTHON_LIBS"
+					AC_CHECK_LIB(python$PYTHON_VERSION, Py_Finalize, PYTHON_LIBS="-L$pylibpath -lpython$PYTHON_VERSION $PYTHON_DEPS"; ac_python=yes,,$PYTHON_DEPS)
+					LIBS=$save_LIBS
+					if test "x$ac_python" = "xyes"; then
+						break
+					fi
+				done
+
+				if test "x$ac_python" != "xyes"; then
+					AC_MSG_WARN(*** Python development libraries required, Python support disabled)
+				fi
+				AC_SUBST([PYTHON_LIBS])
+
+				AC_SUBST(pkgpythondir)
+				if test "x$python_install" = "xyes"; then
+					pkgpythondir=$PYTHON_PREFIX"/lib/python"$PYTHON_VERSION"/site-packages/gpsd"
+				fi
+
+			fi
+		fi
+	fi
 fi
 AM_CONDITIONAL([HAVE_PYTHON], [test x"$ac_python" = xyes])
 
@@ -64,20 +131,20 @@ AC_C_CONST
 
 AC_MSG_CHECKING([for properly working floating point implementation])
 if test "x$build" = "x$host"; then
-	if eval "$CC $CFLAGS -o floattest ${srcdir}/floattest.c"; then
-		if ./floattest > /dev/null; then
+	if eval "$CC $CFLAGS -o test_float ${srcdir}/test_float.c"; then
+		if ./test_float > /dev/null; then
 			AC_MSG_RESULT([yes])
 		else
 			AC_MSG_RESULT([no])
-			AC_MSG_WARN([We strongly recommend you manually examine the floattest results])
+			AC_MSG_WARN([We strongly recommend you manually examine the test_float results])
 		fi
 	else
-		AC_MSG_RESULT([failure compiling floattest])
+		AC_MSG_RESULT([failure compiling test_float])
 	fi
 else
 	AC_MSG_RESULT([skipped test (cross-compiling)])
 	AC_MSG_WARN([We are cross-compiling, and thus cannot run the floating point test now.
-We strongly recommend running floattest on the target platform.])
+We strongly recommend running test_float on the target platform.])
 fi
 
 
@@ -300,9 +367,9 @@ fi
 
 dnl check for Novatel SuperStarII support
 AC_ARG_ENABLE(superstar2,
-  AC_HELP_STRING([--enable-superstar2],
-		 [enable SuperStarII chipset support]),
-  [ac_superstar2=$enableval], [ac_superstar2=no])
+  AC_HELP_STRING([--disable-superstar2],
+		 [disable SuperStarII chipset support]),
+  [ac_superstar2=$enableval], [ac_superstar2=yes])
 AC_MSG_CHECKING([for SuperStarII support])
 if test x"$ac_superstar2" = "xyes"; then
     AC_MSG_RESULT([yes])
@@ -565,6 +632,19 @@ fi
 
 AM_CONDITIONAL([HAVE_NTRIP], [test "$ac_ntrip" = "yes"])
 
+dnl check for AIVDM support
+AC_ARG_ENABLE(aivdm,
+  AC_HELP_STRING([--disable-aivdm],
+		 [disable Aivdm support]),
+  [ac_aivdm=$enableval], [ac_aivdm=yes])
+AC_MSG_CHECKING([for AIVDM support])
+if test x"$ac_aivdm" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([AIVDM_ENABLE], 1, [AIVDM protocol support)])
+else
+  AC_MSG_RESULT([no])
+fi
+
 dnl check for profiling support
 AC_ARG_ENABLE(profiling,
   AC_HELP_STRING([--enable-profiling],
@@ -617,7 +697,7 @@ else
   AC_MSG_RESULT([no])
 fi
 
-dnl check for privilege revokation user at compile-time
+dnl check for privilege revocation user at compile-time
 AC_ARG_ENABLE(gpsd-user,
   AC_HELP_STRING([--enable-gpsd-user=username],
 		 [GPSD privilege revokation user]),
@@ -705,6 +785,19 @@ AC_MSG_CHECKING([if device reconfiguration is allowed])
 if test x"$ac_reconfigure" != "xno"; then
     AC_MSG_RESULT([$ac_reconfigure])
 	AC_DEFINE([ALLOW_RECONFIGURE], 1, [Allow gpsd to reconfigure device])
+else
+  AC_MSG_RESULT([no])
+fi
+
+dnl allow tools to use control_send method
+AC_ARG_ENABLE(controlsend,
+  AC_HELP_STRING([--disable-controlsend],
+		 [do not allow gpsd to change device settings]),
+  [ac_controlsend=$enableval], [ac_controlsend=yes])
+AC_MSG_CHECKING([if control sending is allowed])
+if test x"$ac_controlsend" != "xno"; then
+    AC_MSG_RESULT([$ac_controlsend])
+	AC_DEFINE([ALLOW_CONTROLSEND], 1, [Allow gpsd to controlsend device])
 else
   AC_MSG_RESULT([no])
 fi
@@ -829,6 +922,7 @@ echo "True North              : $ac_tnt"
 echo "OceanServer             : $ac_oceanserver"
 echo "UBX                     : $ac_ubx"
 echo "GPSclock                : $ac_gpsclock"
+echo "AIVDM support           : $ac_aivdm"
 echo "MKT-3301                : $ac_mkt3301"
 dnl Below this line are non-protocol switches
 echo "	Daemon Features"
@@ -840,13 +934,16 @@ echo "Fixed port speed        : $ac_baud"
 echo "Priv-drop user          : $ac_user"
 echo "Enable shared libraries : $enable_shared"
 echo "Enable DBUS support     : $ac_dbus"
-echo "Enable X11 support      : $ac_x"
-echo "Enable Python support   : $ac_python"
 echo "Limited max clients     : $ac_maxclients"
 echo "Limited max devices     : $ac_maxdevices"
 echo "Allow device reconfig   : $ac_reconfigure"
+echo "Allow control send      : $ac_controlsend"
 echo "Squelch logging/hexdump : $ac_squelch"
+echo "	Client Features"
+echo "	---------------"
 echo "Build ncurses programs  : $ac_ncurses"
+echo "Enable X11 support      : $ac_x"
+echo "Enable Python support   : $ac_python"
 echo "------------------------------------------"
 
 if test "xdummy" = "xdummy" -a \
@@ -869,6 +966,6 @@ if test "xdummy" = "xdummy" -a \
     x"$ac_ubx" = "xno"; then
     AC_MSG_ERROR(Can't build gpsd with no protocols enabled)
 fi
-AC_OUTPUT(Makefile gpsd.spec libgps.pc libgpsd.pc)
+AC_OUTPUT(Makefile packaging/gpsd.spec libgps.pc libgpsd.pc)
 echo "Configure finished, type 'make' to build."
 

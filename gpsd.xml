@@ -23,6 +23,7 @@
       <replaceable>rtcm-listener-port</replaceable></arg -->
       <arg choice='opt'>-S <replaceable>listener-port</replaceable></arg>
       <arg choice='opt'>-b </arg>
+      <arg choice='opt'>-l </arg>
       <arg choice='opt'>-G </arg>
       <arg choice='opt'>-n </arg>
       <arg choice='opt'>-N </arg>
@@ -54,11 +55,20 @@ that speaks either the standard textual NMEA 0183 protocol, or the
 (differing) extended NMEA dialects used by MKT-3301, iTrax, Motorola
 OnCore, Sony CXD2951, and Ashtech/Thales devices.  It can also
 interpret the binary protocols used by EverMore, Garmin, Navcom,
-Rockwell/Zodiac, SiRF, Trimble, and uBlox ANTARIS
-devices. <application>gpsd</application> effectively hides the
-differences among these. It also knows about and uses commands that
-tune these GPSes for lower latency. It can read heading and attitude
-information from the Oceanserver 5000 digital compass.</para>
+Rockwell/Zodiac, SiRF, Trimble, and uBlox ANTARIS devices. It can read
+heading and attitude information from the Oceanserver 5000 digital
+compass.</para>
+
+<para>The GPS protocols supported by your instance of
+<application>gpsd</application> may differ depending on how it was
+compiled; general-purpose versions support many, but it can be built
+with protocol subsets down to a singleton for use in constrained
+environments. For a list of the GPS protocols supported by your
+instance, see the output of <command>gpsd -l</command></para>
+
+<para><application>gpsd</application> effectively hides the
+differences among the GPS types it supports. It also knows about and
+uses commands that tune these GPSes for lower latency. </para>
 
 <para><application>gpsd</application> can use differential-GPS
 corrections from a DGPS radio or over the net, from a ground station
@@ -120,6 +130,14 @@ listen on all addresses (INADDR_ANY) rather than just the loopback
 information is now private to the local machine until the user makes
 an effort to expose this to the world. Listening on the loopback by
 default is a change from previous behaviour.</para></listitem>
+</varlistentry>
+<varlistentry>
+<term>-l</term>
+<listitem><para>List all drivers compiled into this
+<application>gpsd</application> instance. The letters to the left of
+each driver name are the <application>gpsd</application> 
+control commands supported by that driver.</para>
+</listitem>
 </varlistentry>
 <varlistentry>
 <term>-n</term>
@@ -186,8 +204,6 @@ the form "/streamname". So, an example DGPSIP URL could be
 option is not given, <application>gpsd</application> will hunt for a
 DGPSIP server. --></para>
 
-
-
 <para>Internally, the daemon maintains a device list holding the
 pathnames of GPSes known to the daemon. Initially, this list is the
 list of device-name arguments specified on the command line.  That
@@ -200,8 +216,15 @@ specified.</para>
 <para>At any given time, each client will be listening to only one of
 the GPSes on the device list.  By default, a client's device is the
 one that most recently shipped information to the daemon at the time
-the client first requests GPS information (that is, issues any command
-other than F, K, W=0 or R=0).</para>
+the client first requests GPS information.</para>
+
+<warning><para>It is planned that the command protocol described below will
+change radically at API version 4. It is a bad idea for applications
+to speak this protocol directly: rather, they should use the
+<application>libgps</application> client library and take appropriate
+care to conditionalize their code on the major and minor API version
+symbols.  See the GPSD project website for more information on the
+protocol and API change.</para></warning>
 
 <para>The request protocol for <application>gpsd</application> clients
 is very simple.  Each request normally consists of a single ASCII
@@ -209,6 +232,10 @@ character followed by a newline.  Case of the request character is
 ignored.  Each request returns a line of response text ended by a
 CR/LF.  Requests and responses are as follows, with %f standing for a
 decimal float numeral and %d for decimal integer numeral:</para>
+
+<para>Any command other than L, F, K, W=0 or R=0 is considered a
+request for GPS information and will cause a GPS device to be
+connected to the client's channel.</para>
 
 <variablelist>
 <varlistentry>
@@ -221,12 +248,33 @@ decimal float numeral and %d for decimal integer numeral:</para>
 <listitem><para>The B command with no argument returns four fields
 giving the parameters of the serial link to the GPS as "B=%d %d %c
 %d"; baud rate, byte size, parity, (N, O or E for no parity, odd, or
-even) and stop bits (1 or 2).  The command "B=%d" sets the baud rate,
-not changing parity or stop bits; watch the response, because it is
+even) and stop bits (1 or 2).</para>
+
+<para>The command "B=%d" sets the baud rate, not changing parity or
+stop bits; The command "B=%d [78] [NOE] [12]" (B followed by
+whiteapace; followed by a numeric speed; followed by one of the digits
+7 or 8; followed by whitespace; followed by one of the letters 'N',
+'O', or 'E'; followed by whitespace; followed by one of the digits '1'
+or 2') sets not only speed but word length, parity, and stop bits.</para>
+
+<para>For both forms, watch the response, because it is
 possible for this to fail if the GPS does not support a
-speed-switching command.  In case of failure, the daemon and GPS will
-continue to communicate at the old speed.  The B= form is rejected
-if more than one client is attached to the channel.</para></listitem>
+speed-switching command or only supports some combinations of
+serial modes.  In case of failure, the daemon and GPS will
+continue to communicate at the old speed.  Both forms are rejected
+if more than one client is attached to the channel.</para>
+
+<para>Use this command with caution.  On USB and Bluetooth GPSes it is
+also possible for serial mode setting to fail either because the
+serial adaptor chip does not support non-8N1 modes or because the
+device firmware does not properly synchronize the serrial adaptor chip
+with the UART on the GPS chipset whjen the speed changes. These
+failures can hang your device, possibly requiring a GPS power cycle or (in
+extreme cases) physically disconnecting the NVRAM backup battery.</para>
+
+<para>(Older versions of <application>gpsd</application> supported
+changing speed only.)</para>
+</listitem>
 </varlistentry>
 
 <varlistentry>
@@ -243,9 +291,9 @@ channel.</para>
 
 <para>If the driver has the capability to change sampling rate, this
 command always returns "C=%f %f" giving the current cycle time in
-seconds and the minimum possible cycle time at the current baud rate.
-If the driver does not have the capability to change sampling rate,
-this returns, as "C=%f", the cycle time in seconds only.</para>
+seconds and the minimum possible cycle time.  If the driver does not
+have the capability to change sampling rate, this returns, as "C=%f",
+the cycle time in seconds only.</para>
 
 <para>Either number may be fractional, indicating a GPS cycle shorter
 than a second; however, if >1 the cycle time must be a whole number. Also
@@ -257,7 +305,36 @@ this works.</para>
 first full packet has been received from the GPS, because the GPS type is
 not yet known. To set up conditions for a real answer, issue it after
 some command that reads position/velocity/time information from the
-device.</para></listitem>
+device.</para>
+
+<!--
+<para>The second field of the C return may be 0, indicating no hard
+lower limit on the cycle time. On an NMEA device of this kind it is
+possible to try to push more characters through per cycle than the
+time to transmit will allow. You must set the time high enough to let
+all sentences come through.  Here are the maxima to use for
+computation:</para>
+
+<table frame='all'>
+<tgroup cols='2'>
+<tbody>
+<row><entry>ZDA       </entry><entry>36</entry></row>
+<row><entry>GLL       </entry><entry>47</entry></row>
+<row><entry>GGA       </entry><entry>82</entry></row>
+<row><entry>VTG       </entry><entry>46</entry></row>
+<row><entry>RMC       </entry><entry>77</entry></row>
+<row><entry>GSA       </entry><entry>67</entry></row>
+<row><entry>GSV       </entry><entry>60 (per line, thus 180 for a set of 3)</entry> </row>
+</tbody>
+</tgroup>
+</table>
+
+<para>The transmit time for a cycle (which must be less than 1 second)
+is the total character count multiplied by 10 and divided by the baud
+rate. A typical budget is GGA, RMC, GSA, 3*GSV = 82+75+67+(3*60) =
+404.</para>
+-->
+</listitem>
 
 </varlistentry>
 
@@ -271,13 +348,15 @@ part will vary and may be absent.</para></listitem>
 <varlistentry>
 <term>e</term>
 <listitem>
-<para>Returns "E=%f %f %f": three estimated position errors in meters
-&mdash; total, horizontal, and vertical (95% confidence
+<para>Returns "E=? %f %f": estimated position errors in meters
+&mdash; horizontal, and vertical (95% confidence
 level).  Note: many GPSes do not supply these numbers.  When the
 GPS does not supply them, <application>gpsd</application> computes
 them from satellite DOP using fixed figures for expected non-DGPS
-and DGPS range errors in meters.  A value of '?' for any of these
-numbers should be taken to mean that component of DOP is not available.
+and DGPS range errors in meters.  A value of '?' for either of these
+numbers should be taken to mean that component of DOP is not
+available. The ? value is a backwards-compatibility placeholder; some
+early versions of GPSD returned a total error estimate there.
 See also the 'q' command.</para>
 </listitem>
 </varlistentry>
@@ -385,8 +464,10 @@ a name in this list does not guarantee that the device is available.</para>
 
 <varlistentry>
 <term>l</term>
-<listitem><para>Returns three fields: a protocol revision number,
-the gpsd version, and a list of accepted request letters.</para></listitem>
+<listitem><para>Returns four fields: the major protocol/API revision number,
+the minor revision number, the gpsd version, and a list of accepted
+request letters. Note: earlier versions of this command returned only
+three fields, omitting the minor revision number.</para></listitem>
 </varlistentry>
 
 <varlistentry>

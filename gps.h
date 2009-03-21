@@ -1,4 +1,4 @@
-/* $Id: gps.h 4900 2009-01-05 21:47:53Z esr $ */
+/* $Id: gps.h 5488 2009-03-17 20:54:34Z esr $ */
 #ifndef _GPSD_GPS_H_
 #define _GPSD_GPS_H_
 
@@ -19,9 +19,16 @@ extern "C" {
 #include <pthread.h>	/* pacifies OpenBSD's compiler */
 #endif
 
+/*
+ * Unless otherwise noted, all function signatures and types and
+ * constants and structure layouts exposed here are correct for all
+ * versions up to and including this one.
+ */
+#define GPSD_API_MAJOR_VERSION	3	/* bump on incompatible changes */
+#define GPSD_API_MINOR_VERSION	1	/* bump on compatible changes */
+
 #define MAXTAGLEN	8	/* maximum length of sentence tag name */
 #define MAXCHANNELS	20	/* maximum GPS channels (*not* satellites!) */
-#define SIRF_CHANNELS	12	/* max channels allowed in SiRF format */
 #define GPS_PRNMAX	32	/* above this number are SBAS satellites */
 
 /* 
@@ -177,7 +184,6 @@ struct rtcm2_t {
 
 struct rtcm3_rtk_hdr {		/* header data from 1001, 1002, 1003, 1004 */
     /* Used for both GPS and GLONASS, but their timebases differ */
-    unsigned int msgnum;	/* Message number */
     unsigned int station_id;	/* Reference Station ID */
     time_t tow;			/* GPS Epoch Time (TOW) in ms, 
 				   or GLONASS Epoch Time in ms */
@@ -209,7 +215,6 @@ struct rtcm3_extended_rtk {
 };
 
 struct rtcm3_network_rtk_header {
-    unsigned int msgnum;	/* Message number */
     unsigned int network_id;	/* Network ID */
     unsigned int subnetwork_id;	/* Subnetwork ID */
     time_t time;		/* GPS Epoch Time (TOW) in ms */
@@ -324,7 +329,6 @@ struct rtcm3_t {
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1012;
 	struct {
-	    unsigned int msgnum;	/* Message number */
 	    unsigned int station_id;	/* Reference Station ID */
 	    unsigned short mjd;		/* Modified Julian Day (MJD) Number */
 	    unsigned int sod;		/* Seconds of Day (UTC) */
@@ -338,7 +342,6 @@ struct rtcm3_t {
 	} rtcm3_1013;
 	/* 1014-1017 were added in the 3.1 version */
 	struct {
-	    unsigned int msgnum;	/* Message number */
 	    unsigned int network_id;	/* Network ID */
 	    unsigned int subnetwork_id;	/* Subnetwork ID */
 	    unsigned char stationcount;	/* # auxiliary stations transmitted */
@@ -358,8 +361,8 @@ struct rtcm3_t {
 	    struct rtcm3_network_rtk_header	header;
 	    struct rtcm3_correction_diff corrections[RTCM3_MAX_SATELLITES];
 	} rtcm3_1017;
+	/* 1018-1029 were in the 3.0 version */
 	struct {
-	    unsigned int msgnum;	/* Message number */
 	    unsigned int ident;		/* Satellite ID */
 	    unsigned int week;		/* GPS Week Number */
 	    unsigned char sv_accuracy;	/* GPS SV ACCURACY */
@@ -393,7 +396,6 @@ struct rtcm3_t {
 	    bool fit_interval;
 	} rtcm3_1019;
 	struct {
-	    unsigned int msgnum;	/* Message number */
 	    unsigned int ident;		/* Satellite ID */
 	    unsigned short channel;	/* Satellite Frequency Channel Number */
 	    /* ephemeris fields, not scaled */
@@ -432,7 +434,6 @@ struct rtcm3_t {
 	    bool M_l_sub_n;
 	} rtcm3_1020;
 	struct {
-	    unsigned int msgnum;	/* Message number */
 	    unsigned int station_id;	/* Reference Station ID */
 	    unsigned short mjd;		/* Modified Julian Day (MJD) Number */
 	    unsigned int sod;		/* Seconds of Day (UTC) */
@@ -444,6 +445,122 @@ struct rtcm3_t {
 };
 
 typedef /*@unsignedintegraltype@*/ unsigned int gps_mask_t;
+
+struct ais_t
+{
+    uint	id;		/* message type */
+    uint    	ri;		/* Repeat indicator */
+    uint	mmsi;	/* MMSI */		
+    union {
+	/* Types 1-3 Common navigation info */
+	struct {
+            uint status;		/* navigation status */
+	    signed rot;			/* rate of turn */
+#define AIS_ROT_HARD_LEFT	-127
+#define AIS_ROT_HARD_RIGHT	127
+#define AIS_ROT_NOT_AVAILABLE	128
+	    uint sog;			/* speed over ground in deciknots */
+#define AIS_SOG_NOT_AVAILABLE	1023
+#define AIS_SOG_FAST_MOVER	1022	/* >= 102.2 knots */
+	    bool accuracy;		/* position accuracy */
+#define AIS_LATLON_SCALE	600000.0
+	    int longitude;		/* longitude */
+#define AIS_LON_NOT_AVAILABLE	0x6791AC0
+	    int latitude;		/* latitude */
+#define AIS_LAT_NOT_AVAILABLE	0x3412140
+	    uint cog;			/* course over ground */
+#define AIS_COG_NOT_AVAILABLE	3600
+	    uint heading;		/* true heading */
+#define AIS_NO_HEADING	511
+	    uint utc_second;		/* seconds of UTC timestamp */
+#define AIS_SEC_NOT_AVAILABLE	60
+#define AIS_SEC_MANUAL		61
+#define AIS_SEC_ESTIMATED	62
+#define AIS_SEC_INOPERATIVE	63
+	    uint maneuver;		/* maneuver indicator */
+	    uint spare;			/* spare bits */
+	    bool raim;			/* RAIM flag */
+	    uint radio;			/* radio status bits */
+	} type123;
+	/* Type 4 - Base Station Report */
+	struct {
+	    uint year;			/* UTC year */
+#define AIS_YEAR_NOT_AVAILABLE	0
+	    uint month;			/* UTC month */
+#define AIS_MONTH_NOT_AVAILABLE	0
+	    uint day;			/* UTC day */
+#define AIS_DAY_NOT_AVAILABLE	0
+	    uint hour;			/* UTC hour */
+#define AIS_HOUR_NOT_AVAILABLE	0
+	    uint minute;		/* UTC minute */
+#define AIS_MINUTE_NOT_AVAILABLE	0
+	    uint second;		/* UTC second */
+#define AIS_SECOND_NOT_AVAILABLE	0
+	    bool accuracy;		/* fix quality */
+	    int longitude;		/* longitude */
+	    int latitude;		/* latitude */
+	    uint epfd;			/* type of position fix device */
+	    uint spare;			/* spare bits */
+	    bool raim;			/* RAIM flag */
+	    uint radio;			/* radio status bits */
+	} type4;
+	/* Type 5 - Ship static and voyage related data */
+	struct {
+	    uint ais_version;		/* AIS version level */
+	    uint imo_id;		/* IMO identification */
+	    char callsign[8];		/* callsign */ 
+	    char vessel_name[21];	/* vessel name */
+	    uint ship_type;		/* ship type code */
+	    uint to_bow;		/* dimension to bow */
+	    uint to_stern;		/* dimension to stern */
+	    uint to_port;		/* dimension to port */
+	    uint to_starboard;		/* dimension to starboard */
+	    uint epfd;			/* type of position fix deviuce */
+	    uint month;			/* UTC month */
+	    uint day;			/* UTC day */
+	    uint hour;			/* UTC hour */
+	    uint minute;		/* UTC minute */
+	    uint draught;		/* draft in meters */
+	    char destination[21];	/* ship destination */
+	    uint dte;			/* data terminal enable */
+	    uint spare;			/* spare bits */
+	} type5;
+	/* Type 9 - Standard SAR Aircraft Position Report */
+	struct {
+	    uint altitude;		/* altitude in meters */
+#define AIS_ALT_NOT_AVAILABLE	4095
+#define AIS_ALT_FAST_MOVER	4094	/* 4094 meters or higher */
+	    uint sog;			/* speed over ground in deciknots */
+	    bool accuracy;		/* position accuracy */
+	    int longitude;		/* longitude */
+	    int latitude;		/* latitude */
+	    uint cog;			/* course over ground */
+	    uint utc_second;		/* seconds of UTC timestamp */
+	    uint regional;		/* regional reserved */
+	    uint dte;			/* data terminal enable */
+	    uint spare;			/* spare bits */
+	    bool assigned;		/* assigned-mode flag */
+	    bool raim;			/* RAIM flag */
+	    uint radio;			/* radio status bits */
+	} type9;
+	/* Type 18 -  */
+	struct {
+	    uint reserved;		/* altitude in meters */
+	    uint sog;			/* speed over ground in deciknots */
+	    bool accuracy;		/* position accuracy */
+	    int longitude;		/* longitude */
+	    int latitude;		/* latitude */
+	    uint cog;			/* course over ground */
+	    uint heading;		/* true heading */
+	    uint utc_second;		/* seconds of UTC timestamp */
+	    uint regional;		/* regional reserved */
+	    uint spare;			/* spare bits */
+	    bool assigned;		/* assigned-mode flag */
+	    bool raim;			/* RAIM flag */
+	    uint radio;			/* radio status bits */
+	} type18;
+    };
+};
 
 struct gps_data_t {
     gps_mask_t set;	/* has field been set since this was last cleared? */
@@ -516,43 +633,6 @@ struct gps_data_t {
     int azimuth[MAXCHANNELS];	/* azimuth */
     int ss[MAXCHANNELS];	/* signal-to-noise ratio (dB) */
 
-#if 0	/* not yet used or filled in */
-    /* measurement data */
-    double pseudorange[MAXCHANNELS];	/* meters */
-    double deltarange[MAXCHANNELS];	/* meters/sec */
-    double doppler[MAXCHANNELS];	/* Hz */
-    unsigned satstat[MAXCHANNELS];	/* tracking status */
-#define SAT_ACQUIRED	0x01		/* satellite acquired */
-#define SAT_CODE_TRACK	0x02		/* code-tracking loop acquired */
-#define SAT_CARR_TRACK	0x04		/* carrier-tracking loop acquired */
-#define SAT_DATA_SYNC	0x08		/* data-bit synchronization done */
-#define SAT_FRAME_SYNC	0x10		/* frame synchronization done */
-#define SAT_EPHEMERIS	0x20		/* ephemeris collected */
-#define SAT_FIX_USED	0x40		/* used for position fix */
-#endif
-
-#if defined(TNT_ENABLE) || defined(OCEANSERVER_ENABLE)
-    /* compass status -- TrueNorth (and any similar) devices only */
-    char headingStatus;
-    char pitchStatus;
-    char rollStatus;
-    double horzField;   /* Magnitude of horizontal magnetic field */
-#endif
-
-#ifdef OCEANSERVER_ENABLE
-    double magnetic_length; /* unitvector sqrt(x^2 + y^2 +z^2) */
-    double magnetic_field_x;
-    double magnetic_field_y;
-    double magnetic_field_z;
-    double acceleration_length; /* unitvector sqrt(x^2 + y^2 +z^2) */
-    double acceleration_field_x;
-    double acceleration_field_y;
-    double acceleration_field_z;
-    double gyro_output_x;
-    double gyro_output_y;
-    double temperature;
-#endif
-
     /* where and what gpsd thinks the device is */
     char	gps_device[PATH_MAX];	/* only valid if non-null. */
     char	*gps_id;	/* only valid if non-null. */
@@ -579,12 +659,56 @@ struct gps_data_t {
     double emit_time;		/* emission time (-> E2) */
     double c_recv_time;		/* client receipt time (-> T2) */
     double c_decode_time;	/* client end-of-decode time (-> D2) */
+
+    /* reporting cycle time and minimum */
     double cycle, mincycle;	/* refresh cycle time in seconds */
 
     /* these members are private */
     int gps_fd;			/* socket or file descriptor to GPS */
     void (*raw_hook)(struct gps_data_t *, char *, size_t len, int level);/* Raw-mode hook for GPS data. */
     void (*thread_hook)(struct gps_data_t *, char *, size_t len, int level);/* Thread-callback hook for GPS data. */
+
+    /*
+     * Do not put any configuration-symbol-dependent members
+     * above this point, as we need things to be at stable
+     * offsets.
+     */
+#ifdef OCEANSERVER_ENABLE
+    double magnetic_length; /* unitvector sqrt(x^2 + y^2 +z^2) */
+    double magnetic_field_x;
+    double magnetic_field_y;
+    double magnetic_field_z;
+    double acceleration_length; /* unitvector sqrt(x^2 + y^2 +z^2) */
+    double acceleration_field_x;
+    double acceleration_field_y;
+    double acceleration_field_z;
+    double gyro_output_x;
+    double gyro_output_y;
+    double temperature;
+#endif
+
+#if defined(TNT_ENABLE) || defined(OCEANSERVER_ENABLE)
+    /* compass status -- TrueNorth (and any similar) devices only */
+    char headingStatus;
+    char pitchStatus;
+    char rollStatus;
+    double horzField;   /* Magnitude of horizontal magnetic field */
+#endif
+
+#if 0	/* not yet used or filled in */
+    /* measurement data */
+    double pseudorange[MAXCHANNELS];	/* meters */
+    double deltarange[MAXCHANNELS];	/* meters/sec */
+    double doppler[MAXCHANNELS];	/* Hz */
+    unsigned satstat[MAXCHANNELS];	/* tracking status */
+#define SAT_ACQUIRED	0x01		/* satellite acquired */
+#define SAT_CODE_TRACK	0x02		/* code-tracking loop acquired */
+#define SAT_CARR_TRACK	0x04		/* carrier-tracking loop acquired */
+#define SAT_DATA_SYNC	0x08		/* data-bit synchronization done */
+#define SAT_FRAME_SYNC	0x10		/* frame synchronization done */
+#define SAT_EPHEMERIS	0x20		/* ephemeris collected */
+#define SAT_FIX_USED	0x40		/* used for position fix */
+#endif
 };
 
 extern /*@null@*/ struct gps_data_t *gps_open(const char *host, const char *port);
@@ -594,11 +718,6 @@ int gps_poll(struct gps_data_t *gpsdata);
 void gps_set_raw_hook(struct gps_data_t *gpsdata, void (*hook)(struct gps_data_t *sentence, char *buf, size_t len, int level));
 int gps_set_callback(struct gps_data_t *gpsdata, void (*callback)(struct gps_data_t *sentence, char *buf, size_t len, int level), pthread_t *handler);
 int gps_del_callback(struct gps_data_t *gpsdata, pthread_t *handler);
-
-enum unit {unspecified, imperial, nautical, metric};
-enum unit gpsd_units(void);
-enum deg_str_type { deg_dd, deg_ddmm, deg_ddmmss };
-extern /*@observer@*/ char *deg_to_str( enum deg_str_type type,  double f);
 
 extern void gps_clear_fix(/*@ out @*/struct gps_fix_t *);
 extern void gps_merge_fix(/*@ out @*/struct gps_fix_t *, 

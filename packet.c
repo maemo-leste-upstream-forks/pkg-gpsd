@@ -1,4 +1,4 @@
-/* $Id: packet.c 5097 2009-01-29 17:32:11Z esr $ */
+/* $Id: packet.c 5468 2009-03-15 06:38:17Z esr $ */
 /****************************************************************************
 
 NAME:
@@ -30,6 +30,9 @@ others apart and distinguish them from baud barf.
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <netinet/in.h>	/* for htons() */
+#include <arpa/inet.h>	/* for htons() */
+
 #include "gpsd_config.h"
 #include "bits.h"
 #include "gpsd.h"
@@ -492,7 +495,7 @@ static void nextstate(struct gps_packet_t *lexer,
 	    lexer->state = GROUND_STATE;
 	break;
     case SUPERSTAR2_ID2:
-	lexer->length = c + 4;
+	lexer->length = (size_t)c + 4;
 	if (lexer->length <= MAX_PACKET_LENGTH)
 	    lexer->state = SUPERSTAR2_PAYLOAD;
 	else
@@ -958,10 +961,17 @@ void packet_parse(struct gps_packet_t *lexer)
 		checksum_ok = (csum[0]==toupper(trailer[1])
 				&& csum[1]==toupper(trailer[2]));
 	    }
-	    if (checksum_ok)
-		packet_accept(lexer, NMEA_PACKET);
-	    else
+	    if (checksum_ok) {
+#ifdef AIVDM_ENABLE
+		if (strncmp((char *)lexer->inbuffer, "!AIVDM", 6) == 0)
+		    packet_accept(lexer, AIVDM_PACKET);
+		else
+#endif /* AIVDM_ENABLE */
+		    packet_accept(lexer, NMEA_PACKET);
+	    } else {
+		gpsd_report(LOG_WARN, "bad checksum in NMEA packet.\n");
 		lexer->state = GROUND_STATE;
+	    }
 	    packet_discard(lexer);
 	    break;
 	}
@@ -984,12 +994,12 @@ void packet_parse(struct gps_packet_t *lexer)
 #endif /* SIRF_ENABLE */
 #ifdef SUPERSTAR2_ENABLE
 	else if (lexer->state == SUPERSTAR2_RECOGNIZED) {
-	    unsigned short a = 0, b, n;
-	    lexer->length = 4 + lexer->inbuffer[3] + 2;
+	    uint16_t a = 0, b, n;
+	    lexer->length = 4 + (size_t) lexer->inbuffer[3] + 2;
 	    for(n = 0; n < lexer->length - 2; n++)
-		a += lexer->inbuffer[n];
+		a += (uint16_t)lexer->inbuffer[n];
 	    a = htons(a);
-	    b = getbeuw(lexer->inbuffer, lexer->length - 2);
+	    b = (uint16_t)getbeuw(lexer->inbuffer, lexer->length - 2);
 	    gpsd_report(LOG_IO, "SuperStarII pkt dump: type %u len %u: %s\n",
 			lexer->inbuffer[1], (unsigned int)lexer->length,
 			gpsd_hexdump_wrapper(lexer->inbuffer, lexer->length, LOG_RAW));

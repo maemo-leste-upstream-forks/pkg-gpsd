@@ -1,4 +1,4 @@
-/* $Id: serial.c 5134 2009-02-09 23:19:32Z esr $ */
+/* $Id: serial.c 5306 2009-03-02 11:50:56Z esr $ */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -106,9 +106,15 @@ void gpsd_set_speed(struct gps_device_t *session,
 
     if (rate!=cfgetispeed(&session->ttyset) || (unsigned int)parity!=session->gpsdata.parity || stopbits!=session->gpsdata.stopbits) {
 
+	/* 
+	 * Don't mess with this conditional! Speed zero is supposed to mean
+	 * to leave the port speed at whatever it currently is.
+	 */
 	/*@ignore@*/
-	(void)cfsetispeed(&session->ttyset, rate);
-	(void)cfsetospeed(&session->ttyset, rate);
+	if (rate != B0) {
+	    (void)cfsetispeed(&session->ttyset, rate);
+	    (void)cfsetospeed(&session->ttyset, rate);
+	}
 	/*@end@*/
 	session->ttyset.c_iflag &=~ (PARMRK | INPCK);
 	session->ttyset.c_cflag &=~ (CSIZE | CSTOPB | PARENB | PARODD);
@@ -116,10 +122,12 @@ void gpsd_set_speed(struct gps_device_t *session,
 	switch (parity)
 	{
 	case 'E':
+	case (char)2:
 	    session->ttyset.c_iflag |= INPCK;
 	    session->ttyset.c_cflag |= PARENB;
 	    break;
 	case 'O':
+	case (char)1:
 	    session->ttyset.c_iflag |= INPCK;
 	    session->ttyset.c_cflag |= PARENB | PARODD;
 	    break;
@@ -180,7 +188,8 @@ void gpsd_set_speed(struct gps_device_t *session,
 	(void)usleep(200000);
 	(void)tcflush(session->gpsdata.gps_fd, TCIOFLUSH);
     }
-    gpsd_report(LOG_INF, "speed %d, %d%c%d\n", speed, 9-stopbits, parity, stopbits);
+    gpsd_report(LOG_INF, "speed %d, %d%c%d\n", 
+		gpsd_get_speed(&session->ttyset), 9-stopbits, parity, stopbits);
 
     session->gpsdata.baudrate = (unsigned int)speed;
     session->gpsdata.parity = (unsigned int)parity;
@@ -193,7 +202,7 @@ void gpsd_set_speed(struct gps_device_t *session,
 	 * in hopes it will respond.
 	 */
 	if (isatty(session->gpsdata.gps_fd)!=0 && !session->context->readonly) {
-	    struct gps_type_t **dp;
+	    const struct gps_type_t **dp;
 	    if (session->device_type == NULL) {
 		for (dp = gpsd_drivers; *dp; dp++)
 		    if ((*dp)->probe_wakeup != NULL)

@@ -1,29 +1,58 @@
 .\"     Title: gps
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 12/30/2008
+.\"      Date: 03/18/2009
 .\"    Manual: 9 Aug 2004
 .\"    Source: 9 Aug 2004
 .\"
-.TH "GPS" "1" "12/30/2008" "9 Aug 2004" "9 Aug 2004"
+.TH "GPS" "1" "03/18/2009" "9 Aug 2004" "9 Aug 2004"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
 .SH "NAME"
-gps, xgps, xgpsspeed, cgps, cgpxlogger \- test clients for gpsd
+gps, xgps, xgpsspeed, cgps, lcdgps, cgpxlogger \- test clients for gpsd
 .SH "SYNOPSIS"
 .HP 5
-\fBxgps\fR [\fIX\-options\fR] [\-h] [\-j] [\-V] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\-altunits\ {[feet]\ |\ [meters]}] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-s\ \fIsmoothing\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBxgps\fR [\fIX\-options\fR] [\-h] [\-V] [\-j] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\-altunits\ {[feet]\ |\ [meters]}] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP 10
 \fBxgpsspeed\fR [\-rv] [\fIX\-options\fR] [\-h] [\-V] [\-nc\ \fIX\-color\fR] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP 5
-\fBcgps\fR [\-h] [\-j] [\-V] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\-altunits\ {[feet]\ |\ [meters]}] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-m] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBcgps\fR [\-h] [\-V] [\-j] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\-altunits\ {[feet]\ |\ [meters]}] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-m] [\-s] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.HP 7
+\fBlcdgps\fR [\-h] [\-V] [\-j] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP 10
-\fBgpxlogger\fR [\fIlogfile\fR]
-.HP 11
-\fBcgpxlogger\fR [\-s\ \fIgpsd\-server\fR] [\-p\ \fIgpsd\-port\fR] [\-i\ \fIpoll\-interval\fR] [\-h]
+\fBgpxlogger\fR
+.HP 10
+\fBgpxlogger\fR [\-h] [\-V] [\-j] [\-i\ \fItrack\ timeout\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .SH "DESCRIPTION"
+.PP
+These are the demonstration clients shipped with
+gpsd\&. They have some common options:
+.PP
+The
+\fB\-h\fR
+option causes each client to emit a summary of its options and then exit\&.
+.PP
+The
+\fB\-V\fR
+option causes each client to dump the package version and exit\&.
+.PP
+The
+\fB\-j\fR
+option, where present, tells the daemon to hold fix data across cycles, eliminating jitter from NMEA devices that emit several partial reports\&. The downside is that with this switch on the client will occasionally report stale or invalid data held over from a previous cycle\&. This option is ineffective, and not needed, on SiRFs and most other non\-NMEA GPSes\&. See also the discussion of the J command in
+\fBgpsd\fR(8)\&.
+.PP
+The
+\fB\-l\fR
+option, when present, sets the format of latitude and longitude reports\&. The value \'d\' produces decimal degrees and is the default\&. The value \'m\' produces degrees and decimal minutes\&. The value \'s\' produces degrees, minutes, and decimal seconds\&.
+.PP
+An optional argument to any client may specify a server to get data from; a colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a device name to be handed to the daemon in an F= command (or equivalent)\&.
+.PP
+Not all clients shipped with GPSD are documented here\&. See also the separate manual pages for
+\fBgpspipe\fR(1)
+and
+\fBgpsmon\fR(1)\&.
 .SS "xgps"
 .PP
 xgps
@@ -33,12 +62,6 @@ with an X interface\&. It displays current GPS position/time/velocity informatio
 .PP
 In the sky view, satellites are color\-coded to indicate quality of signal; consult the data display to the left for exact figures in dB\&. Diamond icons indicate WAAS/EGNOS satellites, circles indicate ordinary GPS satellites\&. Filled icons were used in the last fix, outline icons were not\&.
 .PP
-xgps
-accepts an \-h option as for
-gpsd, or a \-V option to dump the package version and exit\&.
-.PP
-An optional argument may specify a server to get data from; a colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a device name to be handed to the daemon in an F= command\&.
-.PP
 The
 \fB\-speedunits\fR
 option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&. This option can also be set as the X resource \'speedunits\'\&.
@@ -46,14 +69,6 @@ option can be used to set the speed units for display; follow the keyword with k
 The
 \fB\-altunits\fR
 option can be used to set the altitude units for display; follow the keyword with \'meters\' or \'feet\'\&. The default is feet\&. This option can also be set as the X resource \'altunits\'\&.
-.PP
-The
-\fB\-j\fR
-option tells the daemon to hold fix data across cycles, eliminating jitter from NMEA devices that emit several partial reports\&. The downside is that with this switch on the client will occasionally report stale or invalid data held over from a previous cycle\&. This option is ineffective, and not needed, on SiRFs and most other non\-NMEA GPSes\&.
-.PP
-The
-\fB\-l\fR
-option sets the format of latitude and longitude reports\&. The value \'d\' produces decimal degrees and is the default\&. The value \'m\' produces degrees and decimal minutes\&. The value \'s\' produces degrees, minutes, and decimal seconds\&.
 .PP
 There is a known bug in
 xgps; it assumes the default font size is no more than 18 pixels\&. If this is not the case, the satellite data display will show fewer than 12 satellites\&.
@@ -74,11 +89,7 @@ The
 \fB\-s\fR
 option prevents
 cgps
-from printing the raw data\&. This display can also be toggled with the s command\&.
-.PP
-The
-\fB\-j\fR
-option is as described for xgps above\&.
+from displaying the raw data\&. This display can also be toggled with the s command\&.
 .PP
 The
 \fB\-m\fR
@@ -109,42 +120,37 @@ looks at variables in its environment\&. Here are the variables and values it ch
 .PP
 cgps
 terminates when you send it a SIGHUP or SIGINT; given default terminal settings this will happen when you type Ctl\-C at it\&. It will also terminate on \'q\'
+.SS "lcdgps"
 .PP
-The \'j\' command toggles whether or not fix data is cleared at start of cycle; see the description of the
-\fB\-j\fR
-of xgps (above) and
-\fBgpsd\fR(8)
-for discussion\&.
-.SS "cgpxlogger"
+A client that passes
+gpsd
+data to
+lcdproc, turning your car computer into a very expensive and nearly feature\-free GPS receiver\&. Currently assumes a 4x40 LCD and writes data formatted to fit that size screen\&. Also displays 4\- or 6\-character Maidenhead grid square output\&.
 .PP
-This program connects to gpsd, polls for location, and logs each fix to standard output in GPX (XML) format\&.
-.PP
-The
-\fB\-s\fR
-and
-\fB\-p\fR
-options can be used to specify a server and port to query\&.
-.PP
-The
-\fB\-i\fR
-option sets the poll interval at which the logger will collect samples\&.
-.PP
-The
-\fB\-j\fR
-option is as described for xgps above\&.
-.PP
-The
-\fB\-h\fR
-option causes the program to emit a summary of its options and then exit\&.
-.PP
-The program also writes start and end messages to syslog\&.
+Options are as for
+cgps, except: The
+\fB\-u\fR
+sets the display format the units used for altitude and speed\&. The options are:
+\(lqi\(rq
+for Imperial units (feet/miles\-per\-hour);
+\(lqn\(rq
+for nautical (feet/knots); \'m\' for metric (meters/kilometers\-per\-hour)\&.
 .SS "gpxlogger"
 .PP
-This program listens to DBUS broadcasts from gpsd (org\&.gpsd\&.fix) and logs each fix to standard output as they arrive in an XML format\&.
+This program collects fixes from
+gpsd
+and logs them to standard output in GPX, an XML profile for track logging\&.
 .PP
-The output may be composed of multiple tracks\&. A new track is created if there\'s no fix for 5 seconds\&.
+The output may be composed of multiple tracks\&. A new track is created if there\'s no fix for an interval specified by the
+\fB\-i\fR
+and defaulting to 5 seconds\&.
 .PP
-The program also writes start and end messages to syslog\&.
+If D\-Bus support is available on the host and GPSD is configured to use it, this program listens to DBUS broadcasts from
+gpsd\&. (org\&.gpsd\&.fix)\&. Otherwise, it uses a conventional socket connection\&.
+.PP
+The
+\fB\-j\fR
+option is only meaningful in socket mode and when collecting fixes from an NMEA device\&. Presence of a server\-port\-device specification forces use of sockets even on a D\-Bus capable system, though this is unlikely to be of interest to anyone except GPSD developers\&.
 .SH "SEE ALSO"
 .PP
 
@@ -155,10 +161,12 @@ The program also writes start and end messages to syslog\&.
 \fBgpsctl\fR(1),
 \fBgpscat\fR(1),
 \fBgpsprof\fR(1)\&.
+\fBgpspipe\fR(1)\&.
+\fBgpsmon\fR(1)\&.
 .SH "AUTHORS"
 .PP
-Remco Treffcorn, Derrick Brashear, Russ Nelson & Eric S\&. Raymond(xgps)\&. Jeff Francis (cgps)\&. Amaury Jacquot
-<sxpert@esitcom\&.org>
+Remco Treffcorn, Derrick Brashear, Russ Nelson & Eric S\&. Raymond, Jeff Francis (cgps)\&. Amaury Jacquot
+<sxpert@sxpert\&.org>
 & Petter Reinholdtsen
 <pere@hungry\&.com>
 (gpxlogger)\&. Chris Kuethe

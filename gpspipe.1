@@ -1,11 +1,11 @@
 .\"     Title: gpspipe
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 12/30/2008
+.\"      Date: 03/14/2009
 .\"    Manual: 03 Aug 2005
 .\"    Source: 03 Aug 2005
 .\"
-.TH "GPSPIPE" "1" "12/30/2008" "03 Aug 2005" "03 Aug 2005"
+.TH "GPSPIPE" "1" "03/14/2009" "03 Aug 2005" "03 Aug 2005"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -58,7 +58,7 @@ to sleep for ten seconds before attempting to connect to gpsd\&. This is very us
 .PP
 \-R causes super\-raw (gps binary) data to be output\&. This overrides NMEA and gpsd output modes\&.
 .PP
-\-s option causes the collected data to be written to the specified serial device with setttings 4800 8N1\&. Thus
+\-s option causes the collected data to be written to the specified serial device with settings 4800 8N1\&. Thus
 gpspipe
 can be used with \-s and \-r options to emulate a serial port hardwired to a GPS that
 gpsd
@@ -92,6 +92,18 @@ When
 gpsd is running
 \fBgpspipe \-r \-n 100\fR
 will send one hundred raw NMEA sentences to standard output, then exit\&.
+.SH "SEE ALSO"
+.PP
+
+\fBgpsd\fR(8),
+\fBgps\fR(1),
+\fBlibgps\fR(3),
+\fBlibgpsd\fR(3),
+\fBgpsprof\fR(1),
+\fBgpsfake\fR(1),
+\fBgpsctl\fR(1),
+\fBgpscat\fR(1)\&.
+\fBgpsmon\fR(1)\&.
 .SH "AUTHOR"
 .PP
 Gary E\&. Miller
