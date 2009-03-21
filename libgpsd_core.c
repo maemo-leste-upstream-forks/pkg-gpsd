@@ -1,4 +1,4 @@
-/* $Id: libgpsd_core.c 5134 2009-02-09 23:19:32Z esr $ */
+/* $Id: libgpsd_core.c 5498 2009-03-18 17:37:53Z esr $ */
 /* libgpsd_core.c -- direct access to GPSes on serial or USB devices. */
 #include <sys/time.h>
 #include <sys/ioctl.h>
@@ -27,7 +27,7 @@
 
 int gpsd_switch_driver(struct gps_device_t *session, char* type_name)
 {
-    struct gps_type_t **dp;
+    const struct gps_type_t **dp;
 
     gpsd_report(LOG_PROG, "switch_driver(%s) called...\n", type_name);
     if (session->device_type != NULL &&
@@ -47,6 +47,7 @@ int gpsd_switch_driver(struct gps_device_t *session, char* type_name)
 	    gpsd_report(LOG_PROG, "selecting %s driver...\n", (*dp)->type_name);
 	    gpsd_assert_sync(session);
 	    /*@i@*/session->device_type = *dp;
+	    session->gpsdata.mincycle = session->device_type->min_cycle;
 	    if (!session->context->readonly && session->device_type->probe_subtype != NULL)
 		session->device_type->probe_subtype(session, session->packet.counter = 0);
 #ifdef ALLOW_RECONFIGURE
@@ -68,7 +69,8 @@ void gpsd_init(struct gps_device_t *session, struct gps_context_t *context, char
 /* initialize GPS polling */
 {
     /*@ -mayaliasunique @*/
-    (void)strlcpy(session->gpsdata.gps_device, device, PATH_MAX);
+    if (device != NULL)
+	(void)strlcpy(session->gpsdata.gps_device, device, PATH_MAX);
     /*@ -mustfreeonly @*/
     session->device_type = NULL;	/* start by hunting packets */
     session->rtcmtime = 0;
@@ -86,6 +88,7 @@ void gpsd_init(struct gps_device_t *session, struct gps_context_t *context, char
     session->gpsdata.gdop = NAN;
     session->gpsdata.epe = NAN;
     session->mag_var = NAN;
+    session->gpsdata.cycle = session->gpsdata.mincycle = 1; 
 
     /* tty-level initialization */
     gpsd_tty_init(session);
@@ -107,6 +110,7 @@ void gpsd_deactivate(struct gps_device_t *session)
     (void)ntpshm_free(session->context, session->shmTimeP);
     session->shmTimeP = -1;
 # endif /* PPS_ENABLE */
+#endif /* NTPSHM_ENABLE */
 #ifdef ALLOW_RECONFIGURE
     if (session->enable_reconfigure
 	&& session->device_type != NULL
@@ -114,14 +118,13 @@ void gpsd_deactivate(struct gps_device_t *session)
 	session->device_type->revert(session);
 	session->enable_reconfigure = false;
     }
-#endif /* ALLOW_RECONFIGURE */
     if (session->device_type!=NULL) {
 	if (session->back_to_nmea && session->device_type->mode_switcher!=NULL)
 	    session->device_type->mode_switcher(session, 0);
 	if (session->device_type->wrapup!=NULL)
 	    session->device_type->wrapup(session);
     }
-#endif /* NTPSHM_ENABLE */
+#endif /* ALLOW_RECONFIGURE */
     gpsd_report(LOG_INF, "closing GPS=%s (%d)\n",
 		session->gpsdata.gps_device, session->gpsdata.gps_fd);
     (void)gpsd_close(session);
@@ -247,7 +250,7 @@ int gpsd_activate(struct gps_device_t *session, bool reconfigurable)
 	return -1;
     else {
 #ifdef NON_NMEA_ENABLE
-	struct gps_type_t **dp;
+	const struct gps_type_t **dp;
 
 	/*@ -mustfreeonly @*/
 	for (dp = gpsd_drivers; *dp; dp++) {
@@ -691,77 +694,20 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 	if (session->packet.outbuflen>0 && !session->context->readonly && session->device_type->probe_subtype!=NULL)
 	    session->device_type->probe_subtype(session, ++session->packet.counter);
     } else {
+	const struct gps_type_t **dp;
+
 	newlen = generic_get(session);
 	session->gpsdata.d_xmit_time = timestamp();
 	gpsd_report(LOG_RAW,
 		    "packet sniff on %s finds type %d\n",
 		    session->gpsdata.gps_device,
 		    session->packet.type);
-	if (session->packet.type > COMMENT_PACKET) {
-	    switch (session->packet.type) {
-	    case COMMENT_PACKET:
-		break;
-#ifdef SIRF_ENABLE
-	    case SIRF_PACKET:
-		(void)gpsd_switch_driver(session, "SiRF binary");
-		break;
-#endif /* SIRF_ENABLE */
-#ifdef SUPERSTAR2_ENABLE
-	    case SUPERSTAR2_PACKET:
-		(void)gpsd_switch_driver(session, "SuperStarII binary");
-		break;
-#endif /* SUPERSTAR2_ENABLE */
-#ifdef TSIP_ENABLE
-	    case TSIP_PACKET:
-		(void)gpsd_switch_driver(session, "Trimble TSIP");
-		break;
-#endif /* TSIP_ENABLE */
-#ifdef GARMIN_ENABLE
-	    case GARMIN_PACKET:
-		(void)gpsd_switch_driver(session, "Garmin Serial binary");
-		break;
-#endif /* GARMIN_ENABLE */
-#ifdef NMEA_ENABLE
-	    case NMEA_PACKET:
-		(void)gpsd_switch_driver(session, "Generic NMEA");
-		break;
-#endif /* NMEA_ENABLE */
-#ifdef ZODIAC_ENABLE
-	    case ZODIAC_PACKET:
-		(void)gpsd_switch_driver(session, "Zodiac binary");
-		break;
-#endif /* ZODIAC_ENABLE */
-#ifdef UBX_ENABLE
-	    case UBX_PACKET:
-		(void)gpsd_switch_driver(session, "uBlox UBX binary");
-		break;
-#endif /* UBX_ENABLE */
-#ifdef NAVCOM_ENABLE
-	    case NAVCOM_PACKET:
-		(void)gpsd_switch_driver(session, "Navcom binary");
-		break;
-#endif /* NAVCOM_ENABLE */
-#ifdef EVERMORE_ENABLE
-	    case EVERMORE_PACKET:
-		(void)gpsd_switch_driver(session, "EverMore binary");
-		break;
-#endif /* EVERMORE_ENABLE */
-#ifdef ITRAX_ENABLE
-	    case ITALK_PACKET:
-		(void)gpsd_switch_driver(session, "iTalk binary");
-		break;
-#endif /* ITRAX_ENABLE */
-#ifdef RTCM104V2_ENABLE
-	    case RTCM2_PACKET:
-		(void)gpsd_switch_driver(session, "RTCM104V2");
-		break;
-#endif /* RTCM104V2_ENABLE */
-#ifdef RTCM104V3_ENABLE
-	    case RTCM3_PACKET:
-		(void)gpsd_switch_driver(session, "RTCM104V3");
-		break;
-#endif /* RTCM104V2_ENABLE */
-	    }
+	if (session->packet.type >= COMMENT_PACKET) {
+	    for (dp = gpsd_drivers; *dp; dp++)
+		if (session->packet.type == (*dp)->packet_type) {
+		    (void)gpsd_switch_driver(session, (*dp)->type_name);
+		    break;
+		}
 	} else if (!gpsd_next_hunt_setting(session))
 	    return ERROR_SET;
     }
@@ -775,7 +721,8 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 	session->gpsdata.online = 0;
 	return 0;
     } else if (newlen == 0) {		/* no new data */
-	if (session->device_type != NULL && timestamp()>session->gpsdata.online+session->device_type->cycle+1){
+	if (session->device_type != NULL && timestamp()>session->gpsdata.online+session->gpsdata.
+cycle+1){
 	gpsd_report(LOG_INF, "GPS on %s is offline (%lf sec since data)\n",
 		    session->gpsdata.gps_device,
 		    timestamp() - session->gpsdata.online);

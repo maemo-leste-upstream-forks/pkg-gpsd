@@ -1,4 +1,4 @@
-# $Id: setup.py 4944 2009-01-08 03:43:56Z esr $
+# $Id: setup.py 5319 2009-03-02 20:20:54Z esr $
 # Creates build/lib.linux-${arch}-${pyvers}/gpspacket.so,
 # where ${arch} is an architecture and ${pyvers} is a Python version.
 
@@ -24,7 +24,7 @@ if not 'clean' in sys.argv:
             created_files.append(f_name)
 
 gpspacket_sources = ["gpspacket.c", "packet.c", "isgps.c",
-            "rtcm2.c", "strl.c", "hex.c", "crc24q.c"]
+            "driver_rtcm2.c", "strl.c", "hex.c", "crc24q.c"]
 
 setup( name="gpsd",
        version="1.0",

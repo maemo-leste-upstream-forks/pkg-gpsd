@@ -1,11 +1,11 @@
 .\"     Title: gpsd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 01/30/2009
+.\"      Date: 03/14/2009
 .\"    Manual: 9 Aug 2004
 .\"    Source: 9 Aug 2004
 .\"
-.TH "GPSD" "8" "01/30/2009" "9 Aug 2004" "9 Aug 2004"
+.TH "GPSD" "8" "03/14/2009" "9 Aug 2004" "9 Aug 2004"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -14,7 +14,7 @@
 gpsd \- interface daemon for GPS receivers
 .SH "SYNOPSIS"
 .HP 5
-\fBgpsd\fR [\-F\ \fIcontrol\-socket\fR] [\-S\ \fIlistener\-port\fR] [\-b] [\-G] [\-n] [\-N] [\-h] [\-P\ \fIpidfile\fR] [\-D\ \fIdebuglevel\fR] [\-V] [[\fIsource\-name\fR]...]
+\fBgpsd\fR [\-F\ \fIcontrol\-socket\fR] [\-S\ \fIlistener\-port\fR] [\-b] [\-l] [\-G] [\-n] [\-N] [\-h] [\-P\ \fIpidfile\fR] [\-D\ \fIdebuglevel\fR] [\-V] [[\fIsource\-name\fR]...]
 .SH "DESCRIPTION"
 .PP
 gpsd
@@ -25,9 +25,15 @@ gpsd
 discovers the correct port speed and protocol for it\&.
 .PP
 gpsd
-should be able to query any GPS that speaks either the standard textual NMEA 0183 protocol, or the (differing) extended NMEA dialects used by MKT\-3301, iTrax, Motorola OnCore, Sony CXD2951, and Ashtech/Thales devices\&. It can also interpret the binary protocols used by EverMore, Garmin, Navcom, Rockwell/Zodiac, SiRF, Trimble, and uBlox ANTARIS devices\&.
+should be able to query any GPS that speaks either the standard textual NMEA 0183 protocol, or the (differing) extended NMEA dialects used by MKT\-3301, iTrax, Motorola OnCore, Sony CXD2951, and Ashtech/Thales devices\&. It can also interpret the binary protocols used by EverMore, Garmin, Navcom, Rockwell/Zodiac, SiRF, Trimble, and uBlox ANTARIS devices\&. It can read heading and attitude information from the Oceanserver 5000 digital compass\&.
+.PP
+The GPS protocols supported by your instance of
 gpsd
-effectively hides the differences among these\&. It also knows about and uses commands that tune these GPSes for lower latency\&. It can read heading and attitude information from the Oceanserver 5000 digital compass\&.
+may differ depending on how it was compiled; general\-purpose versions support many, but it can be built with protocol subsets down to a singleton for use in constrained environments\&. For a list of the GPS protocols supported by your instance, see the output of
+\fBgpsd \-l\fR
+.PP
+gpsd
+effectively hides the differences among the GPS types it supports\&. It also knows about and uses commands that tune these GPSes for lower latency\&.
 .PP
 gpsd
 can use differential\-GPS corrections from a DGPS radio or over the net, from a ground station running a DGPSIP server or a Ntrip broadcaster that reports RTCM\-104 data; this will shrink position errors by roughly a factor of four\&. When
@@ -65,6 +71,15 @@ cannot break the receiver\&. A better solution would be for Bluetooth to not be 
 This flag causes
 gpsd
 to listen on all addresses (INADDR_ANY) rather than just the loopback (INADDR_LOOPBACK) address\&. For the sake of privacy and security, PVT information is now private to the local machine until the user makes an effort to expose this to the world\&. Listening on the loopback by default is a change from previous behaviour\&.
+.RE
+.PP
+\-l
+.RS 4
+List all drivers compiled into this
+gpsd
+instance\&. The letters to the left of each driver name are the
+gpsd
+control commands supported by that driver\&.
 .RE
 .PP
 \-n
@@ -111,11 +126,23 @@ Internally, the daemon maintains a device list holding the pathnames of GPSes kn
 the section called \(lqGPS DEVICE MANAGEMENT\(rq
 for details on this)\&. Daemon startup will abort with an error if neither any devices nor a control socket are specified\&.
 .PP
-At any given time, each client will be listening to only one of the GPSes on the device list\&. By default, a client\'s device is the one that most recently shipped information to the daemon at the time the client first requests GPS information (that is, issues any command other than F, K, W=0 or R=0)\&.
+At any given time, each client will be listening to only one of the GPSes on the device list\&. By default, a client\'s device is the one that most recently shipped information to the daemon at the time the client first requests GPS information\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+Warning
+.PP
+It is planned that the command protocol described below will change radically at API version 4\&. It is a bad idea for applications to speak this protocol directly: rather, they should use the
+libgps
+client library and take appropriate care to conditionalize their code on the major and minor API version symbols\&. See the GPSD project website for more information on the protocol and API change\&.
 .PP
 The request protocol for
 gpsd
 clients is very simple\&. Each request normally consists of a single ASCII character followed by a newline\&. Case of the request character is ignored\&. Each request returns a line of response text ended by a CR/LF\&. Requests and responses are as follows, with %f standing for a decimal float numeral and %d for decimal integer numeral:
+.PP
+Any command other than L, F, K, W=0 or R=0 is considered a request for GPS information and will cause a GPS device to be connected to the client\'s channel\&.
 .PP
 a
 .RS 4
@@ -124,7 +151,17 @@ The current altitude as "A=%f", meters above mean sea level\&.
 .PP
 b
 .RS 4
-The B command with no argument returns four fields giving the parameters of the serial link to the GPS as "B=%d %d %c %d"; baud rate, byte size, parity, (N, O or E for no parity, odd, or even) and stop bits (1 or 2)\&. The command "B=%d" sets the baud rate, not changing parity or stop bits; watch the response, because it is possible for this to fail if the GPS does not support a speed\-switching command\&. In case of failure, the daemon and GPS will continue to communicate at the old speed\&. The B= form is rejected if more than one client is attached to the channel\&.
+The B command with no argument returns four fields giving the parameters of the serial link to the GPS as "B=%d %d %c %d"; baud rate, byte size, parity, (N, O or E for no parity, odd, or even) and stop bits (1 or 2)\&.
+.sp
+The command "B=%d" sets the baud rate, not changing parity or stop bits; The command "B=%d [78] [NOE] [12]" (B followed by whiteapace; followed by a numeric speed; followed by one of the digits 7 or 8; followed by whitespace; followed by one of the letters \'N\', \'O\', or \'E\'; followed by whitespace; followed by one of the digits \'1\' or 2\') sets not only speed but word length, parity, and stop bits\&.
+.sp
+For both forms, watch the response, because it is possible for this to fail if the GPS does not support a speed\-switching command or only supports some combinations of serial modes\&. In case of failure, the daemon and GPS will continue to communicate at the old speed\&. Both forms are rejected if more than one client is attached to the channel\&.
+.sp
+Use this command with caution\&. On USB and Bluetooth GPSes it is also possible for serial mode setting to fail either because the serial adaptor chip does not support non\-8N1 modes or because the device firmware does not properly synchronize the serrial adaptor chip with the UART on the GPS chipset whjen the speed changes\&. These failures can hang your device, possibly requiring a GPS power cycle or (in extreme cases) physically disconnecting the NVRAM backup battery\&.
+.sp
+(Older versions of
+gpsd
+supported changing speed only\&.)
 .RE
 .PP
 c
@@ -133,7 +170,7 @@ C with no following = asks the daemon to return the cycle time of the attached G
 .sp
 If the driver has the capability to change sampling rate the command "C=%f" does so, setting a new cycle time in seconds\&. The "C=" form is rejected if more than one client is attached to the channel\&.
 .sp
-If the driver has the capability to change sampling rate, this command always returns "C=%f %f" giving the current cycle time in seconds and the minimum possible cycle time at the current baud rate\&. If the driver does not have the capability to change sampling rate, this returns, as "C=%f", the cycle time in seconds only\&.
+If the driver has the capability to change sampling rate, this command always returns "C=%f %f" giving the current cycle time in seconds and the minimum possible cycle time\&. If the driver does not have the capability to change sampling rate, this returns, as "C=%f", the cycle time in seconds only\&.
 .sp
 Either number may be fractional, indicating a GPS cycle shorter than a second; however, if >1 the cycle time must be a whole number\&. Also note that relatively few GPSes have the ability to set sub\-second cycle times; consult your hardware protocol description to make sure this works\&.
 .sp
@@ -147,9 +184,9 @@ Returns the UTC time in the ISO 8601 format, "D=yyyy\-mm\-ddThh:nmm:ss\&.ssZ"\&.
 .PP
 e
 .RS 4
-Returns "E=%f %f %f": three estimated position errors in meters \(em total, horizontal, and vertical (95% confidence level)\&. Note: many GPSes do not supply these numbers\&. When the GPS does not supply them,
+Returns "E=? %f %f": estimated position errors in meters \(em horizontal, and vertical (95% confidence level)\&. Note: many GPSes do not supply these numbers\&. When the GPS does not supply them,
 gpsd
-computes them from satellite DOP using fixed figures for expected non\-DGPS and DGPS range errors in meters\&. A value of \'?\' for any of these numbers should be taken to mean that component of DOP is not available\&. See also the \'q\' command\&.
+computes them from satellite DOP using fixed figures for expected non\-DGPS and DGPS range errors in meters\&. A value of \'?\' for either of these numbers should be taken to mean that component of DOP is not available\&. The ? value is a backwards\-compatibility placeholder; some early versions of GPSD returned a total error estimate there\&. See also the \'q\' command\&.
 .RE
 .PP
 f
@@ -199,7 +236,7 @@ gpsd, followed by a space, followed by a space\-separated list of the device nam
 .PP
 l
 .RS 4
-Returns three fields: a protocol revision number, the gpsd version, and a list of accepted request letters\&.
+Returns four fields: the major protocol/API revision number, the minor revision number, the gpsd version, and a list of accepted request letters\&. Note: earlier versions of this command returned only three fields, omitting the minor revision number\&.
 .RE
 .PP
 m

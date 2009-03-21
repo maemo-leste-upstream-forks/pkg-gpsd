@@ -1,9 +1,12 @@
 #!/usr/bin/env python
-# $Id: gps.py 4988 2009-01-12 17:11:54Z esr $
+# $Id: gps.py 5163 2009-02-12 22:08:31Z esr $
 #
 # gps.py -- Python interface to GPSD.
 #
 import time, calendar, math, socket, sys, select
+
+api_major_version =	3	# bumped on incompatible changes
+api_minor_version =	1	# bumped on compatible changes
 
 NaN = float('nan')
 def isnan(x): return str(x) == 'nan'

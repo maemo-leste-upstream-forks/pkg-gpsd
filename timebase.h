@@ -1,4 +1,4 @@
-/* $Id: timebase.h 4834 2008-12-29 18:51:14Z esr $ */
+/* $Id: timebase.h 5502 2009-03-18 21:09:31Z esr $ */
 #ifndef _GPSD_TIMEBASE_H_
 #define _GPSD_TIMEBASE_H_
 
@@ -35,9 +35,9 @@
  */
 #define LEAP_SECONDS	14
 
-/* IERS says the next leap-second will be inserted at the end of 2008.
+/* IERS says no leap second will be inserted in June 2009.
  */
-#define START_SUBFRAME	1230785999	/* 31 Dec 2008 23:59:59 */
+#define START_SUBFRAME	1262321999	/* 31 Dec 2009 23:59:59 */
 
 /*
  * This is used only when an NMEA device issues a two-digit year in a GPRMC

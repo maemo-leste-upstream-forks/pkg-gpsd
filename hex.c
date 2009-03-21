@@ -1,4 +1,4 @@
-/* $Id: hex.c 5107 2009-01-30 09:56:13Z esr $ */
+/* $Id: hex.c 5498 2009-03-18 17:37:53Z esr $ */
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -56,9 +56,10 @@ int gpsd_hexpack(char *src, char *dst, size_t len){
 /* hex2bin source string to destination - destination can be same as source */ 
     int i, k, l;
 
+    /*@ -mustdefine @*/
     l = (int)(strlen(src) / 2);
     if ((l < 1) || ((size_t)l > len))
-	return -1;
+	return -2;
 
     bzero(dst, (int)len);
     for (i = 0; i < l; i++)
@@ -67,6 +68,7 @@ int gpsd_hexpack(char *src, char *dst, size_t len){
 	else
 	    return -1;
     return l;
+    /*@ +mustdefine @*/
 }
 
 /*@ +charint -shiftimplementation @*/

@@ -1,5 +1,5 @@
 # Automake description for gpsd
-# $Id: Makefile.am 5108 2009-01-30 18:30:34Z esr $
+# $Id: Makefile.am 5494 2009-03-18 15:16:41Z esr $
 
 #SUBDIRS = contrib
 
@@ -9,7 +9,7 @@ XMLTO = xmlto
 # Conditionally add programs depending on libraries that may or may not be present.
 #
 if HAVE_NCURSES
-CURSESPROGS = cgps sirfmon
+CURSESPROGS = cgps gpsmon
 endif
 if HAVE_MOTIF
 MOTIF_PROGS = xgps
@@ -20,18 +20,16 @@ endif
 
 if HAVE_DBUS
 INCLUDES = $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) -DDBUS_API_SUBJECT_TO_CHANGE=1
-DBUSPROGS = gpxlogger
-gpxlogger_LDADD = $(DBUS_GLIB_LIBS) libgps.la  -lm
 endif
 
 if HAVE_RTCM104V2
-RTCM104PROGS = rtcmdecode
-RTCM104PAGES = rtcmdecode.1
+RTCM104PROGS = gpsdecode
+RTCM104PAGES = gpsdecode.1
 endif
 
-bin_PROGRAMS = $(DBUSPROGS) $(MOTIF_PROGS) $(XAW_PROGS) $(RTCM104PROGS) $(CURSESPROGS) gpsctl gpspipe gpsflash cgpxlogger gpsdlcdd
+bin_PROGRAMS = $(MOTIF_PROGS) $(XAW_PROGS) $(RTCM104PROGS) $(CURSESPROGS) gpsctl gpspipe gpsflash gpxlogger lcdgps
 sbin_PROGRAMS = gpsd
-check_PROGRAMS = bits_test gpsmm_test packet_test mkgmtime_test geoid_test
+check_PROGRAMS = test_bits test_gpsmm test_packet test_mkgmtime test_geoid
 if HAVE_PYTHON
 dist_bin_SCRIPTS = gpsprof gpsfake gpscat
 python_PYTHON = gps.py gpsfake.py gpscap.py
@@ -42,7 +40,7 @@ endif
 #
 # Build xgps
 #
-xgps_SOURCES = display.c display.h xgps.c
+xgps_SOURCES = xgps.c
 xgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(XM_LIBS) $(XT_LIBS) $(X_LIBS) $(X_PRE_LIBS) libgps.la -lm $(LIBPTHREAD)
 
 #
@@ -65,10 +63,10 @@ cgps_SOURCES = cgps.c
 cgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(NCURSES_LIBS) libgps.la -lm $(LIBPTHREAD)
 
 #
-# Build cgpxlogger
+# Build gpxlogger
 #
-cgpxlogger_SOURCES = cgpxlogger.c
-cgpxlogger_LDADD = $(LIBC) $(LIBNSL) $(LIBSOCKET) libgps.la -lm $(LIBPTHREAD)
+gpxlogger_SOURCES = gpxlogger.c
+gpxlogger_LDADD = $(DBUS_GLIB_LIBS) libgps.la  -lm
 
 #
 # Build gpsd
@@ -90,22 +88,23 @@ gpspipe_SOURCES = gpspipe.c
 gpspipe_LDADD = $(DBUS_LIBS) $(LIBM) libgps.la -lm
 
 #
-# Build gpsdlcdd
+# Build lcdgps
 #
-gpsdlcdd_SOURCES = gpsdlcdd.c
-gpsdlcdd_LDADD = $(LIBM) libgps.la -lm
+lcdgps_SOURCES = lcdgps.c
+lcdgps_LDADD = $(LIBM) libgps.la -lm
 
 #
-# Build sirfmon
+# Build gpsmon
 #
-sirfmon_SOURCES = sirfmon.c
-sirfmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgps.la -lm $(LIBPTHREAD)
+gpsmon_SOURCES = gpsmon.c monitor_nmea.c monitor_sirf.c \
+	monitor_italk.c monitor_ubx.c monitor_superstar2.c
+gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgps.la -lm $(LIBPTHREAD)
 
 #
-# Build rtcmdecode
+# Build gpsdecode
 #
-rtcmdecode_SOURCES = rtcmdecode.c
-rtcmdecode_LDADD = $(LIBM) libgps.la -lm $(LIBPTHREAD)
+gpsdecode_SOURCES = gpsdecode.c
+gpsdecode_LDADD = $(LIBM) libgps.la -lm $(LIBPTHREAD)
 
 #
 # Build gpsflash
@@ -116,51 +115,51 @@ gpsflash_LDADD = $(LIBM) libgps.la -lm
 #
 # Build shared libraries
 #
-libgps_la_LDFLAGS = -version-number 17:0:0
+libgps_la_LDFLAGS = -version-number 18:0:0
 lib_LTLIBRARIES = libgps.la
 
 libgpsd_c_sources = \
-	netlib.c \
-	nmea_parse.c \
-	serial.c \
-	libgpsd_core.c \
-	subframe.c \
-	ntpshm.c \
-	libgps.c \
-	packet.c \
-	gpsutils.c \
-	geoid.c \
+	bits.c \
+	bsd-base64.c \
+	crc24q.c \
 	dgnss.c \
 	dgpsip.c \
-	ntrip.c \
-	sirf.c \
-	superstar2.c \
-	report.c \
-	isgps.c \
-	rtcm2.c \
-	rtcm3.c \
-	srecord.c \
-	bsd-base64.c \
-	strl.c \
+	gpsd_report.c \
+	gpsutils.c \
+	geoid.c \
 	hex.c \
+	isgps.c \
+	libgps.c \
+	gpsdclient.c \
+	libgpsd_core.c \
+	netlib.c \
+	ntpshm.c \
+	ntrip.c \
+	packet.c \
+	serial.c \
+	srecord.c \
+	strl.c \
+	subframe.c \
 	drivers.c \
-	zodiac.c \
-	ubx.c \
-	garmin.c \
-	garmin_txt.c \
-	tsip.c \
-	evermore.c \
-	italk.c \
-	navcom.c \
-	bits.c \
-	crc24q.c
+	driver_aivdm.c \
+	driver_evermore.c \
+	driver_garmin.c \
+	driver_garmin_txt.c \
+	driver_italk.c \
+	driver_navcom.c \
+	driver_nmea.c \
+	driver_rtcm2.c \
+	driver_rtcm3.c \
+	driver_sirf.c \
+	driver_superstar2.c \
+	driver_tsip.c \
+	driver_ubx.c \
+	driver_zodiac.c
 
 libgpsd_h_sources = \
-	italk.h \
 	bsd-base64.h \
 	timebase.h \
 	bits.h \
-	rtcm2.h \
 	crc24q.h
 
 BUILT_SOURCES = packet_names.h gpsd.h
@@ -175,7 +174,7 @@ gpsd.h: gpsd.h-head gpsd.h-tail gpsd_config.h
 	cat $(srcdir)/gpsd.h-tail >>gpsd.h
 
 libgps_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
-				rtcm2.h libgpsmm.cpp packet_states.h
+				driver_rtcm2.h libgpsmm.cpp packet_states.h
 nodist_libgps_la_SOURCES = packet_names.h
 libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
 
@@ -196,40 +195,40 @@ clean-local:
 	rm -rf build
 
 #
-# Build gpsmm_test
+# Build test_gpsmm
 #
-gpsmm_test_SOURCES = gpsmm_test.cpp
-gpsmm_test_LDADD = $(LIBC) libgps.la -lm
+test_gpsmm_SOURCES = test_gpsmm.cpp
+test_gpsmm_LDADD = $(LIBC) libgps.la -lm
 
 #
-# Build bits_test tester
+# Build test_bits tester
 #
-bits_test_SOURCES = bits_test.c
-bits_test_LDADD = $(LIBC) libgps.la
+test_bits_SOURCES = test_bits.c
+test_bits_LDADD = $(LIBC) libgps.la
 
 #
 # Build packets tester
 #
-packet_test_SOURCES = packet_test.c
-packet_test_LDADD = $(LIBC) libgps.la -lm
+test_packet_SOURCES = test_packet.c
+test_packet_LDADD = $(LIBC) libgps.la -lm
 
 #
 # Build geoid model tester
 #
-geoid_test_SOURCES = geoid_test.c
-geoid_test_LDADD = $(LIBC) libgps.la -lm
+test_geoid_SOURCES = test_geoid.c
+test_geoid_LDADD = $(LIBC) libgps.la -lm
 
 #
 # Build time functions tester
 #
-mkgmtime_test_SOURCES = mkgmtime_test.c
-mkgmtime_test_LDADD = $(LIBC) libgps.la -lm
+test_mkgmtime_SOURCES = test_mkgmtime.c
+test_mkgmtime_LDADD = $(LIBC) libgps.la -lm
 
 if HAVE_XSLT_PROCESSOR
 #
 # Create Manpages
 #
-man_MANS = \
+BUILT_MANPAGES = \
 	gpsd.8 \
 	gps.1 \
 	xgps.1 \
@@ -239,7 +238,7 @@ man_MANS = \
 	libgps.3 \
 	libgpsmm.3 \
 	libgpsd.3 \
-	sirfmon.1 \
+	gpsmon.1 \
 	$(RTCM104PAGES) \
 	$(PYTHONPAGES) \
 	gpsctl.1 \
@@ -247,6 +246,9 @@ man_MANS = \
 	gpsflash.1 \
 	rtcm-104.5 \
 	srec.5
+
+man_MANS = \
+	$(BUILT_MANPAGES)
 
 .xml.1:
 	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $<
@@ -278,11 +280,11 @@ gpsprof.1: gpsprof.xml
 
 gpsfake.1: gpsfake.xml
 
-sirfmon.1: sirfmon.xml
+gpsmon.1: gpsmon.xml
 
 gpspipe.1: gpspipe.xml
 
-rtcmdecode.1: rtcmdecode.xml
+gpsdecode.1: gpsdecode.xml
 
 rtcm-104.5: rtcm-104.xml
 
@@ -292,7 +294,9 @@ gpsflash.1: gpsflash.xml
 
 endif
 
-noinst_HEADERS = ubx.h
+noinst_HEADERS = driver_italk.h driver_rtcm2.h driver_superstar2.h \
+	driver_ubx.h gpsmon.h gpsdclient.h
+
 nodist_include_HEADERS = gpsd.h
 include_HEADERS = gps.h libgpsmm.h
 
@@ -305,7 +309,7 @@ EXTRA_DIST = \
 	NEWS \
 	AUTHORS \
 	dgpsip-servers \
-	floattest.c \
+	test_float.c \
 	gpsd.php \
 	gpsd.xml \
 	gpsd.h-head \
@@ -317,17 +321,16 @@ EXTRA_DIST = \
 	gpsprof.xml \
 	gpsfake.xml \
 	gpsctl.xml \
-	sirfmon.xml \
+	gpsmon.xml \
 	gpspipe.xml \
-	rtcmdecode.xml \
+	gpsdecode.xml \
 	rtcm-104.xml \
 	srec.xml \
 	gpsflash.xml \
 	$(man_MANS) \
 	xgps.ad \
 	xgpsspeed.ad \
-	gpsd.spec.in \
-	gpsd.spec \
+	gpsd.rules \
 	gpsd.hotplug \
 	gpsd.usermap \
 	valgrind-audit \
@@ -335,15 +338,18 @@ EXTRA_DIST = \
 	gpspacket.c \
 	gpslib.c \
 	driver_proto.c \
+	monitor_proto.c \
 	logextract \
 	striplog \
 	setup.py \
 	packet_states.h \
 	libgps.pc.in \
 	libgpsd.pc.in \
-	gpscap.ini
+	gpscap.ini \
+	contrib/* \
+	packaging/*
 
-CLEANFILES = $(BUILT_SOURCES) floattest *.core $(PYEXTENSIONS)
+CLEANFILES = $(BUILT_SOURCES) test_float *.core $(PYEXTENSIONS) $(BUILT_MANPAGES)
 
 pkgconfig_DATA = libgps.pc libgpsd.pc
 pkgconfigdir = $(libdir)/pkgconfig
@@ -365,20 +371,20 @@ splint: gpsd.h packet_names.h
 	-splint $(SPLINTOPTS) -exportlocal $(xgpsspeed_c_sources)
 	@echo "Running splint on gpsctl..."
 	-splint $(SPLINTOPTS) $(gpsctl_SOURCES)
-	@echo "Running splint on sirfmon..."
-	-splint $(SPLINTOPTS) $(sirfmon_SOURCES)
+	@echo "Running splint on gpsmon..."
+	-splint $(SPLINTOPTS) -exportlocal $(gpsmon_SOURCES)
 	@echo "Running splint on gpspipe..."
 	-splint $(SPLINTOPTS) $(gpspipe_SOURCES)
-	@echo "Running splint on rtcmdecode..."
-	-splint $(SPLINTOPTS) -exportlocal rtcmdecode.c
+	@echo "Running splint on gpsdecode..."
+	-splint $(SPLINTOPTS) -exportlocal gpsdecode.c
 	@echo "Running splint on gpsflash..."
 	-splint $(SPLINTOPTS) $(gpsflash_SOURCES)
-	@echo "Running splint on bits_test test harness..."
-	-splint $(SPLINTOPTS) $(bits_test_SOURCES)
-	@echo "Running splint on packet_test test harness..."
-	-splint $(SPLINTOPTS) $(packet_test_SOURCES)
-	@echo "Running splint on geoid_test test harness..."
-	-splint $(SPLINTOPTS) $(geoid_test_SOURCES)
+	@echo "Running splint on test_bits test harness..."
+	-splint $(SPLINTOPTS) $(test_bits_SOURCES)
+	@echo "Running splint on test_packet test harness..."
+	-splint $(SPLINTOPTS) $(test_packet_SOURCES)
+	@echo "Running splint on test_geoid test harness..."
+	-splint $(SPLINTOPTS) $(test_geoid_SOURCES)
 
 # Bogon-checking the Python tools
 pychecker:
@@ -416,56 +422,86 @@ gps-makeregress: gpsd
 #	regress-driver -b test/stable/foo.log
 
 # Regression-test the RTCM decoder.
-rtcm-regress: rtcmdecode
+rtcm-regress: gpsdecode
 	@echo "Testing RTCM decoding..."
 	@mkdir -p test
 	@for f in $(srcdir)/test/*.rtcm2; do \
 		echo "Testing $${f}..."; \
-		$(srcdir)/rtcmdecode <$${f} >test/test.chk; \
+		$(srcdir)/gpsdecode <$${f} >test/test.chk; \
 		diff -ub $${f}.chk test/test.chk; \
 	done; \
 	rm test/test.chk
 
 # Rebuild the RTCM regression tests.
-rtcm-makeregress: rtcmdecode
+rtcm-makeregress: gpsdecode
 	@for f in $(srcdir)/test/*.rtcm2; do \
-		$(srcdir)/rtcmdecode < $${f} > $${f}.chk; \
+		$(srcdir)/gpsdecode < $${f} > $${f}.chk; \
 	done
 
+
+# Regression-test the AIVDM decoder.
+aivdm-regress: gpsdecode
+	@echo "Testing AIVDM decoding..."
+	@mkdir -p test
+	@for f in $(srcdir)/test/*.aivdm; do \
+		echo "Testing $${f}..."; \
+		$(srcdir)/gpsdecode <$${f} >test/test.chk; \
+		diff -ub $${f}.chk test/test.chk; \
+	done; \
+	rm test/test.chk
+
+# Rebuild the AIVDM regression tests.
+aivdm-makeregress: gpsdecode
+	@for f in $(srcdir)/test/*.aivdm; do \
+		$(srcdir)/gpsdecode < $${f} > $${f}.chk; \
+	done
+
+
 # Regression-test the packet getter.
-packet-regress: packet_test
+packet-regress: test_packet
 	@echo "Testing detection of invalid packets..."
-	@$(srcdir)/packet_test | diff -u $(srcdir)/test/packet.test.chk -
+	@$(srcdir)/test_packet | diff -u $(srcdir)/test/packet.test.chk -
 
 # Rebuild the packet-getter regression test
-packet-makeregress: packet_test
+packet-makeregress: test_packet
 	@mkdir -p test
-	$(srcdir)/packet_test >test/packet.test.chk
+	$(srcdir)/test_packet >test/packet.test.chk
 
 # Regression-test the geoid tester.
-geoid-regress: geoid_test
+geoid-regress: test_geoid
 	@echo "Testing the geoid model..."
-	@$(srcdir)/geoid_test 37.371192 122.014965 | diff -u $(srcdir)/test/geoid.test.chk -
+	@$(srcdir)/test_geoid 37.371192 122.014965 | diff -u $(srcdir)/test/geoid.test.chk -
 
 # Rebuild the packet-getter regression test
-geoid-makeregress: geoid_test
+geoid-makeregress: test_geoid
 	@mkdir -p test
-	$(srcdir)/geoid_test 37.371192 122.014965 >test/geoid.test.chk
+	$(srcdir)/test_geoid 37.371192 122.014965 >test/geoid.test.chk
 
 # Test RTCM encoding using passthrough mode.
-undump-regress: rtcmdecode
+undump-regress: gpsdecode
 	@echo "Testing RTCM encoding..."
 	@mkdir -p test
-	@$(srcdir)/rtcmdecode -p < $(srcdir)/test/undump.sample > test/undump.test
+	@$(srcdir)/gpsdecode -p < $(srcdir)/test/undump.sample > test/undump.test
 	@diff -u $(srcdir)/test/undump.sample test/undump.test
 	@rm test/undump.test
 
 # Regression-test the calendar functions
-time_regress: mkgmtime_test
-	./mkgmtime_test
+time-regress: test_mkgmtime
+	./test_mkgmtime
+
+# Regression test the unpacking code in libgps
+unpack-regress: libgps
+	@echo "Testing the clent sentence unpacker..."
+	@$(srcdir)/libgps -u >test/test.chk
+	@diff -u test/unpack.chk test/test.chk
+
+# Build the regressiuin test for the sentence unpacker
+unpack-makeregress: libgps
+	@echo "Rebuilding the clent sentence-unpacker test..."
+	@$(srcdir)/libgps -u >test/unpack.chk
 
 # Do all normal regression tests
-testregress: gps-regress rtcm-regress packet-regress undump-regress time_regress
+testregress: gps-regress rtcm-regress aivdm-regress packet-regress undump-regress time-regress unpack-regress
 	@echo "Regressions complete."
 
 # We would like "${MAKE} check" to run the regression tests.  automake
@@ -473,6 +509,27 @@ testregress: gps-regress rtcm-regress packet-regress undump-regress time_regress
 # Perhaps the tests should be moved into scripts, but then it's not
 # clear how to deal with $(srcdir).
 # TESTS=testregress
+
+# Productions for setting up and performing udev tests.
+#
+# Requires root. Do "udev-install", then "tail -f /var/run/syslog" in
+# another window, then run 'make udev-test', then plug and unplug the
+# GPS ad libitum.  All is well when you get fix reports each time a GPS
+# is plugged in.
+
+udev-install:
+	cp $(srcdir)/gpsd.rules /etc/udev/
+	ln -sf /etc/udev/gpsd.rules /etc/udev/rules.d/025_gpsd.rules
+	cp $(srcdir)/gpsd.hotplug /lib/udev/
+	cp $(srcdir)/gpsd.hotplug.wrapper /lib/udev/
+	chmod a+x /lib/udev/gpsd.hotplug /lib/udev/gpsd.hotplug.wrapper
+
+udev-uninstall:
+	rm -f /etc/udev/{gpsd.rules,gpsd.hotplug,gpsd.hotplug.wrapper}
+	rm -f /etc/udev/rules.d/025_gpsd.rules
+
+udev-test:
+	$(srcdir)/gpsd -N -F /var/run/gpsd.sock -D 4
 
 #
 # Productions for testing unstable drivers.
@@ -487,6 +544,13 @@ unstable-makeregress: gpsd
 
 # Release machinery begins here
 #
+
+# Make RPM from the specfile in packaging
+dist-rpm: distdir
+	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	rpmbuild -ta $(distdir).tar.gz
+	$(am__remove_distdir)
+
 # This is how to ship a release to Berlios incomoing.
 # It requires developer access verified via ssh.
 #
@@ -506,3 +570,4 @@ svn-tag:
 # Ship a release, providing all regression tests pass.
 #
 ship: testregress dist upload-ftp svn-tag
+

@@ -62,7 +62,7 @@ if __name__ == '__main__':
                 sys.stderr.write("usage: gpscat [-s speed] serial-port\n")
                 raise SystemExit, 0
             elif switch == '-V':
-                sys.stderr.write("gpscat at svn revision $Rev: 5116 $\n")
+                sys.stderr.write("gpscat at svn revision $Rev: 5418 $\n")
                 raise SystemExit, 0
 
         tty = os.open(arguments[0], os.O_RDWR)
@@ -104,9 +104,10 @@ if __name__ == '__main__':
             if fd == tty and event == select.POLLIN:
                 if rawmode:
                     buf += os.read(tty, NMEA_MAX)
-                    if not buf.endswith("\r"):
-                        sys.stdout.write(hexdump(buf))
-                        buf = ""
+                    if not buf.endswith("\n"):
+                        buf = hexdump(buf)
+                    sys.stdout.write(buf)
+                    buf = ""
                 else:
                     (ptype, packet) = getter.get(tty)
                     length = len(packet)
@@ -121,8 +122,7 @@ if __name__ == '__main__':
                         continue
                     if typeflag:
                         sys.stdout.write(`ptype` + " (" + `length` + "): " + hexdump(packet))
-                        if ptype not in (gpspacket.COMMENT_PACKET, gpspacket.NMEA_PACKET,  gpspacket.GARMINTXT_PACKET):
-                            sys.stdout.write("\n")
+                        sys.stdout.write("\n")
                     else:
                         sys.stdout.write(hexdump(packet) + "\n")
     except KeyboardInterrupt:

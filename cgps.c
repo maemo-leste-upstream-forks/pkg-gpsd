@@ -1,4 +1,4 @@
-/* $Id: cgps.c 5053 2009-01-21 11:44:35Z esr $ */
+/* $Id: cgps.c 5496 2009-03-18 16:43:52Z jfrancis $ */
 /*
  * Copyright (c) 2005 Jeff Francis <jeff@gritch.org>
  *
@@ -105,6 +105,7 @@
 #endif /* HAVE_NCURSES_H */
 
 #include "gps.h"
+#include "gpsdclient.h"
 
 static struct gps_data_t *gpsdata;
 static time_t status_timer;    /* Time of last state change. */
@@ -649,6 +650,7 @@ static void usage( char *prog)
 		"  -h	  Show this help, then exit\n"
 		"  -V	  Show version, then exit\n"
 		"  -s	  Be silent (don't print raw gpsd data)\n"
+		"  -j	  Turn on anti-jitter buffering\n"
 		"  -l {d|m|s}  Select lat/lon format\n"
 		"		d = DD.dddddd\n"
 		"		m = DD MM.mmmm'\n"
@@ -663,7 +665,7 @@ static void usage( char *prog)
 int main(int argc, char *argv[])
 {
   int option;
-  char *arg = NULL, *colon1, *colon2, *device = NULL, *server = NULL, *port = DEFAULT_GPSD_PORT;
+  struct fixsource_t source;
   char *err_str = NULL;
   int c;
 
@@ -684,7 +686,7 @@ int main(int argc, char *argv[])
       fixclear_flag=1;
       break;
     case 'V':
-      (void)fprintf(stderr, "SVN ID: $Id: cgps.c 5053 2009-01-21 11:44:35Z esr $ \n");
+      (void)fprintf(stderr, "SVN ID: $Id: cgps.c 5496 2009-03-18 16:43:52Z jfrancis $ \n");
       exit(0);
     case 'l':
       switch ( optarg[0] ) {
@@ -708,29 +710,10 @@ int main(int argc, char *argv[])
   }
 
   /* Grok the server, port, and device. */
-  /*@ -branchstate @*/
   if (optind < argc) {
-    arg = strdup(argv[optind]);
-    /*@i@*/colon1 = strchr(arg, ':');
-    server = arg;
-    if (colon1 != NULL) {
-      if (colon1 == arg)
-	server = NULL;
-      else
-	*colon1 = '\0';
-      port = colon1 + 1;
-      colon2 = strchr(port, ':');
-      if (colon2 != NULL) {
-	if (colon2 == port)
-	  port = NULL;
-	else
-	  *colon2 = '\0';
-	device = colon2 + 1;
-      }
-    }
-    colon1 = colon2 = NULL;
-  }
-  /*@ +branchstate @*/
+      gpsd_source_spec(argv[optind], &source);
+  } else
+      gpsd_source_spec(NULL, &source);
 
   /*@ -observertrans @*/
   switch (gpsd_units())
@@ -760,7 +743,7 @@ int main(int argc, char *argv[])
   /*@ +observertrans @*/
 
   /* Open the stream to gpsd. */
-  /*@i@*/gpsdata = gps_open(server, port);
+  /*@i@*/gpsdata = gps_open(source.server, source.port);
   if (!gpsdata) {
     switch ( errno ) {
     case NL_NOSERVICE:  err_str = "can't get service entry"; break;
@@ -782,8 +765,8 @@ int main(int argc, char *argv[])
   misc_timer = status_timer;
 
   /* If the user requested a specific device, try to change to it. */
-  if (device)
-      (void)gps_query(gpsdata, "F=%s\n", device);
+  if (source.device != NULL)
+      (void)gps_query(gpsdata, "F=%s\n", source.device);
 
   /* Here's where updates go until we figure out what we're dealing
      with. */

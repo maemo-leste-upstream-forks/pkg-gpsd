@@ -1,11 +1,11 @@
 .\"     Title: gpsctl
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 02/07/2009
+.\"      Date: 03/14/2009
 .\"    Manual: 29 Oct 2006
 .\"    Source: 29 Oct 2006
 .\"
-.TH "GPSCTL" "1" "02/07/2009" "29 Oct 2006" "29 Oct 2006"
+.TH "GPSCTL" "1" "03/14/2009" "29 Oct 2006" "29 Oct 2006"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -14,7 +14,7 @@
 gpsctl \- control the modes of a GPS
 .SH "SYNOPSIS"
 .HP 7
-\fBgpsctl\fR [\-h] [\-b | \-n] [\-c\ \fIcontrol\fR] [\-e] [\-f] [\-l] [\-s\ \fIspeed\fR] [\-t\ \fIdevicetype\fR] [\-D\ \fIdebuglevel\fR] [\-V] [\fIserial\-port\fR]
+\fBgpsctl\fR [\-h] [\-b | \-n] [\-x\ \fIcontrol\fR] [\-e] [\-f] [\-l] [\-s\ \fIspeed\fR] [\-t\ \fIdevicetype\fR] [\-D\ \fIdebuglevel\fR] [\-V] [\fIserial\-port\fR]
 .SH "DESCRIPTION"
 .PP
 gpsctl
@@ -38,10 +38,7 @@ Put the GPS into binary mode\&. After the GPS resets itself, autobaud to the new
 .PP
 \-c
 .RS 4
-Send a specified control string to the GPS;
-gpsctl
-will provide packet headers and trailers and checksum as appropriate for binary packet types, and whatever checksum and trailer is required for text packet types\&. (You must include the leading $ for NMEA packets\&.) When sending to a UBX device, the first two bytes of the string supplied will become the message class and type, and the remainder the payload\&. When sending to a Navcom NCT or Trimble TSIP device, the first byte is interpreted as the command ID and the rest as payload\&. C\-style backslash escapes in the string, notably \exNN for hex, will be interpreted; additionally, \ee will be replaced with ESC\&. This switch implies
-\fB\-f\fR\&.
+Change the GPS\'s cycle time\&. Units are seconds\&. Note, most GPses have a fixeed cycle time of 1 second\&.
 .RE
 .PP
 \-e
@@ -69,11 +66,21 @@ Put GPS into NMEA mode\&. After the GPS resets itself autobaud to its new speed\
 \-s
 .RS 4
 Set the baud rate at which the GPS emits packets\&.
+.sp
+Use this option with caution\&. On USB and Bluetooth GPSes it is also possible for serial mode setting to fail either because the serial adaptor chip does not support non\-8N1 modes or because the device firmware does not properly synchronize the serrial adaptor chip with the UART on the GPS chipset whjen the speed changes\&. These failures can hang your device, possibly requiring a GPS power cycle or (in extreme cases) physically disconnecting the NVRAM backup battery\&.
 .RE
 .PP
 \-t
 .RS 4
 Force the device type\&.
+.RE
+.PP
+\-x
+.RS 4
+Send a specified control string to the GPS;
+gpsctl
+will provide packet headers and trailers and checksum as appropriate for binary packet types, and whatever checksum and trailer is required for text packet types\&. (You must include the leading $ for NMEA packets\&.) When sending to a UBX device, the first two bytes of the string supplied will become the message class and type, and the remainder the payload\&. When sending to a Navcom NCT or Trimble TSIP device, the first byte is interpreted as the command ID and the rest as payload\&. When sending to a Zodiac device, the first two bytes are used as a message ID of type little\-endian short, and the remainder as payload in byte pairs interpreted as little\-endian short\&. C\-style backslash escapes in the string, notably \exNN for hex, will be interpreted; additionally, \ee will be replaced with ESC\&. This switch implies
+\fB\-f\fR\&.
 .RE
 .PP
 \-T
