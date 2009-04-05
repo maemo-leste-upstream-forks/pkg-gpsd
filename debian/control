@@ -7,7 +7,8 @@ Build-Depends: debhelper (>= 5.0.61), po-debconf, dpkg-dev (>= 1.14.8),
  python-all-dev, python-support (>= 0.4),
  xsltproc, docbook-xsl, docbook-xml,
  libxt-dev, lesstif2-dev, libxaw7-dev, libncurses-dev,
- libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev, makedev
+ libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev, makedev,
+ lsb-release
 Standards-Version: 3.8.0
 Homepage: http://gpsd.berlios.de/
 XS-Python-Version: all
@@ -15,8 +16,9 @@ XS-Python-Version: all
 Package: gpsd
 Architecture: any
 Depends: python, netbase, lsb-base (>= 3.0-6), ${shlibs:Depends}, ${misc:Depends}
-Recommends: gpsd-clients
-Suggests: udev
+Recommends: udev
+Breaks: ${gpsd:Breaks}
+Suggests: gpsd-clients
 Description: GPS (Global Positioning System) daemon
  gpsd is a service daemon that monitors one or more GPSes attached to a host
  computer through serial or USB ports, making all data on the location/course/
