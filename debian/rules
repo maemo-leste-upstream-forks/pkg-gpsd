@@ -14,6 +14,22 @@ CPPFLAGS =
 #python versions
 PYVERS := $(shell pyversions -r)
 
+#debhelper version and settings needed for udev
+DH_VERSION := $(shell dpkg -s debhelper | grep '^Version' | awk '{print $2}')
+LSB_RELEASE := $(shell lsb_release -i)
+UDEV_BREAKS =
+
+ifneq (,$(findstring Debian,$(LSB_RELEASE))) ## debian ##
+	## FIXME ##
+else ##debian ##
+ifneq (,$(findstring Ubuntu,$(LSB_RELEASE))) ## ubuntu ##
+ifeq (0, $(strip $(shell dpkg --compare-versions $(DH_VERSION) ge 7.0.17ubuntu2; echo $$?)))
+UDEV_BREAKS = 136-1
+endif
+endif ## ubuntu ##
+endif ## debian ##
+
+
 #let's help configure to figure out our host/build system
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
@@ -22,7 +38,6 @@ ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
 else
   CONFFLAGS += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
 endif
-
 
 
 #where our files go
@@ -202,6 +217,9 @@ binary-arch: build install
 	dh_fixperms -s
 	dh_makeshlibs -s
 	dh_shlibdeps -s
+ifneq (,$(strip $(UDEV_BREAKS)))
+	echo "gpsd:Breaks=udev (<< $(UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
+endif
 	dh_gencontrol -s
 	dh_installdeb -s
 	dh_md5sums -s
