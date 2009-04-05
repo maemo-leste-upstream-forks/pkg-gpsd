@@ -60,7 +60,7 @@ Description: Python interface to gpsd and testing environment
  which utilize the interface: gpsprof for latency-profiling and gpsfake to
  simulate a GPS by playing back a logfile.
 
-Package: libgps17
+Package: libgps18
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -76,7 +76,7 @@ Description: C library for communicating with GPS devices
 Package: libgps-dev
 Architecture: any
 Section: libdevel
-Depends: libgps17 (= ${binary:Version}), ${misc:Depends}
+Depends: libgps18 (= ${binary:Version}), ${misc:Depends}
 Conflicts: gpsd (<< 2.34.dfsg-1)
 Description: C library for communicating with GPS devices (development files)
  libgps is a service library for querying GPS devices. There are two
