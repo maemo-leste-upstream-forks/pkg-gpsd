@@ -6,7 +6,7 @@
 @DPATCH@
 --- a/INSTALL
 +++ b/INSTALL
-@@ -86,9 +86,9 @@ home directory or to the system-wide X a
+@@ -93,9 +93,9 @@ home directory or to the system-wide X a
  4. Start gpsd.  You'll need to give it as an argument a path to 
  a serial or USB port with a GPS attached to it.
  
