@@ -1,9 +1,40 @@
-gpsd (2.38-2) unstable; urgency=low
+gpsd (2.39-1) unstable; urgency=low
 
-  * debian/rules: Install upstream changelog, thanks to Paul Martin
-    (Closes: #515067).
+  * [44f4a445] debian/rules: Install upstream changelog, thanks to Paul
+    Martin (Closes: #515067).
+  * [edd0f8f7] debian/gbp.conf: Adding file.
+  * [d0d4a002] Imported Upstream version 2.39
+  * [376c8df9] debian/rules: Fixing FTBFS with the new python-support,
+    thanks to Josselin Mouette (Closes: #516235)
+  * [3a6804d7] debian/po: Adding Romanian translation, thanks to Eddy
+    Petrișor (Closes: #514081).
+  * [3d9cbca0] debian/control: Needed changes for udev transition.
+  * [5d958d9b] debian/patches/default_units: drop exec flag.
+  * [70489cfe] debian/control: bump libgps soname to 18.
+  * [c91b4914] debian/patches: Updating patches for new version.
+  * [f1217338] debian/rules: Add Breaks support for udev.
+  * [d8a810a2] debian/gpsd.config: move gpsd/autodetection to low
+  * [57ae764d] debian/rules: Use lsb_release -si
+  * [337dddcb] debian/rules: Support Python 2.6.
+  * [703df0da] Migrating symbols files to libgps18.
+  * [07f088f7] debian/rules: Be pendantic about symbol files.
+  * [b0280081] debian/rules: Don't require python.mk to build.
+  * [581ac233] debian/rules: Work around broken --disable-python.
+  * [522a76dd] debian/gpsd.postrm: removing old diversion parts.
+  * [7f422a4f] debian/gpsd.udev: Dropping file, shipped upstream.
+  * [65061f11] debian/rules: Install gpsd.rules for udev.
+  * [cbdc4e8a] debian/patches: Install gpscat via setup.py.
+  * [852f0522] debian/control: Bumping Standards-Version.
+  * [26728c33] debian/patches: Add missing gpscat manpage.
+  * [a99dfede] debian/rules: More workarounds for --disable-python.
+  * [74a4ad5b] debian/rules: Use configure-stamp instead of
+    config.status.
+  * [3be45988] debian/rules: Build gpscat.1 for Python.
+  * [9063e762] debian/rules: Delete Python manpages form clients
+    package.
+  * [24c96c32] debian/patches: Install gpscat manpage.
 
- -- Bernd Zeimetz <bzed@debian.org>  Fri, 13 Feb 2009 10:17:37 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 08 Apr 2009 01:57:53 +0200
 
 gpsd (2.38-1) unstable; urgency=low
 
