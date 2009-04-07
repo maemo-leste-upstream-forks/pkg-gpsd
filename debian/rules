@@ -108,15 +108,16 @@ endif
 	touch $@
 
 
-configure: config.status
-config.status: patch autotools-dev-stamp
+configure: configure-stamp
+configure-stamp: patch autotools-dev-stamp
 	dh_testdir
 	$(CONFENV) ./configure $(CONFFLAGS)
+	touch $@
 
 build: build-gpsd build-python
 build-gpsd: build-gpsd-stamp
 build-python: build-python-stamp
-build-gpsd-stamp: config.status
+build-gpsd-stamp: configure-stamp
 	dh_testdir
 
 	#hack around broken --disable-python in configure
@@ -192,6 +193,7 @@ clean-patched:
 	#update debconf po files
 	debconf-updatepo
 	rm -f autotools-dev-stamp
+	rm -f configure-stamp
 	rm -f build-gpsd-stamp build-python-stamp
 	rm -f TROUBLESHOOTING
 	[ ! -r setup.py ] || python setup.py clean
