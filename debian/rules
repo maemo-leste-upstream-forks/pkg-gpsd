@@ -1,6 +1,7 @@
 #!/usr/bin/make -f
 
 include /usr/share/quilt/quilt.make
+include /usr/share/python/python.mk
 
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
@@ -166,7 +167,7 @@ install-python: build-python-stamp
 	set -e ;\
 	unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	for py in $(PYVERS); do  \
-	  $$py setup.py install --root=debian/$(PACKAGE_PY); \
+	  $$py setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args); \
 	done
 
 clean: clean-patched unpatch
