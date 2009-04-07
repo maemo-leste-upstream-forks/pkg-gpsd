@@ -1,7 +1,15 @@
 #!/usr/bin/make -f
 
 include /usr/share/quilt/quilt.make
-include /usr/share/python/python.mk
+-include /usr/share/python/python.mk
+ifeq (,$(py_sitename))
+py_sitename = site-packages
+py_libdir = /usr/lib/python$(subst python,,$(1))/site-packages
+py_sitename_sh = $(py_sitename)
+py_libdir_sh = $(py_libdir)
+endif
+
+
 
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
