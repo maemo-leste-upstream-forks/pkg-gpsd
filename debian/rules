@@ -216,7 +216,7 @@ binary-arch: build install
 	dh_strip -s
 	dh_compress -s
 	dh_fixperms -s
-	dh_makeshlibs -s
+	dh_makeshlibs -s -- -c4
 	dh_shlibdeps -s
 ifneq (,$(strip $(UDEV_BREAKS)))
 	echo "gpsd:Breaks=udev (<< $(UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
