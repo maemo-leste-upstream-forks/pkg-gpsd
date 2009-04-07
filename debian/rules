@@ -199,7 +199,7 @@ clean-patched:
 	[ ! -r Makefile ] || $(MAKE) distclean
 	rm -f *.1 *.3 *.5 *.8 .1
 	rm -rf .deps .libs
-
+	rm -f $(CURDIR)/debian/gpsd.udev
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
 	rm -f config.sub
 endif
@@ -223,6 +223,7 @@ binary-arch: build install
 	dh_installexamples -s
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/site-packages/gps.py
 	dh_pysupport -s
+	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev -s
 	dh_link -s
 	dh_strip -s
