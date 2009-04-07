@@ -135,7 +135,7 @@ build-gpsd-stamp: configure-stamp
 
 build-python-stamp: build-gpsd-stamp
 	dh_testdir
-	$(MAKE) packet_names.h gpsfake.1 gpsprof.1
+	$(MAKE) packet_names.h gpscat.1 gpsfake.1 gpsprof.1
 	set -e; \
 	unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	for py in $(PYVERS); do  \
