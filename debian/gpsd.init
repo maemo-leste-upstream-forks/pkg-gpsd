@@ -63,9 +63,12 @@ case "$1" in
 	set +e; $SELF stop; set -e
 		$SELF start
 	;;
+  status)
+	status_of_proc $DAEMON gpsd
+	;;
   *)
 	N=/etc/init.d/gpsd
-	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+	echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
 	exit 1
 	;;
 esac

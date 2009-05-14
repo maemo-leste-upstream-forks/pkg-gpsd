@@ -15,7 +15,7 @@ XS-Python-Version: all
 
 Package: gpsd
 Architecture: any
-Depends: python, netbase, lsb-base (>= 3.0-6), ${shlibs:Depends}, ${misc:Depends}
+Depends: python, netbase, lsb-base (>= 3.2-13), ${shlibs:Depends}, ${misc:Depends}
 Recommends: udev
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients
