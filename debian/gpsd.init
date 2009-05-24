@@ -1,11 +1,12 @@
 #!/bin/sh
 #
-#	Author: Tilman Koschnick <til@subnetz.org>.
+#	Authors: Tilman Koschnick <til@subnetz.org>
+#                Bernd Zeimetz <bzed@debian.org>
 #
 
 ### BEGIN INIT INFO
 # Provides:          gpsd
-# Required-Start:    $syslog $network
+# Required-Start:    $syslog $network dbus bluetooth
 # Required-Stop:     $syslog $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6

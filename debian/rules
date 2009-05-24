@@ -227,7 +227,7 @@ binary-arch: build install
 	dh_installdocs -s
 	dh_installmenu -s
 	dh_installdebconf -s
-	dh_installinit -s
+	dh_installinit -s -- start 26 2 3 4 5 . stop 73 0 1 6 .
 	dh_installexamples -s
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/site-packages/gps.py
 	dh_pysupport -s
