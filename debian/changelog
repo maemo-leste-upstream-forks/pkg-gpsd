@@ -1,3 +1,15 @@
+gpsd (2.39-2) unstable; urgency=low
+
+  * [765fde7b] Calculate soname and library version properly.
+  * [1da6bffd] Support the "status" action in the init.d script.
+    (Closes: #528688) - thanks to Peter Eisentraut
+  * [634d40b0] Make gpsd.hotplug.wrapper work with Ubuntu. (LP: #367197)
+  * [1a66eb21] Start gpsd after bluetooth. (LP: #359352)
+  * [1e5ffb92] Adding patch to fix a crash in libgpsmm.
+  * [ba4e66a1] Updating symbols file after fixing libgpsmm.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 18 Jun 2009 01:37:34 +0200
+
 gpsd (2.39-1) unstable; urgency=low
 
   * [44f4a445] debian/rules: Install upstream changelog, thanks to Paul
