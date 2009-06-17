@@ -4,6 +4,8 @@
  _ZN5gpsmm4pollEv@Base 2.39
  _ZN5gpsmm5queryEPKc@Base 2.39
  _ZN5gpsmm9clear_fixEv@Base 2.39
+ _ZN5gpsmmC1Ev@Base 2.39-2
+ _ZN5gpsmmC2Ev@Base 2.39-2
  _ZN5gpsmmD0Ev@Base 2.39
  _ZN5gpsmmD1Ev@Base 2.39
  _ZN5gpsmmD2Ev@Base 2.39
