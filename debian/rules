@@ -21,7 +21,8 @@ LDFLAGS =
 CPPFLAGS =
 
 #python versions
-PYVERS := $(shell pyversions -r)
+PYTHONS := $(shell pyversions -vr)
+
 
 #debhelper version and settings needed for udev
 DH_VERSION := $(shell dpkg -s debhelper | grep '^Version' | awk '{print $2}')
@@ -119,7 +120,7 @@ configure-stamp: patch autotools-dev-stamp
 
 build: build-gpsd build-python
 build-gpsd: build-gpsd-stamp
-build-python: build-python-stamp
+build-python: $(PYTHONS:%=build-%-stamp)
 build-gpsd-stamp: configure-stamp
 	dh_testdir
 
@@ -136,16 +137,17 @@ build-gpsd-stamp: configure-stamp
 #	$(MAKE) testregress
 #endif
 
-build-python-stamp: build-gpsd-stamp
-	dh_testdir
+
+build-python-pre:
 	$(MAKE) packet_names.h gpscat.1 gpsfake.1 gpsprof.1
-	set -e; \
-	unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
-	for py in $(PYVERS); do  \
-	  $$py setup.py build; \
-	done
 	touch $@
 
+build-%-stamp: build-gpsd-stamp build-python-pre
+	dh_testdir
+	set -e; \
+	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
+	  python$* setup.py build
+	touch $@
 
 install: install-gpsd install-python
 
@@ -182,13 +184,13 @@ install-gpsd: build-gpsd-stamp
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 
 
-install-python: build-python-stamp
+install-python: build-python $(PYTHONS:%=install-%)
+
+install-%:
 	set -e ;\
-	unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
-	for py in $(PYVERS); do  \
-	  $$py setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args) \
-				--install-layout=deb; \
-	done
+	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
+	  python$* setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args) \
+				--install-layout=deb; 
 
 clean: clean-patched unpatch
 clean-patched:
@@ -199,9 +201,7 @@ clean-patched:
 	grep -q '^Package: libgps$(LIB_soname)' debian/control
 	#update debconf po files
 	debconf-updatepo
-	rm -f autotools-dev-stamp
-	rm -f configure-stamp
-	rm -f build-gpsd-stamp build-python-stamp
+	rm -f *-stamp
 	rm -f TROUBLESHOOTING
 	[ ! -r setup.py ] || python setup.py clean
 	rm -rf build
