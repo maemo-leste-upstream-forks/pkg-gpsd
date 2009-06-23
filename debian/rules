@@ -186,7 +186,8 @@ install-python: build-python-stamp
 	set -e ;\
 	unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	for py in $(PYVERS); do  \
-	  $$py setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args); \
+	  $$py setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args) \
+				--install-layout=deb; \
 	done
 
 clean: clean-patched unpatch
@@ -229,7 +230,7 @@ binary-arch: build install
 	dh_installdebconf -s
 	dh_installinit -s -- start 26 2 3 4 5 . stop 73 0 1 6 .
 	dh_installexamples -s
-	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/site-packages/gps.py
+	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/*-packages/gps.py
 	dh_pysupport -s
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev -s
