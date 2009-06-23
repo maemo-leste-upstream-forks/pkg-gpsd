@@ -120,7 +120,7 @@ configure-stamp: patch autotools-dev-stamp
 
 build: build-gpsd build-python
 build-gpsd: build-gpsd-stamp
-build-python: $(PYTHONS:%=build-%-stamp)
+build-python: $(PYTHONS:%=build-python%-stamp)
 build-gpsd-stamp: configure-stamp
 	dh_testdir
 
@@ -141,7 +141,7 @@ build-python-pre:
 	$(MAKE) packet_names.h gpscat.1 gpsfake.1 gpsprof.1
 	touch $@
 
-build-%-stamp: build-gpsd-stamp build-python-pre
+build-python%-stamp: build-gpsd-stamp build-python-pre
 	dh_testdir
 	set -e; \
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
@@ -183,9 +183,9 @@ install-gpsd: build-gpsd-stamp
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 
 
-install-python: build-python $(PYTHONS:%=install-%)
+install-python: build-python $(PYTHONS:%=install-python%)
 
-install-%:
+install-python%:
 	set -e ;\
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	  python$* setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args) \
