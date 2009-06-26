@@ -97,7 +97,7 @@ PACKAGE_LIB := $(shell grep '^Package: libgps$(LIB_soname)' debian/control | \
 	               awk '{print $$2}')
 PACKAGE_LIB_DEV := libgps-dev
 PACKAGE_PY := python-gps
-
+PACKAGE_GPSDDBG := gpsd-dbg
 
 
 autotools-dev-stamp:
@@ -120,7 +120,7 @@ configure-stamp: patch autotools-dev-stamp
 
 build: build-gpsd build-python
 build-gpsd: build-gpsd-stamp
-build-python: $(PYTHONS:%=build-python%-stamp)
+build-python: $(PYTHONS:%=build-python%-stamp) $(PYTHONS:%=build-python%-dbg-stamp)
 build-gpsd-stamp: configure-stamp
 	dh_testdir
 
@@ -183,13 +183,20 @@ install-gpsd: build-gpsd-stamp
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 
 
-install-python: build-python $(PYTHONS:%=install-python%)
+install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-python%-dbg)
 
 install-python%:
 	set -e ;\
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	  python$* setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args) \
-				--install-layout=deb; 
+				--install-layout=deb
+
+install-python%-dbg:
+	set -e ;\
+	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
+	  python$* setup.py install --root=debian/$(PACKAGE_GPSDDBG) \
+	      $(py_setup_install_args) --install-layout=deb
+
 
 clean: clean-patched unpatch
 clean-patched:
@@ -234,7 +241,7 @@ binary-arch: build install
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev -s
 	dh_link -s
-	dh_strip -s
+	dh_strip -s --dbg-package=$(PACKAGE_GPSDDBG)
 	dh_compress -s
 	dh_fixperms -s
 	dh_makeshlibs -s -- -c4

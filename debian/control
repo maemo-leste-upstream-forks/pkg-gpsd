@@ -29,6 +29,21 @@ Description: GPS (Global Positioning System) daemon
  contention or loss of data. Also, gpsd responds to queries with a format that
  is substantially easier to parse than the NMEA 0183 emitted by most GPSes.
 
+Package: gpsd-dbg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Recommends: libgps18 (= ${binary:Version}),
+ gpsd (= ${binary:Version}),
+ gpsd-clients ((= ${binary:Version}),
+ python-gps (= ${binary:Version})
+Description: Global Positioning System - debugging symbols
+ The gpsd service daemon can monitor one or more GPS devices connected to
+ a host computer, making all data on the location and movements of the
+ sensors available to be queried on TCP port 2947.
+ .
+ This package contains the detached debug symbols for gpsd, gpsd-clients,
+ python-gps and libgps18.
+
 Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
