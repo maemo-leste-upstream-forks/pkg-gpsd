@@ -20,16 +20,17 @@ _Description: Start gpsd automatically on boot?
 
 Template: gpsd/daemon_options
 Type: string
+Default: -F /var/run/gpsd.sock
 _Description: Options to gpsd:
  You can give additional arguments when starting gpsd; see gpsd(8) for a
  list of options.
  .
- By default -F /var/run/gpsd.sock will be added if not specified otherwise.
+ The default is to add "-F /var/run/gpsd.sock".
 
 Template: gpsd/autodetection
 Type: boolean
 Default: true
 _Description: Should gpsd handle attached USB GPS receivers automatically?
- gpsd handles GPS devices only, so it is safe to say yes here normally.
- In case gpsd causes interference with other attached devices or programs
- you should disable it here.
+ As gpsd only handles GPS devices, it is safe to choose this option.
+ However, you can disable it if gpsd is causing interference with other
+ attached devices or programs.
