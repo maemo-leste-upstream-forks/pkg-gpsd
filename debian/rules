@@ -196,7 +196,8 @@ install-python%:
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	  case $* in *-dbg) \
 	    python$* setup.py install --root=$(CURDIR)/debian/tmp \
-		 $(py_setup_install_args) ;; \
+		--install-data=/tmp \
+		$(py_setup_install_args) ;; \
 	  *) \
 	    python$* setup.py install --root=$(CURDIR)/debian/$(PACKAGE_PY) \
 		$(py_setup_install_args) ;; \
