@@ -191,10 +191,10 @@ install-python%:
 	set -e ;\
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	  case $* in *-dbg) \
-	    python$* setup.py install --root=debian/$(PACKAGE_GPSDDBG) \
-		 $(py_setup_install_args) ;;\
+	    python$* setup.py install --root=$(CURDIR)/debian/tmp \
+		 $(py_setup_install_args) ;; \
 	  *) \
-	    python$* setup.py install --root=debian/$(PACKAGE_PY) \
+	    python$* setup.py install --root=$(CURDIR)/debian/$(PACKAGE_PY) \
 		$(py_setup_install_args) ;; \
 	  esac
 
