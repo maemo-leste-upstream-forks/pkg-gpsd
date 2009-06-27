@@ -36,7 +36,7 @@ _Description: Should gpsd handle attached USB GPS receivers automatically?
 
 Template: gpsd/brokenconfig
 Type: error
- _Description: Unusable gpsd configuration
-  The configuration must at least specify either a device that gpsd should
-  connect to, or a control socket (using the -F option). USB autodetection
-  requires /var/run/gpsd.sock as control socket.
+_Description: Unusable gpsd configuration
+ The configuration must at least specify either a device that gpsd should
+ connect to, or a control socket (using the -F option). USB autodetection
+ requires /var/run/gpsd.sock as control socket.
