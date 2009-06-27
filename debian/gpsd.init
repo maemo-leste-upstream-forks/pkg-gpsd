@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 #	Authors: Tilman Koschnick <til@subnetz.org>
 #                Bernd Zeimetz <bzed@debian.org>
@@ -32,15 +32,6 @@ else
 	log_failure_msg "gpsd: error: Cannot find /etc/default/gpsd."
 	exit 1
 fi
-
-case "$DAEMON_OPTS" in
-	*-F*)
-		: #nothing to do here
-	;;
-	*)
-		DAEMON_OPTS="-F /var/run/gpsd.sock $DAEMON_OPTS"
-	;;
-esac
 
 case "$1" in
   start)
