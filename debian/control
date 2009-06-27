@@ -26,8 +26,8 @@ Description: Global Positioning System - daemon
  .
  With gpsd, multiple GPS client applications can share access to devices
  without contention or loss of data. Also, gpsd responds to queries with a
- format that is substantially easier to parse than the NMEA standard
- emitted by most GPS devices.
+ format that is substantially easier to parse than the different standards
+ emitted by GPS devices.
 
 Package: gpsd-dbg
 Architecture: any
