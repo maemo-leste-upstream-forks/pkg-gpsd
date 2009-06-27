@@ -138,11 +138,12 @@ build-gpsd-stamp: configure-stamp
 #endif
 
 
-build-python-pre:
+build-python-pre: build-python-pre-stamp
+build-python-pre-stamp:
 	$(MAKE) packet_names.h gpscat.1 gpsfake.1 gpsprof.1
 	touch $@
 
-build-python%-stamp: build-gpsd-stamp build-python-pre
+build-python%-stamp: build-gpsd-stamp build-python-pre-stamp
 	dh_testdir
 	set -e; \
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
@@ -189,14 +190,13 @@ install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-py
 install-python%:
 	set -e ;\
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
-	  python$* setup.py install --root=debian/$(PACKAGE_PY) $(py_setup_install_args) \
-				--install-layout=deb
-
-install-python%-dbg:
-	set -e ;\
-	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
-	  python$* setup.py install --root=debian/$(PACKAGE_GPSDDBG) \
-	      $(py_setup_install_args) --install-layout=deb
+	  case $* in *-dbg) \
+	    python$* setup.py install --root=debian/$(PACKAGE_GPSDDBG) \
+		 $(py_setup_install_args) ;;\
+	  *) \
+	    python$* setup.py install --root=debian/$(PACKAGE_PY) \
+		$(py_setup_install_args) ;; \
+	  esac
 
 
 clean: clean-patched unpatch
