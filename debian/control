@@ -35,7 +35,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
 Recommends: libgps18 (= ${binary:Version}),
  gpsd (= ${binary:Version}),
- gpsd-clients ((= ${binary:Version}),
+ gpsd-clients (= ${binary:Version}),
  python-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
  The gpsd service daemon can monitor one or more GPS devices connected to
