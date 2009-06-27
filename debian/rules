@@ -113,7 +113,7 @@ endif
 
 
 configure: configure-stamp
-configure-stamp: patch autotools-dev-stamp
+configure-stamp: $(QUILT_STAMPFN) autotools-dev-stamp
 	dh_testdir
 	$(CONFENV) ./configure $(CONFFLAGS)
 	touch $@
@@ -151,8 +151,13 @@ build-python%-stamp: build-gpsd-stamp build-python-pre-stamp
 	touch $@
 
 install: install-gpsd install-python
+	dh_testdir
+	dh_testroot
+	dh_install
 
 install-gpsd: build-gpsd-stamp
+	dh_testdir
+	dh_testroot
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp PYEXTENSIONS='' noinst_SCRIPTS='' nodist_python_PYTHON='' dist_bin_SCRIPTS='' PYTHONPAGES_DIST=''
 	cp INSTALL TROUBLESHOOTING
 	#ldconfig link
@@ -181,7 +186,6 @@ install-gpsd: build-gpsd-stamp
 	install -d -m 755 debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults
 	install -m 644 xgps.ad debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults/xgps
 	install -m 644 xgpsspeed.ad debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults/xgpsspeed
-	dh_install
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 
 
