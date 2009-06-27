@@ -8,7 +8,6 @@ _Description: Device the GPS receiver is attached to:
  Leave empty if you don't want to connect gpsd to a device on boot or if you
  want to use device autodetection only.
 
-
 Template: gpsd/start_daemon
 Type: boolean
 Default: false
@@ -34,3 +33,10 @@ _Description: Should gpsd handle attached USB GPS receivers automatically?
  As gpsd only handles GPS devices, it is safe to choose this option.
  However, you can disable it if gpsd is causing interference with other
  attached devices or programs.
+
+Template: gpsd/brokenconfig
+Type: error
+_Description: gpsd will fail to start with the current configuration.
+ At least you either need to specify a device you want to connect gpsd
+ to or specify a control socket using the -F option.
+ Enabled USB autodetection requires /var/run/gpsd.sock as control socket.
