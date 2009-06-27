@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-27 03:03+0200\n"
+"POT-Creation-Date: 2009-06-27 13:44+0200\n"
 "PO-Revision-Date: 2008-07-21 15:12+0100\n"
 "Last-Translator: Martin Bagge <brother@bsnet.se>\n"
 "Language-Team: Swedish <debian-l10n-swedish@lists.debian.org>\n"
@@ -81,6 +81,10 @@ msgstr "Flaggor till gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -116,6 +120,21 @@ msgstr ""
 "Det här alternativet är avaktiverat som standard därför att ett flertal GPS-"
 "mottagere använder vanliga USB-till-seriell-adaptrar och detta medför att "
 "gpsd kan störa andra enheter eller program."
+
+#. Type: error
+#. Description
+#: ../gpsd.templates:5001
+msgid "Unusable gpsd configuration"
+msgstr ""
+
+#. Type: error
+#. Description
+#: ../gpsd.templates:5001
+msgid ""
+"The configuration must at least specify either a device that gpsd should "
+"connect to, or a control socket (using the -F option). USB autodetection "
+"requires /var/run/gpsd.sock as control socket."
+msgstr ""
 
 #~ msgid "Multiple devices may be specified as a space-separated list."
 #~ msgstr "Flera enheter kan anges genom att separera med mellanslag."

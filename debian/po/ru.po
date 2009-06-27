@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ru\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-27 03:03+0200\n"
+"POT-Creation-Date: 2009-06-27 13:44+0200\n"
 "PO-Revision-Date: 2008-07-31 21:28+0400\n"
 "Last-Translator: Yuri Kozlov <kozlov.y@gmail.com>\n"
 "Language-Team: Russian <debian-l10n-russian@lists.debian.org>\n"
@@ -77,6 +77,10 @@ msgstr "Параметры для gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -114,6 +118,21 @@ msgstr ""
 "используются широко распространённые микросхемы USB-в-последовательный порт, "
 "из-за чего gpsd может повлиять на другие подключённые устройства или "
 "программы."
+
+#. Type: error
+#. Description
+#: ../gpsd.templates:5001
+msgid "Unusable gpsd configuration"
+msgstr ""
+
+#. Type: error
+#. Description
+#: ../gpsd.templates:5001
+msgid ""
+"The configuration must at least specify either a device that gpsd should "
+"connect to, or a control socket (using the -F option). USB autodetection "
+"requires /var/run/gpsd.sock as control socket."
+msgstr ""
 
 #~ msgid "Multiple devices may be specified as a space-separated list."
 #~ msgstr "Через пробел можно указать несколько устройств."
