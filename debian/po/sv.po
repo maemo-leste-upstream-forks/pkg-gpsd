@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:48+0100\n"
+"POT-Creation-Date: 2009-06-27 03:03+0200\n"
 "PO-Revision-Date: 2008-07-21 15:12+0100\n"
 "Last-Translator: Martin Bagge <brother@bsnet.se>\n"
 "Language-Team: Swedish <debian-l10n-swedish@lists.debian.org>\n"
@@ -31,14 +31,21 @@ msgstr "Enhet som din GPS-mottagare är ansluten till:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Please enter the device the GPS receiver is attached to. It will probably be something like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr "Ange enheten som din GPS är inkopplad på, detta är antagligen någon liknande /dev/ttyS0 eller /dev/ttyUSB0."
+msgid ""
+"Please enter the device the GPS receiver is attached to. It will probably be "
+"something like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr ""
+"Ange enheten som din GPS är inkopplad på, detta är antagligen någon "
+"liknande /dev/ttyS0 eller /dev/ttyUSB0."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Multiple devices may be specified as a space-separated list."
-msgstr "Flera enheter kan anges genom att separera med mellanslag."
+msgid ""
+"Multiple devices may be specified as a space-separated list. Leave empty if "
+"you don't want to connect gpsd to a device on boot or if you want to use "
+"device autodetection only."
+msgstr ""
 
 #. Type: boolean
 #. Description
@@ -49,8 +56,21 @@ msgstr "Ska gpsd startas vid systemets uppstart?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "If the GPS receiver is permanently attached to this computer, it might be appropriate for gpsd to start at boot time. Alternatively it can be started by the hotplug interface for USB devices, or by running gpsd(8) manually."
-msgstr "Om din GPS-mottagare är permanent ansluten i din dator kanske du vill starta gpsd vid systemets uppstart. Annars kan du köra den genom att starta gpsd(1) när som helst eller så kan du använda hotplugs gränssnitt för USB-enheter."
+#, fuzzy
+#| msgid ""
+#| "If the GPS receiver is permanently attached to this computer, it might be "
+#| "appropriate for gpsd to start at boot time. Alternatively it can be "
+#| "started by the hotplug interface for USB devices, or by running gpsd(8) "
+#| "manually."
+msgid ""
+"If the GPS receiver is permanently attached to this computer, it might be "
+"appropriate for gpsd to start at boot time. Alternatively it can be started "
+"by udev when an appropriate device is plugged in or by running gpsd(8) "
+"manually."
+msgstr ""
+"Om din GPS-mottagare är permanent ansluten i din dator kanske du vill starta "
+"gpsd vid systemets uppstart. Annars kan du köra den genom att starta gpsd(1) "
+"när som helst eller så kan du använda hotplugs gränssnitt för USB-enheter."
 
 #. Type: string
 #. Description
@@ -61,8 +81,18 @@ msgstr "Flaggor till gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "You can give additional arguments when starting gpsd; see gpsd(8) for a list of options."
-msgstr "Du kan ange ytterligare argument när du startar gpsd, se gpsd(8) för en lista över flaggor."
+msgid ""
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
+"of options."
+msgstr ""
+"Du kan ange ytterligare argument när du startar gpsd, se gpsd(8) för en "
+"lista över flaggor."
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+msgstr ""
 
 #. Type: boolean
 #. Description
@@ -73,9 +103,22 @@ msgstr "Ska gpsd automatiskt hantera USB-GPS:er som ansluts?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-msgid "This option is disabled by default, because several GPS receivers use common USB-to-serial converter chips, so gpsd may cause interference with other attached devices or programs."
-msgstr "Det här alternativet är avaktiverat som standard därför att ett flertal GPS-mottagere använder vanliga USB-till-seriell-adaptrar och detta medför att gpsd kan störa andra enheter eller program."
+#, fuzzy
+#| msgid ""
+#| "This option is disabled by default, because several GPS receivers use "
+#| "common USB-to-serial converter chips, so gpsd may cause interference with "
+#| "other attached devices or programs."
+msgid ""
+"As gpsd only handles GPS devices, it is safe to choose this option. However, "
+"you can disable it if gpsd is causing interference with other attached "
+"devices or programs."
+msgstr ""
+"Det här alternativet är avaktiverat som standard därför att ett flertal GPS-"
+"mottagere använder vanliga USB-till-seriell-adaptrar och detta medför att "
+"gpsd kan störa andra enheter eller program."
+
+#~ msgid "Multiple devices may be specified as a space-separated list."
+#~ msgstr "Flera enheter kan anges genom att separera med mellanslag."
 
 #~ msgid "You can enter several devices, separated by spaces."
 #~ msgstr "Du kan ange flera enheter, separera med blanksteg."
-

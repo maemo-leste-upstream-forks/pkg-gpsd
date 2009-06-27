@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:48+0100\n"
+"POT-Creation-Date: 2009-06-27 03:03+0200\n"
 "PO-Revision-Date: 2008-03-15 21:07+0000\n"
 "Last-Translator: Jacobo Tarrio <jtarrio@debian.org>\n"
 "Language-Team: Galician <proxecto@trasno.net>\n"
@@ -33,10 +33,11 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Multiple devices may be specified as a space-separated list."
+msgid ""
+"Multiple devices may be specified as a space-separated list. Leave empty if "
+"you don't want to connect gpsd to a device on boot or if you want to use "
+"device autodetection only."
 msgstr ""
-"Pódense especificar varios dispositivos coma unha lista de dispositivos "
-"separados por espazos."
 
 #. Type: boolean
 #. Description
@@ -47,10 +48,17 @@ msgstr "¿Iniciar gpsd co ordenador?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
+#, fuzzy
+#| msgid ""
+#| "If the GPS receiver is permanently attached to this computer, it might be "
+#| "appropriate for gpsd to start at boot time. Alternatively it can be "
+#| "started by the hotplug interface for USB devices, or by running gpsd(8) "
+#| "manually."
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
-"by the hotplug interface for USB devices, or by running gpsd(8) manually."
+"by udev when an appropriate device is plugged in or by running gpsd(8) "
+"manually."
 msgstr ""
 "Se o receptor GPS está conectado permanentemente ao seu ordenador, pode ser "
 "apropiado que se inicie gpsd co ordenador. De xeito alternativo, pode "
@@ -73,6 +81,12 @@ msgstr ""
 "Pode fornecer argumentos adicionais ao iniciar gpsd; consulte gpsd(8) para "
 "unha lista de opcións."
 
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+msgstr ""
+
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
@@ -83,14 +97,24 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "This option is disabled by default, because several GPS receivers use "
+#| "common USB-to-serial converter chips, so gpsd may cause interference with "
+#| "other attached devices or programs."
 msgid ""
-"This option is disabled by default, because several GPS receivers use common "
-"USB-to-serial converter chips, so gpsd may cause interference with other "
-"attached devices or programs."
+"As gpsd only handles GPS devices, it is safe to choose this option. However, "
+"you can disable it if gpsd is causing interference with other attached "
+"devices or programs."
 msgstr ""
 "Esta opción está desconectada por defecto, porque varios receptors GPS "
 "empregan chips conversores USB a serie, polo que gpsd podería causar "
 "interferencias con outros dispositivos conectados ou programas."
+
+#~ msgid "Multiple devices may be specified as a space-separated list."
+#~ msgstr ""
+#~ "Pódense especificar varios dispositivos coma unha lista de dispositivos "
+#~ "separados por espazos."
 
 #~ msgid "You can enter several devices, separated by spaces."
 #~ msgstr "Pode introducir varios dispositivos, separados por espazos."

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.33-4\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:48+0100\n"
+"POT-Creation-Date: 2009-06-27 03:03+0200\n"
 "PO-Revision-Date: 2008-03-26 19:12+0000\n"
 "Last-Translator: Miguel Figueiredo <elmig@debianpt.org>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -34,9 +34,11 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Multiple devices may be specified as a space-separated list."
-msgstr "Podem ser especificados vários dispositivos como uma lista separada "
-"por espaços."
+msgid ""
+"Multiple devices may be specified as a space-separated list. Leave empty if "
+"you don't want to connect gpsd to a device on boot or if you want to use "
+"device autodetection only."
+msgstr ""
 
 #. Type: boolean
 #. Description
@@ -47,15 +49,22 @@ msgstr "Iniciar automaticamente o gpsd no arranque?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
+#, fuzzy
+#| msgid ""
+#| "If the GPS receiver is permanently attached to this computer, it might be "
+#| "appropriate for gpsd to start at boot time. Alternatively it can be "
+#| "started by the hotplug interface for USB devices, or by running gpsd(8) "
+#| "manually."
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
-"by the hotplug interface for USB devices, or by running gpsd(8) manually."
+"by udev when an appropriate device is plugged in or by running gpsd(8) "
+"manually."
 msgstr ""
-"Se o receptor de GPS estiver permanentemente ligado a este computador, poderá "
-"ser apropriado o gpsd iniciar no arranque do computador. Em alternativa pode "
-"ser iniciado pelo interface hotplug para dispositivos USB, ou correndo "
-"manualmente o gpsd(8)."
+"Se o receptor de GPS estiver permanentemente ligado a este computador, "
+"poderá ser apropriado o gpsd iniciar no arranque do computador. Em "
+"alternativa pode ser iniciado pelo interface hotplug para dispositivos USB, "
+"ou correndo manualmente o gpsd(8)."
 
 #. Type: string
 #. Description
@@ -73,6 +82,12 @@ msgstr ""
 "Você pode passar argumentos adicionais quando iniciar o gpsd; para uma lista "
 "de opções veja gpsd(8)."
 
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+msgstr ""
+
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
@@ -82,15 +97,25 @@ msgstr "Deve o gpsd lidar automaticamente com receptores de GPS USB?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "This option is disabled by default, because several GPS receivers use "
+#| "common USB-to-serial converter chips, so gpsd may cause interference with "
+#| "other attached devices or programs."
 msgid ""
-"This option is disabled by default, because several GPS receivers use common "
-"USB-to-serial converter chips, so gpsd may cause interference with other "
-"attached devices or programs."
+"As gpsd only handles GPS devices, it is safe to choose this option. However, "
+"you can disable it if gpsd is causing interference with other attached "
+"devices or programs."
 msgstr ""
 "O pré-definido é esta opção vir desactivada, pois vários dispositivos "
 "receptores de GPS utilizam chips conversores USB-para-série vulgares, por "
-"isso o gpsd poderá causar interferências com outros dispositivos ou programas "
-"que estejam ligados."
+"isso o gpsd poderá causar interferências com outros dispositivos ou "
+"programas que estejam ligados."
+
+#~ msgid "Multiple devices may be specified as a space-separated list."
+#~ msgstr ""
+#~ "Podem ser especificados vários dispositivos como uma lista separada por "
+#~ "espaços."
 
 #~ msgid "You can enter several devices, separated by spaces."
 #~ msgstr "Pode introduzir vários dispositivos separados por espaços."

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ru\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:48+0100\n"
+"POT-Creation-Date: 2009-06-27 03:03+0200\n"
 "PO-Revision-Date: 2008-07-31 21:28+0400\n"
 "Last-Translator: Yuri Kozlov <kozlov.y@gmail.com>\n"
 "Language-Team: Russian <debian-l10n-russian@lists.debian.org>\n"
@@ -15,7 +15,8 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: KBabel 1.11.4\n"
-"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
+"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #. Type: string
 #. Description
@@ -36,8 +37,11 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Multiple devices may be specified as a space-separated list."
-msgstr "Через пробел можно указать несколько устройств."
+msgid ""
+"Multiple devices may be specified as a space-separated list. Leave empty if "
+"you don't want to connect gpsd to a device on boot or if you want to use "
+"device autodetection only."
+msgstr ""
 
 #. Type: boolean
 #. Description
@@ -48,14 +52,21 @@ msgstr "Запускать службу gpsd при включении комп�
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
+#, fuzzy
+#| msgid ""
+#| "If the GPS receiver is permanently attached to this computer, it might be "
+#| "appropriate for gpsd to start at boot time. Alternatively it can be "
+#| "started by the hotplug interface for USB devices, or by running gpsd(8) "
+#| "manually."
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
-"by the hotplug interface for USB devices, or by running gpsd(8) manually."
+"by udev when an appropriate device is plugged in or by running gpsd(8) "
+"manually."
 msgstr ""
-"Если GPS-приёмник постоянно подсоединён к компьютеру, то лучше "
-"запускать gpsd при включении компьютера. Также, он может запускаться "
-"интерфейсом hotplug для USB-устройств, или вручную (см. gpsd(8))."
+"Если GPS-приёмник постоянно подсоединён к компьютеру, то лучше запускать "
+"gpsd при включении компьютера. Также, он может запускаться интерфейсом "
+"hotplug для USB-устройств, или вручную (см. gpsd(8))."
 
 #. Type: string
 #. Description
@@ -70,25 +81,39 @@ msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
-"Вы можете указать дополнительные параметры запуска gpsd; их список "
-"есть в справочной странице gpsd(8)."
+"Вы можете указать дополнительные параметры запуска gpsd; их список есть в "
+"справочной странице gpsd(8)."
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+msgstr ""
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr "Должен ли gpsd обрабатывать подключения USB GPS-приёмников автоматически?"
+msgstr ""
+"Должен ли gpsd обрабатывать подключения USB GPS-приёмников автоматически?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "This option is disabled by default, because several GPS receivers use "
+#| "common USB-to-serial converter chips, so gpsd may cause interference with "
+#| "other attached devices or programs."
 msgid ""
-"This option is disabled by default, because several GPS receivers use common "
-"USB-to-serial converter chips, so gpsd may cause interference with other "
-"attached devices or programs."
+"As gpsd only handles GPS devices, it is safe to choose this option. However, "
+"you can disable it if gpsd is causing interference with other attached "
+"devices or programs."
 msgstr ""
 "По умолчанию эта возможность выключена, так как в некоторых GPS-приёмниках "
 "используются широко распространённые микросхемы USB-в-последовательный порт, "
 "из-за чего gpsd может повлиять на другие подключённые устройства или "
 "программы."
 
+#~ msgid "Multiple devices may be specified as a space-separated list."
+#~ msgstr "Через пробел можно указать несколько устройств."

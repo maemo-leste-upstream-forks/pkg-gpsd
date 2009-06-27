@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: gpsd 2.37-1nReport-Msgid-Bugs-To: gpsd@packages.debian."
 "org\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2008-03-15 16:48+0100\n"
+"POT-Creation-Date: 2009-06-27 03:03+0200\n"
 "PO-Revision-Date: 2008-03-20 19:00+1030\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
@@ -36,10 +36,11 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Multiple devices may be specified as a space-separated list."
+msgid ""
+"Multiple devices may be specified as a space-separated list. Leave empty if "
+"you don't want to connect gpsd to a device on boot or if you want to use "
+"device autodetection only."
 msgstr ""
-"Cũng có thể ghi rõ nhiều thiết bị cùng lúc dưới dạng danh sách định giới "
-"bằng dấu cách."
 
 #. Type: boolean
 #. Description
@@ -53,10 +54,17 @@ msgstr "Tự động khởi chạy gpsd khi khởi động không?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
+#, fuzzy
+#| msgid ""
+#| "If the GPS receiver is permanently attached to this computer, it might be "
+#| "appropriate for gpsd to start at boot time. Alternatively it can be "
+#| "started by the hotplug interface for USB devices, or by running gpsd(8) "
+#| "manually."
 msgid ""
 "If the GPS receiver is permanently attached to this computer, it might be "
 "appropriate for gpsd to start at boot time. Alternatively it can be started "
-"by the hotplug interface for USB devices, or by running gpsd(8) manually."
+"by udev when an appropriate device is plugged in or by running gpsd(8) "
+"manually."
 msgstr ""
 "Máy nhận GPS có kết nối bền bỉ đến máy tính thì bạn cũng có thể khởi chạy "
 "trình nền gpsd vào lúc khởi động hệ thống. Không thì bạn có thể khởi chạy nó "
@@ -81,6 +89,12 @@ msgstr ""
 "Bạn cũng có thể đặt thêm tùy chọn khi khởi chạy trình nền gpsd; xem gpsd(8) "
 "để tìm danh sách các tùy chọn sẵn sàng."
 
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+msgstr ""
+
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
@@ -92,11 +106,21 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "This option is disabled by default, because several GPS receivers use "
+#| "common USB-to-serial converter chips, so gpsd may cause interference with "
+#| "other attached devices or programs."
 msgid ""
-"This option is disabled by default, because several GPS receivers use common "
-"USB-to-serial converter chips, so gpsd may cause interference with other "
-"attached devices or programs."
+"As gpsd only handles GPS devices, it is safe to choose this option. However, "
+"you can disable it if gpsd is causing interference with other attached "
+"devices or programs."
 msgstr ""
 "Tùy chọn này bị tắt theo mặc định, vì vài máy nhận tín hiệu GPS có sử dụng "
 "phiến tinh thể chuyển đổi USB-sang-nối-tiếp, trong trường hợp đó gpsd có thể "
 "gây trở ngạy cho các thiết bị đã kết nối hoặc chương trình khác."
+
+#~ msgid "Multiple devices may be specified as a space-separated list."
+#~ msgstr ""
+#~ "Cũng có thể ghi rõ nhiều thiết bị cùng lúc dưới dạng danh sách định giới "
+#~ "bằng dấu cách."
