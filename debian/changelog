@@ -1,3 +1,54 @@
+gpsd (2.39-3) experimental; urgency=low
+
+  * [98418e2f] Set priority of all debconf questions to low.
+  * [c5d8d1f4] Set control socket option if not in DAEMON_OPTS. (Closes:
+    #515085) - thanks to Sascha Silbe
+  * [9bed6ecc] Update gpsd.templates to explain options better.
+  * [fc356713] Support building for Python2.6.
+  * [ee363122] Enable parallel build for python modules.
+  * [568c3961] Rise python-all-dev build-dep for --install-layout.
+  * [751c5138] Bump python-support build-dep to >= 0.7.1
+  * [1545b437] Remove workarounds for broken --disable-python.
+  * [59f41451] Using python in build target names.
+  * [dcb57ba6] Build gpsd-dbg containing the debug symbols.
+  * [52ac81d1] Update templates as suggested during the review. - thanks
+    to Justin B Rye
+  * [5b099fbe] Updating control file after review. - thanks to Justin B
+    Rye
+  * [03147ac2] Ensure a valid configuration in debconf. (Closes:
+    #515085) - thanks to Sascha Silbe
+  * [13db408f] Add error message to gpsd templates.
+  * [549e673e] Update error message in template after review.
+  * [73b14c74] Adding fuzzy po files after template update.
+  * [e1bbde15] Bail out after too many errors during config.
+  * [a280e182] Fix description: there is more than NMEA only.
+  * [6d9b16f3] Remove extra space in front of template.
+  * [be7b37bb] Updating fuzzy po files.
+  * [0e5c78b7] Revert "Remove workarounds for broken --disable-python."
+  * [741490b0] Adding python-all-dbg as build-dep.
+  * [726fc8e3] Removing extra ( in package dependency.
+  * [3e15f929] Lowering required python-* version to build.
+  * [80313e6d] Fixing various bugs in the config script.
+  * [5d48d2e7] Install python-dbg files to debian/tmp.
+  * [43c5b4f2] Install python *_d.so files into gpsd-dbg.
+  * [bb498598] Run dh_install after installing the python files.
+  * [ae083f4f] Don't install data files with python*-dbg.
+  * [48bf64d7] Revert "Set control socket option if not in DAEMON_OPTS."
+  * [9a25c1cf] Reword and fix gpsd/start_daemon template. - thanks to
+    Justin B Rye
+  * [8d652246] Require daemon autostart before asking further debconf
+    questions.
+  * [f61a73fc] Also check if gpsd was autostarted in
+    gpsd.hotplug.wrapper.
+  * [35569850] Updating po files after gpsd/start_daemon change.
+  * [6cbdda19] Add ~ to Debian revisions in the symbols file.
+  * [a2972159] Bump Standards-Version to 3.8.2 and make lintian happy.
+  * [edfe4196] Use debian/pyversions instead of XS-Python-Version.
+  * [fe7302d8] Add Vcs-Browser and Vcs-Git information.
+  * [d0f0b1b8] Use grep -q to avoid useless output in gpsd.config.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 28 Jun 2009 14:53:14 +0200
+
 gpsd (2.39-2) unstable; urgency=low
 
   * [765fde7b] Calculate soname and library version properly.
