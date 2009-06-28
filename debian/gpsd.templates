@@ -10,12 +10,10 @@ _Description: Device the GPS receiver is attached to:
 
 Template: gpsd/start_daemon
 Type: boolean
-Default: false
-_Description: Start gpsd automatically on boot?
- If the GPS receiver is permanently attached to this computer, it might be
- appropriate for gpsd to start at boot time. Alternatively it can be started
- by udev when an appropriate device is plugged in or by running gpsd(8)
- manually.
+Default: true
+_Description: Start gpsd automatically?
+ If you accept this option, gpsd will be started automatically.
+ Autodetection of USB GPS devices requires a running gpsd.
 
 Template: gpsd/daemon_options
 Type: string
