@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-27 13:44+0200\n"
+"POT-Creation-Date: 2009-06-28 13:43+0200\n"
 "PO-Revision-Date: 2008-03-18 19:02+0100\n"
 "Last-Translator: Bart Cornelis <cobaco@skolelinux.no>\n"
 "Language-Team: debian-l10n-dutch <debian-l10n-dutch@lists.debian.org>\n"
@@ -44,7 +44,9 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "Start gpsd automatically on boot?"
+#, fuzzy
+#| msgid "Start gpsd automatically on boot?"
+msgid "Start gpsd automatically?"
 msgstr ""
 "Wilt u dat gpsd automatisch gestart wordt tijdens het opstarten van de "
 "computer?"
@@ -52,22 +54,10 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid ""
-#| "If the GPS receiver is permanently attached to this computer, it might be "
-#| "appropriate for gpsd to start at boot time. Alternatively it can be "
-#| "started by the hotplug interface for USB devices, or by running gpsd(8) "
-#| "manually."
 msgid ""
-"If the GPS receiver is permanently attached to this computer, it might be "
-"appropriate for gpsd to start at boot time. Alternatively it can be started "
-"by udev when an appropriate device is plugged in or by running gpsd(8) "
-"manually."
+"If you accept this option, gpsd will be started automatically. Autodetection "
+"of USB GPS devices requires a running gpsd."
 msgstr ""
-"Als uw GPS-ontvanger permanent op uw computer aangesloten is kan het "
-"toepasselijk zijn om gpsd automatisch te starten tijdens het opstarten van "
-"de computer. Alternatief kan gpsd gestart worden via de hotplug-interface "
-"voor USB-apparaten, of handmatig via het commando gpsd(8)."
 
 #. Type: string
 #. Description
@@ -133,6 +123,23 @@ msgid ""
 "connect to, or a control socket (using the -F option). USB autodetection "
 "requires /var/run/gpsd.sock as control socket."
 msgstr ""
+
+#, fuzzy
+#~| msgid ""
+#~| "If the GPS receiver is permanently attached to this computer, it might "
+#~| "be appropriate for gpsd to start at boot time. Alternatively it can be "
+#~| "started by the hotplug interface for USB devices, or by running gpsd(8) "
+#~| "manually."
+#~ msgid ""
+#~ "If the GPS receiver is permanently attached to this computer, it might be "
+#~ "appropriate for gpsd to start at boot time. Alternatively it can be "
+#~ "started by udev when an appropriate device is plugged in or by running "
+#~ "gpsd(8) manually."
+#~ msgstr ""
+#~ "Als uw GPS-ontvanger permanent op uw computer aangesloten is kan het "
+#~ "toepasselijk zijn om gpsd automatisch te starten tijdens het opstarten "
+#~ "van de computer. Alternatief kan gpsd gestart worden via de hotplug-"
+#~ "interface voor USB-apparaten, of handmatig via het commando gpsd(8)."
 
 #~ msgid "Multiple devices may be specified as a space-separated list."
 #~ msgstr ""
