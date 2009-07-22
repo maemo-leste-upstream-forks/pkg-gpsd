@@ -1,3 +1,36 @@
+gpsd (2.39-4) unstable; urgency=low
+
+  * [51e8dea3] Updating git-dch settings in git-bp config.
+  * [35f17def] Updating debconf translation: cs.po (Closes: #534958) -
+    thanks to Miroslav Kure
+  * [c1917386] Updating debconf translation: eu.po (Closes: #535038) -
+    thanks to Piarres Beobide
+  * [4b6719c3] Updating debconf translation: ja.po (Closes: #535067) -
+    thanks to Kenshi Muto
+  * [b188ed05] Updating debconf translation: fi.po (Closes: #535112) -
+    thanks to Esko Arajärvi
+  * [ae2b44fe] Updating debconf translation: ro.po (Closes: #535121) -
+    thanks to Eddy Petrișor
+  * [0d989720] Updating debconf translation: sv.po (Closes: #535149) -
+    thanks to Martin Bagge / brother
+  * [413b36ab] Updating debconf translation: sk.po (Closes: #535157) -
+    thanks to helix84@centrum.sk
+  * [ca978d4f] Updating debconf translation: es.po (Closes: #536239) -
+    thanks to Francisco Javier Cuadrado
+  * [9efd437a] Updating debconf translation: pt.po (Closes: #536276) -
+    thanks to "Traduz - Portuguese Translation Team"
+  * [6e18a392] Updating debconf translation: ru.po (Closes: #536563) -
+    thanks to Yuri Kozlov
+  * [2c970b41] Updating debconf translation: it.po (Closes: #536596) -
+    thanks to Luca Monducci
+  * [d998da9f] Updating debconf translation: gl.po (Closes: #537427) -
+    thanks to marce
+  * [64375707] Fixing debconf prio for "brokenconfig" state. (Closes:
+    #536010) - thanks to Alban Browaeys <prahal@yahoo.com>
+  * [9d7960e6] Updating debconf-updatepo reformatted .po files.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 22 Jul 2009 17:57:36 +0200
+
 gpsd (2.39-3) experimental; urgency=low
 
   * [98418e2f] Set priority of all debconf questions to low.
