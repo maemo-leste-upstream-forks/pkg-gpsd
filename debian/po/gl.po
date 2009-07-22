@@ -42,15 +42,12 @@ msgid ""
 "device autodetection only."
 msgstr ""
 "Pode indicar varios dispositivos nunha lista separados por espazos. Déixeo "
-"en "
-"branco se non desexa conectar gpsd a ningún dispositivo no arrinque ou se só "
-"desexa "
-"empregar a detección automática do dispositivo."
+"en branco se non desexa conectar gpsd a ningún dispositivo no arrinque ou se "
+"só desexa empregar a detección automática do dispositivo."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
 msgstr "Desexa iniciar gpsd automaticamente?"
 
@@ -62,8 +59,7 @@ msgid ""
 "of USB GPS devices requires a running gpsd."
 msgstr ""
 "Se escolle esta opción gpsd iniciarase automaticamente. Para detectar "
-"automaticamente "
-"os dispositivos GPS USB debe ter un gpsd en execución."
+"automaticamente os dispositivos GPS USB debe ter un gpsd en execución."
 
 #. Type: string
 #. Description
@@ -74,9 +70,6 @@ msgstr "Opcións para gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -100,20 +93,14 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "This option is disabled by default, because several GPS receivers use "
-#| "common USB-to-serial converter chips, so gpsd may cause interference with "
-#| "other attached devices or programs."
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
 "Dado que gpsd só xestiona dispositivos GPS é seguro escoller esta opción. "
-"Porén, "
-"pode desactivala se gpsd estivese a causar interferencias con outros "
-"dispositivos "
-"conectados ou programas."
+"Porén, pode desactivala se gpsd estivese a causar interferencias con outros "
+"dispositivos conectados ou programas."
 
 #. Type: error
 #. Description
@@ -130,9 +117,9 @@ msgid ""
 "requires /var/run/gpsd.sock as control socket."
 msgstr ""
 "A configuración debe especificar polo menos ou un dispositivo ao que se "
-"debera conectar gpsd, ou un socket de control (mediante a opción -F). "
-"A detección automática do USB require a /var/run/gpsd.sock como socket "
-"de control."
+"debera conectar gpsd, ou un socket de control (mediante a opción -F). A "
+"detección automática do USB require a /var/run/gpsd.sock como socket de "
+"control."
 
 #, fuzzy
 #~| msgid ""

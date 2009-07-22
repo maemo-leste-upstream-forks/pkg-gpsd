@@ -25,27 +25,41 @@ msgstr "Zariadenie, ku ktorému je GPS prijímač pripojený:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Please enter the device the GPS receiver is attached to. It will probably be something like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr "Prosím zadajte zariadenie, ku pripojená prijímač GPS. Pravdepodobne to bude niečo ako /dev/ttyS0 alebo /dev/ttyUSB0."
+msgid ""
+"Please enter the device the GPS receiver is attached to. It will probably be "
+"something like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr ""
+"Prosím zadajte zariadenie, ku pripojená prijímač GPS. Pravdepodobne to bude "
+"niečo ako /dev/ttyS0 alebo /dev/ttyUSB0."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Multiple devices may be specified as a space-separated list. Leave empty if you don't want to connect gpsd to a device on boot or if you want to use device autodetection only."
-msgstr "Viaceré zariadenia možno uviesť ako zoznam oddelený medzerami. Ponechajte toto pole prázdne ak nechcete zariadenie gpsd pripájať pri štarte alebo ak chcete používať iba automatickú detekciu zariadenia."
+msgid ""
+"Multiple devices may be specified as a space-separated list. Leave empty if "
+"you don't want to connect gpsd to a device on boot or if you want to use "
+"device autodetection only."
+msgstr ""
+"Viaceré zariadenia možno uviesť ako zoznam oddelený medzerami. Ponechajte "
+"toto pole prázdne ak nechcete zariadenie gpsd pripájať pri štarte alebo ak "
+"chcete používať iba automatickú detekciu zariadenia."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
 msgstr "Spúšťať gpsd automaticky pri spustení systému?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "If you accept this option, gpsd will be started automatically. Autodetection of USB GPS devices requires a running gpsd."
-msgstr "Ak prijmete túto voľbu, gpsd sa bude spúšťať automaticky. Na automatickú detekciu GPS prijímačov pripojených prostredníctvom USB je potrebné, aby gpsd bežal."
+msgid ""
+"If you accept this option, gpsd will be started automatically. Autodetection "
+"of USB GPS devices requires a running gpsd."
+msgstr ""
+"Ak prijmete túto voľbu, gpsd sa bude spúšťať automaticky. Na automatickú "
+"detekciu GPS prijímačov pripojených prostredníctvom USB je potrebné, aby "
+"gpsd bežal."
 
 #. Type: string
 #. Description
@@ -56,11 +70,12 @@ msgstr "Voľby pre gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
-msgid "You can give additional arguments when starting gpsd; see gpsd(8) for a list of options."
-msgstr "Môžete zadať ďalšie argumenty, ktoré sa odovzdajú gpsd pri štarte. Zoznam možností nájdete v manuálové stránke gpsd(8)."
+msgid ""
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
+"of options."
+msgstr ""
+"Môžete zadať ďalšie argumenty, ktoré sa odovzdajú gpsd pri štarte. Zoznam "
+"možností nájdete v manuálové stránke gpsd(8)."
 
 #. Type: string
 #. Description
@@ -72,17 +87,20 @@ msgstr "Predvolená voľba je pridať „-F /var/run/gpsd.sock“."
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr "Má gpsd automaticky spravovať GPS prijímače pripojené prostredníctvom USB?"
+msgstr ""
+"Má gpsd automaticky spravovať GPS prijímače pripojené prostredníctvom USB?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "This option is disabled by default, because several GPS receivers use "
-#| "common USB-to-serial converter chips, so gpsd may cause interference with "
-#| "other attached devices or programs."
-msgid "As gpsd only handles GPS devices, it is safe to choose this option. However, you can disable it if gpsd is causing interference with other attached devices or programs."
-msgstr "Pretože gpsd pracuje iba so zariadeniami GPS, zapnúť túto voľbu je bezpečné. Môžete ju však vypnúť ak gpsd spôsobuje problémy s inými pripojenými zariadeniami alebo  programami."
+msgid ""
+"As gpsd only handles GPS devices, it is safe to choose this option. However, "
+"you can disable it if gpsd is causing interference with other attached "
+"devices or programs."
+msgstr ""
+"Pretože gpsd pracuje iba so zariadeniami GPS, zapnúť túto voľbu je bezpečné. "
+"Môžete ju však vypnúť ak gpsd spôsobuje problémy s inými pripojenými "
+"zariadeniami alebo  programami."
 
 #. Type: error
 #. Description
@@ -93,6 +111,11 @@ msgstr "Nepoužiteľná konfigurácia gpsd"
 #. Type: error
 #. Description
 #: ../gpsd.templates:5001
-msgid "The configuration must at least specify either a device that gpsd should connect to, or a control socket (using the -F option). USB autodetection requires /var/run/gpsd.sock as control socket."
-msgstr "Konfigurácia musí určovať aspoň zariadenie, ku ktorému sa má gpsd pripájať alebo riadiaci socket (pomocou voľby -F). Automatická detekcia USB vyžaduje, aby riadiaci socket bol /var/run/gpsd.sock."
-
+msgid ""
+"The configuration must at least specify either a device that gpsd should "
+"connect to, or a control socket (using the -F option). USB autodetection "
+"requires /var/run/gpsd.sock as control socket."
+msgstr ""
+"Konfigurácia musí určovať aspoň zariadenie, ku ktorému sa má gpsd pripájať "
+"alebo riadiaci socket (pomocou voľby -F). Automatická detekcia USB vyžaduje, "
+"aby riadiaci socket bol /var/run/gpsd.sock."

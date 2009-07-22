@@ -46,7 +46,6 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
 msgstr "Iniciar automaticamente o gpsd?"
 
@@ -69,9 +68,6 @@ msgstr "Opções para o gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -94,10 +90,6 @@ msgstr "Deve o gpsd lidar automaticamente com receptores de GPS USB?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "This option is disabled by default, because several GPS receivers use "
-#| "common USB-to-serial converter chips, so gpsd may cause interference with "
-#| "other attached devices or programs."
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
@@ -121,9 +113,9 @@ msgid ""
 "connect to, or a control socket (using the -F option). USB autodetection "
 "requires /var/run/gpsd.sock as control socket."
 msgstr ""
-"A configuração tem de especificar pelo menos um dispositivo a que o gpsd deva "
-"ligar, ou um socket de controlo (utilizando a opção -F). A autodetecção USB "
-"necessita de /var/run/gpsd.sock como socket de controlo."
+"A configuração tem de especificar pelo menos um dispositivo a que o gpsd "
+"deva ligar, ou um socket de controlo (utilizando a opção -F). A autodetecção "
+"USB necessita de /var/run/gpsd.sock como socket de controlo."
 
 #, fuzzy
 #~| msgid ""

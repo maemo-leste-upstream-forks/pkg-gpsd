@@ -54,7 +54,6 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
 msgstr "Spouštět gpsd automaticky?"
 
@@ -77,9 +76,6 @@ msgstr "Volby pro gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -102,10 +98,6 @@ msgstr "Má gpsd automaticky spravovat GPS přijímače připojené přes USB?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "This option is disabled by default, because several GPS receivers use "
-#| "common USB-to-serial converter chips, so gpsd may cause interference with "
-#| "other attached devices or programs."
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
@@ -130,8 +122,8 @@ msgid ""
 "requires /var/run/gpsd.sock as control socket."
 msgstr ""
 "V nastavení musí být uvedeno alespoň zařízení, ke kterému se má gpsd "
-"připojit, nebo kontrolní socket (volbou -F). Automatické rozpoznávání "
-"USB zařízení vyžaduje kontrolní socket /var/run/gpsd.sock."
+"připojit, nebo kontrolní socket (volbou -F). Automatické rozpoznávání USB "
+"zařízení vyžaduje kontrolní socket /var/run/gpsd.sock."
 
 #~| msgid ""
 #~| "If the GPS receiver is permanently attached to this computer, it might "
@@ -146,8 +138,8 @@ msgstr ""
 #~ msgstr ""
 #~ "Pokud je GPS přijímač připojen k počítači trvale, možná budete chtít "
 #~ "spouštět gpsd hned při zavádění systému. V opačném případě můžete gpsd(8) "
-#~ "kdykoliv spustit ručně, resp. pro USB zařízení můžete využít spuštění přes "
-#~ "udev."
+#~ "kdykoliv spustit ručně, resp. pro USB zařízení můžete využít spuštění "
+#~ "přes udev."
 
 #~ msgid "Multiple devices may be specified as a space-separated list."
 #~ msgstr "Více zařízení můžete zadat tak, že je oddělíte mezerami."

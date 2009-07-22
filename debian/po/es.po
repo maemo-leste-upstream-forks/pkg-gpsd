@@ -48,27 +48,41 @@ msgstr "Dispositivo al cual está asociado su receptor GPS:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Please enter the device the GPS receiver is attached to. It will probably be something like /dev/ttyS0 or /dev/ttyUSB0."
-msgstr "Introduzca el dispositivo en al que está asociado su GPS. Probablemente será algo como «/dev/ttyS0» o «/dev/ttyUSB0»."
+msgid ""
+"Please enter the device the GPS receiver is attached to. It will probably be "
+"something like /dev/ttyS0 or /dev/ttyUSB0."
+msgstr ""
+"Introduzca el dispositivo en al que está asociado su GPS. Probablemente será "
+"algo como «/dev/ttyS0» o «/dev/ttyUSB0»."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:1001
-msgid "Multiple devices may be specified as a space-separated list. Leave empty if you don't want to connect gpsd to a device on boot or if you want to use device autodetection only."
-msgstr "Se deben especificar varios dispositivos en una lista separada por espacios. Déjelo vacío si no quiere conectar gpsd con un dispositivo en el arranque o si sólo quiere utilizar la detección automática de dispositivos."
+msgid ""
+"Multiple devices may be specified as a space-separated list. Leave empty if "
+"you don't want to connect gpsd to a device on boot or if you want to use "
+"device autodetection only."
+msgstr ""
+"Se deben especificar varios dispositivos en una lista separada por espacios. "
+"Déjelo vacío si no quiere conectar gpsd con un dispositivo en el arranque o "
+"si sólo quiere utilizar la detección automática de dispositivos."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
 msgstr "¿Desea iniciar gpsd automáticamente?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid "If you accept this option, gpsd will be started automatically. Autodetection of USB GPS devices requires a running gpsd."
-msgstr "Si acepta esta opción, gpsd se iniciará automáticamente. La detección automática de los dispositivos GPS por USB requiere que gpsd esté en ejecución."
+msgid ""
+"If you accept this option, gpsd will be started automatically. Autodetection "
+"of USB GPS devices requires a running gpsd."
+msgstr ""
+"Si acepta esta opción, gpsd se iniciará automáticamente. La detección "
+"automática de los dispositivos GPS por USB requiere que gpsd esté en "
+"ejecución."
 
 #. Type: string
 #. Description
@@ -79,11 +93,12 @@ msgstr "Opciones para gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
-msgid "You can give additional arguments when starting gpsd; see gpsd(8) for a list of options."
-msgstr "Puede proporcionar argumentos adicionales al iniciar gpsd; vea gpsd(8) para la lista de opciones."
+msgid ""
+"You can give additional arguments when starting gpsd; see gpsd(8) for a list "
+"of options."
+msgstr ""
+"Puede proporcionar argumentos adicionales al iniciar gpsd; vea gpsd(8) para "
+"la lista de opciones."
 
 #. Type: string
 #. Description
@@ -100,12 +115,14 @@ msgstr "¿Debe gspd manejar los receptores GPS por USB automáticamente?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "This option is disabled by default, because several GPS receivers use "
-#| "common USB-to-serial converter chips, so gpsd may cause interference with "
-#| "other attached devices or programs."
-msgid "As gpsd only handles GPS devices, it is safe to choose this option. However, you can disable it if gpsd is causing interference with other attached devices or programs."
-msgstr "Ya que gpsd sólo maneja dispositivos GPS, es seguro escoger esta opción. Sin embargo, puede desactivarla si gpsd está causando interferencias con otros dispositivos asociados o programas."
+msgid ""
+"As gpsd only handles GPS devices, it is safe to choose this option. However, "
+"you can disable it if gpsd is causing interference with other attached "
+"devices or programs."
+msgstr ""
+"Ya que gpsd sólo maneja dispositivos GPS, es seguro escoger esta opción. Sin "
+"embargo, puede desactivarla si gpsd está causando interferencias con otros "
+"dispositivos asociados o programas."
 
 #. Type: error
 #. Description
@@ -116,6 +133,12 @@ msgstr "Configuración de gpsd inusable"
 #. Type: error
 #. Description
 #: ../gpsd.templates:5001
-msgid "The configuration must at least specify either a device that gpsd should connect to, or a control socket (using the -F option). USB autodetection requires /var/run/gpsd.sock as control socket."
-msgstr "La configuración debe al menos especificar un dispositivo al que gpsd se deberá conectar, o un socket de control (utilizando la opción -F). La detección automática por USB necesita el archivo «/var/run/gpsd.sock» como socket de control."
-
+msgid ""
+"The configuration must at least specify either a device that gpsd should "
+"connect to, or a control socket (using the -F option). USB autodetection "
+"requires /var/run/gpsd.sock as control socket."
+msgstr ""
+"La configuración debe al menos especificar un dispositivo al que gpsd se "
+"deberá conectar, o un socket de control (utilizando la opción -F). La "
+"detección automática por USB necesita el archivo «/var/run/gpsd.sock» como "
+"socket de control."
