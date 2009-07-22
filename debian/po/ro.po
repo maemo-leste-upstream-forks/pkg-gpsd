@@ -10,14 +10,13 @@ msgstr ""
 "Project-Id-Version: ro\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-06-28 13:43+0200\n"
-"PO-Revision-Date: 2009-02-02 22:44+0200\n"
+"PO-Revision-Date: 2009-06-30 00:05+0300\n"
 "Last-Translator: Eddy Petrișor <eddy.petrisor@gmail.com>\n"
 "Language-Team: Romanian <debian-l10n-romanian@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms:  nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
-"20)) ? 1 : 2;\n"
+"Plural-Forms:  nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < 20)) ? 1 : 2;\n"
 "X-Generator: KBabel 1.11.4\n"
 
 #. Type: string
@@ -43,15 +42,14 @@ msgid ""
 "Multiple devices may be specified as a space-separated list. Leave empty if "
 "you don't want to connect gpsd to a device on boot or if you want to use "
 "device autodetection only."
-msgstr ""
+msgstr "Se pot preciza mai multe dispozitive într-o listă separată cu spații. Lăsați câmpul gol dacă nu doriți să conectați gpsd la un dipozitiv la pornirea sistemului sau dacă doriți să folosiți doar autodetecția."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
-msgstr "Se pornește gpsd automat la pornirea sistemului?"
+msgstr "Se pornește gpsd automat?"
 
 #. Type: boolean
 #. Description
@@ -59,7 +57,7 @@ msgstr "Se pornește gpsd automat la pornirea sistemului?"
 msgid ""
 "If you accept this option, gpsd will be started automatically. Autodetection "
 "of USB GPS devices requires a running gpsd."
-msgstr ""
+msgstr "Dacă acceptați această opțiune, gpsd va fi pornit automat. Detecția dispozitivelor GPS pe USB are nevoie de un gpsd pornit."
 
 #. Type: string
 #. Description
@@ -70,7 +68,6 @@ msgstr "Opțiuni ale lui gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
@@ -85,19 +82,17 @@ msgstr ""
 #. Description
 #: ../gpsd.templates:3001
 msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr ""
+msgstr "În mod implicit se adaugă „-F /var/run/gpsd.sock”."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr ""
-"Doriți ca gpsd să gestioneze automat receptoarele GPS conectate prin USB?"
+msgstr "Doriți ca gpsd să gestioneze automat receptoarele GPS conectate prin USB?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "This option is disabled by default, because several GPS receivers use "
 #| "common USB-to-serial converter chips, so gpsd may cause interference with "
@@ -106,16 +101,13 @@ msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
-msgstr ""
-"Această opțiune este implicit dezactivată deoarece mai multe receptoare GPS "
-"folosesc circuite de conversie USB-serial, deci gpsd ar putea interfera cu "
-"alte dispozitive atașate sau cu alte programe."
+msgstr "Deoarece gpsd gestionează doar dispozitive GPS, nu sunt probleme dacă se activează această opțiiune. Totuși o puteți dezactiva dacă gpsd interferează cu alte dispozitive atașate sau cu alte programe."
 
 #. Type: error
 #. Description
 #: ../gpsd.templates:5001
 msgid "Unusable gpsd configuration"
-msgstr ""
+msgstr "Configurație gpsd inutilizabilă"
 
 #. Type: error
 #. Description
@@ -124,7 +116,7 @@ msgid ""
 "The configuration must at least specify either a device that gpsd should "
 "connect to, or a control socket (using the -F option). USB autodetection "
 "requires /var/run/gpsd.sock as control socket."
-msgstr ""
+msgstr "Configurația trebuie să precizeze cel puțin un dispozitiv la care ar trebui să se conecteze gpsd sau un socket de control (folosind opțiunea -F). Autodetecția USB necesită ca socket-ul de control să fie /var/run/gpsd.sock."
 
 #, fuzzy
 #~| msgid ""
@@ -145,3 +137,4 @@ msgstr ""
 
 #~ msgid "Multiple devices may be specified as a space-separated list."
 #~ msgstr "Se pot preciza mai multe dispozitive, dacă le separați cu spații."
+
