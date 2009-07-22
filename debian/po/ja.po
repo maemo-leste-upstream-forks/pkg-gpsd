@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-06-28 13:43+0200\n"
-"PO-Revision-Date: 2008-05-29 13:58+0900\n"
+"PO-Revision-Date: 2009-06-29 21:16+0900\n"
 "Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -38,15 +38,13 @@ msgid ""
 "Multiple devices may be specified as a space-separated list. Leave empty if "
 "you don't want to connect gpsd to a device on boot or if you want to use "
 "device autodetection only."
-msgstr ""
+msgstr "複数のデバイスをスペースで区切ったリストとして指定できます。起動時に gpsd からデバイスに接続したくないかデバイスの自動検出のみを利用したいなら、空のままにしてください。"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
-msgstr "起動時に gpsd を自動で開始しますか?"
+msgstr "gpsd を自動で開始しますか?"
 
 #. Type: boolean
 #. Description
@@ -54,7 +52,7 @@ msgstr "起動時に gpsd を自動で開始しますか?"
 msgid ""
 "If you accept this option, gpsd will be started automatically. Autodetection "
 "of USB GPS devices requires a running gpsd."
-msgstr ""
+msgstr "この選択肢に「はい」と答えると、gpsd は自動で開始します。USB GPS デバイスの自動検出には gpsd の実行が必要です。"
 
 #. Type: string
 #. Description
@@ -65,22 +63,16 @@ msgstr "gpsd に渡すオプション:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
-msgstr ""
-"gpsd の起動時に追加の引数を与えることができます。オプション一覧については "
-"gpsd(8) を参照してください。"
+msgstr "gpsd の起動時に追加の引数を与えることができます。オプション一覧については gpsd(8) を参照してください。"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr ""
+msgstr "デフォルトでは \"-F /var/run/gpsd.sock\" を追加します。"
 
 #. Type: boolean
 #. Description
@@ -91,25 +83,17 @@ msgstr "gpsd が接続された USB GPS 受信機を自動で走査できるよ�
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
-#| msgid ""
-#| "This option is disabled by default, because several GPS receivers use "
-#| "common USB-to-serial converter chips, so gpsd may cause interference with "
-#| "other attached devices or programs."
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
-msgstr ""
-"この選択肢はデフォルトでは「いいえ」になっています。というのも、いくつかの "
-"GPS 受信機は普通の USB/シリアル変換チップを使っており、gpsd がほかの接続され"
-"たデバイスやプログラムと干渉を引き起こす可能性があるからです。"
+msgstr "gpsd は GPS デバイスの操作のみを行うので、この選択肢で「はい」と答えることは安全です。ただし、もし gpsd がほかの接続されたデバイスやプログラムに干渉を引き起こすようであれば、無効にできます。"
 
 #. Type: error
 #. Description
 #: ../gpsd.templates:5001
 msgid "Unusable gpsd configuration"
-msgstr ""
+msgstr "利用できない gpsd の設定"
 
 #. Type: error
 #. Description
@@ -118,24 +102,4 @@ msgid ""
 "The configuration must at least specify either a device that gpsd should "
 "connect to, or a control socket (using the -F option). USB autodetection "
 "requires /var/run/gpsd.sock as control socket."
-msgstr ""
-
-#, fuzzy
-#~| msgid ""
-#~| "If the GPS receiver is permanently attached to this computer, it might "
-#~| "be appropriate for gpsd to start at boot time. Alternatively it can be "
-#~| "started by the hotplug interface for USB devices, or by running gpsd(8) "
-#~| "manually."
-#~ msgid ""
-#~ "If the GPS receiver is permanently attached to this computer, it might be "
-#~ "appropriate for gpsd to start at boot time. Alternatively it can be "
-#~ "started by udev when an appropriate device is plugged in or by running "
-#~ "gpsd(8) manually."
-#~ msgstr ""
-#~ "GPS 受信機がこのコンピュータに永続的に接続されているのであれば、ブート時"
-#~ "に gpsd を起動したいと思うかもしれません。そのほかに、USBデバイスならホッ"
-#~ "トプラグインターフェイスで起動することもできますし、gpsd(8) を手動で呼び出"
-#~ "すこともできます。"
-
-#~ msgid "Multiple devices may be specified as a space-separated list."
-#~ msgstr "複数のデバイスはスペースで区切ったリストとして指定できます。"
+msgstr "設定では少なくとも、gpsd が接続すべきデバイスまたは制御ソケット (-F オプションを利用) のどちらかを指定する必要があります。USB の自動検出には制御ソケットとして /var/run/gpsd.sock が必要です。"
