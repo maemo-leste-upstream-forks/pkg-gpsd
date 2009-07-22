@@ -3,20 +3,20 @@
 # This file is distributed under the same license as the PACKAGE package.
 #
 # Yuri Kozlov <kozlov.y@gmail.com>, 2008.
+# Yuri Kozlov <yuray@komyakino.ru>, 2009.
 msgid ""
 msgstr ""
-"Project-Id-Version: ru\n"
+"Project-Id-Version: gpsd 2.39-3\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-06-28 13:43+0200\n"
-"PO-Revision-Date: 2008-07-31 21:28+0400\n"
-"Last-Translator: Yuri Kozlov <kozlov.y@gmail.com>\n"
+"PO-Revision-Date: 2009-06-29 20:37+0400\n"
+"Last-Translator: Yuri Kozlov <yuray@komyakino.ru>\n"
 "Language-Team: Russian <debian-l10n-russian@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: KBabel 1.11.4\n"
-"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
-"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #. Type: string
 #. Description
@@ -42,14 +42,16 @@ msgid ""
 "you don't want to connect gpsd to a device on boot or if you want to use "
 "device autodetection only."
 msgstr ""
+"Можно указать несколько устройств через пробел. Ничего не вводите, "
+"если не хотите, чтобы gpsd обращался к устройству при загрузке, или если "
+"хотите воспользоваться автообнаружением устройств."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
-msgstr "Запускать службу gpsd при включении компьютера?"
+msgstr "Запускать gpsd автоматически?"
 
 #. Type: boolean
 #. Description
@@ -58,6 +60,8 @@ msgid ""
 "If you accept this option, gpsd will be started automatically. Autodetection "
 "of USB GPS devices requires a running gpsd."
 msgstr ""
+"Если ответить утвердительно, то gpsd будет запускаться автоматически. "
+"Для автообнаружения USB устройств GPS требуется работающий gpsd."
 
 #. Type: string
 #. Description
@@ -68,7 +72,6 @@ msgstr "Параметры для gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
@@ -83,19 +86,17 @@ msgstr ""
 #. Description
 #: ../gpsd.templates:3001
 msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr ""
+msgstr "По умолчанию добавляется \"-F /var/run/gpsd.sock\"."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr ""
-"Должен ли gpsd обрабатывать подключения USB GPS-приёмников автоматически?"
+msgstr "Должна ли gpsd обрабатывать подключения USB GPS-приёмников автоматически?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "This option is disabled by default, because several GPS receivers use "
 #| "common USB-to-serial converter chips, so gpsd may cause interference with "
@@ -105,16 +106,15 @@ msgid ""
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
-"По умолчанию эта возможность выключена, так как в некоторых GPS-приёмниках "
-"используются широко распространённые микросхемы USB-в-последовательный порт, "
-"из-за чего gpsd может повлиять на другие подключённые устройства или "
-"программы."
+"Так как gpsd работает только с устройствами GPS, можно уверенно давать "
+"утвердительный ответ. Однако, вы можете ответить отрицательно, "
+"если gpsd влияет на другие подключённые устройства или программы."
 
 #. Type: error
 #. Description
 #: ../gpsd.templates:5001
 msgid "Unusable gpsd configuration"
-msgstr ""
+msgstr "Неработоспособные настройки gpsd"
 
 #. Type: error
 #. Description
@@ -124,22 +124,8 @@ msgid ""
 "connect to, or a control socket (using the -F option). USB autodetection "
 "requires /var/run/gpsd.sock as control socket."
 msgstr ""
+"В настройках нужно, как минимум, указать устройство, к которому "
+"должна обращаться gpsd, или управляющий сокет (через параметр -F). "
+"Для автообнаружения USB требуется управляющий сокет "
+"/var/run/gpsd.sock."
 
-#, fuzzy
-#~| msgid ""
-#~| "If the GPS receiver is permanently attached to this computer, it might "
-#~| "be appropriate for gpsd to start at boot time. Alternatively it can be "
-#~| "started by the hotplug interface for USB devices, or by running gpsd(8) "
-#~| "manually."
-#~ msgid ""
-#~ "If the GPS receiver is permanently attached to this computer, it might be "
-#~ "appropriate for gpsd to start at boot time. Alternatively it can be "
-#~ "started by udev when an appropriate device is plugged in or by running "
-#~ "gpsd(8) manually."
-#~ msgstr ""
-#~ "Если GPS-приёмник постоянно подсоединён к компьютеру, то лучше запускать "
-#~ "gpsd при включении компьютера. Также, он может запускаться интерфейсом "
-#~ "hotplug для USB-устройств, или вручную (см. gpsd(8))."
-
-#~ msgid "Multiple devices may be specified as a space-separated list."
-#~ msgstr "Через пробел можно указать несколько устройств."
