@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-06-28 13:43+0200\n"
-"PO-Revision-Date: 2008-03-22 09:51+0100\n"
+"PO-Revision-Date: 2009-06-28 16:32+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -47,14 +47,16 @@ msgid ""
 "you don't want to connect gpsd to a device on boot or if you want to use "
 "device autodetection only."
 msgstr ""
+"Můžete zadat i více zařízení v podobě seznamu odděleného čárkami. Pokud "
+"nechcete gpsd připojovat k zařízení během zavádění systému, nebo pokud "
+"chcete využívat pouze automatické rozpoznávání zařízení, ponechte prázdné."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
-msgstr "Spouštět gpsd automaticky při zavádění systému?"
+msgstr "Spouštět gpsd automaticky?"
 
 #. Type: boolean
 #. Description
@@ -63,6 +65,8 @@ msgid ""
 "If you accept this option, gpsd will be started automatically. Autodetection "
 "of USB GPS devices requires a running gpsd."
 msgstr ""
+"Povolíte-li tuto možnost, gpsd se bude spouštět automaticky. Automatické "
+"rozpoznávání GPS zařízení připojených přes USB vyžaduje běžící gpsd."
 
 #. Type: string
 #. Description
@@ -73,7 +77,6 @@ msgstr "Volby pro gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
@@ -88,7 +91,7 @@ msgstr ""
 #. Description
 #: ../gpsd.templates:3001
 msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr ""
+msgstr "Ve výchozím nastavení se přidává „-F /var/run/gpsd.sock“."
 
 #. Type: boolean
 #. Description
@@ -99,7 +102,6 @@ msgstr "Má gpsd automaticky spravovat GPS přijímače připojené přes USB?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "This option is disabled by default, because several GPS receivers use "
 #| "common USB-to-serial converter chips, so gpsd may cause interference with "
@@ -109,15 +111,15 @@ msgid ""
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
-"Tato možnost je standardně vypnutá, protože některé GPS přijímače používají "
-"běžné převodníky USB-serial a mohlo by se stát, že se bude gpsd bít s jinými "
-"připojenými zařízeními nebo programy."
+"Protože gpsd spravuje pouze GPS zařízení, je bezpečné tuto možnost povolit. "
+"Pokud by přece jen gpsd nějakým způsobem rušil ostatní připojená zařízení "
+"nebo programy, můžete ho zakázat."
 
 #. Type: error
 #. Description
 #: ../gpsd.templates:5001
 msgid "Unusable gpsd configuration"
-msgstr ""
+msgstr "Nepoužitelné nastavení gpsd"
 
 #. Type: error
 #. Description
@@ -127,8 +129,10 @@ msgid ""
 "connect to, or a control socket (using the -F option). USB autodetection "
 "requires /var/run/gpsd.sock as control socket."
 msgstr ""
+"V nastavení musí být uvedeno alespoň zařízení, ke kterému se má gpsd "
+"připojit, nebo kontrolní socket (volbou -F). Automatické rozpoznávání "
+"USB zařízení vyžaduje kontrolní socket /var/run/gpsd.sock."
 
-#, fuzzy
 #~| msgid ""
 #~| "If the GPS receiver is permanently attached to this computer, it might "
 #~| "be appropriate for gpsd to start at boot time. Alternatively it can be "
@@ -142,8 +146,8 @@ msgstr ""
 #~ msgstr ""
 #~ "Pokud je GPS přijímač připojen k počítači trvale, možná budete chtít "
 #~ "spouštět gpsd hned při zavádění systému. V opačném případě můžete gpsd(8) "
-#~ "kdykoliv spustit ručně, resp. pro USB zařízení můžete využít rozhraní "
-#~ "hotplug."
+#~ "kdykoliv spustit ručně, resp. pro USB zařízení můžete využít spuštění přes "
+#~ "udev."
 
 #~ msgid "Multiple devices may be specified as a space-separated list."
 #~ msgstr "Více zařízení můžete zadat tak, že je oddělíte mezerami."
