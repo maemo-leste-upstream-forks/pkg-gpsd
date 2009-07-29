@@ -6,7 +6,8 @@
 
 ### BEGIN INIT INFO
 # Provides:          gpsd
-# Required-Start:    $syslog $network dbus bluetooth
+# Required-Start:    $syslog $network dbus
+# Should-Start:      bluetooth
 # Required-Stop:     $syslog $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
