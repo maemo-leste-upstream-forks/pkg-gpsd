@@ -1,3 +1,16 @@
+gpsd (2.39-5) unstable; urgency=low
+
+  [ Thomas Mueller ]
+  * [c884a6d0] Updating debconf translation: de.po (Closes: #538900)
+
+  [ Bernd Zeimetz ]
+  * [26d4a13e] gpsd.init: Move bluetooth to Should-Start - thanks to
+    Carsten Einig
+  * [7113becd] Add missing macro UNUSED to gpsd.h. (LP: #396256) -
+    thanks to Dennis Nienhüser
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 30 Jul 2009 13:31:32 +0200
+
 gpsd (2.39-4) unstable; urgency=low
 
   * [51e8dea3] Updating git-dch settings in git-bp config.
