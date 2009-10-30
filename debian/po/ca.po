@@ -1,18 +1,18 @@
 #
 # Catalan translation for gpsd package.
-# Copyright (C) 2008 Bernd Zeimetz.
+# Copyright © 2009 Bernd Zeimetz.
 # This file is distributed under the same license as the gpsd package.
 #
-# Jordà Polo <jorda@ettin.org>, 2007, 2008.
+# Jordà Polo <jorda@ettin.org>, 2007, 2008, 2009.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gpsd-2.34.dfsg-4\n"
+"Project-Id-Version: gpsd-2.39-5\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-06-28 13:43+0200\n"
-"PO-Revision-Date: 2008-04-02 11:29+0200\n"
+"PO-Revision-Date: 2009-08-22 21:52+0200\n"
 "Last-Translator: Jordà Polo <jorda@ettin.org>\n"
-"Language-Team: Català <debian-l10n-catalan@lists.debian.org>\n"
+"Language-Team: Catalan <debian-l10n-catalan@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -41,14 +41,16 @@ msgid ""
 "you don't want to connect gpsd to a device on boot or if you want to use "
 "device autodetection only."
 msgstr ""
+"Podeu especificar múltiples dispositius separats per espais. Deixeu aquest "
+"camp buit si no voleu connectar el gpsd a un dispositiu durant l'arrencada, "
+"o si només voleu utilitzar la detecció automàtica."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid "Start gpsd automatically on boot?"
 msgid "Start gpsd automatically?"
-msgstr "S'hauria d'iniciar gpsd automàticament durant l'arrencada?"
+msgstr "S'hauria d'iniciar el gpsd automàticament?"
 
 #. Type: boolean
 #. Description
@@ -57,17 +59,18 @@ msgid ""
 "If you accept this option, gpsd will be started automatically. Autodetection "
 "of USB GPS devices requires a running gpsd."
 msgstr ""
+"Si accepteu aquesta opció, s'iniciarà el gpsd automàticament. La detecció "
+"automàtica de dispositius GPS USB requereix que el gpsd s'estigui executant."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid "Options to gpsd:"
-msgstr "Opcions per a gpsd:"
+msgstr "Opcions per al gpsd:"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
@@ -75,26 +78,26 @@ msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
-"Podeu indicar arguments addicionals quan inicieu gpsd; vegeu la llista "
+"Podeu indicar arguments addicionals quan inicieu el gpsd; vegeu la llista "
 "d'opcions a gpsd(8)."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr ""
+msgstr "Els arguments predeterminats són «-F /var/run/gpsd.sock»."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr ""
-"Voleu que gpsd gestioni automàticament els receptors GPS connectats per USB?"
+"Voleu que el gpsd gestioni automàticament els receptors GPS connectats per "
+"USB?"
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "This option is disabled by default, because several GPS receivers use "
 #| "common USB-to-serial converter chips, so gpsd may cause interference with "
@@ -104,15 +107,15 @@ msgid ""
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
-"Aquesta opció està desactivada per defecte, ja que molts receptors GPS "
-"utilitzen xips de conversió d'USB a port sèrie comuns, i això pot causar "
-"interferències a altres programes o dispositius connectats."
+"Com el gpsd només gestiona dispositius GPS, és segur triar aquesta opció. "
+"Tanmateix, podeu desactivar-la si el gpsd causa interferències amb altres "
+"programes o dispositius connectats."
 
 #. Type: error
 #. Description
 #: ../gpsd.templates:5001
 msgid "Unusable gpsd configuration"
-msgstr ""
+msgstr "La configuració del gpsd no és utilitzable"
 
 #. Type: error
 #. Description
@@ -122,23 +125,10 @@ msgid ""
 "connect to, or a control socket (using the -F option). USB autodetection "
 "requires /var/run/gpsd.sock as control socket."
 msgstr ""
-
-#, fuzzy
-#~| msgid ""
-#~| "If the GPS receiver is permanently attached to this computer, it might "
-#~| "be appropriate for gpsd to start at boot time. Alternatively it can be "
-#~| "started by the hotplug interface for USB devices, or by running gpsd(8) "
-#~| "manually."
-#~ msgid ""
-#~ "If the GPS receiver is permanently attached to this computer, it might be "
-#~ "appropriate for gpsd to start at boot time. Alternatively it can be "
-#~ "started by udev when an appropriate device is plugged in or by running "
-#~ "gpsd(8) manually."
-#~ msgstr ""
-#~ "Si el vostre receptor GPS està connectat permanentment a l'ordinador, és "
-#~ "possible que us interessi iniciar gpsd durant l'arrencada del sistema. "
-#~ "Altrament, podeu iniciar-lo utilitzant la interfície hotplug per a "
-#~ "dispositius USB, o executant gpsd(8) manualment."
+"La configuració ha d'especificar o bé el dispositiu al qual el gpsd s'hauria "
+"de connectar, o bé un sòcol de control (utilitzant l'opció -F). La detecció "
+"automàtica mitjançant USB requereix /var/run/gpsd.sock com a sòcol de "
+"control."
 
 #~ msgid "Multiple devices may be specified as a space-separated list."
 #~ msgstr ""
