@@ -6,9 +6,9 @@
 
 ### BEGIN INIT INFO
 # Provides:          gpsd
-# Required-Start:    $syslog $network dbus
-# Should-Start:      bluetooth
-# Required-Stop:     $syslog $network
+# Required-Start:    $remote_fs $syslog $network
+# Should-Start:      bluetooth dbus
+# Required-Stop:     $remote_fs $syslog $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start the GPS (Global Positioning System) daemon
