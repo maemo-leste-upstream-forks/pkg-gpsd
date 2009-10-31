@@ -1,0 +1,26 @@
+--- a/gpsd.hotplug
++++ b/gpsd.hotplug
+@@ -6,7 +6,13 @@
+ # purposes.
+ import sys, time, os, syslog, glob, socket, stat
+ 
+-CONTROL_SOCKET = "/var/run/gpsd.sock"
++if os.environ.has_key('GPSD_SOCKET'):
++    CONTROL_SOCKET = os.getenv('GPSD_SOCKET')
++else:
++    CONTROL_SOCKET = "/var/run/gpsd.sock"
++
++GPSD_OPTIONS = os.getenv('GPSD_OPTIONS')
++
+ WHEREAMI = __file__
+ 
+ def gpsd_control_connect():
+@@ -33,7 +39,7 @@ def gpsd_control(action, argument):
+     if connect:
+         syslog.syslog("reached a running gpsd")
+     elif action == 'add':
+-        gpsdcmd = "gpsd -F " + CONTROL_SOCKET
++        gpsdcmd = "gpsd %s -F %s" (GPSD_OPTIONS, CONTROL_SOCKET)
+         syslog.syslog("launching %s" % gpsdcmd)
+         os.system(gpsdcmd)
+         connect = gpsd_control_connect()

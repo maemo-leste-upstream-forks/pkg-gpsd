@@ -6,3 +6,4 @@ no-gps-manpage
 default_units
 gpsd.hotplug_location
 INSTALL-description-fix
+gpsd.hotplug_use_environment_from_etc_default_gpsd
