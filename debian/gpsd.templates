@@ -13,16 +13,22 @@ Type: boolean
 Default: true
 _Description: Start gpsd automatically?
  If you accept this option, gpsd will be started automatically.
- Autodetection of USB GPS devices requires a running gpsd.
+
+Template: gpsd/socket
+Type: string
+Default: /var/run/gpsd.sock
+_Description: gpsd control socket path
+ Please enter the gpsd control socket location. Usually you want to keep
+ the default setting.
 
 Template: gpsd/daemon_options
 Type: string
-Default: -F /var/run/gpsd.sock
 _Description: Options to gpsd:
  You can give additional arguments when starting gpsd; see gpsd(8) for a
  list of options.
  .
- The default is to add "-F /var/run/gpsd.sock".
+ Do not use '-F' here, the control socket path is set with a different
+ debconf question.
 
 Template: gpsd/autodetection
 Type: boolean
@@ -35,6 +41,6 @@ _Description: Should gpsd handle attached USB GPS receivers automatically?
 Template: gpsd/brokenconfig
 Type: error
 _Description: Unusable gpsd configuration
- The configuration must at least specify either a device that gpsd should
- connect to, or a control socket (using the -F option). USB autodetection
- requires /var/run/gpsd.sock as control socket.
+ Do not specify a control socket (using the -F option) within
+ the options to gpsd. It as added automatically using the value you've
+ specified in the gpsd socket debconf question.

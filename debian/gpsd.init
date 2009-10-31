@@ -34,6 +34,10 @@ else
 	exit 1
 fi
 
+if [ -n "$GPSD_SOCKET" ]; then
+	GPSD_OPTIONS="$GPSD_OPTIONS -F $GPSD_SOCKET"
+fi
+
 case "$1" in
   start)
 	if [ "x$START_DAEMON" = "xtrue" ] ; then

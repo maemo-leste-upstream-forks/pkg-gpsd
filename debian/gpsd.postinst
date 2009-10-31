@@ -36,6 +36,8 @@ if [ "$1" = "configure" ] ; then
     OPTS=$RET
     db_get gpsd/autodetection
     USBAUTO=$RET
+    db_get gpsd/socket
+    GPSD_SOCKET=$RET
 
 cat <<EOF > /etc/default/gpsd
 # Default settings for gpsd.
@@ -45,6 +47,7 @@ START_DAEMON="$START_DAEMON"
 DAEMON_OPTS="$OPTS"
 DEVICES="$DEVICES"
 USBAUTO="$USBAUTO"
+GPSD_SOCKET="$GPSD_SOCKET"
 EOF
 
 fi
