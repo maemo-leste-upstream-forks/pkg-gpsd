@@ -43,7 +43,7 @@ case "$1" in
 	if [ "x$START_DAEMON" = "xtrue" ] ; then
 		log_daemon_msg "Starting $DESC" "gpsd"
 		start-stop-daemon --start --quiet \
-			--exec $DAEMON -- $DAEMON_OPTS -P $PIDFILE $DEVICES \
+			--exec $DAEMON -- $GPSD_OPTIONS -P $PIDFILE $DEVICES \
 			&& log_end_msg 0 \
 			|| log_end_msg 1
 	else
