@@ -1,3 +1,32 @@
+gpsd (2.39-6) experimental; urgency=low
+
+  [ Christian Perrier ]
+  * [fe381184] Updating debconf translation: fr.po (Closes: #540502)
+
+  [ Jordà Polo ]
+  * [2c23a9a6] Updating debconf translation: ca.po (Closes: #544101)
+
+  [ Clytie Siddall ]
+  * [49af80a6] Updating debconf translation: vi.po (Closes: #548020)
+
+  [ Bernd Zeimetz ]
+  * [35fe08a1] Correct dependencies in init.d LSB header. (Closes:
+    #548552) - thanks to Petter Reinholdtsen <pere@hungry.com>
+  * [c3e1a9a0] Move socket location out of the normal daemon options.
+    Also make it much harder for the user to create a broken
+    configuration, this should fix some of the bugs reported on debconf
+    running into trouble. (Closes: #546894) (LP: #423629, #423629)
+  * [887a9c32] Don't use hardcoded paths in gpsd.hotplug.
+  * [8305f777] Use environment from /etc/default/gpsd in hotplug script.
+    (Closes: #542386) - thanks to Joerg Dorchain <joerg@dorchain.net>
+  * [309f9c95] Rename DAEMON_OPTS to GPSD_OPTIONS.
+  * [cbc56721] Remove bashism from gpsd.hotplug.wrapper.
+  * [3481f700] Make gpsd.config even more simple, try to do the right
+    thing automatically.
+  * [0ec26652] Updating po files.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 01 Nov 2009 21:49:21 +0100
+
 gpsd (2.39-5) unstable; urgency=low
 
   [ Thomas Mueller ]
