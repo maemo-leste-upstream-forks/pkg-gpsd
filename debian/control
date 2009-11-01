@@ -19,6 +19,7 @@ Package: gpsd
 Architecture: any
 Depends: python, netbase, lsb-base (>= 3.2-13), ${shlibs:Depends}, ${misc:Depends}
 Recommends: udev
+Suggests: dbus
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients
 Description: Global Positioning System - daemon
