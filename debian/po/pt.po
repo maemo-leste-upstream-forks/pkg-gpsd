@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.39-3\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-07-05 11:56+0100\n"
 "Last-Translator: Miguel Figueiredo <elmig@debianpt.org>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -52,9 +52,11 @@ msgstr "Iniciar automaticamente o gpsd?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
 msgstr ""
 "Se aceitar esta opção, o gpsd será iniciado automaticamente. A autodetecção "
 "de dispositivos GPS USB necessita que o gpsd esteja a correr."
@@ -62,34 +64,47 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "Options to gpsd:"
-msgstr "Opções para o gpsd:"
+msgid "gpsd control socket path"
+msgstr ""
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+msgid "Options to gpsd:"
+msgstr "Opções para o gpsd:"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
+msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
 "Você pode passar argumentos adicionais quando iniciar o gpsd; para uma lista "
 "de opções veja gpsd(8)."
 
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "O predefinido é acrescentar \"-F /var/run/gpsd.sock\"."
-
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr "Deve o gpsd lidar automaticamente com receptores de GPS USB?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
@@ -99,23 +114,20 @@ msgstr ""
 "No entanto pode desabilita-la se o gpsd estiver a causar interferência com "
 "outros dispositivos ligados ou outros programas."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid "Unusable gpsd configuration"
-msgstr "Configuração do gpsd não utilizável"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "O predefinido é acrescentar \"-F /var/run/gpsd.sock\"."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr ""
-"A configuração tem de especificar pelo menos um dispositivo a que o gpsd "
-"deva ligar, ou um socket de controlo (utilizando a opção -F). A autodetecção "
-"USB necessita de /var/run/gpsd.sock como socket de controlo."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Configuração do gpsd não utilizável"
+
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "A configuração tem de especificar pelo menos um dispositivo a que o gpsd "
+#~ "deva ligar, ou um socket de controlo (utilizando a opção -F). A "
+#~ "autodetecção USB necessita de /var/run/gpsd.sock como socket de controlo."
 
 #, fuzzy
 #~| msgid ""

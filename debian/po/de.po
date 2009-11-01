@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-07-23 22:28+0200\n"
 "Last-Translator: Thomas Mueller <thomas.mueller@tmit.eu>\n"
 "Language-Team: Deutsch <debian-l10n-de@lists.debian.org>\n"
@@ -41,8 +41,8 @@ msgid ""
 "device autodetection only."
 msgstr ""
 "Mehrere Geräte können durch Leerzeichen getrennt angegeben werden. Geben Sie "
-"nichts an, falls Sie gpsd mit keinem Gerät verbinden wollen oder falls Sie nur "
-"die automatische Geräteerkennung nutzen wollen."
+"nichts an, falls Sie gpsd mit keinem Gerät verbinden wollen oder falls Sie "
+"nur die automatische Geräteerkennung nutzen wollen."
 
 #. Type: boolean
 #. Description
@@ -53,9 +53,11 @@ msgstr "Soll gpsd automatisch gestartet werden?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
 msgstr ""
 "Wenn Sie dieser Option auswählen, wird gpsd automatisch gestartet. Für die "
 "automatische Erkennung von USB-GPS-Geräten ist ein laufender gpsd notwendig."
@@ -63,59 +65,68 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+msgid "gpsd control socket path"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
 msgid "Options to gpsd:"
 msgstr "Optionen für gpsd:"
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3001
+#: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
-"Sie können gpsd beim Start zusätzliche Argumente übergeben. Die Handbuchseite "
-"von gpsd (8) enthält eine Liste der möglichen Optionen."
-
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "Standardmäßig wird »-F /var/run/gpsd.sock« hinzugefügt."
+"Sie können gpsd beim Start zusätzliche Argumente übergeben. Die "
+"Handbuchseite von gpsd (8) enthält eine Liste der möglichen Optionen."
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr "Soll gpsd angeschlossene GPS-Empfänger automatisch behandeln?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
-"Da gpsd nur GPS-Geräte verwendet, können Sie diese Option unbesorgt auswählen. "
-"Sollte gpsd dennoch Störungen mit anderen Geräten oder Programmen verursachen, "
-"können Sie diese Option deaktivieren."
+"Da gpsd nur GPS-Geräte verwendet, können Sie diese Option unbesorgt "
+"auswählen. Sollte gpsd dennoch Störungen mit anderen Geräten oder Programmen "
+"verursachen, können Sie diese Option deaktivieren."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid "Unusable gpsd configuration"
-msgstr "Unbrauchbare gpsd Konfiguration"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "Standardmäßig wird »-F /var/run/gpsd.sock« hinzugefügt."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr ""
-"Die Konfiguration muss wenigstens entweder ein Gerät, mit dem sich gpsd "
-"verbinden soll, oder einen Kontroll-Socket (unter Verwendung der Option »-F«) "
-"spezifizieren. Die USB-Autoerkennung benötigt »/var/run/gpsd.sock« als "
-"Kontroll-Socket."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Unbrauchbare gpsd Konfiguration"
 
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "Die Konfiguration muss wenigstens entweder ein Gerät, mit dem sich gpsd "
+#~ "verbinden soll, oder einen Kontroll-Socket (unter Verwendung der Option »-"
+#~ "F«) spezifizieren. Die USB-Autoerkennung benötigt »/var/run/gpsd.sock« als "
+#~ "Kontroll-Socket."

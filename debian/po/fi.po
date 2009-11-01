@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-06-29 22:04+0300\n"
 "Last-Translator: Esko Arajärvi <edu@iki.fi>\n"
 "Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>\n"
@@ -51,39 +51,54 @@ msgstr "Käynnistetäänkö gpsd automaattisesti?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
 msgstr ""
-"Jos valitset tämän vaihtoehdon, gpsd käynnistetään automaattisesti. "
-"USB-liitäntäisten GPS-laitteiden automaattinen tunnistus vaatii, että gpsd "
-"on käynnissä."
+"Jos valitset tämän vaihtoehdon, gpsd käynnistetään automaattisesti. USB-"
+"liitäntäisten GPS-laitteiden automaattinen tunnistus vaatii, että gpsd on "
+"käynnissä."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
+msgid "gpsd control socket path"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
 msgid "Options to gpsd:"
 msgstr "gpsd:n valitsimet:"
 
 #. Type: string
 #. Description
-#: ../gpsd.templates:3001
+#: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
 "Ohjelmalle gpsd voidaan antaa käynnistyksen yhteydessä lisäargumentteja. "
 "Luettelo valitsimista löytyy man-ohjesivulta gpsd(8)."
 
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "Oletuksena annetaan valitsin ”-F /var/run/gpsd.sock”."
-
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr ""
 "Tulisiko gpsd:n hallinnoida USB:n avulla liitettyjä GPS-vastaanottimia "
@@ -91,31 +106,28 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
 "Koska gpsd hallinnoi vain GPS-laitteita, on turvallista valita tämä "
-"vaihtoehto. Voit kuitenkin haluta poistaa sen käytöstä, jos gpsd "
-"aiheuttaa ongelmia muiden ohjelmien tai liitettyjen laitteiden kanssa."
+"vaihtoehto. Voit kuitenkin haluta poistaa sen käytöstä, jos gpsd aiheuttaa "
+"ongelmia muiden ohjelmien tai liitettyjen laitteiden kanssa."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid "Unusable gpsd configuration"
-msgstr "Kelvottomat gpsd-asetukset"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "Oletuksena annetaan valitsin ”-F /var/run/gpsd.sock”."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr ""
-"Asetuksissa tulisi määrittää ainakin laite, johon gpsd ottaa yhteyden, tai "
-"hallintapistoke (käyttäen valitsinta -F). USB-laitteiden automaattinen "
-"tunnistus vaatii, että hallintapistokkeena käytetään tiedostoa /var/run/gpsd."
-"sock."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Kelvottomat gpsd-asetukset"
+
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "Asetuksissa tulisi määrittää ainakin laite, johon gpsd ottaa yhteyden, "
+#~ "tai hallintapistoke (käyttäen valitsinta -F). USB-laitteiden "
+#~ "automaattinen tunnistus vaatii, että hallintapistokkeena käytetään "
+#~ "tiedostoa /var/run/gpsd.sock."

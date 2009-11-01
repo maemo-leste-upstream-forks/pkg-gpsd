@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ro\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-06-30 00:05+0300\n"
 "Last-Translator: Eddy Petrișor <eddy.petrisor@gmail.com>\n"
 "Language-Team: Romanian <debian-l10n-romanian@lists.debian.org>\n"
@@ -57,9 +57,11 @@ msgstr "Se pornește gpsd automat?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
 msgstr ""
 "Dacă acceptați această opțiune, gpsd va fi pornit automat. Detecția "
 "dispozitivelor GPS pe USB are nevoie de un gpsd pornit."
@@ -67,35 +69,48 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "Options to gpsd:"
-msgstr "Opțiuni ale lui gpsd:"
+msgid "gpsd control socket path"
+msgstr ""
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+msgid "Options to gpsd:"
+msgstr "Opțiuni ale lui gpsd:"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
+msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
 "Puteți furniza argumente suplimentare la pornirea lui gpsd; a se vedea gpsd"
 "(8) pentru lista de opțiuni."
 
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "În mod implicit se adaugă „-F /var/run/gpsd.sock”."
-
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr ""
 "Doriți ca gpsd să gestioneze automat receptoarele GPS conectate prin USB?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
@@ -105,23 +120,21 @@ msgstr ""
 "activează această opțiiune. Totuși o puteți dezactiva dacă gpsd interferează "
 "cu alte dispozitive atașate sau cu alte programe."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid "Unusable gpsd configuration"
-msgstr "Configurație gpsd inutilizabilă"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "În mod implicit se adaugă „-F /var/run/gpsd.sock”."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr ""
-"Configurația trebuie să precizeze cel puțin un dispozitiv la care ar trebui "
-"să se conecteze gpsd sau un socket de control (folosind opțiunea -F). "
-"Autodetecția USB necesită ca socket-ul de control să fie /var/run/gpsd.sock."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Configurație gpsd inutilizabilă"
+
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "Configurația trebuie să precizeze cel puțin un dispozitiv la care ar "
+#~ "trebui să se conecteze gpsd sau un socket de control (folosind opțiunea -"
+#~ "F). Autodetecția USB necesită ca socket-ul de control să fie /var/run/"
+#~ "gpsd.sock."
 
 #, fuzzy
 #~| msgid ""

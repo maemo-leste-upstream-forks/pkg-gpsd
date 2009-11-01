@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-06-30 09:22+0100\n"
 "Last-Translator: Martin Bagge / brother <brother@bsnet.se>\n"
 "Language-Team: Swedish <debian-l10n-swedish@lists.debian.org>\n"
@@ -59,9 +59,11 @@ msgstr "Ska gpsd startas automatiskt?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
 msgstr ""
 "Om du väljer detta alternativ kommer gpsd att startas automatiskt. När gpsd "
 "körs fungerar även den automatiska identifikationen av GPS-enheter via USB."
@@ -69,34 +71,47 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "Options to gpsd:"
-msgstr "Flaggor till gpsd:"
+msgid "gpsd control socket path"
+msgstr ""
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+msgid "Options to gpsd:"
+msgstr "Flaggor till gpsd:"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
+msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
 "Du kan ange ytterligare argument när du startar gpsd, se gpsd(8) för en "
 "lista över möjliga alternativ."
 
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "Standardvärdet är att lägga till \"-F /var/run/gpsd.soc\"."
-
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr "Ska gpsd automatiskt hantera USB-GPS:er som ansluts?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
@@ -106,20 +121,18 @@ msgstr ""
 "alternativ. Du kan avaktivera det igen om gpsd stör andra enheter eller "
 "program."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid "Unusable gpsd configuration"
-msgstr "Oanvändbar konfiguration av gpsd"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "Standardvärdet är att lägga till \"-F /var/run/gpsd.soc\"."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr ""
-"Konfigurationen av gpsd måste ange åtminstone en enhet som gpsd ska ansluta "
-"till eller ett datauttag (med hjälp av flaggan -F). För att automatisera "
-"upptäckten av USB-enheter krävs /var/run/gpsd.soc som datauttag."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Oanvändbar konfiguration av gpsd"
+
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "Konfigurationen av gpsd måste ange åtminstone en enhet som gpsd ska "
+#~ "ansluta till eller ett datauttag (med hjälp av flaggan -F). För att "
+#~ "automatisera upptäckten av USB-enheter krävs /var/run/gpsd.soc som "
+#~ "datauttag."

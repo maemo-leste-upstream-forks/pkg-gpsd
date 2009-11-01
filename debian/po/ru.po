@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.39-3\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-06-29 20:37+0400\n"
 "Last-Translator: Yuri Kozlov <yuray@komyakino.ru>\n"
 "Language-Team: Russian <debian-l10n-russian@lists.debian.org>\n"
@@ -56,9 +56,11 @@ msgstr "Запускать gpsd автоматически?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
 msgstr ""
 "Если ответить утвердительно, то gpsd будет запускаться автоматически. Для "
 "автообнаружения USB устройств GPS требуется работающий gpsd."
@@ -66,35 +68,48 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "Options to gpsd:"
-msgstr "Параметры для gpsd:"
+msgid "gpsd control socket path"
+msgstr ""
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+msgid "Options to gpsd:"
+msgstr "Параметры для gpsd:"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
+msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
 "Вы можете указать дополнительные параметры запуска gpsd; их список есть в "
 "справочной странице gpsd(8)."
 
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "По умолчанию добавляется \"-F /var/run/gpsd.sock\"."
-
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr ""
 "Должна ли gpsd обрабатывать подключения USB GPS-приёмников автоматически?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
@@ -104,20 +119,17 @@ msgstr ""
 "утвердительный ответ. Однако, вы можете ответить отрицательно, если gpsd "
 "влияет на другие подключённые устройства или программы."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid "Unusable gpsd configuration"
-msgstr "Неработоспособные настройки gpsd"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "По умолчанию добавляется \"-F /var/run/gpsd.sock\"."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr ""
-"В настройках нужно, как минимум, указать устройство, к которому должна "
-"обращаться gpsd, или управляющий сокет (через параметр -F). Для "
-"автообнаружения USB требуется управляющий сокет /var/run/gpsd.sock."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Неработоспособные настройки gpsd"
+
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "В настройках нужно, как минимум, указать устройство, к которому должна "
+#~ "обращаться gpsd, или управляющий сокет (через параметр -F). Для "
+#~ "автообнаружения USB требуется управляющий сокет /var/run/gpsd.sock."

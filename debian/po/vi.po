@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd 2.39-3\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-09-23 18:40+0930\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
@@ -16,15 +16,15 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: LocFactoryEditor 1.8\n"
 
-#: ../gpsd.templates:1001
 #. Type: string
 #. Description
+#: ../gpsd.templates:1001
 msgid "Device the GPS receiver is attached to:"
 msgstr "Thiết bị kết nối với máy nhận GPS:"
 
-#: ../gpsd.templates:1001
 #. Type: string
 #. Description
+#: ../gpsd.templates:1001
 msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
@@ -32,90 +32,104 @@ msgstr ""
 "Hãy gõ thiết bị đến đó máy nhận tín hiệu GPS có kết nối. Rất có thể giống "
 "như « /dev/ttyS0 » hoặc « /dev/ttyUSB0 ». "
 
-#: ../gpsd.templates:1001
 #. Type: string
 #. Description
+#: ../gpsd.templates:1001
 msgid ""
 "Multiple devices may be specified as a space-separated list. Leave empty if "
 "you don't want to connect gpsd to a device on boot or if you want to use "
 "device autodetection only."
-msgstr "Nhiều thiết bị cũng có thể được xác định trong một danh sách định giới bằng dấu cách. Bỏ trống trường này nếu bạn không muốn kết nối gpsd đến thiết bị khi khởi động, hoặc chỉ muốn sử dụng dịch vụ tự động phát hiện thiết bị."
+msgstr ""
+"Nhiều thiết bị cũng có thể được xác định trong một danh sách định giới bằng "
+"dấu cách. Bỏ trống trường này nếu bạn không muốn kết nối gpsd đến thiết bị "
+"khi khởi động, hoặc chỉ muốn sử dụng dịch vụ tự động phát hiện thiết bị."
 
-#: ../gpsd.templates:2001
 #. Type: boolean
 #. Description
-#| msgid "Start gpsd automatically on boot?"
+#: ../gpsd.templates:2001
 msgid "Start gpsd automatically?"
 msgstr "Tự động khởi chạy gpsd ?"
 
-#: ../gpsd.templates:2001
 #. Type: boolean
 #. Description
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
-msgstr "Bật tùy chọn này thì trình nền gpsd sẽ được tự động khởi chạy. Chức năng tự động phát hiện thiết bị GPS qua USB cũng yêu cầu trình nền gpsd đang chạy."
+#: ../gpsd.templates:2001
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
+msgstr ""
+"Bật tùy chọn này thì trình nền gpsd sẽ được tự động khởi chạy. Chức năng tự "
+"động phát hiện thiết bị GPS qua USB cũng yêu cầu trình nền gpsd đang chạy."
 
-#: ../gpsd.templates:3001
 #. Type: string
 #. Description
+#: ../gpsd.templates:3001
+msgid "gpsd control socket path"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:3001
+msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
 msgid "Options to gpsd:"
 msgstr "Tùy chọn về gpsd:"
 
 # You can give additional arguments when starting gpsd; see gpsd(1) for a
 # list of options.
-#: ../gpsd.templates:3001
 #. Type: string
 #. Description
+#: ../gpsd.templates:4001
+#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
 "Bạn cũng có thể đặt thêm tùy chọn khi khởi chạy trình nền gpsd; xem gpsd(8) "
 "để tìm danh sách các tùy chọn sẵn sàng."
 
-#: ../gpsd.templates:3001
-#. Type: string
-#. Description
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "Mặc định là thêm « -F /var/run/gpsd.sock »."
-
-#: ../gpsd.templates:4001
 #. Type: boolean
 #. Description
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr ""
 "gpsd có nên tự động quản lý các máy nhận tín hiệu GPS được kết nối qua USB "
 "không?"
 
-#: ../gpsd.templates:4001
 #. Type: boolean
 #. Description
-#| msgid ""
-#| "This option is disabled by default, because several GPS receivers use "
-#| "common USB-to-serial converter chips, so gpsd may cause interference with "
-#| "other attached devices or programs."
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
-"Vì trình nền gpsd chỉ quản lý thiết bị kiểu GPS, bạn có thể bật tuỳ chọn này một cách an toàn. Tuy nhiên, cũng có thể tắt nó nếu gpsd gây ra sự giao thoa với thiết bị khác được kết nối hoặc với chương trình khác."
+"Vì trình nền gpsd chỉ quản lý thiết bị kiểu GPS, bạn có thể bật tuỳ chọn này "
+"một cách an toàn. Tuy nhiên, cũng có thể tắt nó nếu gpsd gây ra sự giao thoa "
+"với thiết bị khác được kết nối hoặc với chương trình khác."
 
-#: ../gpsd.templates:5001
-#. Type: error
-#. Description
-msgid "Unusable gpsd configuration"
-msgstr "Cấu hình gpsd vô ích"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "Mặc định là thêm « -F /var/run/gpsd.sock »."
 
-#: ../gpsd.templates:5001
-#. Type: error
-#. Description
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr "Cấu hình phải chỉ ra ít nhất một thiết bị đến đó gpsd nên kết nối, hoặc một ổ cắm điều khiển (dùng tuỳ chọn « -F »). Chức năng tự động phát hiện qua USB cũng yêu cầu ổ cắm điều khiển là « /var/run/gpsd.sock »."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Cấu hình gpsd vô ích"
+
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "Cấu hình phải chỉ ra ít nhất một thiết bị đến đó gpsd nên kết nối, hoặc "
+#~ "một ổ cắm điều khiển (dùng tuỳ chọn « -F »). Chức năng tự động phát hiện "
+#~ "qua USB cũng yêu cầu ổ cắm điều khiển là « /var/run/gpsd.sock »."

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-06-28 13:43+0200\n"
+"POT-Creation-Date: 2009-11-01 20:46+0100\n"
 "PO-Revision-Date: 2009-06-28 16:32+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
@@ -60,9 +60,11 @@ msgstr "Spouštět gpsd automaticky?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-msgid ""
-"If you accept this option, gpsd will be started automatically. Autodetection "
-"of USB GPS devices requires a running gpsd."
+#, fuzzy
+#| msgid ""
+#| "If you accept this option, gpsd will be started automatically. "
+#| "Autodetection of USB GPS devices requires a running gpsd."
+msgid "If you accept this option, gpsd will be started automatically."
 msgstr ""
 "Povolíte-li tuto možnost, gpsd se bude spouštět automaticky. Automatické "
 "rozpoznávání GPS zařízení připojených přes USB vyžaduje běžící gpsd."
@@ -70,34 +72,47 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "Options to gpsd:"
-msgstr "Volby pro gpsd:"
+msgid "gpsd control socket path"
+msgstr ""
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid ""
+"Please enter the gpsd control socket location. Usually you want to keep the "
+"default setting."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+msgid "Options to gpsd:"
+msgstr "Volby pro gpsd:"
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+#, fuzzy
+#| msgid ""
+#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
+#| "list of options."
+msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options."
+"of options. Do not use '-F' here, the control socket path is set with a "
+"different debconf question."
 msgstr ""
 "Nyní můžete zadat parametry, které se mají používat při startu gpsd. Seznam "
 "možností naleznete v manuálové stránce gpsd(8)."
 
-#. Type: string
-#. Description
-#: ../gpsd.templates:3001
-msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-msgstr "Ve výchozím nastavení se přidává „-F /var/run/gpsd.sock“."
-
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
 msgstr "Má gpsd automaticky spravovat GPS přijímače připojené přes USB?"
 
 #. Type: boolean
 #. Description
-#: ../gpsd.templates:4001
+#: ../gpsd.templates:5001
 msgid ""
 "As gpsd only handles GPS devices, it is safe to choose this option. However, "
 "you can disable it if gpsd is causing interference with other attached "
@@ -107,23 +122,20 @@ msgstr ""
 "Pokud by přece jen gpsd nějakým způsobem rušil ostatní připojená zařízení "
 "nebo programy, můžete ho zakázat."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid "Unusable gpsd configuration"
-msgstr "Nepoužitelné nastavení gpsd"
+#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
+#~ msgstr "Ve výchozím nastavení se přidává „-F /var/run/gpsd.sock“."
 
-#. Type: error
-#. Description
-#: ../gpsd.templates:5001
-msgid ""
-"The configuration must at least specify either a device that gpsd should "
-"connect to, or a control socket (using the -F option). USB autodetection "
-"requires /var/run/gpsd.sock as control socket."
-msgstr ""
-"V nastavení musí být uvedeno alespoň zařízení, ke kterému se má gpsd "
-"připojit, nebo kontrolní socket (volbou -F). Automatické rozpoznávání USB "
-"zařízení vyžaduje kontrolní socket /var/run/gpsd.sock."
+#~ msgid "Unusable gpsd configuration"
+#~ msgstr "Nepoužitelné nastavení gpsd"
+
+#~ msgid ""
+#~ "The configuration must at least specify either a device that gpsd should "
+#~ "connect to, or a control socket (using the -F option). USB autodetection "
+#~ "requires /var/run/gpsd.sock as control socket."
+#~ msgstr ""
+#~ "V nastavení musí být uvedeno alespoň zařízení, ke kterému se má gpsd "
+#~ "připojit, nebo kontrolní socket (volbou -F). Automatické rozpoznávání USB "
+#~ "zařízení vyžaduje kontrolní socket /var/run/gpsd.sock."
 
 #~| msgid ""
 #~| "If the GPS receiver is permanently attached to this computer, it might "
