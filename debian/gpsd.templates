@@ -26,8 +26,8 @@ Type: string
 _Description: Options to gpsd:
  You can give additional arguments when starting gpsd; see gpsd(8) for a
  list of options.
- Do not use '-F' here, the control socket path is set with a different
- debconf question.
+ .
+ Do not use '-F' here. The control socket path is set independently.
 
 Template: gpsd/autodetection
 Type: boolean
