@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
-"POT-Creation-Date: 2009-11-01 20:46+0100\n"
+"POT-Creation-Date: 2009-11-04 02:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -76,8 +76,13 @@ msgstr ""
 #: ../gpsd.templates:4001
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
-"of options. Do not use '-F' here, the control socket path is set with a "
-"different debconf question."
+"of options."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../gpsd.templates:4001
+msgid "Do not use '-F' here. The control socket path is set independently."
 msgstr ""
 
 #. Type: boolean
