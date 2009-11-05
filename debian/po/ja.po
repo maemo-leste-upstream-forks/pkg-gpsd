@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-11-04 02:49+0100\n"
-"PO-Revision-Date: 2009-06-29 21:16+0900\n"
+"PO-Revision-Date: 2009-11-05 22:21+0900\n"
 "Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -52,20 +52,14 @@ msgstr "gpsd を自動で開始しますか?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
-#| msgid ""
-#| "If you accept this option, gpsd will be started automatically. "
-#| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
-msgstr ""
-"この選択肢に「はい」と答えると、gpsd は自動で開始します。USB GPS デバイスの自"
-"動検出には gpsd の実行が必要です。"
+msgstr "この選択肢に「はい」と答えると、gpsd は自動で開始します。"
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid "gpsd control socket path"
-msgstr ""
+msgstr "gpsd 制御ソケットパス"
 
 #. Type: string
 #. Description
@@ -73,7 +67,7 @@ msgstr ""
 msgid ""
 "Please enter the gpsd control socket location. Usually you want to keep the "
 "default setting."
-msgstr ""
+msgstr "gpsd の制御ソケットの場所を入力してください。通常はデフォルトの設定のままにしておけばよいでしょう。"
 
 #. Type: string
 #. Description
@@ -84,10 +78,6 @@ msgstr "gpsd に渡すオプション:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -98,14 +88,8 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
-msgstr ""
-"gpsd の起動時に追加の引数を与えることができます。オプション一覧については "
-"gpsd(8) を参照してください。"
+msgstr "'-F' はここでは使わないでください。制御ソケットパスは独立に設定されます。"
 
 #. Type: boolean
 #. Description
@@ -124,18 +108,3 @@ msgstr ""
 "gpsd は GPS デバイスの操作のみを行うので、この選択肢で「はい」と答えることは"
 "安全です。ただし、もし gpsd がほかの接続されたデバイスやプログラムに干渉を引"
 "き起こすようであれば、無効にできます。"
-
-#~ msgid "The default is to add \"-F /var/run/gpsd.sock\"."
-#~ msgstr "デフォルトでは \"-F /var/run/gpsd.sock\" を追加します。"
-
-#~ msgid "Unusable gpsd configuration"
-#~ msgstr "利用できない gpsd の設定"
-
-#~ msgid ""
-#~ "The configuration must at least specify either a device that gpsd should "
-#~ "connect to, or a control socket (using the -F option). USB autodetection "
-#~ "requires /var/run/gpsd.sock as control socket."
-#~ msgstr ""
-#~ "設定では少なくとも、gpsd が接続すべきデバイスまたは制御ソケット (-F オプ"
-#~ "ションを利用) のどちらかを指定する必要があります。USB の自動検出には制御ソ"
-#~ "ケットとして /var/run/gpsd.sock が必要です。"
