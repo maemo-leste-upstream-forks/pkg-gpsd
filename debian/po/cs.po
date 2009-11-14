@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: gpsd\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-11-04 02:49+0100\n"
-"PO-Revision-Date: 2009-06-28 16:32+0200\n"
+"PO-Revision-Date: 2009-11-12 10:39+0100\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -60,20 +60,17 @@ msgstr "Spouštět gpsd automaticky?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid ""
 #| "If you accept this option, gpsd will be started automatically. "
 #| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
-msgstr ""
-"Povolíte-li tuto možnost, gpsd se bude spouštět automaticky. Automatické "
-"rozpoznávání GPS zařízení připojených přes USB vyžaduje běžící gpsd."
+msgstr "Povolíte-li tuto možnost, gpsd se bude spouštět automaticky."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
 msgid "gpsd control socket path"
-msgstr ""
+msgstr "Cesta k řídícímu socketu gpsd"
 
 #. Type: string
 #. Description
@@ -82,6 +79,8 @@ msgid ""
 "Please enter the gpsd control socket location. Usually you want to keep the "
 "default setting."
 msgstr ""
+"Zadejte prosím umístění řídícího socketu gpsd. Obvykle se doporučuje "
+"ponechat výchozí nastavení."
 
 #. Type: string
 #. Description
@@ -92,7 +91,6 @@ msgstr "Volby pro gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
@@ -106,14 +104,12 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
 msgstr ""
-"Nyní můžete zadat parametry, které se mají používat při startu gpsd. Seznam "
-"možností naleznete v manuálové stránce gpsd(8)."
+"Nezadávejte zde volbu „-F“, protože řídící socket se nastavuje samostatně."
 
 #. Type: boolean
 #. Description
