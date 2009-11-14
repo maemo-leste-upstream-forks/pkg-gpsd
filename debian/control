@@ -19,9 +19,8 @@ Package: gpsd
 Architecture: any
 Depends: python, netbase, lsb-base (>= 3.2-13), ${shlibs:Depends}, ${misc:Depends}
 Recommends: udev
-Suggests: dbus
 Breaks: ${gpsd:Breaks}
-Suggests: gpsd-clients
+Suggests: gpsd-clients, dbus
 Description: Global Positioning System - daemon
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
