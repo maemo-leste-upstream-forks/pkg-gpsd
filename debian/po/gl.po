@@ -43,8 +43,7 @@ msgid ""
 msgstr ""
 "Pode indicar varios dispositivos nunha lista separados por espazos. Déixeo "
 "en branco se non desexa conectar gpsd no arrinque con ningún dispositivo ou "
-"se "
-"só desexa empregar a detección automática do dispositivo."
+"se só desexa empregar a detección automática do dispositivo."
 
 #. Type: boolean
 #. Description
@@ -55,9 +54,6 @@ msgstr "Desexa iniciar gpsd automaticamente?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid ""
-#| "If you accept this option, gpsd will be started automatically. "
-#| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
 msgstr "Se escolle esta opción gpsd iniciarase automaticamente."
 
@@ -86,9 +82,6 @@ msgstr "Opcións para gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -99,9 +92,6 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
 msgstr ""
 "Non empregue aquí «-F». A rota ao socket de control defínese por separado."
