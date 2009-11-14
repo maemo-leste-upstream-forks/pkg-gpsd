@@ -1,3 +1,60 @@
+gpsd (2.39-7) unstable; urgency=low
+
+  [ Bernd Zeimetz ]
+  * [bda49bd9] Bumping Standards-Version to 3.8.3. No changes needed.
+  * [cdf3c74c] Fix hotplug script environment patch to ensure that
+    'None' is not passed as gpsd option.
+  * [67cde41b] Don't check for "$START_DAEMON" = "true" in
+    gpsd.hotplug.wrapper anymore.
+  * [c4fb8bab] Go trough all debconf questions if the daemon is started
+    at boot *or* USB autodetection is enabled.
+  * [f929f33f] Add dbus to 'Suggests' of gpsd.
+  * [9dd1656f] Rewriting gpsd.init completely. The new start-stop-daemon
+    options should ensure that gpsd is stopped definitely, hopefully
+    this fixes an upgrade problem which was reported on Launchpad. (LP:
+    #468915) - thanks to Walter Wittel
+  * [376285e7] Updating gpsd.templates after review. - thanks to Justin
+    B Rye
+  * [e5d5e1f7] Updating po files for new gpsd.templates.
+  * [6e23af3e] Update po files after running debconf-updatepo.
+  * [691c564c] Add missing : to the control path question.
+  * [8da65d0a] Running debconf-updatepo again.
+
+  [ Esko Arajärvi ]
+  * [77a66dc2] Updating debconf translation: fi.po (Closes: #554478)
+
+  [ Kenshi Muto ]
+  * [389d8f08] Updating debconf translation: ja.po (Closes: #554576)
+
+  [ dooteo ]
+  * [400eada8] Updating debconf translation: eu.po (Closes: #554540)
+
+  [ Ivan Masár ]
+  * [67146d71] Updating debconf translation: sk.po (Closes: #554681)
+
+  [ Luca Monducci ]
+  * [c52ba7fa] Updating debconf translation: it.po (Closes: #555117)
+
+  [ Eddy Petrișor ]
+  * [afb4ef0b] Updating debconf translation: ro.po (Closes: #555464)
+
+  [ Thomas Mueller ]
+  * [9f7c21e9] Updating debconf translation: de.po (Closes: #555840)
+
+  [ Miroslav Kure ]
+  * [e4246738] Updating debconf translation: cs.po (Closes: #555894)
+
+  [ Francisco Javier Cuadrado ]
+  * [3a72944f] Updating debconf translation: es.po (Closes: #556035)
+
+  [ Yuri Kozlov ]
+  * [4beef045] Updating debconf translation: ru.po (Closes: #556193)
+
+  [ marce ]
+  * [325806a3] Updating debconf translation: gl.po (Closes: #555453)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 14 Nov 2009 21:43:26 +0100
+
 gpsd (2.39-6) experimental; urgency=low
 
   [ Christian Perrier ]
