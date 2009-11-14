@@ -82,8 +82,8 @@ msgstr "Si acepta esta opción, gpsd se iniciará automáticamente."
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "ruta del «socket» de control de gpsd"
+msgid "gpsd control socket path:"
+msgstr "Ruta del «socket» de control de gpsd:"
 
 #. Type: string
 #. Description

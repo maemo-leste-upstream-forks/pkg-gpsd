@@ -63,8 +63,8 @@ msgstr "Dacă acceptați această opțiune, gpsd va fi pornit automat."
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "calea către socket-ul de control gpsd"
+msgid "gpsd control socket path:"
+msgstr "calea către socket-ul de control gpsd:"
 
 #. Type: string
 #. Description

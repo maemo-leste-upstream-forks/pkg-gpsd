@@ -64,7 +64,7 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
+msgid "gpsd control socket path:"
 msgstr ""
 
 #. Type: string

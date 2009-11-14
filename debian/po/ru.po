@@ -62,8 +62,8 @@ msgstr "Если ответить утвердительно, то gpsd буде
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "Путь к сокету управления gpsd"
+msgid "gpsd control socket path:"
+msgstr "Путь к сокету управления gpsd:"
 
 #. Type: string
 #. Description

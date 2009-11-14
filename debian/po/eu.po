@@ -62,8 +62,8 @@ msgstr "Aukera hau onartuz gero, gpsd automatikoki abiaraziko da."
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "gpsd kontrolaren socket-aren bide-izena"
+msgid "gpsd control socket path:"
+msgstr "gpsd kontrolaren socket-aren bide-izena:"
 
 #. Type: string
 #. Description

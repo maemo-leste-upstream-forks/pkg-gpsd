@@ -58,8 +58,8 @@ msgstr "この選択肢に「はい」と答えると、gpsd は自動で開始�
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "gpsd 制御ソケットパス"
+msgid "gpsd control socket path:"
+msgstr "gpsd 制御ソケットパス:"
 
 #. Type: string
 #. Description

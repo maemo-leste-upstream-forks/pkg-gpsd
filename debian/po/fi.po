@@ -57,7 +57,7 @@ msgstr "Jos valitset tämän vaihtoehdon, gpsd käynnistetään automaattisesti.
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
+msgid "gpsd control socket path:"
 msgstr "gpsd-hallintapistokkeen polku:"
 
 #. Type: string

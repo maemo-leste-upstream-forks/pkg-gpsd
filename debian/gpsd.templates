@@ -17,7 +17,7 @@ _Description: Start gpsd automatically?
 Template: gpsd/socket
 Type: string
 Default: /var/run/gpsd.sock
-_Description: gpsd control socket path
+_Description: gpsd control socket path:
  Please enter the gpsd control socket location. Usually you want to keep
  the default setting.
 

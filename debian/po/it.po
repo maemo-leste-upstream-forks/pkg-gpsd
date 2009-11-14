@@ -58,8 +58,8 @@ msgstr "Accettando, gpsd verrà avviato automaticamente."
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "Percorso del socke di controllo di gpsd"
+msgid "gpsd control socket path:"
+msgstr "Percorso del socke di controllo di gpsd:"
 
 #. Type: string
 #. Description

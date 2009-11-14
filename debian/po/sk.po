@@ -59,8 +59,8 @@ msgstr "Ak prijmete túto voľbu, gpsd sa bude spúšťať automaticky."
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "cesta k riadiacemu socketu gpsd"
+msgid "gpsd control socket path:"
+msgstr "Cesta k riadiacemu socketu gpsd:"
 
 #. Type: string
 #. Description
