@@ -60,9 +60,6 @@ msgstr "Spouštět gpsd automaticky?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid ""
-#| "If you accept this option, gpsd will be started automatically. "
-#| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
 msgstr "Povolíte-li tuto možnost, gpsd se bude spouštět automaticky."
 
@@ -91,9 +88,6 @@ msgstr "Volby pro gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -104,9 +98,6 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
 msgstr ""
 "Nezadávejte zde volbu „-F“, protože řídící socket se nastavuje samostatně."

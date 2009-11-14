@@ -16,7 +16,8 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: KBabel 1.11.4\n"
-"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
+"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #. Type: string
 #. Description
@@ -55,9 +56,6 @@ msgstr "Запускать gpsd автоматически?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid ""
-#| "If you accept this option, gpsd will be started automatically. "
-#| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
 msgstr "Если ответить утвердительно, то gpsd будет запускаться автоматически."
 
@@ -74,8 +72,8 @@ msgid ""
 "Please enter the gpsd control socket location. Usually you want to keep the "
 "default setting."
 msgstr ""
-"Введите путь к сокету управления gpsd. Обычно, достаточно оставить "
-"настройку по умолчанию."
+"Введите путь к сокету управления gpsd. Обычно, достаточно оставить настройку "
+"по умолчанию."
 
 #. Type: string
 #. Description
@@ -86,9 +84,6 @@ msgstr "Параметры для gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -99,17 +94,16 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
-msgstr "Не указывайте параметр -F. Путь к сокету управления настраивается отдельно."
+msgstr ""
+"Не указывайте параметр -F. Путь к сокету управления настраивается отдельно."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr "Должна ли gpsd обрабатывать подключения USB GPS-приёмников автоматически?"
+msgstr ""
+"Должна ли gpsd обрабатывать подключения USB GPS-приёмников автоматически?"
 
 #. Type: boolean
 #. Description
@@ -122,4 +116,3 @@ msgstr ""
 "Так как gpsd работает только с устройствами GPS, можно уверенно давать "
 "утвердительный ответ. Однако, вы можете ответить отрицательно, если gpsd "
 "влияет на другие подключённые устройства или программы."
-

@@ -32,8 +32,8 @@ msgid ""
 "Please enter the device the GPS receiver is attached to. It will probably be "
 "something like /dev/ttyS0 or /dev/ttyUSB0."
 msgstr ""
-"Hautatu GPS hartzailea erantsita duen gailua. Baliteke "
-"/dev/ttyS0 edo /dev/ttyUSB0 bezalako zerbait izatea."
+"Hautatu GPS hartzailea erantsita duen gailua. Baliteke /dev/ttyS0 edo /dev/"
+"ttyUSB0 bezalako zerbait izatea."
 
 #. Type: string
 #. Description
@@ -43,9 +43,9 @@ msgid ""
 "you don't want to connect gpsd to a device on boot or if you want to use "
 "device autodetection only."
 msgstr ""
-"Hainbat gailu zehaztu daitezke zuriunez bereiztutako zerrendan. Utzi eremu hau hutsik "
-"abioan gpsd konektatzerik ez baduzu nahi, edo gailuaren detekzio automatikoa "
-"soilik erabiltzea nahi baduzu."
+"Hainbat gailu zehaztu daitezke zuriunez bereiztutako zerrendan. Utzi eremu "
+"hau hutsik abioan gpsd konektatzerik ez baduzu nahi, edo gailuaren detekzio "
+"automatikoa soilik erabiltzea nahi baduzu."
 
 #. Type: boolean
 #. Description
@@ -56,9 +56,6 @@ msgstr "Abiarazi gpsd automatikoki?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid ""
-#| "If you accept this option, gpsd will be started automatically. "
-#| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
 msgstr "Aukera hau onartuz gero, gpsd automatikoki abiaraziko da."
 
@@ -87,9 +84,6 @@ msgstr "Aukerak gpsd-rentzat:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -100,11 +94,10 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
-msgstr "Ez erabili '-F' hemen. Kontroleko socket-aren bide-izena beste leku batean ezartzen da."
+msgstr ""
+"Ez erabili '-F' hemen. Kontroleko socket-aren bide-izena beste leku batean "
+"ezartzen da."
 
 #. Type: boolean
 #. Description
@@ -121,6 +114,5 @@ msgid ""
 "devices or programs."
 msgstr ""
 "Gpsd-k GPS gailuak bakarrik kudea ditzakeenez, ziurra da aukera hau "
-"hautatzea. Hala ere berau desgaitu dezakezu gpsd instalatuta "
-"dagoen beste programa edo gailu batekin arazoak sortzen ari bada."
-
+"hautatzea. Hala ere berau desgaitu dezakezu gpsd instalatuta dagoen beste "
+"programa edo gailu batekin arazoak sortzen ari bada."

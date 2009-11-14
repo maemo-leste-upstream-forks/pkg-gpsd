@@ -57,9 +57,6 @@ msgstr "Se pornește gpsd automat?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid ""
-#| "If you accept this option, gpsd will be started automatically. "
-#| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
 msgstr "Dacă acceptați această opțiune, gpsd va fi pornit automat."
 
@@ -88,9 +85,6 @@ msgstr "Opțiuni ale lui gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
@@ -101,9 +95,6 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
 msgstr ""
 "Nu introduceți „-F”. Calea către socket-ul de control este configurată "
