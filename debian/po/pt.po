@@ -52,17 +52,14 @@ msgstr "Iniciar automaticamente o gpsd?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#| msgid ""
-#| "If you accept this option, gpsd will be started automatically. "
-#| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
 msgstr "Se aceitar esta opção, o gpsd será iniciado automaticamente."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path"
-msgstr "caminho para o socket de controlo do gpsd"
+msgid "gpsd control socket path:"
+msgstr "Caminho para o socket de controlo do gpsd:"
 
 #. Type: string
 #. Description
@@ -71,7 +68,8 @@ msgid ""
 "Please enter the gpsd control socket location. Usually you want to keep the "
 "default setting."
 msgstr ""
-"Por favor introduza o caminho para o socket de controlo do gpsd. Normalmente deve manter a definição predefinida."
+"Por favor introduza o caminho para o socket de controlo do gpsd. Normalmente "
+"deve manter a definição predefinida."
 
 #. Type: string
 #. Description
@@ -82,24 +80,20 @@ msgstr "Opções para o gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
-"Você pode passar argumentos adicionais ao iniciar o gpsd; para uma lista "
-"de opções veja gpsd(8)."
+"Você pode passar argumentos adicionais ao iniciar o gpsd; para uma lista de "
+"opções veja gpsd(8)."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#| msgid ""
-#| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
-#| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
-msgstr "Não utilize '-F' aqui. O caminho do socket de controlo é definido independentemente."
+msgstr ""
+"Não utilize '-F' aqui. O caminho do socket de controlo é definido "
+"independentemente."
 
 #. Type: boolean
 #. Description
