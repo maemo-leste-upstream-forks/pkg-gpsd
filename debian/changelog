@@ -1,3 +1,17 @@
+gpsd (2.39-8) unstable; urgency=low
+
+  * [a9e9d167] Export needed variables for the hotplug script. (Closes:
+    #556956) - thanks to Luca Niccoli
+  * [254f1da4] Add a missing % which caused USB autostart to fail.
+    (Closes: #556954) - thanks to Luca Niccoli
+  * [2990d2cc] Updating debconf translation: pt.po (Closes: #556250) -
+    thanks to "Traduz - Portuguese Translation Team"
+  * [dc6305e7] Updating debconf translation: sv.po (Closes: #556580) -
+    thanks to Martin Bagge
+  * [6066918d] Add missing : in po files and unfuzzy them.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 18 Nov 2009 17:39:31 +0100
+
 gpsd (2.39-7) unstable; urgency=low
 
   [ Bernd Zeimetz ]
