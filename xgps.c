@@ -1,4 +1,4 @@
-/* $Id: xgps.c 5326 2009-03-02 23:24:03Z esr $ */
+/* $Id: xgps.c 6654 2009-12-01 08:52:02Z esr $ */
 /* $gpsd: xgps.c 3871 2006-11-13 00:40:00Z esr $ */
 
 /*
@@ -52,6 +52,13 @@
 #include "gpsd_config.h"
 #include "gps.h"
 #include "gpsdclient.h"
+#include "revision.h"
+
+/*
+ * FIXME: use here is a minor bug, should report epx and epy separately.
+ * How to mix together epx and epy to get a horizontal circular error.
+ */
+#define EMIX(x, y)	(((x) > (y)) ? (x) : (y))
 
 /* This code used to live in display.c */
 
@@ -85,7 +92,7 @@ set_color(String color)
 }
 /*@ +usedef @*/
 
-static void 
+static void
 register_shell(Widget w)
 {
 	appshell = w;
@@ -125,7 +132,7 @@ set_title(char *title)
 }
 
 static void
-pol2cart(double azimuth, double elevation,  
+pol2cart(double azimuth, double elevation,
 	 /*@out@*/int *xout, /*@out@*/int *yout)
 {
 	azimuth *= DEG_2_RAD;
@@ -141,7 +148,7 @@ pol2cart(double azimuth, double elevation,
 static void
 draw_arc(int x, int y, unsigned int diam)
 {
-    (void)XDrawArc(XtDisplay(draww), pixmap, drawGC, 
+    (void)XDrawArc(XtDisplay(draww), pixmap, drawGC,
 		   x - diam / 2, y - diam / 2,        /* x,y */
 		   diam, diam,        /* width, height */
 		   0, 360 * 64);      /* angle1, angle2 */
@@ -155,7 +162,7 @@ draw_graphics(struct gps_data_t *gpsdata)
 	int i, x, y;
 	char buf[20];
 
-	if (gpsdata->satellites != 0) {
+	if (gpsdata->satellites_visible != 0) {
 		i = (int)min(width, height);
 
 		set_color("White");
@@ -191,10 +198,10 @@ draw_graphics(struct gps_data_t *gpsdata)
 		(void)XDrawString(dpy, pixmap, drawGC, x - 5, y, "W", 1);
 
 		/* Now draw the satellites... */
-		for (i = 0; i < gpsdata->satellites; i++) {
-			pol2cart((double)gpsdata->azimuth[i], 
+		for (i = 0; i < gpsdata->satellites_visible; i++) {
+			pol2cart((double)gpsdata->azimuth[i],
 			    (double)gpsdata->elevation[i], &x, &y);
-			if (gpsdata->ss[i] < 10) 
+			if (gpsdata->ss[i] < 10)
 				set_color("Black");
 			else if (gpsdata->ss[i] < 30)
 				set_color("Red");
@@ -236,12 +243,12 @@ draw_graphics(struct gps_data_t *gpsdata)
 					    y - IDIAM, 2 * IDIAM + 1,
 					    2 * IDIAM + 1, 0, 360 * 64);
 				else
-				    (void)XDrawArc(dpy, pixmap, drawGC, 
+				    (void)XDrawArc(dpy, pixmap, drawGC,
 					    x - IDIAM,
 					    y - IDIAM, 2 * IDIAM + 1,
 					    2 * IDIAM + 1, 0, 360 * 64);
 			}
-			(void)snprintf(buf, sizeof(buf), 
+			(void)snprintf(buf, sizeof(buf),
 				       "%-3d", gpsdata->PRN[i]);
 			set_color("Black");
 			(void)XDrawString(dpy, pixmap, drawGC, x, y+17, buf, 3);
@@ -262,7 +269,7 @@ redraw(Widget widget UNUSED, XtPointer client_data UNUSED, XtPointer call_data)
 
 	(void)XCopyArea(dpy, pixmap, XtWindow(draww), drawGC,
 			cbs->event->xexpose.x, cbs->event->xexpose.y,
-			(unsigned int)cbs->event->xexpose.width, 
+			(unsigned int)cbs->event->xexpose.width,
 			(unsigned int)cbs->event->xexpose.height,
 			cbs->event->xexpose.x, cbs->event->xexpose.y);
 }
@@ -304,10 +311,11 @@ static XtIntervalId timeout, gps_timeout;
 static XtInputId gps_input;
 static enum deg_str_type deg_type = deg_dd;
 static struct fixsource_t source;
+#ifdef CLIENTDEBUG_ENABLE
+static int debug;
+#endif /* CLIENTDEBUG_ENABLE */
 
-bool jitteropt = false;
-
-bool gps_lost;
+static bool gps_lost;
 
 /*@ -nullassign @*/
 static XrmOptionDescRec options[] = {
@@ -492,7 +500,7 @@ build_gui(Widget toplevel)
 	    XmNchildType,		XmFRAME_TITLE_CHILD,
 	    XmNchildVerticalAlignment,	XmALIGNMENT_CENTER,
 	    NULL);
-	status = XtVaCreateManagedWidget("status", 
+	status = XtVaCreateManagedWidget("status",
 					 xmTextFieldWidgetClass, status_form,
 					 XmNcursorPositionVisible, False,
 					 XmNeditable, False,
@@ -554,7 +562,7 @@ build_gui(Widget toplevel)
 
 	/* the satellite diagram */
 	satellite_diagram = XtVaCreateManagedWidget("satellite_diagram",
-	    xmDrawingAreaWidgetClass,	right, 
+	    xmDrawingAreaWidgetClass,	right,
 	    XmNbackground,		get_pixel(toplevel, "snow"),
 	    XmNheight,			SATDIAG_SIZE + 24,
 	    XmNwidth,			SATDIAG_SIZE,
@@ -831,7 +839,7 @@ build_gui(Widget toplevel)
 	/*@ -type -nullpass @*/
 	delw = XmInternAtom(XtDisplay(toplevel), "WM_DELETE_WINDOW",
 	    (Boolean)False);
-	(void)XmAddWMProtocolCallback(toplevel, delw, 
+	(void)XmAddWMProtocolCallback(toplevel, delw,
 		(XtCallbackProc)quit_cb, NULL);
 	/*@ +type +onlytrans @*/
 
@@ -867,13 +875,16 @@ handle_input(XtPointer client_data UNUSED, int *source UNUSED, XtInputId *id UNU
 
 /* runs on each sentence */
 static void
-update_panel(struct gps_data_t *gpsdata, char *message, 
-	size_t len UNUSED, int level UNUSED)
+update_panel(struct gps_data_t *gpsdata, char *message,	size_t len UNUSED)
 {
 	unsigned int i;
 	int newstate;
 	XmString string[MAXCHANNELS + 1];
 	char s[128], *latlon, *sp;
+
+	/* this is where we implement source-device filtering */
+	if (gpsdata->dev.path[0]!='\0' && source.device!=NULL && strcmp(source.device, gpsdata->dev.path) != 0)
+	    return;
 
 	/* the raw data sisplay */
 	if (message[0] != '\0')
@@ -882,13 +893,13 @@ update_panel(struct gps_data_t *gpsdata, char *message,
 	XmTextFieldSetString(status, message);
 
 	/* This is for the satellite status display */
-	if (gpsdata->satellites) {
+	if (gpsdata->satellites_visible) {
 		string[0] = XmStringCreateSimple(
 		    "PRN:   Elev:  Azim:  SNR:  Used:");
 		for (i = 0; i < MAXCHANNELS; i++) {
-			if (i < (unsigned int)gpsdata->satellites) {
-				(void)snprintf(s, sizeof(s),  
-				    " %3d    %2d    %3d    %2d      %c", 
+			if (i < (unsigned int)gpsdata->satellites_visible) {
+				(void)snprintf(s, sizeof(s),
+				    " %3d    %2d    %3d    %2.0f      %c",
 				    gpsdata->PRN[i], gpsdata->elevation[i],
 				    gpsdata->azimuth[i], gpsdata->ss[i],
 				    gpsdata->used[i] ? 'Y' : 'N');
@@ -946,22 +957,23 @@ update_panel(struct gps_data_t *gpsdata, char *message,
 		XmTextFieldSetString(text_6, s);
 	} else
 		XmTextFieldSetString(text_6, "n/a");
-	if (isnan(gpsdata->fix.eph)==0) {
+	/* FIXME: Someday report epx and epy */
+	if (isnan(gpsdata->fix.epx)==0) {
 		(void)snprintf(s, sizeof(s), "%f %s",
-		    gpsdata->fix.eph * altunits->factor,
+		    EMIX(gpsdata->fix.epx, gpsdata->fix.epy) * altunits->factor,
 		    altunits->legend);
 		XmTextFieldSetString(text_7, s);
 	} else
 		XmTextFieldSetString(text_7, "n/a");
 	if (isnan(gpsdata->fix.epv)==0) {
-		(void)snprintf(s, sizeof(s), "%f %s", 
+		(void)snprintf(s, sizeof(s), "%f %s",
 		    gpsdata->fix.epv * altunits->factor,
 		    altunits->legend);
 		XmTextFieldSetString(text_8, s);
 	} else
 		XmTextFieldSetString(text_8, "n/a");
 	if (gpsdata->fix.mode == MODE_3D && isnan(gpsdata->fix.climb)==0) {
-		(void)snprintf(s, sizeof(s), "%f %s/sec", 
+		(void)snprintf(s, sizeof(s), "%f %s/sec",
 		    gpsdata->fix.climb * altunits->factor,
 		    altunits->legend);
 		XmTextFieldSetString(text_9, s);
@@ -969,7 +981,9 @@ update_panel(struct gps_data_t *gpsdata, char *message,
 		XmTextFieldSetString(text_9, "n/a");
 	if (gpsdata->set & DEVICEID_SET) {
 		(void)strlcpy(s, "xgps: ", sizeof(s));
-		(void)strlcpy(s+6, gpsdata->gps_id, sizeof(s)-6);
+		(void)strlcat(s, gpsdata->dev.driver, sizeof(s));
+		(void)strlcat(s, " ", sizeof(s));
+		(void)strlcat(s, gpsdata->dev.subtype, sizeof(s));
 		set_title(s);
 	}
 	if (gpsdata->online == 0) {
@@ -1032,57 +1046,29 @@ get_resource(Widget w, char *name, char *default_value)
 void
 handle_gps(XtPointer client_data UNUSED, XtIntervalId *ignored UNUSED)
 {
-	char *err_str = NULL;
 	char error[128];
 	static bool dialog_posted = false;
 
 	/*@i@*/gpsdata = gps_open(source.server, source.port);
 	if (!gpsdata) {
-		switch (errno ){
-		case NL_NOSERVICE:
-			err_str = "can't get service entry";
-			break;
-		case NL_NOHOST:
-			err_str = "can't get host entry";
-			break;
-		case NL_NOPROTO:
-			err_str = "can't get protocol entry";
-			break;
-		case NL_NOSOCK:
-			err_str = "can't create socket";
-			break;
-		case NL_NOSOCKOPT:
-			err_str = "error SETSOCKOPT SO_REUSEADDR";
-			break;
-		case NL_NOCONNECT:
-			err_str = "can't connect to host";
-			break;
-		default:
-			err_str = "Unknown";
-			break;
-		}
 		if (!gps_lost && !dialog_posted) {
 			(void)snprintf(error, sizeof(error),
 			    "No GPS data available.\n\n%s\n\n"
 			    "Check the connection to gpsd and if "
-			    "gpsd is running.", err_str);
+			    "gpsd is running.", gps_errstr(errno));
 			(void)err_dialog(toplevel, error);
 			dialog_posted = true;
 		}
 		gps_timeout = XtAppAddTimeOut(app, 1000, handle_gps, app);
 	} else {
+	        gps_mask_t mask;
 		timeout = XtAppAddTimeOut(app, 2000, handle_time_out, app);
 		timer = time(NULL);
 
 		gps_set_raw_hook(gpsdata, update_panel);
 
-		if (jitteropt)
-		    (void)gps_query(gpsdata, "J=1");
-
-		if (source.device != NULL)
-		    (void)gps_query(gpsdata, "F=%s", source.device);
-
-		(void)gps_query(gpsdata, "w+x");
+		mask = WATCH_ENABLE|WATCH_RAW|WATCH_NEWSTYLE;
+		(void)gps_stream(gpsdata, mask, NULL);
 
 		gps_input = XtAppAddInput(app, gpsdata->gps_fd,
 		    (XtPointer)XtInputReadMask, handle_input, NULL);
@@ -1106,7 +1092,7 @@ err_dialog(Widget widget, char *s)
 		XmString ok = XmStringCreateLocalized("OK");
 		XtSetArg(args[n], XmNautoUnmanage, False); n++;
 		XtSetArg(args[n], XmNcancelLabelString, ok); n++;
-		dialog = XmCreateInformationDialog(widget, "notice", 
+		dialog = XmCreateInformationDialog(widget, "notice",
 						   args, (Cardinal)n);
 		XtAddCallback(dialog, XmNcancelCallback, dlg_callback, NULL);
 		XtUnmanageChild(XmMessageBoxGetChild(dialog,
@@ -1210,7 +1196,7 @@ main(int argc, char *argv[])
 	    &argc, argv, fallback_resources, NULL);
 
 	su = get_resource(toplevel, "speedunits", "kmh");
-	for (speedunits = speedtable; 
+	for (speedunits = speedtable;
 	    speedunits < speedtable + sizeof(speedtable)/sizeof(speedtable[0]);
 	    speedunits++)
 		if (strcmp(speedunits->legend, su)==0)
@@ -1222,7 +1208,7 @@ main(int argc, char *argv[])
 speedunits_ok:
 
 	au = get_resource(toplevel, "altunits", "meters");
-	for (altunits = alttable; 
+	for (altunits = alttable;
 	    altunits < alttable + sizeof(alttable)/sizeof(alttable[0]);
 	    altunits++)
 		if (strcmp(altunits->legend, au)==0)
@@ -1233,14 +1219,18 @@ speedunits_ok:
 
 altunits_ok:
 
-	while ((option = getopt(argc, argv, "Vhjl:")) != -1) {
+	while ((option = getopt(argc, argv, "Vd:hl:")) != -1) {
 		switch (option) {
 		case 'V':
-		    (void)fprintf(stderr, "SVN ID: $Id: xgps.c 5326 2009-03-02 23:24:03Z esr $ \n");
+		    (void)fprintf(stderr, "xgps: %s (revision %s)\n", 
+				  VERSION, REVISION);
 		    exit(0);
-		case 'j':
-		    jitteropt = true;
-		    continue;
+		case 'd':
+		    debug = atoi(optarg);
+#ifdef CLIENTDEBUG_ENABLE
+		    gps_enable_debug(debug, stderr);
+#endif /* CLIENTDEBUG_ENABLE */
+		    break;
 		case 'l':
 		    switch (optarg[0]) {
 		    case 'd':

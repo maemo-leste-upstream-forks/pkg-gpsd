@@ -1,4 +1,4 @@
-/* $Id: gpxlogger.c 5326 2009-03-02 23:24:03Z esr $ */
+/* $Id: gpxlogger.c 6599 2009-11-25 13:21:01Z esr $ */
 #include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
@@ -89,7 +89,7 @@ static void print_fix(struct gps_fix_t *fix, struct tm *time)
      * we don't necessarily have access to some of the stuff in gsdata.
      * Might mean some of this stuff should be promoted.
      */
-    if ((gpsdata->status >= 2) && (gpsdata->fix.mode >= MODE_3D)){
+    if ((gpsdata->status >= 2) && (gpsdata->fix.mode >= MODE_3D)) {
 	/* dgps or pps */
 	if (gpsdata->fix.mode == 4) { /* military pps */
 	    (void)printf("        <fix>pps</fix>\n");
@@ -172,13 +172,21 @@ static struct gps_fix_t gpsfix;
 
 #include <glib/gprintf.h>
 
+/*
+ * FIXME: use here is a minor bug, should report epx and epy separately.
+ * How to mix together epx and epy to get a horizontal circular error.
+ */
+#define EMIX(x, y)	(((x) > (y)) ? (x) : (y))
+
 DBusConnection* connection;
 
-static char devname[BUFSIZ];
+static char gpsd_devname[BUFSIZ];
 
-static DBusHandlerResult handle_gps_fix (DBusMessage* message) 
+static DBusHandlerResult handle_gps_fix (DBusMessage* message)
 {
     DBusError	error;
+    /* this packet format was designed before we split eph */
+    double eph = EMIX(gpsfix.epx, gpsfix.epy);
 
     dbus_error_init (&error);
 
@@ -189,7 +197,7 @@ static DBusHandlerResult handle_gps_fix (DBusMessage* message)
 			   DBUS_TYPE_DOUBLE, &gpsfix.ept,
 			   DBUS_TYPE_DOUBLE, &gpsfix.latitude,
 			   DBUS_TYPE_DOUBLE, &gpsfix.longitude,
-			   DBUS_TYPE_DOUBLE, &gpsfix.eph,
+			   DBUS_TYPE_DOUBLE, &eph,
 			   DBUS_TYPE_DOUBLE, &gpsfix.altitude,
 			   DBUS_TYPE_DOUBLE, &gpsfix.epv,
 			   DBUS_TYPE_DOUBLE, &gpsfix.track,
@@ -198,9 +206,9 @@ static DBusHandlerResult handle_gps_fix (DBusMessage* message)
 			   DBUS_TYPE_DOUBLE, &gpsfix.eps,
 			   DBUS_TYPE_DOUBLE, &gpsfix.climb,
 			   DBUS_TYPE_DOUBLE, &gpsfix.epc,
-			   DBUS_TYPE_STRING, &devname,
+			   DBUS_TYPE_STRING, &gpsd_devname,
 			   DBUS_TYPE_INVALID);
-	
+
     conditionally_log_fix(&gpsfix);
     return DBUS_HANDLER_RESULT_HANDLED;
 }
@@ -264,11 +272,14 @@ static int dbus_mainloop(void)
  **************************************************************************/
 
 struct fixsource_t source;
-static int casoc = 0;
 
 static void process(struct gps_data_t *gpsdata,
-	     char *buf UNUSED, size_t len UNUSED, int level UNUSED)
+	     char *buf UNUSED, size_t len UNUSED)
 {
+    /* this is where we implement source-device filtering */
+    if (gpsdata->dev.path[0] && source.device!=NULL && strcmp(source.device, gpsdata->dev.path) != 0)
+	return;
+
     conditionally_log_fix(&gpsdata->fix);
 }
 
@@ -279,46 +290,16 @@ static int socket_mainloop(void)
 
     gpsdata = gps_open(source.server, source.port);
     if (!gpsdata) {
-	char *err_str;
-	switch (errno) {
-	case NL_NOSERVICE:
-	    err_str = "can't get service entry";
-	    break;
-	case NL_NOHOST:
-	    err_str = "can't get host entry";
-	    break;
-	case NL_NOPROTO:
-	    err_str = "can't get protocol entry";
-	    break;
-	case NL_NOSOCK:
-	    err_str = "can't create socket";
-	    break;
-	case NL_NOSOCKOPT:
-	    err_str = "error SETSOCKOPT SO_REUSEADDR";
-	    break;
-	case NL_NOCONNECT:
-	    err_str = "can't connect to host";
-	    break;
-	default:
-	    err_str = "Unknown";
-	    break;
-	}
 	fprintf(stderr,
 		"%s: no gpsd running or network error: %d, %s\n",
-		progname, errno, err_str);
+		progname, errno, gps_errstr(errno));
 	exit(1);
     }
 
-    if (casoc)
-	gps_query(gpsdata, "j1\n");
-    if (source.device != NULL)
-	gps_query(gpsdata, "f=%s\n", source.device);
-
     gps_set_raw_hook(gpsdata, process);
+    gps_stream(gpsdata, WATCH_ENABLE|WATCH_NEWSTYLE, NULL);
 
-    gps_query(gpsdata, "w+x");
-
-    for(;;){
+    for(;;) {
 	int data;
 	struct timeval tv;
 
@@ -329,7 +310,7 @@ static int socket_mainloop(void)
 	tv.tv_sec = 0;
 	data = select(gpsdata->gps_fd + 1, &fds, NULL, NULL, &tv);
 
-	if (data < 0) {
+	if (data == -1) {
 	    (void)fprintf(stderr,"%s\n", strerror(errno));
 	    break;
 	}
@@ -361,7 +342,7 @@ int main (int argc, char** argv)
     int ch;
 
     progname = argv[0];
-    while ((ch = getopt(argc, argv, "hi:j:V")) != -1){
+    while ((ch = getopt(argc, argv, "hi:V")) != -1) {
 	switch (ch) {
 	case 'i':		/* set polling interfal */
 	    timeout = (unsigned int)atoi(optarg);
@@ -371,12 +352,8 @@ int main (int argc, char** argv)
 		fprintf(stderr,
 			"WARNING: track timeout is an hour or more!\n");
 	    break;
-	case 'j':		/* set data smoothing */
-	    casoc = (unsigned int)atoi(optarg);
-	    casoc = casoc ? 1 : 0;
-	    break;
 	case 'V':
-	    (void)fprintf(stderr, "SVN ID: $Id: gpxlogger.c 5326 2009-03-02 23:24:03Z esr $ \n");
+	    (void)fprintf(stderr, "SVN ID: $Id: gpxlogger.c 6599 2009-11-25 13:21:01Z esr $ \n");
 	    exit(0);
 	default:
  	    usage();

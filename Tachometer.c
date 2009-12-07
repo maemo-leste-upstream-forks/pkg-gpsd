@@ -1,4 +1,4 @@
-/* $Id: Tachometer.c 4427 2007-10-16 13:40:03Z esr $ */
+/* $Id: Tachometer.c 6566 2009-11-20 03:51:06Z esr $ */
 /*
  * Tachometer Widget Implementation
  *
@@ -12,7 +12,9 @@
 #include <X11/StringDefs.h>
 #include <TachometerP.h>
 #include <math.h>
-#include "gpsd_config.h"	/* must define UNUSED */
+
+#include "gpsd_config.h"
+#include "gps.h"
 
 #define D2R  0.0174532925199432957692369076848861271 /* radians = pi/180 */
 

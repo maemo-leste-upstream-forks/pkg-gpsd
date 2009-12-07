@@ -1,4 +1,4 @@
-/* $Id: geoid.c 4958 2009-01-08 17:45:01Z ckuethe $ */
+/* $Id: geoid.c 6566 2009-11-20 03:51:06Z esr $ */
 /* 
  * geoid.c -- ECEF to WGS84 conversions, including ellipsoid-to-MSL height
  *
@@ -8,7 +8,6 @@
 
 #include <sys/types.h>
 #include <math.h>
-#include "gpsd_config.h"
 #include "gpsd.h"
 
 static double fix_minuz(double d);
