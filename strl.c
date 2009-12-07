@@ -1,6 +1,8 @@
-/* $Id: strl.c 4075 2006-12-05 00:05:19Z ckuethe $ */
+/* $Id: strl.c 6185 2009-09-10 18:50:49Z esr $ */
 #include <stdio.h>
+#ifndef S_SPLINT_S
 #include <unistd.h>
+#endif /* S_SPLINT_S */
 #include <stdlib.h>
 #include <string.h>
 #include "gpsd_config.h"

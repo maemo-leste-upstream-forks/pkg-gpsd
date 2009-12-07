@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: autogen.sh 5000 2009-01-13 20:43:34Z ckuethe $
+# $Id: autogen.sh 5510 2009-03-24 15:36:51Z esr $
 
 # Automakeversion
 AM_1=1
@@ -107,4 +107,4 @@ aclocal \
   && autoconf --force \
   && echo Now running configure to configure gpsd \
   && echo "./configure $@" \
-  && ./configure $@
+  && ./configure "$@"

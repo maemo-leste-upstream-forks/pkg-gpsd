@@ -1,83 +1,91 @@
-dnl $Id: configure.ac 5502 2009-03-18 21:09:31Z esr $
+dnl $Id: configure.ac 6710 2009-12-04 20:45:44Z esr $
 AC_INIT
-AM_INIT_AUTOMAKE(gpsd, 2.39)
+AM_INIT_AUTOMAKE(gpsd, 2.90)
 dnl AC_PREFIX_PROGRAM(gcc)
 AM_CONFIG_HEADER(gpsd_config.h)
 AC_LANG([C])
 
-AC_ARG_ENABLE(python,
-  AC_HELP_STRING([--disable-python],
-		 [disable python scripts and library bindings]),
-  [try_python="$enableval"], [try_python="yes"])
-if test "x$try_python" = "xyes"; then
-	AM_PATH_PYTHON
-	ac_python=yes
-	if test "x$PYTHON" = "x"; then
-		AC_PATH_PROG(PYTHON, python, none)
-	fi
+# ACREQUIRE_BUGFIX
+# ----------------
+# Due to a longstanding Autoconf bug (Autoconf 2.50 to at least 2.63),
+# any macro that is AC_REQUIREd at any point must be AC_REQUIREd
+# *before* it is directly expanded.  The macros below were being
+# directly expanded before being AC_REQUIREd, so we AC_REQUIRE them
+# early to prevent out-of-order expansion problems.  See the threads
+# at:
+# http://lists.gnu.org/archive/html/bug-autoconf/2008-12/msg00039.html
+# http://lists.gnu.org/archive/html/autoconf-patches/2008-12/msg00058.html
+# http://lists.gnu.org/archive/html/bug-autoconf/2009-01/msg00019.html
+# http://lists.gnu.org/archive/html/bug-gnulib/2009-01/msg00247.html
+AC_DEFUN_ONCE([ACREQUIRE_BUGFIX],
+[
+  AC_REQUIRE([AC_PROG_CPP])
+  AC_REQUIRE([AC_PROG_EGREP])
+  AC_REQUIRE([AC_PROG_CC])
+])
+ACREQUIRE_BUGFIX
+# ACREQUIRE_BUGFIX done
 
-	if test "x$PYTHON" = "xnone"; then
-	AC_MSG_WARN([*** Python interpreter not found, Python support disabled.])
-		ac_python=no
-	fi
+dnl AM_PATH_PYTHON provided with automake can be too old.  Look
+dnl for newer python first, and include 2.6 on the list.
+m4_define([_AM_PYTHON_INTERPRETER_LIST],
+	    [python3.0 python2.6 python2.5 python2.4 python])
+AM_PATH_PYTHON([2.4])
+ac_python=yes
+if test "x$PYTHON" = "x"; then
+	AC_PATH_PROG(PYTHON, python, none)
+fi
+
+if test "x$PYTHON" = "xnone"; then
+AC_MSG_WARN([*** Python interpreter not found, Python support disabled.])
+	ac_python=no
+fi
+
+if test "x$ac_python" = "xyes"; then
+	AC_MSG_CHECKING(Python version and location)
+	PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
+	PYTHON_VERSION_MAJOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[0]);"`]
+	PYTHON_VERSION_MINOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[1]);"`]
+	PYTHON_VERSION="${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
+	AC_MSG_RESULT([$PYTHON, $PYTHON_VERSION, $PYTHON_PREFIX])
+
+	PYTHON_CFLAGS="-DHAVE_PYTHON -I$PYTHON_PREFIX/include/python$PYTHON_VERSION"
+
+	OLD_CPPFLAGS="$CPPFLAGS"
+	OLD_CXXFLAGS="$CXXFLAGS"
+	CPPFLAGS="$CPPFLAGS $PYTHON_CFLAGS"
+	CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
+
+	AC_CHECK_HEADERS([Python.h],
+			[],
+			[AC_MSG_WARN([*** Python include files not found! You should install the Python development package. Python support disabled]); ac_python=no])
+	CPPFLAGS="$OLD_CPPFLAGS"
+	CXXFLAGS="$OLD_CXXFLAGS"
 
 	if test "x$ac_python" = "xyes"; then
-		AC_MSG_CHECKING(Python version and location)
-		PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
-		PYTHON_VERSION_MAJOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[0]);"`]
-		PYTHON_VERSION_MINOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[1]);"`]
-		PYTHON_VERSION="${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
-		AC_MSG_RESULT([$PYTHON, $PYTHON_VERSION, $PYTHON_PREFIX])
+		AC_SUBST([PYTHON_CFLAGS])
 
-		AC_MSG_CHECKING(whether Python is at least 2.4)
-		if test $PYTHON_VERSION_MAJOR -lt 2 -o $PYTHON_VERSION_MAJOR -eq 2 -a $PYTHON_VERSION_MINOR -lt 3; then
-			AC_MSG_RESULT(no)
-			AC_MSG_WARN([*** GPSD requires at least Python 2.3, Python support disabled.])
-			ac_python=no
-		fi
-		if test "x$ac_python" = "xyes"; then
-			AC_MSG_RESULT(yes)
+		ac_python=no
+		for pylibpath in '/usr/lib' $PYTHON_PREFIX/lib $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config; do
+			eval `echo unset ac_cv_lib_python$PYTHON_VERSION'___'Py_Finalize | tr '.' '_'`
 
-			PYTHON_CFLAGS="-DHAVE_PYTHON -I$PYTHON_PREFIX/include/python$PYTHON_VERSION"
-
-			OLD_CPPFLAGS="$CPPFLAGS"
-			OLD_CXXFLAGS="$CXXFLAGS"
-			CPPFLAGS="$CPPFLAGS $PYTHON_CFLAGS"
-			CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
-
-			AC_CHECK_HEADERS([Python.h],
-					[],
-					[AC_MSG_WARN([*** Python include files not found! You should install the Python development package. Python support disabled]); ac_python=no])
-			CPPFLAGS="$OLD_CPPFLAGS"
-			CXXFLAGS="$OLD_CXXFLAGS"
-
+			save_LIBS=$LIBS
+			LIBS="$LIBS -L$pylibpath $PYTHON_LIBS"
+			AC_CHECK_LIB(python$PYTHON_VERSION, Py_Finalize, PYTHON_LIBS="-L$pylibpath -lpython$PYTHON_VERSION $PYTHON_DEPS"; ac_python=yes,,$PYTHON_DEPS)
+			LIBS=$save_LIBS
 			if test "x$ac_python" = "xyes"; then
-				AC_SUBST([PYTHON_CFLAGS])
-
-				ac_python=no
-				for pylibpath in '/usr/lib' $PYTHON_PREFIX/lib $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config; do
-					eval `echo unset ac_cv_lib_python$PYTHON_VERSION'___'Py_Finalize | tr '.' '_'`
-
-					save_LIBS=$LIBS
-					LIBS="$LIBS -L$pylibpath $PYTHON_LIBS"
-					AC_CHECK_LIB(python$PYTHON_VERSION, Py_Finalize, PYTHON_LIBS="-L$pylibpath -lpython$PYTHON_VERSION $PYTHON_DEPS"; ac_python=yes,,$PYTHON_DEPS)
-					LIBS=$save_LIBS
-					if test "x$ac_python" = "xyes"; then
-						break
-					fi
-				done
-
-				if test "x$ac_python" != "xyes"; then
-					AC_MSG_WARN(*** Python development libraries required, Python support disabled)
-				fi
-				AC_SUBST([PYTHON_LIBS])
-
-				AC_SUBST(pkgpythondir)
-				if test "x$python_install" = "xyes"; then
-					pkgpythondir=$PYTHON_PREFIX"/lib/python"$PYTHON_VERSION"/site-packages/gpsd"
-				fi
-
+				break
 			fi
+		done
+
+		if test "x$ac_python" != "xyes"; then
+			AC_MSG_WARN(*** Python development libraries required, Python support disabled)
+		fi
+		AC_SUBST([PYTHON_LIBS])
+
+		AC_SUBST(pkgpythondir)
+		if test "x$python_install" = "xyes"; then
+			pkgpythondir=$PYTHON_PREFIX"/lib/python"$PYTHON_VERSION"/site-packages/gpsd"
 		fi
 	fi
 fi
@@ -153,7 +161,7 @@ if eval "test x$GCC = xyes"; then
 	dnl -Wcast-qual -W
 fi
 
-AC_CHECK_HEADERS(sys/termios.h sys/select.h sys/time.h sys/modem.h sys/ipc.h sys/shm.h sys/socket.h)
+AC_CHECK_HEADERS(sys/termios.h sys/select.h sys/time.h sys/modem.h sys/ipc.h sys/shm.h sys/stat.h sys/socket.h)
 AC_CHECK_HEADERS(arpa/inet.h netinet/in_systm.h netinet/in.h netinet/tcp.h)
 AC_CHECK_HEADERS([netinet/ip.h], [], [],
 [[#if HAVE_NETINET_IN_SYSTM_H && HAVE_NETINET_IN_H
@@ -219,25 +227,21 @@ AC_CHECK_LIB(pthread, pthread_setcancelstate,
 AC_SUBST(LIBPTHREAD)
 
 AH_VERBATIM([_GNU_SOURCE],
-	  [/* Macro for declaring function arguments unused. */
-#if defined(__GNUC__)
-#  define UNUSED __attribute__((unused)) /* Flag variable as unused */
-#else /* not __GNUC__ */
-#  define UNUSED
-#endif
-
-/* Some libc's don't have strlcat/strlcpy. Local copies are provided */
+	  [/* Some libc's don't have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT
 size_t strlcat(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
 #endif
 #ifndef HAVE_STRLCPY
 size_t strlcpy(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
-#endif])
+#endif
+
+#define GPSD_CONFIG_H])
 
 dnl Check for X libraries
 ac_x="no"
 if test x"$with_x" != "xno" -a x"$have_x" != "xdisabled"
   then
+  X_LIBS=-lX11
   AC_CHECK_HEADERS(X11/xpm.h xpm.h)
   if test x"$ac_cv_header_X11_xpm_h" = "xno" &&
      test x"$ac_cv_header_xpm_h" = "xno"; then
@@ -250,7 +254,6 @@ if test x"$with_x" != "xno" -a x"$have_x" != "xdisabled"
   LIBS="$LIBS $X_EXTRA_LIBS"
   CFLAGS="$CFLAGS $X_CFLAGS"
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-  LDFLAGS="$LDFLAGS $X_LIBS"
   AC_SUBST(X_LIBS)
   AC_SUBST(X11_LIBS)
   AC_SUBST(X_PRE_LIBS)
@@ -348,6 +351,19 @@ AC_MSG_CHECKING([for NMEA support])
 if test x"$ac_nmea" = "xyes"; then
     AC_MSG_RESULT([yes])
 	AC_DEFINE([NMEA_ENABLE], 1, [NMEA chipset support])
+else
+  AC_MSG_RESULT([no])
+fi
+
+dnl check for OnCore support
+AC_ARG_ENABLE(oncore,
+  AC_HELP_STRING([--disable-oncore],
+		 [disable Motorola OnCore chipset support]),
+  [ac_oncore=$enableval], [ac_oncore=yes])
+AC_MSG_CHECKING([for Motorola OnCore support])
+if test x"$ac_oncore" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([ONCORE_ENABLE], 1, [Motorola OnCore chipset support])
 else
   AC_MSG_RESULT([no])
 fi
@@ -488,7 +504,7 @@ dnl check for Garmin Simple Text support
 AC_ARG_ENABLE(garmintxt,
   AC_HELP_STRING([--enable-garmintxt],
 		 [enable Garmin Simple Text support]),
-  [ac_garmintxt=$enableval], [ac_garmintxt=no])
+  [ac_garmintxt=$enableval], [ac_garmintxt=yes])
 AC_MSG_CHECKING([for Garmin Simple Text support])
 if test x"$ac_garmintxt" = "xyes"; then
     AC_MSG_RESULT([yes])
@@ -553,17 +569,17 @@ else
   AC_MSG_RESULT([no])
 fi
 
-dnl check for MKT-3301 support
-AC_ARG_ENABLE(mkt3301,
-  AC_HELP_STRING([--disable-mkt3301],
-		 [disable MKT-3301 support]),
-  [ac_mkt3301=$enableval], [ac_mkt3301=yes])
-AC_MSG_CHECKING([for MKT-3301 support])
-if test x"$ac_mkt3301" = "xyes"; then
+dnl check for MTK-3301 support
+AC_ARG_ENABLE(mtk3301,
+  AC_HELP_STRING([--disable-mtk3301],
+		 [disable MTK-3301 support]),
+  [ac_mtk3301=$enableval], [ac_mtk3301=yes])
+AC_MSG_CHECKING([for MTK-3301 support])
+if test x"$ac_mtk3301" = "xyes"; then
     ac_nmea=yes
     AC_MSG_RESULT([yes])
-	AC_DEFINE([MKT3301_ENABLE], 1, [MKT-3301 support])
-	AC_DEFINE([NMEA_ENABLE], 1, [MKT-3301 requires NMEA support])
+	AC_DEFINE([MTK3301_ENABLE], 1, [MTK-3301 support])
+	AC_DEFINE([NMEA_ENABLE], 1, [MTK-3301 requires NMEA support])
 else
   AC_MSG_RESULT([no])
 fi
@@ -645,6 +661,47 @@ else
   AC_MSG_RESULT([no])
 fi
 
+dnl check for latency timing support
+AC_ARG_ENABLE(timing,
+  AC_HELP_STRING([--disable-timing],
+		 [disable latency timing support]),
+  [ac_timing=$enableval], [ac_timing=yes])
+AC_MSG_CHECKING([for latency timing support])
+if test x"$ac_timing" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([TIMING_ENABLE], 1, [latency timing support)])
+else
+  AC_MSG_RESULT([no])
+fi
+
+dnl check for client debugging support
+AC_ARG_ENABLE(clientdebug,
+  AC_HELP_STRING([--disable-clientdebug],
+		 [disable client debugging support]),
+  [ac_clientdebug=$enableval], [ac_clientdebug=yes])
+AC_MSG_CHECKING([for client debugging support])
+if test x"$ac_clientdebug" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([CLIENTDEBUG_ENABLE], 1, [client debugging support)])
+else
+  AC_MSG_RESULT([no])
+fi
+
+AM_CONDITIONAL([CLIENTDEBUG_ENABLE], [test x"$ac_clientdebug" = x"yes"])
+
+dnl check for support for oldstyle protocol
+AC_ARG_ENABLE(oldstyle,
+  AC_HELP_STRING([--disable-oldstyle],
+		 [disable oldstyle (pre-JSON) protocol support]),
+  [ac_oldstyle=$enableval], [ac_oldstyle=yes])
+AC_MSG_CHECKING([for oldstyle support])
+if test x"$ac_oldstyle" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([OLDSTYLE_ENABLE], 1, [oldstyle (pre-JSON) protocol support])
+else
+  AC_MSG_RESULT([no])
+fi
+
 dnl check for profiling support
 AC_ARG_ENABLE(profiling,
   AC_HELP_STRING([--enable-profiling],
@@ -700,14 +757,25 @@ fi
 dnl check for privilege revocation user at compile-time
 AC_ARG_ENABLE(gpsd-user,
   AC_HELP_STRING([--enable-gpsd-user=username],
-		 [GPSD privilege revokation user]),
+		 [GPSD privilege revocation user]),
   [ac_user=$enableval], [ac_user=nobody])
-AC_MSG_CHECKING([privilege revokation user])
+AC_MSG_CHECKING([privilege revocation user])
 if test x"$ac_user" != "xnobody"; then
     AC_MSG_RESULT([$ac_user])
-	AC_DEFINE_UNQUOTED([GPSD_USER], "$ac_user", [GPSD privilege revokation user])
+	AC_DEFINE_UNQUOTED([GPSD_USER], "$ac_user", [GPSD privilege revocation user])
 else
   AC_MSG_RESULT([nobody])
+fi
+
+dnl check for privilege revocation group at compile-time
+AC_ARG_ENABLE(gpsd-group,
+  AC_HELP_STRING([--enable-gpsd-group=groupname],
+		 [GPSD privilege revocation group, use if /dev/ttyS0 not found]),
+  [ac_group=$enableval])
+AC_MSG_CHECKING([privilege revokation group])
+if test x"$ac_user" != "xnobody"; then
+    AC_MSG_RESULT([$ac_group])
+	AC_DEFINE_UNQUOTED([GPSD_GROUP], "$ac_group", [GPSD privilege revokation group])
 fi
 
 dnl check for port speed fixed at compile-time
@@ -792,12 +860,25 @@ fi
 dnl allow tools to use control_send method
 AC_ARG_ENABLE(controlsend,
   AC_HELP_STRING([--disable-controlsend],
-		 [do not allow gpsd to change device settings]),
+		 [do not allow gpsctl/gpsmon to change device settings]),
   [ac_controlsend=$enableval], [ac_controlsend=yes])
 AC_MSG_CHECKING([if control sending is allowed])
 if test x"$ac_controlsend" != "xno"; then
     AC_MSG_RESULT([$ac_controlsend])
 	AC_DEFINE([ALLOW_CONTROLSEND], 1, [Allow gpsd to controlsend device])
+else
+  AC_MSG_RESULT([no])
+fi
+
+dnl enable raw measurements
+AC_ARG_ENABLE(raw,
+  AC_HELP_STRING([--enable-raw],
+		 [enable raw measurement processing]),
+  [ac_raw=$enableval], [ac_raw=yes])
+AC_MSG_CHECKING([for Raw Measurement support])
+if test x"$ac_raw" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([RAW_ENABLE], 1, [Raw Measurement support])
 else
   AC_MSG_RESULT([no])
 fi
@@ -844,6 +925,29 @@ if test x"$ac_squelch" = "xyes"; then
 else
   AC_MSG_RESULT([no])
 fi
+
+dnl C++ bindings
+if test -n "$CXX" && ( test "X$CXX" != "Xno" &&
+    ( (test "X$CXX" = "Xg++" && `g++ -v >/dev/null 2>&1` ) ||
+    (test "X$CXX" != "Xg++"))) ; then
+  ISCXX="yes"
+else
+  ISCXX="no"
+fi
+
+AC_ARG_ENABLE(libgpsmm,
+  AC_HELP_STRING([--disable-libgpsmm],
+		 [don't build C++ bindings]),
+  [ac_libgpsmm=$enableval], [ac_libgpsmm=$ISCXX])
+AC_MSG_CHECKING([for C++ support])
+if test x"$ac_libgpsmm" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([LIBGPSMM_ENABLE], 1, [C++ support])
+else
+  AC_MSG_RESULT([no])
+fi
+
+AM_CONDITIONAL([LIBGPSMM_ENABLE], [test x"$ac_libgpsmm" = x"yes"])
 
 dnl Test for XSLT processor (xsltproc or xmlto)
 AC_CHECK_PROG(WITH_XSLTPROC,[xsltproc],[yes],[no])
@@ -912,6 +1016,7 @@ echo "iTrax                   : $ac_itrax"
 echo "NMEA                    : $ac_nmea"
 echo "NTRIP                   : $ac_ntrip"
 echo "Navcom                  : $ac_navcom"
+echo "OnCore                  : $ac_oncore"
 echo "RTCM104V2               : $ac_rtcm104v2"
 echo "RTCM104V3               : $ac_rtcm104v3"
 echo "SiRF                    : $ac_sirf"
@@ -923,10 +1028,14 @@ echo "OceanServer             : $ac_oceanserver"
 echo "UBX                     : $ac_ubx"
 echo "GPSclock                : $ac_gpsclock"
 echo "AIVDM support           : $ac_aivdm"
-echo "MKT-3301                : $ac_mkt3301"
+echo "Timing support          : $ac_timing"
+echo "Client debugging support: $ac_clientdebug"
+echo "MTK-3301                : $ac_mtk3301"
 dnl Below this line are non-protocol switches
 echo "	Daemon Features"
 echo "	---------------"
+echo "GPSD-NG                 : $ac_gpsdng"
+echo "Old protocol            : $ac_oldstyle"
 echo "NTP SHM                 : $ac_ntpshm"
 echo "NTP PPS                 : $ac_pps"
 echo -n "PPS input on            : " ; case $ac_ppsoncts in yes) echo "CTS" ;; no) echo "DCD" ;; *) echo "Not defined" ;; esac
@@ -939,12 +1048,15 @@ echo "Limited max devices     : $ac_maxdevices"
 echo "Allow device reconfig   : $ac_reconfigure"
 echo "Allow control send      : $ac_controlsend"
 echo "Squelch logging/hexdump : $ac_squelch"
+echo "Raw Measurements        : $ac_raw"
 echo "	Client Features"
 echo "	---------------"
 echo "Build ncurses programs  : $ac_ncurses"
 echo "Enable X11 support      : $ac_x"
 echo "Enable Python support   : $ac_python"
+echo "Enable C++ support      : $ac_libgpsmm"
 echo "------------------------------------------"
+echo ""
 
 if test "xdummy" = "xdummy" -a \
     x"$ac_earthmate" = "xno" -a \
@@ -956,6 +1068,7 @@ if test "xdummy" = "xdummy" -a \
     x"$ac_navcom" = "xno" -a \
     x"$ac_nmea" = "xno" -a \
     x"$ac_ntrip" = "xno" -a \
+    x"$ac_oncore" = "xno" -a \
     x"$ac_rtcm104v2" = "xno" -a \
     x"$ac_sirf" = "xno" -a \
     x"$ac_superstar2" = "xno" -a \
@@ -966,6 +1079,9 @@ if test "xdummy" = "xdummy" -a \
     x"$ac_ubx" = "xno"; then
     AC_MSG_ERROR(Can't build gpsd with no protocols enabled)
 fi
-AC_OUTPUT(Makefile packaging/gpsd.spec libgps.pc libgpsd.pc)
+AC_OUTPUT(Makefile packaging/gpsd.spec libgps.pc libgpsd.pc
+		   jsongen.py maskaudit.py
+		   gpscat gpsfake gpsprof valgrind-audit,
+		   [chmod +x jsongen.py maskaudit.py gpscat gpsfake gpsprof valgrind-audit])
 echo "Configure finished, type 'make' to build."
 

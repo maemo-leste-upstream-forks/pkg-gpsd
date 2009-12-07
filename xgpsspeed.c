@@ -1,4 +1,4 @@
-/* $Id: xgpsspeed.c 5326 2009-03-02 23:24:03Z esr $ */
+/* $Id: xgpsspeed.c 6593 2009-11-24 18:20:49Z esr $ */
 /* GPS speedometer as a wrapper around an Athena widget Tachometer
  * - Derrick J Brashear <shadow@dementia.org>
  */
@@ -36,16 +36,25 @@ static struct gps_data_t *gpsdata;
 static Widget tacho;
 static double speedfactor;
 static Widget toplevel;
+static struct fixsource_t source;
+#ifdef CLIENTDEBUG_ENABLE
+static int debug;
+#endif /* CLIENTDEBUG_ENABLE */
 
 static void update_display(struct gps_data_t *gpsdata, 
-			   char *buf UNUSED, size_t len UNUSED, int level UNUSED)
+			   char *buf UNUSED, size_t len UNUSED)
 {
-    int temp_int = (int)rint(gpsdata->fix.speed * speedfactor);
+    /* this is where we implement source-device filtering */
+    if (gpsdata->dev.path[0]!='\0' && source.device!=NULL && strcmp(source.device, gpsdata->dev.path) != 0)
+	return;
+    else {
+	int temp_int = (int)rint(gpsdata->fix.speed * speedfactor);
 
-    if (temp_int < 0) temp_int = 0;
-    else if (temp_int > 100) temp_int = 100;
+	if (temp_int < 0) temp_int = 0;
+	else if (temp_int > 100) temp_int = 100;
 
-    (void)TachometerSetValue(tacho, temp_int);
+	(void)TachometerSetValue(tacho, temp_int);
+    }
 }
 
 static void handle_input(XtPointer client_data UNUSED,
@@ -82,7 +91,6 @@ int main(int argc, char **argv)
     Arg             args[10];
     XtAppContext app;
     int option;
-    struct fixsource_t source;
     char *speedunits;
     Widget base;
 
@@ -99,8 +107,14 @@ int main(int argc, char **argv)
     else if (strcmp(speedunits, "knots")==0)
 	speedfactor = MPS_TO_KNOTS;
 
-    while ((option = getopt(argc, argv, "hV")) != -1) {
+    while ((option = getopt(argc, argv, "d:hV")) != -1) {
 	switch (option) {
+	case 'd':
+	    debug = atoi(optarg);
+#ifdef CLIENTDEBUG_ENABLE
+	    gps_enable_debug(debug, stderr);
+#endif /* CLIENTDEBUG_ENABLE */
+	    break;
 	case 'V':
 	    (void)printf("xgpsspeed %s\n", VERSION);
 	    exit(0);
@@ -160,10 +174,7 @@ int main(int argc, char **argv)
 
     gps_set_raw_hook(gpsdata, update_display);
 
-    if (source.device != NULL)
-	(void)gps_query(gpsdata, "F=%s\n", source.device);
-
-    (void)gps_query(gpsdata, "w+x\n");
+    (void)gps_stream(gpsdata, WATCH_ENABLE|WATCH_NEWSTYLE, NULL);
 
     (void)XtAppMainLoop(app);
 

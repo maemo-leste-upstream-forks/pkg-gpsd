@@ -1,21 +1,21 @@
-/* $Id: ntrip.c 5052 2009-01-21 10:42:24Z esr $ */
-/* ntrip.c -- gather and dispatch DGNSS data from Ntrip broadcasters */
+/* $Id: net_ntrip.c 6566 2009-11-20 03:51:06Z esr $ */
+/* net_ntrip.c -- gather and dispatch DGNSS data from Ntrip broadcasters */
 #include <sys/types.h>
 #ifndef S_SPLINT_S
 #include <sys/socket.h>
+#include <unistd.h>
 #endif /* S_SPLINT_S */
 #include <sys/time.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#ifndef S_SPLINT_S
 #include <netdb.h>
+#endif /* S_SPLINT_S */
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
-#include "gpsd_config.h"
 
-#ifdef NTRIP_ENABLE
 #include "gpsd.h"
 #include "bsd-base64.h"
 
@@ -177,7 +177,7 @@ static int ntrip_sourcetable_parse(int fd, char *buf, ssize_t blen,
 
 	memset(&buf[len], 0, (size_t)(blen - len));
 
-	if ((rlen = recv(fd, &buf[len], (size_t)(blen - 1 - len), 0)) < 0) {
+	if ((rlen = recv(fd, &buf[len], (size_t)(blen - 1 - len), 0)) == -1) {
 	    if (errno == EINTR)
 		continue;
 	    return -1;
@@ -284,7 +284,7 @@ static int ntrip_stream_probe(const char *caster,
     int dsock;
     char buf[BUFSIZ];
 
-    if ((dsock = netlib_connectsock(caster, port, "tcp")) < 0) {
+    if ((dsock = netlib_connectsock(caster, port, "tcp")) == -1) {
 	    printf("ntrip stream connect error %d\n", dsock);
 	    return -1;
     }
@@ -358,7 +358,7 @@ static int ntrip_stream_open(const char *caster,
     }
 
     memset(buf, 0, sizeof(buf));
-    if (read(context->dsock, buf, sizeof(buf) - 1) < 0)
+    if (read(context->dsock, buf, sizeof(buf) - 1) == -1)
 	goto close;
 
     /* parse 401 Unauthorized */
@@ -384,9 +384,9 @@ static int ntrip_stream_open(const char *caster,
     if (opts >= 0)
 	(void)fcntl(context->dsock, F_SETFL, opts | O_NONBLOCK);
 
-    context->dgnss_service = dgnss_ntrip;
+    context->netgnss_service = netgnss_ntrip;
 #ifndef S_SPLINT_S
-    context->dgnss_privdata = stream;
+    context->netgnss_privdata = stream;
 #endif
     return context->dsock;
 close:
@@ -454,7 +454,7 @@ int ntrip_open(struct gps_context_t *context, char *caster)
 void ntrip_report(struct gps_device_t *session)
 /* may be time to ship a usage report to the Ntrip caster */
 {
-    struct ntrip_stream_t *stream = session->context->dgnss_privdata;
+    struct ntrip_stream_t *stream = session->context->netgnss_privdata;
     /*
      * 10 is an arbitrary number, the point is to have gotten several good
      * fixes before reporting usage to our Ntrip caster.
@@ -472,4 +472,3 @@ void ntrip_report(struct gps_device_t *session)
 	}
     }
 }
-#endif /* NTRIP_ENABLE */

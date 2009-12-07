@@ -1,4 +1,4 @@
-/* $Id: gpsd_dbus.c 5277 2009-02-24 19:17:05Z esr $ */
+/* $Id: gpsd_dbus.c 6672 2009-12-02 08:14:42Z garyemiller $ */
 #include <sys/types.h>
 #include <stdio.h>
 #include "gpsd_config.h"
@@ -31,14 +31,18 @@ void send_dbus_fix(struct gps_device_t* channel) {
     DBusMessage*	message;
     /*DBusMessageIter	iter;*/
     dbus_uint32_t	serial; /* collected, but not used */
-    char*		devname;
+    char*		gpsd_devname;
+    /* this packet format was designed before we split eph */
+    double		eph;
 
     /* if the connection is non existent, return without doing anything */
     if (connection == NULL) return;
 
     gpsdata = &(channel->gpsdata);
     gpsfix = &(gpsdata->fix);
-    devname = gpsdata->gps_device;
+    /* this packet format was designed before we split eph */
+    eph = EMIX(gpsfix->epx, gpsfix->epy);
+    gpsd_devname = gpsdata->dev.path;
 
     /* Send the named signel.  */
     message = dbus_message_new_signal("/org/gpsd", "org.gpsd", "fix");
@@ -48,7 +52,7 @@ void send_dbus_fix(struct gps_device_t* channel) {
 			      DBUS_TYPE_DOUBLE,	&(gpsfix->ept),
 			      DBUS_TYPE_DOUBLE, &(gpsfix->latitude),
 			      DBUS_TYPE_DOUBLE, &(gpsfix->longitude),
-			      DBUS_TYPE_DOUBLE, &(gpsfix->eph),
+			      DBUS_TYPE_DOUBLE, &(eph),
 			      DBUS_TYPE_DOUBLE, &(gpsfix->altitude),
 			      DBUS_TYPE_DOUBLE, &(gpsfix->epv),
 			      DBUS_TYPE_DOUBLE, &(gpsfix->track),
@@ -57,7 +61,7 @@ void send_dbus_fix(struct gps_device_t* channel) {
 			      DBUS_TYPE_DOUBLE, &(gpsfix->eps),
 			      DBUS_TYPE_DOUBLE, &(gpsfix->climb),
 			      DBUS_TYPE_DOUBLE, &(gpsfix->epc),
-			      DBUS_TYPE_STRING, &devname,
+			      DBUS_TYPE_STRING, &gpsd_devname,
 			      DBUS_TYPE_INVALID);
     dbus_message_set_no_reply(message, TRUE);
     dbus_connection_send(connection, message, &serial);

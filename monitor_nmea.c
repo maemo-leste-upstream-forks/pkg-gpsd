@@ -1,4 +1,4 @@
-/* $Id: monitor_nmea.c 5395 2009-03-06 14:55:03Z esr $ */
+/* $Id: monitor_nmea.c 6662 2009-12-01 20:40:51Z garyemiller $ */
 /*
  * nmeamon.c - gpsmon support for NMEA devices.
  *
@@ -18,6 +18,7 @@
 #include <assert.h>
 
 #include "gpsd_config.h"
+
 #ifdef HAVE_NCURSES_H
 #include <ncurses.h>
 #else
@@ -56,7 +57,6 @@ static bool nmea_initialize(void)
     mvwaddstr(cookedwin, 1, 1, "Time: ");
     mvwaddstr(cookedwin, 1, 31, "Lat: ");
     mvwaddstr(cookedwin, 1, 55, "Lon: ");
-    mvwaddstr(cookedwin, 2, 60, "Lon: ");
     mvwaddstr(cookedwin, 2, 34, " Cooked PVT ");
     wattrset(cookedwin, A_NORMAL);
 
@@ -133,16 +133,16 @@ static void cooked_pvt(void)
 
 
     if (session.gpsdata.fix.mode >= MODE_2D && isnan(session.gpsdata.fix.latitude)==0) {
-	(void)snprintf(scr, sizeof(scr), "%s %c", 
-		       deg_to_str(deg_ddmmss,  fabs(session.gpsdata.fix.latitude)), 
+	(void)snprintf(scr, sizeof(scr), "%s %c",
+		       deg_to_str(deg_ddmmss,  fabs(session.gpsdata.fix.latitude)),
 		       (session.gpsdata.fix.latitude < 0) ? 'S' : 'N');
     } else
 	(void)snprintf(scr, sizeof(scr), "n/a");
     (void)mvwprintw(cookedwin, 1, 36, "%-17s", scr);
 
     if (session.gpsdata.fix.mode >= MODE_2D && isnan(session.gpsdata.fix.longitude)==0) {
-	(void)snprintf(scr, sizeof(scr), "%s %c", 
-		       deg_to_str(deg_ddmmss,  fabs(session.gpsdata.fix.longitude)), 
+	(void)snprintf(scr, sizeof(scr), "%s %c",
+		       deg_to_str(deg_ddmmss,  fabs(session.gpsdata.fix.longitude)),
 		       (session.gpsdata.fix.longitude < 0) ? 'W' : 'E');
     } else
 	(void)snprintf(scr, sizeof(scr), "n/a");
@@ -186,7 +186,7 @@ static void nmea_update(void)
 	if (strstr(sentences, fields[0]) == NULL) {
 	    char *s_end = sentences + strlen(sentences);
 	    if ((int)(strlen(sentences) + strlen(fields[0])) < xmax-2) {
-		*s_end++ = ' '; 
+		*s_end++ = ' ';
 		(void)strlcpy(s_end, fields[0], NMEA_MAX);
 	    } else {
 		*--s_end = '.';
@@ -196,8 +196,8 @@ static void nmea_update(void)
 	    mvwaddstr(nmeawin, SENTENCELINE, 1, sentences);
 	}
 
-	/* 
-	 * If the interval between this and last update is 
+	/*
+	 * If the interval between this and last update is
 	 * the longest we've seen yet, boldify the corresponding
 	 * tag.
 	 */
@@ -209,21 +209,23 @@ static void nmea_update(void)
 	    tick_interval = now - last_tick;
 	    if (findme != NULL) {
 		mvwchgat(nmeawin, SENTENCELINE, 1, xmax-13, A_NORMAL, 0, NULL);
-		mvwchgat(nmeawin, 
-			 SENTENCELINE, 1+(findme-sentences), 
+		mvwchgat(nmeawin,
+			 SENTENCELINE, 1+(findme-sentences),
 			 (int)strlen(fields[0]),
 			 A_BOLD, 0, NULL);
 	    }
 	}
 	last_tick = now;
 
-	if (strcmp(fields[0], "GPGSV") == 0) {
+	if (strcmp(fields[0], "GPGSV") == 0 
+	  || strcmp(fields[0], "GNGSV") == 0 
+	  || strcmp(fields[0], "GLGSV") == 0) {
 	    int i;
-	    int nsats = (session.gpsdata.satellites < MAXSATS) ? session.gpsdata.satellites : MAXSATS;
+	    int nsats = (session.gpsdata.satellites_visible < MAXSATS) ? session.gpsdata.satellites_visible : MAXSATS;
 
 	    for (i = 0; i < nsats; i++) {
 		(void)wmove(satwin, i+2, 3);
-		(void)wprintw(satwin, " %3d %3d%3d %3d", 
+		(void)wprintw(satwin, " %3d %3d%3d %3.0f",
 			      session.gpsdata.PRN[i],
 			      session.gpsdata.azimuth[i],
 			      session.gpsdata.elevation[i],
@@ -236,7 +238,9 @@ static void nmea_update(void)
 		(void)mvwaddch(satwin, MAXSATS+2, 18, ACS_DARROW);
 	}
 
-	if (strcmp(fields[0], "GPRMC") == 0) {
+	if (strcmp(fields[0], "GPRMC") == 0 
+	  || strcmp(fields[0], "GNRMC") == 0 
+	  || strcmp(fields[0], "GLRMC") == 0) {
 	    /* time, lat, lon, course, speed */
 	    (void)mvwaddstr(gprmcwin, 1, 12, fields[1]);
 	    (void)mvwprintw(gprmcwin, 2, 12, "%12s %s", fields[3], fields[4]);
@@ -251,7 +255,9 @@ static void nmea_update(void)
 	    cooked_pvt();	/* cooked version of PVT */
 	}
 
-	if (strcmp(fields[0], "GPGSA") == 0) {
+	if (strcmp(fields[0], "GPGSA") == 0 
+	  || strcmp(fields[0], "GNGSA") == 0 
+	  || strcmp(fields[0], "GLGSA") == 0) {
 	    char scr[128];
 	    int i;
 	    (void)mvwprintw(gpgsawin, 1,7, "%1s %s", fields[1], fields[2]);
@@ -259,7 +265,7 @@ static void nmea_update(void)
 	    (void)wclrtoeol(gpgsawin);
 	    scr[0] = '\0';
 	    for (i = 0; i < session.gpsdata.satellites_used; i++) {
-		(void)snprintf(scr + strlen(scr), sizeof(scr)-strlen(scr), 
+		(void)snprintf(scr + strlen(scr), sizeof(scr)-strlen(scr),
 			       "%d ", session.gpsdata.used[i]);
 	    }
 	    getmaxyx(gpgsawin, ymax, xmax);
@@ -270,12 +276,14 @@ static void nmea_update(void)
 		mvwaddch(gpgsawin, 2, xmax-4-7, (chtype)'.');
 	    }
 	    monitor_fixframe(gpgsawin);
-	    (void)mvwprintw(gpgsawin, 3, 8, "%-5s", fields[16]); 
-	    (void)mvwprintw(gpgsawin, 3, 16, "%-5s", fields[17]); 
-	    (void)mvwprintw(gpgsawin, 3, 24, "%-5s", fields[15]); 
+	    (void)mvwprintw(gpgsawin, 3, 8, "%-5s", fields[16]);
+	    (void)mvwprintw(gpgsawin, 3, 16, "%-5s", fields[17]);
+	    (void)mvwprintw(gpgsawin, 3, 24, "%-5s", fields[15]);
 	    monitor_fixframe(gpgsawin);
 	}
-	if (strcmp(fields[0], "GPGGA") == 0) {
+	if (strcmp(fields[0], "GPGGA") == 0 
+	  || strcmp(fields[0], "GNGGA") == 0 
+	  || strcmp(fields[0], "GLGGA") == 0) {
 	    (void)mvwprintw(gpggawin, 1, 12, "%-17s", fields[1]);
 	    (void)mvwprintw(gpggawin, 2, 12, "%-17s", fields[2]);
 	    (void)mvwprintw(gpggawin, 3, 12, "%-17s", fields[4]);
@@ -331,7 +339,7 @@ static void monitor_nmea_send(const char *fmt, ... )
  * Yes, it's OK for most of these to be clones of the generic NMEA monitor
  * object except for the pointer to the GPSD driver.  That pointer makes
  * a difference, as it will automatically enable stuff like speed-switcher
- * and mode-switcher commands.  It's really only necessary to write a 
+ * and mode-switcher commands.  It's really only necessary to write a
  * separate monitor object if you want to change the device-window
  * display or implement device-specific commands.
  */
@@ -358,7 +366,7 @@ extern const struct gps_type_t ashtech;
 #ifdef ALLOW_CONTROLSEND
 static int ashtech_command(char line[])
 {
-    switch (line[0]) 
+    switch (line[0])
     {
     case 'N':		/* normal = 9600, GGA+GSA+GSV+RMC+ZDA */
 	monitor_nmea_send("$PASHS,NME,ALL,A,OFF"); /* silence outbound chatter */
@@ -446,17 +454,17 @@ const struct monitor_object_t gpsclock_mmt = {
 };
 #endif /* GPSCLOCK_ENABLE */
 
-#ifdef MKT3301_ENABLE
-extern const struct gps_type_t mkt3301;
+#ifdef MTK3301_ENABLE
+extern const struct gps_type_t mtk3301;
 
-const struct monitor_object_t mkt3301_mmt = {
+const struct monitor_object_t mtk3301_mmt = {
     .initialize = nmea_initialize,
     .update = nmea_update,
     .command = NULL,
     .wrap = nmea_wrap,
     .min_y = 21, .min_x = 80,
-    .driver = &mkt3301,
+    .driver = &mtk3301,
 };
-#endif /* MKT3301_ENABLE */
+#endif /* MTK3301_ENABLE */
 
 #endif /* NMEA_ENABLE */
