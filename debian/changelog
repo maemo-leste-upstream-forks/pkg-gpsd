@@ -1,3 +1,12 @@
+gpsd (2.90-2) unstable; urgency=low
+
+  * Upload to unstable.
+    This will also fix the following issues:
+    - gpsd doesn't support pipelining (Closes: #488913)
+    - FTBFS with binutils-gold (Closes: #554739) 
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 08 Dec 2009 13:51:27 +0100
+
 gpsd (2.90-1) experimental; urgency=low
 
   * New upstream release.
