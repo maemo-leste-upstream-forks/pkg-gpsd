@@ -139,7 +139,7 @@ build-gpsd-stamp: configure-stamp
 
 
 build-python-pre: build-python-pre-stamp
-build-python-pre-stamp:
+build-python-pre-stamp: configure-stamp
 	$(MAKE) packet_names.h gpscat.1 gpsfake.1 gpsprof.1
 	touch $@
 
