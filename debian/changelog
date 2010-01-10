@@ -1,3 +1,13 @@
+gpsd (2.90.1~svn6819-1) unstable; urgency=low
+
+  * SVN snapshot, uploading to unstable as it fixes
+    the blocking issues with gps_poll.
+    The non-blocking gps_poll was introduced while fixing
+    an issue in gps_unpack, so this upload also
+    Closes: #561280
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 16 Dec 2009 10:25:26 +0100
+
 gpsd (2.90-2) unstable; urgency=low
 
   * Upload to unstable.
