@@ -7,10 +7,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gpsd-2.39-5\n"
+"Project-Id-Version: gpsd-2.39-7\n"
 "Report-Msgid-Bugs-To: gpsd@packages.debian.org\n"
 "POT-Creation-Date: 2009-11-04 02:49+0100\n"
-"PO-Revision-Date: 2009-08-22 21:52+0200\n"
+"PO-Revision-Date: 2009-12-27 11:42+0100\n"
 "Last-Translator: Jordà Polo <jorda@ettin.org>\n"
 "Language-Team: Catalan <debian-l10n-catalan@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -54,20 +54,17 @@ msgstr "S'hauria d'iniciar el gpsd automàticament?"
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:2001
-#, fuzzy
 #| msgid ""
 #| "If you accept this option, gpsd will be started automatically. "
 #| "Autodetection of USB GPS devices requires a running gpsd."
 msgid "If you accept this option, gpsd will be started automatically."
-msgstr ""
-"Si accepteu aquesta opció, s'iniciarà el gpsd automàticament. La detecció "
-"automàtica de dispositius GPS USB requereix que el gpsd s'estigui executant."
+msgstr "Si accepteu aquesta opció, s'iniciarà el gpsd automàticament."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:3001
-msgid "gpsd control socket path:"
-msgstr ""
+msgid "gpsd control socket path"
+msgstr "camí al sòcol de control del gpsd"
 
 #. Type: string
 #. Description
@@ -76,6 +73,8 @@ msgid ""
 "Please enter the gpsd control socket location. Usually you want to keep the "
 "default setting."
 msgstr ""
+"Introduïu la ubicació del sòcol de control del gpsd. Normalment us "
+"interessarà mantenir la configuració predeterminada."
 
 #. Type: string
 #. Description
@@ -86,7 +85,6 @@ msgstr "Opcions per al gpsd:"
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
@@ -100,14 +98,13 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
-#, fuzzy
 #| msgid ""
 #| "You can give additional arguments when starting gpsd; see gpsd(8) for a "
 #| "list of options."
 msgid "Do not use '-F' here. The control socket path is set independently."
 msgstr ""
-"Podeu indicar arguments addicionals quan inicieu el gpsd; vegeu la llista "
-"d'opcions a gpsd(8)."
+"No utilitzeu «-F» aquí. El camí al sòcol de control s'estableix de forma "
+"independent."
 
 #. Type: boolean
 #. Description
