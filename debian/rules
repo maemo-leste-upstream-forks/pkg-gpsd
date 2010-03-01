@@ -174,7 +174,6 @@ install-gpsd: build-gpsd-stamp
 
 
 	install -d -m 755 debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults
-	install -m 644 xgps.ad debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults/xgps
 	install -m 644 xgpsspeed.ad debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults/xgpsspeed
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 
