@@ -2,12 +2,12 @@
 .\"     Title: gpsd
 .\"    Author: [see the "AUTHORS" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 12/04/2009
+.\"      Date: 03/01/2010
 .\"    Manual: [FIXME: manual]
 .\"    Source: [FIXME: source]
 .\"  Language: English
 .\"
-.TH "GPSD" "8" "12/04/2009" "[FIXME: source]" "[FIXME: manual]"
+.TH "GPSD" "8" "03/01/2010" "[FIXME: source]" "[FIXME: manual]"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -76,7 +76,7 @@ to assist troubleshooting\&.
 .SH "DESCRIPTION"
 .PP
 gpsd
-is a monitor daemon that watches a TCP/IP port (2947 by default), waiting for applications to request information from GPSes, differential\-GPS radios, or AIS receivers attached to the host machine\&. Each GPS, DGPS radio, or AIS receiver is expected to be direct\-connected to the host via a USB or RS232C serial port\&. The port may be specified to
+is a monitor daemon that collects information from GPSes, differential\-GPS radios, or AIS receivers attached to the host machine\&. Each GPS, DGPS radio, or AIS receiver is expected to be direct\-connected to the host via a USB or RS232C serial device\&. The serial device may be specified to
 gpsd
 at startup, or it may be set via a command shipped down a local control socket (e\&.g\&. by a USB hotplug script)\&. Given a GPS device by either means,
 gpsd
@@ -85,13 +85,15 @@ discovers the correct port speed and protocol for it\&.
 gpsd
 should be able to query any GPS that speaks either the standard textual NMEA 0183 protocol, or the (differing) extended NMEA dialects used by MKT\-3301, iTrax, Motorola OnCore, Sony CXD2951, and Ashtech/Thales devices\&. It can also interpret the binary protocols used by EverMore, Garmin, Navcom, Rockwell/Zodiac, SiRF, Trimble, and uBlox ANTARIS devices\&. It can read heading and attitude information from the Oceanserver 5000 digital compass\&.
 .PP
-The GPS protocols supported by your instance of
+The GPS reporting formats supported by your instance of
 gpsd
 may differ depending on how it was compiled; general\-purpose versions support many, but it can be built with protocol subsets down to a singleton for use in constrained environments\&. For a list of the GPS protocols supported by your instance, see the output of
 \fBgpsd \-l\fR
 .PP
 gpsd
-effectively hides the differences among the GPS types it supports\&. It also knows about and uses commands that tune these GPSes for lower latency\&.
+effectively hides the differences among the GPS types it supports\&. It also knows about and uses commands that tune these GPSes for lower latency\&. By using
+gpsd
+as an intermediary applications avoid contention for serial devices\&.
 .PP
 gpsd
 can use differential\-GPS corrections from a DGPS radio or over the net, from a ground station running a DGPSIP server or a Ntrip broadcaster that reports RTCM\-104 data; this will shrink position errors by roughly a factor of four\&. When
@@ -101,6 +103,10 @@ the section called \(lqACCURACY\(rq
 and
 the section called \(lqFILES\(rq
 for discussion\&.
+.PP
+Client applications will communicate with
+gpsd
+via a TCP/IP port, 2947 by default)\&. Both IPv4 and IPv6 connections are supported and a client may connect via either\&.
 .PP
 The program accepts the following options:
 .PP
@@ -127,7 +133,7 @@ cannot break the receiver\&. A better solution would be for Bluetooth to not be 
 .RS 4
 This flag causes
 gpsd
-to listen on all addresses (INADDR_ANY) rather than just the loopback (INADDR_LOOPBACK) address\&. For the sake of privacy and security, PVT information is now private to the local machine until the user makes an effort to expose this to the world\&. Listening on the loopback by default is a change from previous behaviour\&.
+to listen on all addresses (INADDR_ANY) rather than just the loopback (INADDR_LOOPBACK) address\&. For the sake of privacy and security, PVT information is now private to the local machine until the user makes an effort to expose this to the world\&.
 .RE
 .PP
 \-l
@@ -173,325 +179,41 @@ is in the foreground (\-N) or to syslog if in the background\&.
 Dump version and exit\&.
 .RE
 .PP
-Arguments are interpreted as the names of data sources\&. Normally, a data source is the device pathname of a local serial device from which the daemon may expect GPS data\&.
+Arguments are interpreted as the names of data sources\&. Normally, a data source is the device pathname of a local device from which the daemon may expect GPS data\&. But there are three other special source types recognized, for a total of four:
 .PP
-A data source name may also be a URI pointing to a specific network GNSS service (a DGPSIP server or Ntrip broadcaster)\&. If the URI starts with "ntrip://" Ntrip will be used; if the URI starts with "dgpsip://", DGPSIP will be used\&.
-gpsd
-defaults to DGPSIP if no protocol is defined\&. For Ntrip services that require authentication, a prefix of the form "username:password@" can be added before the name of the Ntrip broadcaster\&. If a suffix of the service name begins with ":" it is interpreted as a port number, overriding the default IANA\-assigned port of 2101\&. For Ntrip service you must specify which stream to use; the stream is given in the form "/streamname"\&. !n example DGPSIP URI could be "dgpsip://dgpsip\&.example\&.com" and a Ntrip URI could be "ntrip://foo:bar@ntrip\&.example\&.com:80/example\-stream"\&.
+Local serial or USB device
+.RS 4
+A normal Unix device name of a serial or USB device to which a sensor is attached\&. Example:
+/dev/ttyUSB0\&.
+.RE
 .PP
-Internally, the daemon maintains a device list holding the pathnames of GPSes known to the daemon\&. Initially, this list is the list of device\-name arguments specified on the command line\&. That list may be empty, in which case the daemon will have no devices on its search list until they are added by a control\-socket command (see
+AIS feed
+.RS 4
+A URI with the prefix "ais://", followed by a hostname, a colon, and a port number\&. The daemon will open a socket to the indicated server and read AIVDM/AIVDO packets from it\&. Example:
+ais://data\&.aishub\&.net:4006\&.
+.RE
+.PP
+Ntrip caster
+.RS 4
+A URI with the prefix "ntrip://" followed by the name of an Ntrp caster\&. For Ntrip services that require authentication, a prefix of the form "username:password@" can be added before the name of the Ntrip broadcaster\&. For Ntrip service, you must specify which stream to use; the stream is given in the form "/streamname"\&. An example DGPSIP URI could be "dgpsip://dgpsip\&.example\&.com" and a Ntrip URI could be "ntrip://foo:bar@ntrip\&.example\&.com:80/example\-stream"\&. Corrections from the caster will be send to each attached GPS with the capability to accept them\&.
+.RE
+.PP
+DGPSIP server
+.RS 4
+A URI with the prefix "dgpsip://" followed by a hostname, a colon, and an optional colon\-separated port number (defaulting to 2101)\&. The daemon will handshake with the DGPSIP server and read RTCM2 correction data from it\&. Corrections from the server will be set to each attached GPS with the capability to accept them\&.Example:
+dgpsip://dgps\&.wsrcc\&.com:2101\&.
+.RE
+.PP
+Internally, the daemon maintains a device list holding the pathnames of devices and remote servers known to the daemon\&. Initially, this list is the list of device\-name arguments specified on the command line\&. That list may be empty, in which case the daemon will have no devices on its search list until they are added by a control\-socket command (see
 the section called \(lqGPS DEVICE MANAGEMENT\(rq
 for details on this)\&. Daemon startup will abort with an error if neither any devices nor a control socket are specified\&.
 .PP
-Clients communicate with the dameon via textual request and responses\&. Currently there are two supported protocols, but there may be only one in the future\&. It is a bad idea for applications to speak either protocol directly: rather, they should use the
+Clients communicate with the dameon via textual request and responses\&. It is a bad idea for applications to speak the protocol directly: rather, they should use the
 libgps
 client library and take appropriate care to conditionalize their code on the major and minor protocol version symbols\&.
-.SH "OLD PROTOCOL"
-.if n \{\
-.sp
-.\}
-.RS 4
-.it 1 an-trap
-.nr an-no-space-flag 1
-.nr an-break-flag 1
-.br
-.ps +1
-\fBWarning\fR
-.ps -1
-.br
+.SH "REQUEST/RESPONSE PROTOCOL"
 .PP
-\fIDo not rely on being able to use this protocol directly!\fR
-This protocol has run out of command namespace and is not flexible enough to handle report types other than for GPS devices\&. Thus, it is in the process of being replaced by a new, JSON\-based protocol documented in a later section; development on the old protocol has ceased and support for it may be removed at any time after the new one is deemed mature\&.
-.sp .5v
-.RE
-.PP
-Under the old protocol, each client will at any given time be listening to only one of the GPSes on the internal device list (this restriction is removed under the new JSON\-based protocol)\&. By default, a client\'s device is the one that most recently shipped information to the daemon at the time the client first requests GPS information\&.
-.PP
-Each request normally consists of a single ASCII character followed by a newline\&. Case of the request character is ignored\&. Each request returns a line of response text ended by a CR/LF\&. Requests and responses are as follows, with %f standing for a decimal float numeral and %d for decimal integer numeral:
-.PP
-Any command other than L, F, K, W=0 or R=0 is considered a request for GPS information and will cause a GPS device to be connected to the client\'s channel\&.
-.PP
-a
-.RS 4
-The current altitude as "A=%f", meters above mean sea level\&.
-.RE
-.PP
-b
-.RS 4
-The B command with no argument returns four fields giving the parameters of the serial link to the GPS as "B=%d %d %c %d"; baud rate, byte size, parity (N, O or E for no parity, odd, or even) and stop bits (1 or 2)\&.
-.sp
-The command "B=%d" sets the baud rate, not changing parity or stop bits; The command "B=%d [78] [NOE] [12]" (B followed by whitespace; followed by a numeric speed; followed by one of the digits 7 or 8; followed by whitespace; followed by one of the letters \'N\', \'O\', or \'E\'; followed by whitespace; followed by one of the digits \'1\' or 2\') sets not only speed but word length, parity, and stop bits\&.
-.sp
-For both forms, watch the response, because it is possible for this to fail if the GPS does not support a speed\-switching command or only supports some combinations of serial modes\&. In case of failure, the daemon and GPS will continue to communicate at the old speed\&. Both forms are rejected if more than one client is attached to the channel\&.
-.sp
-Use this command with caution\&. On USB and Bluetooth GPSes it is also possible for serial mode setting to fail either because the serial adaptor chip does not support non\-8N1 modes or because the device firmware does not properly synchronize the serrial adaptor chip with the UART on the GPS chipset whjen the speed changes\&. These failures can hang your device, possibly requiring a GPS power cycle or (in extreme cases) physically disconnecting the NVRAM backup battery\&.
-.sp
-(Older versions of
-gpsd
-supported changing speed only\&.)
-.RE
-.PP
-c
-.RS 4
-C with no following = asks the daemon to return the cycle time of the attached GPS, if any\&. If there is no attached device it will return "C=?"\&.
-.sp
-If the driver has the capability to change sampling rate the command "C=%f" does so, setting a new cycle time in seconds\&. The "C=" form is rejected if more than one client is attached to the channel\&.
-.sp
-If the driver has the capability to change sampling rate, this command always returns "C=%f %f" giving the current cycle time in seconds and the minimum possible cycle time\&. If the driver does not have the capability to change sampling rate, this returns, as "C=%f", the cycle time in seconds only\&.
-.sp
-Either number may be fractional, indicating a GPS cycle shorter than a second; however, if >1 the cycle time must be a whole number\&. Also note that relatively few GPSes have the ability to set sub\-second cycle times; consult your hardware protocol description to make sure this works\&.
-.sp
-This command will return "C=?" at start of session, before the first full packet has been received from the GPS, because the GPS type is not yet known\&. To set up conditions for a real answer, issue it after some command that reads position/velocity/time information from the device\&.
-.RE
-.PP
-d
-.RS 4
-Returns the UTC time in the ISO 8601 format, "D=yyyy\-mm\-ddThh:nmm:ss\&.ssZ"\&. Digits of precision in the fractional\-seconds part will vary and may be absent\&.
-.RE
-.PP
-e
-.RS 4
-Returns "E=? %f %f": estimated position errors in meters \(em horizontal, and vertical (95% confidence level)\&. Note: many GPSes do not supply these numbers\&. When the GPS does not supply them,
-gpsd
-computes them from satellite DOP using fixed figures for expected non\-DGPS and DGPS range errors in meters\&. A value of \'?\' for either of these numbers should be taken to mean that component of DOP is not available\&. The ? value is a backwards\-compatibility placeholder; some early versions of GPSD returned a total error estimate there\&. See also the \'q\' command\&.
-.RE
-.PP
-f
-.RS 4
-Gets or sets the active GPS device name\&. The bare command \'f\' requests a response containing \'F=\' followed by the name of the active GPS device\&. The other form of the command is \'f=\', in which case all following printable characters up to but not including the next CR/LF are interpreted as the name of a trial GPS device\&. If the trial device is in
-gpsd\'s device list, it is opened and read to see if a GPS can be found there\&. If it can, the trial device becomes the active device for this client\&.
-.sp
-The \'f=\' command may fail if the specified device name is not on the daemon\'s device list\&. This device list is initialized with the paths given on the command line, if any were specified\&. For security reasons, ordinary clients cannot change this device list; instead, this must be done via the daemon\'s local control socket declared with the \-F option\&.
-.sp
-Once an \'f=\' command succeeds, the client is tied to the specified device until the client disconnects\&.
-.sp
-Whether the command is \'f\' or \'f=\' or not, and whether it succeeds or not, the response always lists the name of the client\'s device\&.
-.sp
-(At protocol level 1, the F command failed if more than one client was attached, and multiple devices were not supported\&.)
-.RE
-.PP
-g
-.RS 4
-With =, accepts a single argument which may have any of the values \'gps\', \'ais\', \'rtcm104v2\', or \'rtcm104v3\' , with case ignored\&. This specifies the type of information the client wants and forces a device assignment\&. Without =, forces a device assignment but doesn\'t force the type\&. This command is optional; if it is not given, the R, W and B commands will bind the client to whatever available device the daemon finds first\&. All other commands require a GPS and will attempt to bind the client to one\&.
-.sp
-This command returns either \'?\' if no device of the specified type(s) could be assigned, otherwise a string (\'GPS\', \'AIS\' or \'RTCM104v2\') identifying the kind of information the attached device returns\&.
-.sp
-(Earlier versions accepted \'RTCM104\' and returned \'RTCM104\' rather than \'RTCM104v2\')
-.RE
-.PP
-i
-.RS 4
-Returns a text string identifying the GPS\&. The string may contain spaces and is terminated by CR\-LF\&. This command will return \'?\' at start of session, before the first full packet has been received from the GPS, because its type is not yet known\&.
-.RE
-.PP
-k
-.RS 4
-Returns a line consisting of "K=" followed by an integer count of of all GPS devices known to
-gpsd, followed by a space, followed by a space\-separated list of the device names\&. This command lists devices the daemon has been pointed at by the command\-line argument(s) or an add command via its control socket, and has successfully recognized as GPSes\&. Because GPSes might be unplugged at any time, the presence of a name in this list does not guarantee that the device is available\&.
-.sp
-(At protocol level 1, there was no K command\&.)
-.RE
-.PP
-l
-.RS 4
-Returns four fields: the major protocol revision number, the minor protocol revision number, the gpsd version, and a list of accepted request letters\&. Note: earlier versions of this command returned only three fields, omitting the minor protocol revision number\&.
-.RE
-.PP
-m
-.RS 4
-The NMEA mode as "M=%d"\&. 0=no mode value yet seen, 1=no fix, 2=2D (no altitude), 3=3D (with altitude)\&.
-.RE
-.PP
-n
-.RS 4
-Get or set the GPS driver mode\&. Without argument, reports the mode as "N=%d"; N=0 means NMEA mode and N=1 means alternate mode (binary if it has one, for SiRF and Evermore chipsets in particular)\&. With argument, set the mode if possible; the new mode will be reported in the response\&. The "N=" form is rejected if more than one client is attached to the channel\&.
-.RE
-.PP
-o
-.RS 4
-Attempts to return a complete time/position/velocity report as a unit\&. Any field for which data is not available being reported as ?\&. If there is no fix, the response is simply "O=?", otherwise a tag and timestamp are always reported\&. Fields are as follows, in order:
-.PP
-tag
-.RS 4
-A tag identifying the last sentence received\&. For NMEA devices this is just the NMEA sentence name; the talker\-ID portion may be useful for distinguishing among results produced by different NMEA talkers in the same wire\&.
-.RE
-.PP
-timestamp
-.RS 4
-Seconds since the Unix epoch, UTC\&. May have a fractional part of up to \&.01sec precision\&.
-.RE
-.PP
-time error
-.RS 4
-Estimated timestamp error (%f, seconds, 95% confidence)\&.
-.RE
-.PP
-latitude
-.RS 4
-Latitude as in the P report (%f, degrees)\&.
-.RE
-.PP
-longitude
-.RS 4
-Longitude as in the P report (%f, degrees)\&.
-.RE
-.PP
-altitude
-.RS 4
-Altitude as in the A report (%f, meters)\&. If the mode field is not 3 this is an estimate and should be treated as unreliable\&.
-.RE
-.PP
-horizontal error estimate
-.RS 4
-Horizontal error estimate as in the E report (%f, meters)\&.
-.RE
-.PP
-vertical error estimate
-.RS 4
-Vertical error estimate as in the E report (%f, meters)\&.
-.RE
-.PP
-course over ground
-.RS 4
-Track as in the T report (%f, degrees)\&.
-.RE
-.PP
-speed over ground
-.RS 4
-Speed (%f, meters/sec)\&. Note: older versions of the O command reported this field in knots\&.
-.RE
-.PP
-climb/sink
-.RS 4
-Vertical velocity as in the U report (%f, meters/sec)\&.
-.RE
-.PP
-estimated error in course over ground
-.RS 4
-Error estimate for course (%f, degrees, 95% confidence)\&.
-.RE
-.PP
-estimated error in speed over ground
-.RS 4
-Error estimate for speed (%f, meters/sec, 95% confidence)\&. Note: older experimental versions of the O command reported this field in knots\&.
-.RE
-.PP
-estimated error in climb/sink
-.RS 4
-Estimated error for climb/sink (%f, meters/sec, 95% confidence)\&.
-.RE
-.PP
-mode
-.RS 4
-The NMEA mode (%d, ?=no mode value yet seen, 1=no fix, 2=2D, 3=3D)\&. (This field was not reported at protocol levels 2 and lower\&.)
-.RE
-.RE
-.PP
-p
-.RS 4
-Returns the current position in the form "P=%f %f"; numbers are in degrees, latitude first\&.
-.RE
-.PP
-q
-.RS 4
-Returns "Q=%d %f %f %f %f %f": a count of satellites used in the last fix, and five dimensionless dilution\-of\-precision (DOP) numbers \(em spherical, horizontal, vertical, time, and total geometric\&. These are computed from the satellite geometry; they are factors by which to multiply the estimated UERE (user error in meters at specified confidence level due to ionospheric delay, multipath reception, etc\&.) to get actual circular error ranges in meters (or seconds) at the same confidence level\&. See also the \'e\' command\&. Note: Some GPSes may fail to report these, or report only one of them (often HDOP); a value of 0\&.0 should be taken as an indication that the data is not available\&.
-.sp
-Note: Older versions of
-gpsd
-reported only the first three DOP numbers, omitting time DOP and total DOP\&.
-.RE
-.PP
-r
-.RS 4
-Sets or toggles \'raw\' mode\&. Return "R=0" or "R=1" or "R=2"\&. In raw mode you read the NMEA data stream from each GPS\&. (Non\-NMEA GPSes get their communication format translated to NMEA on the fly\&.)
-.sp
-The command \'r\' immediately followed by the digit \'1\' or the plus sign \'+\' sets raw mode\&. The command \'r\' immediately followed by the digit \'2\' sets super\-raw mode; for non\-NMEA (binary) GPSes or RTCM\-104 sources this dumps the raw binary packet\&. The command \'r\' followed by the digit \'0\' or the minus sign \'\-\' clears raw mode\&. The command \'r\' with neither suffix toggles raw mode\&.
-.sp
-Note: older versions of
-gpsd
-did not support super\-raw mode\&.
-.RE
-.PP
-s
-.RS 4
-The NMEA status as "S=%d"\&. 0=no fix, 1=fix, 2=DGPS\-corrected fix\&.
-.RE
-.PP
-t
-.RS 4
-Track made good; course "T=%f" in degrees from true north\&.
-.RE
-.PP
-u
-.RS 4
-Current rate of climb as "U=%f" in meters per second\&. Some GPSes (not SiRF\-based) do not report this, in that case
-gpsd
-computes it using the altitude from the last fix (if available)\&.
-.RE
-.PP
-v
-.RS 4
-The current speed over ground as "V=%f" in knots\&.
-.RE
-.PP
-w
-.RS 4
-Sets or toggles \'watcher\' mode (see the description below)\&. Return "W=0" or "W=1"\&.The command \'w\' immediately followed by the digit \'1\' or the plus sign \'+\' sets watcher mode\&. The command \'w\' followed by the digit \'0\' or the minus sign \'\-\' clears watcher mode\&. The command \'w\' with neither suffix toggles watcher mode\&.
-.RE
-.PP
-x
-.RS 4
-Returns "X=0" if the GPS is offline, "X=%f" if online; in the latter case, %f is a timestamp from when the device was activated or the last sentence was received\&.
-.sp
-(At protocol level 1, the nonzero response was always 1\&.)
-.RE
-.PP
-y
-.RS 4
-Returns Y=, followed by a sentence tag, followed by a timestamp (seconds since the Unix epoch, UTC) and a count, followed by that many quintuples of satellite PRNs, elevation/azimuth pairs (elevation an integer formatted as %d in range 0\-90, azimuth an integer formatted as %d in range 0\-359), signal strengths in decibels, and 1 or 0 according as the satellite was or was not used in the last fix\&. Each number is followed by one space\&. The count field was formerly limited 12 \- this is no longer the case, since receivers with more than 12 channels are common and there are enough satellites in orbit to have more than 12 usable\&.
-.sp
-(At protocol level 1, this response had no tag or timestamp\&.)
-.RE
-.PP
-The "J" command present in earlier version of the protocol is now ignored and a no\-op\&. Internal changes in the daemon (which can now detect the end of a fix\-reporting cycle reliably) have made it unnecessary)\&.
-.PP
-The "Z" command and "$" response, previously documented only with a warning that they were subject to change without notice, have been removed\&.
-.PP
-Note that a response consisting of just ? following the = means that there is no valid data available\&. This may mean either that the device being queried is offline, or (for position/velocity/time queries) that it is online but has no fix\&.
-.PP
-Requests can be concatenated and sent as a string;
-gpsd
-will then respond with a comma\-separated list of replies\&.
-.PP
-Every
-gpsd
-reply will start with the string "GPSD" followed by the replies\&. Examples:
-.sp
-.if n \{\
-.RS 4
-.\}
-.nf
-      query:       "p\en"
-      reply:       "GPSD,P=36\&.000000 123\&.000000\er\en"
-
-      query:       "d\en"
-      reply:       "GPSD,D=2002\-11\-16T02:45:05\&.12Z\er\en"
-
-      query:       "va\en"
-      reply:       "GPSD,V=0\&.000000,A=37\&.900000\er\en"
-.fi
-.if n \{\
-.RE
-.\}
-.PP
-The recommended mode for clients is watcher mode\&. In watcher mode
-gpsd
-ships a line of data to the client each time the GPS gets either a fix update or a satellite picture, but rather than being raw NMEA the line is a gpsd \'o\' or \'y\' response\&. If the device is a source of RTCM\-104 corrections, the corrections are dumped in the Sager dump format described in
-\fBrtcm104\fR(5)\&.
-Additionally, watching clients get notifications in the form X=0 or X=%f when the online/offline status of the GPS changes, and an I response giving the device type when the user is assigned a device\&.
-.SH "NEW PROTOCOL"
-.PP
-The new GPSD protocol is built on top of JSON, JaveScript Object Notation\&. Use of this metaprotocol to pass structured data between daemon and client avoids the non\-extensibility problems of the old protocol, and permits a richer set of record types to be passed up to clients\&.
+The GPSD protocol is built on top of JSON, JaveScript Object Notation\&. Use of this metaprotocol to pass structured data between daemon and client avoids the non\-extensibility problems of the old protocol, and permits a richer set of record types to be passed up to clients\&.
 .PP
 A request line is introduced by "?" and may include multiple commands\&. Commands begin with a command identifier, followed either by a terminating \';\' or by an equal sign "=" and a JSON object treated as an argument\&. Any \';\' or newline indication (either LF or CR\-LF) after the end of a command is ignored\&. All request lines must be composed of US\-ASCII characters and may be no more than 80 characters in length, exclusive of the trailing newline\&.
 .PP
@@ -1086,7 +808,7 @@ Here\'s an example:
 .RS 4
 .\}
 .nf
-{"class":"VERSION","version":"2\&.40dev","rev":$Id: gpsd\&.xml 6686 2009\-12\-03 07:43:49Z esr $,"proto_major":3,"proto_minor":1}
+{"class":"VERSION","version":"2\&.40dev","rev":$Id: gpsd\&.xml 6988 2010\-02\-03 23:40:57Z esr $,"proto_major":3,"proto_minor":1}
 .fi
 .if n \{\
 .RE
@@ -1266,8 +988,7 @@ T}
 .sp 1
 There is an additional boolean "timing" attribute which is undodumented because that portion of the interface is considered unstable and for developer use only\&.
 .sp
-In watcher mode, GPS reports are dumpred as TPV and SKY responses\&. If the device is a source of RTCM2 corrections, the corrections are dumped in the JSON format described in
-\fBrtcm104\fR(5)\&. If the device is a source of AIS data, AIS packets are dumped in JSON form with each field (other than padding fields) dumped as an integer or string, whichever is appropriate\&.
+In watcher mode, GPS reports are dumpred as TPV and SKY responses\&. AIS and RTCM reporting is described in the next section\&.
 .sp
 When the C client library parses a response of this kind, it will assert the POLICY_SET bit in the top\-level set member\&.
 .sp
@@ -1450,6 +1171,8 @@ Device minimum cycle time in seconds\&. Reported from
 T}
 .TE
 .sp 1
+The serial parameters will be omitted in a response describing a TCP/IP source such as an Ntrip, DGPSIP, or AIS feed\&.
+.sp
 The contents of the flags field should be interpreted as follows:
 .sp
 .it 1 an-trap
@@ -1589,6 +1312,14 @@ Here\'s an example:
 .\}
 .PP
 When the C client library parses a response of this kind, it will assert the ERR_SET bit in the top\-level set member\&.
+.SH "AIS AND RTCM DUMP FORMATS"
+.PP
+AIS packets are dumped as JSON objects with class "AIS"\&. Each AIS report object contains a "type" field giving the AIS message type and a "scaled" field telling whether the remainder of the fields are dumped in scaled or unscaled form\&. Other fields are as named ands specified in the
+AIVDM/AIVDO Protocol Decoding
+document\&.
+.PP
+RTCM2 corrections are dumped in the JSON format described in
+\fBrtcm104\fR(5)\&.
 .SH "GPS DEVICE MANAGEMENT"
 .PP
 gpsd
@@ -1765,7 +1496,7 @@ If multiple NMEA talkers are feeding RMC, GLL, and GGA sentences to the same ser
 gpsd
 may change control settings on your GPS (such as the emission frequency of various sentences or packets) and not restore the original settings on exit\&. This is a result of inadequacies in NMEA and the vendor binary GPS protocols, which often do not give clients any way to query the values of control settings in order to be able to restore them later\&.
 .PP
-If your GPS uses a SiRF chipset at firmware level 231, and it is after 31 May 2007, reported UTC time may be off by the difference between 13 seconds and whatever leap\-second correction is currently applicable, from startup until complete subframe information is received (normally about six seconds)\&. Firmware levels 232 and up don\'t have this problem\&. You may run
+If your GPS uses a SiRF chipset at firmware level 231, reported UTC time may be off by the difference between 13 seconds and whatever leap\-second correction is currently applicable, from startup until complete subframe information is received (normally about six seconds)\&. Firmware levels 232 and up don\'t have this problem\&. You may run
 gpsd
 at debug level 4 to see the chipset type and firmware revision level\&.
 .PP
@@ -1800,7 +1531,7 @@ have made a point of not looking at it\&. The
 links to several documents that collect publicly disclosed information about the protocol\&.
 .PP
 gpsd
-parses the following NMEA sentences: RMC, GGA, GLL, GSA, GSV, VTG, ZDA\&. It recognizes these with either the normal GP talker\-ID prefix, or with the II prefix emitted by Seahawk Autohelm marine navigation systems, or with the IN prefix emitted by some Garmin units\&. It recognizes one vendor extension, the PGRME emitted by some Garmin GPS models\&.
+parses the following NMEA sentences: RMC, GGA, GLL, GSA, GSV, VTG, ZDA\&. It recognizes these with either the normal GP talker\-ID prefix, or with the GN prefix used by GLONASS, or with the II prefix emitted by Seahawk Autohelm marine navigation systems, or with the IN prefix emitted by some Garmin units\&. It recognizes one vendor extension, the PGRME emitted by some Garmin GPS models\&.
 .PP
 Note that
 gpsd

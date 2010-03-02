@@ -1,4 +1,4 @@
-/* $Id: gpspacket.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: gpspacket.c 6832 2009-12-15 13:03:49Z esr $ */
 /*
  * Python binding for the packet.c module.
  */
@@ -73,7 +73,7 @@ Lexer_get(LexerObject *self, PyObject *args)
     ssize_t len;
     int fd;
 
-    if (!PyArg_ParseTuple(args, "i;missing or invalid file descriptor argument to gpspacket.get", &fd))
+    if (!PyArg_ParseTuple(args, "i;missing or invalid file descriptor argument to gps.packet.get", &fd))
         return NULL;
 
     len = packet_get(fd, &self->lexer);
@@ -126,7 +126,7 @@ static PyTypeObject Lexer_Type = {
 	 * to be portable to Windows without using C++. */
 	PyObject_HEAD_INIT(NULL)
 	0,			/*ob_size*/
-	"gpspacket.lexer",	/*tp_name*/
+	"gps.packet.lexer",	/*tp_name*/
 	sizeof(LexerObject),	/*tp_basicsize*/
 	0,			/*tp_itemsize*/
 	/* methods */
@@ -216,7 +216,7 @@ register_report(LexerObject *self, PyObject *args)
 
 /* List of functions defined in the module */
 
-static PyMethodDef gpspacket_methods[] = {
+static PyMethodDef packet_methods[] = {
     {"new",		gpspacket_new,		METH_VARARGS,
      PyDoc_STR("new() -> new packet-lexer object")},
     {"register_report", (PyCFunction)register_report, METH_VARARGS,
@@ -238,7 +238,7 @@ level of the message and the message itself.\n\
 ");
 
 PyMODINIT_FUNC
-initgpspacket(void)
+initpacket(void)
 {
     PyObject *m;
 
@@ -246,7 +246,7 @@ initgpspacket(void)
 	return;
 
     /* Create the module and add the functions */
-    m = Py_InitModule3("gpspacket", gpspacket_methods, module_doc);
+    m = Py_InitModule3("packet", packet_methods, module_doc);
 
     PyModule_AddIntConstant(m, "BAD_PACKET", BAD_PACKET);
     PyModule_AddIntConstant(m, "COMMENT_PACKET", COMMENT_PACKET);

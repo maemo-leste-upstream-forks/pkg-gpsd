@@ -1,4 +1,4 @@
-/* $Id: serial.c 6660 2009-12-01 20:18:56Z garyemiller $ */
+/* $Id: serial.c 6908 2010-01-02 22:29:16Z esr $ */
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifndef S_SPLINT_S
@@ -89,7 +89,7 @@ void gpsd_set_speed(struct gps_device_t *session,
 
     /*
      * Yes, you can set speeds that aren't in the hunt loop.  If you
-     * do this, and you aren't on Linux where boad rate is preserved
+     * do this, and you aren't on Linux where baud rate is preserved
      * across port closings, you've screwed yourself. Don't do that!
      */
     if (speed < 300)
@@ -290,6 +290,7 @@ int gpsd_open(struct gps_device_t *session)
 	gpsd_set_speed(session,
 		       gpsd_get_speed(&session->ttyset_old), 'N', 1);
     }
+    session->is_serial = true;
     return session->gpsdata.gps_fd;
 }
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: gpsd.hotplug.wrapper 6534 2009-11-18 16:38:57Z bzed $
+# $Id: gpsd.hotplug.wrapper 6857 2009-12-18 11:26:52Z bzed $
 
 if [ -r /etc/default/gpsd ]; then
   . /etc/default/gpsd
@@ -11,7 +11,7 @@ if [ -r /etc/default/gpsd ]; then
 fi
 
 if [ "$ACTION" = "remove" ] ; then
-  if [ $(echo $DEVLINKS | grep -q /dev/gps) ] ; then
+  if echo $DEVLINKS | grep -q /dev/gps; then
     exec /lib/udev/gpsd.hotplug "$ACTION" "$DEVNAME"
   fi
   exit 0

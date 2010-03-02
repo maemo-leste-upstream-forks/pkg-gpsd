@@ -1,6 +1,9 @@
-/* $Id: drivers.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: drivers.c 6908 2010-01-02 22:29:16Z esr $ */
 #include <sys/types.h>
-#include <sys/ioctl.h>
+#include "gpsd_config.h"
+#ifdef HAVE_SYS_IOCTL_H
+ #include <sys/ioctl.h>
+#endif /* HAVE_SYS_IOCTL_H */
 #include <sys/time.h>
 #include <stdlib.h>
 #ifndef S_SPLINT_S
@@ -1044,6 +1047,12 @@ const struct gps_type_t mtk3301 = {
 
 
 #ifdef AIVDM_ENABLE
+/**************************************************************************
+ *
+ * AIVDM
+ *
+ **************************************************************************/
+
 static gps_mask_t aivdm_analyze(struct gps_device_t *session)
 {
     if (session->packet.type == AIVDM_PACKET) {

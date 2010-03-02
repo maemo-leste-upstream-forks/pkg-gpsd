@@ -1,11 +1,12 @@
-/* $Id: driver_aivdm.c 6627 2009-11-30 14:06:17Z esr $ */
+/* $Id: driver_aivdm.c 6983 2010-02-01 23:29:44Z esr $ */
 /*
  * Driver for AIS/AIVDM messages.
  *
  * See the file AIVDM.txt on the GPSD website for documentation and references.
  *
- * Message types 1-12, 14-15, 18-21, and 24 have been tested against live data
- * with known-good decodings. Message types 13, 16-17 and 22-23 have not.
+ * Code for message types 1-15, 18-21, and 24 has been tested against
+ * live data with known-good decodings. Code for message types 16-17,
+ * 22-23, and 25-26 has not.
  */
 #include <sys/types.h>
 #include <stdio.h>
@@ -79,7 +80,7 @@ bool aivdm_decode(const char *buf, size_t buflen,
 #endif /* __UNUSED_DEBUG__ */
     int nfields = 0;
     unsigned char *data, *cp = ais_context->fieldcopy;
-    unsigned char ch;
+    unsigned char ch, pad;
     int i;
 
     if (buflen == 0)
@@ -101,6 +102,7 @@ bool aivdm_decode(const char *buf, size_t buflen,
     ais_context->await = atoi((char *)ais_context->field[1]);
     ais_context->part = atoi((char *)ais_context->field[2]);
     data = ais_context->field[5];
+    pad = ais_context->field[6][0];
     gpsd_report(LOG_PROG, "await=%d, part=%d, data=%s\n",
 		ais_context->await,
 		ais_context->part,
@@ -131,6 +133,8 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	}
 	/*@ +shiftnegative @*/
     }
+    if (isdigit(pad))
+	ais_context->bitlen -= (pad - '0');	/* ASCII assumption */
     /*@ -charint @*/
 
     /* time to pass buffered-up data to where it's actually processed? */
@@ -154,6 +158,12 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	case 1:	/* Position Report */
 	case 2:
 	case 3:
+	    if (ais_context->bitlen != 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type %d size not 168 bits (%zd).\n",
+			    ais->type,
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type1.status		= UBITS(38, 4);
 	    ais->type1.turn		= SBITS(42, 8);
 	    ais->type1.speed		= UBITS(50, 10);
@@ -181,6 +191,12 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    break;
 	case 4: 	/* Base Station Report */
 	case 11:	/* UTC/Date Response */
+	    if (ais_context->bitlen != 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type %d size not 168 bits (%zd).\n",
+			    ais->type,
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type4.year		= UBITS(38, 14);
 	    ais->type4.month		= UBITS(52, 4);
 	    ais->type4.day		= UBITS(56, 5);
@@ -208,6 +224,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type4.epfd);
 	    break;
 	case 5: /* Ship static and voyage related data */
+	    if (ais_context->bitlen != 424) {
+		gpsd_report(LOG_WARN, "AIVDM message type 5 size not 424 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type5.ais_version  = UBITS(38, 2);
 	    ais->type5.imo          = UBITS(40, 30);
 	    UCHARS(70, ais->type5.callsign);
@@ -234,6 +255,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type5.destination);
 	    break;
 	case 6: /* Addressed Binary Message */
+	    if (ais_context->bitlen < 88 || ais_context->bitlen > 1008) {
+		gpsd_report(LOG_WARN, "AIVDM message type 6 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type6.seqno          = UBITS(38, 2);
 	    ais->type6.dest_mmsi      = UBITS(40, 30);
 	    ais->type6.retransmit     = (bool)UBITS(70, 1);
@@ -253,6 +279,12 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	case 13: /* Safety Related Acknowledge */
 	{
 	    unsigned int mmsi[4];
+	    if (ais_context->bitlen < 72 || ais_context->bitlen > 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type %d size is out of range (%zd).\n",
+			    ais->type,
+			    ais_context->bitlen);
+		break;
+	    }
 	    for (i = 0; i < sizeof(mmsi)/sizeof(mmsi[0]); i++)
 		if (ais_context->bitlen > 40 + 32*i)
 		    mmsi[i] = UBITS(40 + 32*i, 30);
@@ -268,6 +300,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    break;
 	}
 	case 8: /* Binary Broadcast Message */
+	    if (ais_context->bitlen < 56 || ais_context->bitlen > 1008) {
+		gpsd_report(LOG_WARN, "AIVDM message type 8 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    //ais->type8.spare        = UBITS(38, 2);
 	    ais->type8.app_id =       UBITS(40, 16);
 	    ais->type8.bitcount       = ais_context->bitlen - 56;
@@ -279,6 +316,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type8.bitcount);
 	    break;
 	case 9: /* Standard SAR Aircraft Position Report */
+	    if (ais_context->bitlen != 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type 9 size not 168 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type9.alt		= UBITS(38, 12);
 	    ais->type9.speed		= UBITS(50, 10);
 	    ais->type9.accuracy		= (bool)UBITS(60, 1);
@@ -303,12 +345,22 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type9.second);
 	    break;
 	case 10: /* UTC/Date inquiry */
+	    if (ais_context->bitlen != 72) {
+		gpsd_report(LOG_WARN, "AIVDM message type 10 size not 72 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    //ais->type10.spare        = UBITS(38, 2);
 	    ais->type10.dest_mmsi      = UBITS(40, 30);
 	    //ais->type10.spare2       = UBITS(70, 2);
 	    gpsd_report(LOG_INF, "dest=%u\n", ais->type10.dest_mmsi);
 	    break;
 	case 12: /* Safety Related Message */
+	    if (ais_context->bitlen < 72 || ais_context->bitlen > 1008) {
+		gpsd_report(LOG_WARN, "AIVDM message type 12 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type12.seqno          = UBITS(38, 2);
 	    ais->type12.dest_mmsi      = UBITS(40, 30);
 	    ais->type12.retransmit     = (bool)UBITS(70, 1);
@@ -321,6 +373,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type12.dest_mmsi);
 	    break;
 	case 14:	/* Safety Related Broadcast Message */
+	    if (ais_context->bitlen < 40 || ais_context->bitlen > 1008) {
+		gpsd_report(LOG_WARN, "AIVDM message type 14 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    //ais->type14.spare          = UBITS(38, 2);
 	    from_sixbit((char *)ais_context->bits,
 			40, ais_context->bitlen-40,
@@ -328,6 +385,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    gpsd_report(LOG_INF, "\n");
 	    break;
 	case 15:	/* Interrogation */
+	    if (ais_context->bitlen < 88 || ais_context->bitlen > 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type 15 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    (void)memset(&ais->type15, '\0', sizeof(ais->type15));
 	    //ais->type14.spare         = UBITS(38, 2);
 	    ais->type15.mmsi1		= UBITS(40, 30);
@@ -348,11 +410,16 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    gpsd_report(LOG_INF, "\n");
 	    break;
 	case 16:	/* Assigned Mode Command */
+	    if (ais_context->bitlen != 96 && ais_context->bitlen != 144) {
+		gpsd_report(LOG_WARN, "AIVDM message type 16 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type16.mmsi1		= UBITS(40, 30);
 	    ais->type16.offset1		= UBITS(70, 12);
 	    ais->type16.increment1	= UBITS(82, 10);
-	    if (ais_context->bitlen <= 96)
-		ais->type16.mmsi2 = 0;
+	    if (ais_context->bitlen < 144)
+		ais->type16.mmsi2=ais->type16.offset2=ais->type16.increment2 = 0;
 	    else {
 		ais->type16.mmsi2	= UBITS(92, 30);
 		ais->type16.offset2	= UBITS(122, 12);
@@ -361,6 +428,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    gpsd_report(LOG_INF, "\n");
 	    break;
 	case 17:	/* GNSS Broadcast Binary Message */
+	    if (ais_context->bitlen < 80 || ais_context->bitlen > 816) {
+		gpsd_report(LOG_WARN, "AIVDM message type 17 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    //ais->type17.spare         = UBITS(38, 2);
 	    ais->type17.lon		= UBITS(40, 18);
 	    ais->type17.lat		= UBITS(58, 17);
@@ -371,6 +443,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    gpsd_report(LOG_INF, "\n");
 	    break;
 	case 18:	/* Standard Class B CS Position Report */
+	    if (ais_context->bitlen != 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type 18 size not 168 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type18.reserved	= UBITS(38, 8);
 	    ais->type18.speed		= UBITS(46, 10);
 	    ais->type18.accuracy	= UBITS(56, 1)!=0;
@@ -400,6 +477,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type18.second);
 	    break;	
 	case 19:	/* Extended Class B CS Position Report */
+	    if (ais_context->bitlen != 312) {
+		gpsd_report(LOG_WARN, "AIVDM message type 19 size not 312 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type19.reserved     = UBITS(38, 8);
 	    ais->type19.speed        = UBITS(46, 10);
 	    ais->type19.accuracy     = UBITS(56, 1)!=0;
@@ -433,6 +515,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type19.shipname);
 	    break;
 	case 20:	/* Data Link Management Message */
+	    if (ais_context->bitlen < 72 || ais_context->bitlen > 160) {
+		gpsd_report(LOG_WARN, "AIVDM message type 20 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    //ais->type20.spare		= UBITS(38, 2);
 	    ais->type20.offset1		= UBITS(40, 12);
 	    ais->type20.number1		= UBITS(52, 4);
@@ -452,6 +539,11 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    ais->type20.increment4	= UBITS(149, 11);
 	    break;
 	case 21:	/* Aid-to-Navigation Report */
+	    if (ais_context->bitlen < 272 || ais_context->bitlen > 360) {
+		gpsd_report(LOG_WARN, "AIVDM message type 21 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type21.aid_type = UBITS(38, 5);
 	    from_sixbit((char *)ais_context->bits, 
 			43, 21, ais->type21.name);
@@ -483,20 +575,35 @@ bool aivdm_decode(const char *buf, size_t buflen,
 			ais->type19.second);
 	    break;
 	case 22:	/* Channel Management */
+	    if (ais_context->bitlen != 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type 22 size not 168 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type22.channel_a    = UBITS(40, 12);
 	    ais->type22.channel_b    = UBITS(52, 12);
 	    ais->type22.txrx         = UBITS(64, 4);
 	    ais->type22.power        = UBITS(68, 1);
-	    ais->type22.ne_lon       = SBITS(69, 18);
-	    ais->type22.ne_lat       = SBITS(87, 17);
-	    ais->type22.sw_lon       = SBITS(104, 18);
-	    ais->type22.sw_lat       = SBITS(122, 17);
 	    ais->type22.addressed    = UBITS(139, 1);
+	    if (!ais->type22.addressed) {
+		ais->type22.area.ne_lon       = SBITS(69, 18);
+		ais->type22.area.ne_lat       = SBITS(87, 17);
+		ais->type22.area.sw_lon       = SBITS(104, 18);
+		ais->type22.area.sw_lat       = SBITS(122, 17);
+	    } else {
+		ais->type22.mmsi.dest1             = SBITS(69, 30);
+		ais->type22.mmsi.dest2             = SBITS(104, 30);
+	    }
 	    ais->type22.band_a       = UBITS(140, 1);
 	    ais->type22.band_b       = UBITS(141, 1);
 	    ais->type22.zonesize     = UBITS(142, 3);
 	    break;
 	case 23:	/* Group Assignment Command */
+	    if (ais_context->bitlen != 160) {
+		gpsd_report(LOG_WARN, "AIVDM message type 23 size not 160 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
 	    ais->type23.ne_lon       = SBITS(40, 18);
 	    ais->type23.ne_lat       = SBITS(58, 17);
 	    ais->type23.sw_lon       = SBITS(75, 18);
@@ -510,10 +617,20 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	case 24:	/* Class B CS Static Data Report */
 	    switch (UBITS(38, 2)) {
 	    case 0:
+		if (ais_context->bitlen != 160) {
+		    gpsd_report(LOG_WARN, "AIVDM message type 24A size not 160 bits (%zd).\n",
+				ais_context->bitlen);
+		    break;
+		}
 		UCHARS(40, ais_context->shipname);
 		//ais->type24.a.spare	= UBITS(160, 8);
 		return false;	/* data only partially decoded */
 	    case 1:
+		if (ais_context->bitlen != 168) {
+		    gpsd_report(LOG_WARN, "AIVDM message type 24B size not 168 bits (%zd).\n",
+				ais_context->bitlen);
+		    break;
+		}
 		(void)strlcpy(ais->type24.shipname, 
 			      ais_context->shipname,
 			      sizeof(ais_context->shipname));
@@ -532,6 +649,66 @@ bool aivdm_decode(const char *buf, size_t buflen,
 		break;
 	    }
 	    gpsd_report(LOG_INF, "\n");
+	    break;
+	case 25:	/* Binary Message, Single Slot */
+	    /* this check and the following one reject line noise */
+	    if (ais_context->bitlen < 40 || ais_context->bitlen > 168) {
+		gpsd_report(LOG_WARN, "AIVDM message type 25 size not between 40 to 168 bits (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
+	    ais->type25.addressed	= (bool)UBITS(38, 1);
+	    ais->type25.structured	= (bool)UBITS(39, 1);
+	    if (ais_context->bitlen < (40 + (16*ais->type25.structured) + (30*ais->type25.addressed))) {
+		gpsd_report(LOG_WARN, "AIVDM message type 25 too short for mode.\n");
+		break;
+	    }
+	    if (ais->type25.addressed)
+		ais->type25.dest_mmsi   = UBITS(40, 30);
+	    if (ais->type25.structured)
+		ais->type25.app_id      = UBITS(40+ais->type25.addressed*30,16);
+	    /*
+	     * Not possible to do this right without machinery we
+	     * don't yet have.  The problem is that if the addressed
+	     * bit is on the bitfield start won't be on a byte
+	     * boundary. Thus the formulas below (and in message type 26)
+	     * will work perfectly for brodacst messages, but for addressed
+	     * messages the retrieved data will be led by thr 30 bits of
+	     * the destination MMSI
+	     */
+	    ais->type25.bitcount       = ais_context->bitlen - 40 - 16*ais->type25.structured;
+	    (void)memcpy(ais->type25.bitdata,
+			 (char *)ais_context->bits+5 + 2 * ais->type25.structured,
+			 (ais->type25.bitcount + 7) / 8);
+	    gpsd_report(LOG_INF, "addressed=%d, structured=%d, dest=%u, id=%u, cnt=%zd\n",
+			ais->type25.addressed,
+			ais->type25.structured,
+			ais->type25.dest_mmsi,
+			ais->type25.app_id,
+			ais->type25.bitcount);		
+	    break;
+	case 26:	/* Binary Message, Multiple Slot */
+	    if (ais_context->bitlen < 60 || ais_context->bitlen > 1004) {
+		gpsd_report(LOG_WARN, "AIVDM message type 26 size is out of range (%zd).\n",
+			    ais_context->bitlen);
+		break;
+	    }
+	    ais->type26.addressed	= (bool)UBITS(38, 1);
+	    ais->type26.structured	= (bool)UBITS(39, 1);
+	    if (ais->type26.addressed)
+		ais->type26.dest_mmsi      = UBITS(40, 30);
+	    if (ais->type26.structured)
+		ais->type26.app_id      = UBITS(40+ais->type26.addressed*30,16);
+	    ais->type26.bitcount        = ais_context->bitlen - 60 - 16*ais->type26.structured;
+	    (void)memcpy(ais->type26.bitdata,
+			 (char *)ais_context->bits+5 + 2 * ais->type26.structured,
+			 (ais->type26.bitcount + 7) / 8);
+	    gpsd_report(LOG_INF, "addressed=%d, structured=%d, dest=%u, id=%u, cnt=%zd\n",
+			ais->type26.addressed,
+			ais->type26.structured,
+			ais->type26.dest_mmsi,
+			ais->type26.app_id,
+			ais->type26.bitcount);
 	    break;
 	default:
 	    gpsd_report(LOG_INF, "\n");

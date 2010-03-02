@@ -1,4 +1,4 @@
-# $Id: setup.py 6429 2009-11-10 03:13:13Z ckuethe $
+# $Id: setup.py 6846 2009-12-17 02:19:16Z esr $
 # Creates build/lib.linux-${arch}-${pyvers}/gpspacket.so,
 # where ${arch} is an architecture and ${pyvers} is a Python version.
 
@@ -57,9 +57,9 @@ gpspacket_sources = ["gpspacket.c", "packet.c", "isgps.c",
 setup( name="gpsd",
        version="1.0",
        ext_modules=[
-    	Extension("gpspacket", gpspacket_sources),
-    	Extension("gpslib", ["gpslib.c", "geoid.c"])
+    	Extension("gps.packet", gpspacket_sources),
+    	Extension("gps.client", ["gpsclient.c", "geoid.c", "gpsdclient.c", "strl.c"])
         ],
-       py_modules = ['gpsfake','gps', 'leapsecond'],
+       packages = ['gps'],
        data_files=[('bin', ['gpscat','gpsfake','gpsprof'])] + manpages
      )

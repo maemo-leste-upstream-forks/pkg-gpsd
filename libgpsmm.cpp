@@ -1,4 +1,4 @@
-/* $Id: libgpsmm.cpp 6615 2009-11-29 04:15:51Z esr $ */
+/* $Id: libgpsmm.cpp 6933 2010-01-13 22:46:47Z esr $ */
 /*
  * Copyright (C) 2005 Alfredo Pironti
  *
@@ -14,7 +14,7 @@
 gpsmm::gpsmm() : gps_data(0) { gps_data = NULL; }
 
 struct gps_data_t* gpsmm::open(void) {
-	return open("127.0.0.1",DEFAULT_GPSD_PORT);
+	return open("localhost",DEFAULT_GPSD_PORT);
 }
 
 struct gps_data_t* gpsmm::open(const char *host, const char *port) {
@@ -54,6 +54,10 @@ struct gps_data_t* gpsmm::poll(void) {
 	else {
 		return backup();
 	}
+}
+
+bool gpsmm::waiting(void) {
+	return gps_waiting(gps_data);
 }
 
 void gpsmm::clear_fix(void) {

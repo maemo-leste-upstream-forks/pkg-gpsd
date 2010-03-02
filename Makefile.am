@@ -1,5 +1,5 @@
 # Automake description for gpsd
-# $Id: Makefile.am 6709 2009-12-04 20:41:03Z esr $
+# $Id: Makefile.am 7013 2010-03-01 05:18:44Z esr $
 
 CLEANFILES =
 
@@ -28,9 +28,6 @@ XMLTO = xmlto
 if HAVE_NCURSES
 CURSESPROGS = cgps gpsmon
 endif
-if HAVE_MOTIF
-MOTIF_PROGS = xgps
-endif
 if HAVE_XAW
 XAW_PROGS = xgpsspeed
 endif
@@ -48,24 +45,17 @@ endif
 bin_PROGRAMS = $(MOTIF_PROGS) $(XAW_PROGS) $(RTCM104PROGS) $(CURSESPROGS) gpsctl gpspipe gpxlogger lcdgps
 sbin_PROGRAMS = gpsd
 
-check_PROGRAMS = test_float test_bits test_packet test_mkgmtime test_geoid test_json
+check_PROGRAMS = test_float test_trig test_bits test_packet test_mkgmtime test_geoid test_json
 if LIBGPSMM_ENABLE
 check_PROGRAMS += test_gpsmm
 endif
 
 PYTHONPAGES_DIST = gpsprof.1 gpsfake.1 gpscat.1
 if HAVE_PYTHON
-dist_bin_SCRIPTS = gpsprof gpsfake gpscat
-python_PYTHON = gps.py gpsfake.py gpscap.py
-nodist_python_PYTHON = gpspacket.so gpslib.so
+dist_bin_SCRIPTS = gpsprof gpsfake gpscat xgps
+python_PYTHON = gpscap.py
 PYTHONPAGES = $(PYTHONPAGES_DIST)
 endif
-
-#
-# Build xgps
-#
-xgps_SOURCES = xgps.c
-xgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(XM_LIBS) $(XT_LIBS) $(X_LIBS) $(X_PRE_LIBS) libgps.la -lm
 
 #
 # Build xgpsspeed
@@ -184,6 +174,7 @@ libgpsd_c_sources = \
 	driver_zodiac.c
 
 libgpsd_h_sources = \
+	sockaddr.h \
 	bsd-base64.h \
 	timebase.h \
 	bits.h \
@@ -222,7 +213,7 @@ maskdump.c: gpsd.h-tail maskaudit.py
 libgps_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
 				driver_rtcm2.h packet_states.h
 
-# Warning: This overrides autoconf's normal link-line generatyion process
+# Warning: This overrides autoconf's normal link-line generation process
 if LIBGPSMM_ENABLE
 libgps_la_SOURCES += libgpsmm.cpp
 libgps_la_LINK = /bin/sh ./libtool --tag=CXX --mode=link g++ $(libgps_la_LDFLAGS) -o $@
@@ -236,8 +227,6 @@ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
 #
 # Build Python binding
 #
-# install may require --root depending on what you're doing.
-# python setup.py install --root=$DESTIR --prefix=$PREFIX
 if HAVE_PYTHON
 PYEXTENSIONS = gpspacket.so gpslib.so
 noinst_SCRIPTS = gpspacket.so gpslib.so setup.py
@@ -248,7 +237,7 @@ $(PYEXTENSIONS): stamp-python-modules
 	+@WITNESS=stamp-python-modules; $(MULTIOUT_RECOVER_DELETED)
 # TODO:  Should the dependency on libgps.la be enforced inside
 # setup.py?  (See the variable 'needed_files' in setup.py.)
-stamp-python-modules: gpspacket.c gpslib.c libgps.la setup.py
+stamp-python-modules: gpspacket.c gpsclient.c libgps.la setup.py
 	@rm -f '$@' '$@.tmp'
 	@echo 'timestamp for $@' > '$@.tmp'
 	(cd '$(srcdir)' && \
@@ -261,16 +250,21 @@ stamp-python-modules: gpspacket.c gpslib.c libgps.la setup.py
 			--mangenerator '$(MANGENERATOR)') && \
 	mv -f '$@.tmp' '$@'
 CLEANFILES += stamp-python-modules stamp-python-modules.tmp
-endif
+
 # Clean up after Python
 clean-local:
 	rm -rf build
 
+# Install Python modules
+install-exec-local:
+	$(PYTHON) setup.py install --prefix=${prefix} # --root=$(DESTDIR)
+endif
+
 if LIBGPSMM_ENABLE
-TESTBINS = test_float test_gpsmm test_bits test_packet test_geoid \
+TESTBINS = test_float test_trig test_gpsmm test_bits test_packet test_geoid \
 	test_mkgmtime test_json
 else
-TESTBINS = test_float test_bits test_packet test_geoid \
+TESTBINS = test_float test_trig test_bits test_packet test_geoid \
 	test_mkgmtime test_json
 endif
 
@@ -279,6 +273,12 @@ endif
 #
 test_float_SOURCES = test_float.c
 test_float_LDADD = $(LIBC) libgps.la -lm
+
+#
+# Build test_trig
+#
+test_trig_SOURCES = test_trig.c
+test_trig_LDADD = $(LIBC) libgps.la -lm
 
 if LIBGPSMM_ENABLE
 #
@@ -324,7 +324,6 @@ MANPAGES_BASE = \
 	xgpsspeed.1 \
 	cgps.1 \
 	lcdgps.1 \
-	cgpxlogger.1 \
 	libgps.3 \
 	libgpsmm.3 \
 	libgpsd.3 \
@@ -363,7 +362,7 @@ BUILT_MANPAGES = $(MANPAGES_DIST)
 	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $<
 
 # Another instance of the multiple-outputs hack.
-gps.1 xgps.1 xgpsspeed.1 cgps.1 lcdgps.1 cgpxlogger.1: stamp-gps-manpages
+gps.1 xgps.1 xgpsspeed.1 cgps.1 lcdgps.1: stamp-gps-manpages
 	+@WITNESS=stamp-gps-manpages; $(MULTIOUT_RECOVER_DELETED)
 stamp-gps-manpages: gps.xml
 	@rm -f '$@' '$@.tmp'
@@ -387,8 +386,11 @@ include_HEADERS = gps.h
 endif
 
 # Note: packaging/gpsd.spec is generated, but it needs to be in the
-# tarball in order for 'make diat-rpm' to work.
+# tarball in order for 'make diat-rpm' to work.  The BUILT_SOURCES
+# files are here in order to minimize build dependencies for package
+# builders who never alter anything, especially the Python dependency.
 EXTRA_DIST = \
+	$(BUILT_SOURCES) \
 	revision.h \
 	autogen.sh \
 	README \
@@ -401,6 +403,7 @@ EXTRA_DIST = \
 	maskaudit.py.in \
 	dgpsip-servers \
 	test_float.c \
+	test_trig.c \
 	gpsd.php \
 	gpsd.xml \
 	gpsd.h-head \
@@ -419,7 +422,6 @@ EXTRA_DIST = \
 	rtcm-104.xml \
 	srec.xml \
 	$(MANPAGES_DIST) \
-	xgps.ad \
 	xgpsspeed.ad \
 	gpsd.rules \
 	gpsd.hotplug \
@@ -428,7 +430,7 @@ EXTRA_DIST = \
 	valgrind-audit \
 	valgrind-suppressions \
 	gpspacket.c \
-	gpslib.c \
+	gpsclient.c \
 	driver_proto.c \
 	monitor_proto.c \
 	setup.py \
@@ -439,7 +441,9 @@ EXTRA_DIST = \
 	packaging/gpsd.spec \
 	packaging/etc_default_gpsd \
 	packaging/etc_init.d_gpsd \
-	packaging/etc_init.d_gpsd_rpm
+	packaging/etc_init.d_gpsd_rpm \
+	regress-driver \
+	test
 
 #dist-hook:
 #	$(MKDIR_P) '$(distdir)/contrib' && \
@@ -453,7 +457,7 @@ pkgconfig_DATA = libgps.pc libgpsd.pc
 pkgconfigdir = $(libdir)/pkgconfig
 
 # These are not distributed
-libgps: libgps_core.c .libs/libgps.a
+libgps: libgps_core.c gps.h .libs/libgps.a
 	$(CC) $(CFLAGS) -o libgps -lm -DTESTMAIN $(LIBPTHREAD) -g libgps_core.c .libs/libgps.a
 
 # Report splint warnings
@@ -461,8 +465,6 @@ SPLINTOPTS = -I/usr/include/dbus-1.0/ +quiet
 splint: gpsd.h packet_names.h
 	@echo "Running splint on daemon and libraries..."
 	-splint $(SPLINTOPTS) -exportlocal -redef $(gpsd_c_sources) $(libgpsd_c_sources)
-	@echo "Running splint on xgps..."
-	-splint $(SPLINTOPTS) -exportlocal $(xgps_SOURCES)
 	@echo "Running splint on cgps..."
 	-splint $(SPLINTOPTS) -exportlocal $(cgps_SOURCES)
 	@echo "Running splint on xgpsspeed..."
@@ -486,6 +488,10 @@ splint: gpsd.h packet_names.h
 	@echo "Running splint on test_json test harness..."
 	-splint $(SPLINTOPTS) $(test_json_SOURCES)
 
+# Report cppcheck warnings.  Requires 1.40 or later.
+cppcheck: gpsd.h packet_names.h
+	cppcheck --template gcc --all --force .
+
 # Re-indenting to a uniform style would be nice, and we leave this here
 # as a rough guide to the project style, but it turns out that indent is
 # an excessively blunt instrument.  As of 2.2.10 it doesn't honor -nfca
@@ -496,10 +502,6 @@ indent:
 	indent -i4 -br -cbi0 -bli0 -ncs -npcs -nfca $(gpsd_c_sources) $(libgpsd_c_sources)
 	chmod u-w maskdump.c
 	@echo "Diff lines:" `svn diff | wc -l`
-
-# Bogon-checking the Python tools
-pychecker:
-	for f in gps.py gpsfake.py leapsecond.py; do pychecker $$f; done
 
 version:
 	@echo $(VERSION)

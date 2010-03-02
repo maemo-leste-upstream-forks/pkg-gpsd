@@ -766,10 +766,6 @@ HAVE_RTCM104V2_TRUE
 HAVE_NCURSES_FALSE
 HAVE_NCURSES_TRUE
 NCURSES_LIBS
-HAVE_MOTIF_FALSE
-HAVE_MOTIF_TRUE
-XM_LIBS
-XP_LIBS
 XPM_LIBS
 XEXT_LIBS
 HAVE_XAW_FALSE
@@ -3312,7 +3308,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=gpsd
- VERSION=2.90
+ VERSION=2.91
 
 
 cat >>confdefs.h <<_ACEOF
@@ -5705,13 +5701,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5708: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5704: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5711: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5707: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5714: output\"" >&5)
+  (eval echo "\"\$as_me:5710: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6905,7 +6901,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6908 "configure"' > conftest.$ac_ext
+  echo '#line 6904 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8163,11 +8159,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8166: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8162: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8170: \$? = $ac_status" >&5
+   echo "$as_me:8166: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8502,11 +8498,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8505: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8501: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8509: \$? = $ac_status" >&5
+   echo "$as_me:8505: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8607,11 +8603,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8610: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8606: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8614: \$? = $ac_status" >&5
+   echo "$as_me:8610: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8662,11 +8658,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8665: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8661: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8669: \$? = $ac_status" >&5
+   echo "$as_me:8665: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11045,7 +11041,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11048 "configure"
+#line 11044 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11141,7 +11137,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11144 "configure"
+#line 11140 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14027,11 +14023,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14030: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14026: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14034: \$? = $ac_status" >&5
+   echo "$as_me:14030: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14126,11 +14122,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14129: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14125: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14133: \$? = $ac_status" >&5
+   echo "$as_me:14129: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14178,11 +14174,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14181: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14177: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14185: \$? = $ac_status" >&5
+   echo "$as_me:14181: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16037,7 +16033,7 @@ if eval "test x$GCC = xyes"; then
 	CFLAGS="$CFLAGS -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE"
 	fi
 
-for ac_header in sys/termios.h sys/select.h sys/time.h sys/modem.h sys/ipc.h sys/shm.h sys/stat.h sys/socket.h
+for ac_header in sys/termios.h sys/select.h sys/time.h sys/modem.h sys/ipc.h sys/shm.h sys/stat.h sys/socket.h sys/ioctl.h sys/un.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -16081,7 +16077,7 @@ fi
 
 done
 
-for ac_header in termios.h strings.h getopt.h netdb.h
+for ac_header in termios.h strings.h getopt.h netdb.h syslog.h pwd.h grp.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -17380,14 +17376,6 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libXt problem - xgps won't be built." >&5
 $as_echo "$as_me: WARNING: libXt problem - xgps won't be built." >&2;}
   fi
-  ac_fn_c_check_header_mongrel "$LINENO" "X11/Xaw/Label.h" "ac_cv_header_X11_Xaw_Label_h" "$ac_includes_default"
-if test "x$ac_cv_header_X11_Xaw_Label_h" = x""yes; then :
-
-else
-  motif_includes="no"
-fi
-
-
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XawInitializeWidgetSet in -lXaw8" >&5
 $as_echo_n "checking for XawInitializeWidgetSet in -lXaw8... " >&6; }
 if test "${ac_cv_lib_Xaw8_XawInitializeWidgetSet+set}" = set; then :
@@ -17625,119 +17613,8 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libXpm problem - xgps won't be built." >&5
 $as_echo "$as_me: WARNING: libXpm problem - xgps won't be built." >&2;}
   fi
-
-    XM_LIBS=""
-  XP_LIBS=""
-  if test "$motif_includes" != "no" -a "$motif_libraries" != "no"
-  then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XpSelectInput in -lXp" >&5
-$as_echo_n "checking for XpSelectInput in -lXp... " >&6; }
-if test "${ac_cv_lib_Xp_XpSelectInput+set}" = set; then :
-  $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lXp ${X_PRE_LIBS} ${XPM_LIBS} ${XEXT_LIBS} ${XT_LIBS} ${XEXT_LIBS} ${X11_LIBS} ${LIBGEN} $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char XpSelectInput ();
-int
-main ()
-{
-return XpSelectInput ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_Xp_XpSelectInput=yes
-else
-  ac_cv_lib_Xp_XpSelectInput=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_Xp_XpSelectInput" >&5
-$as_echo "$ac_cv_lib_Xp_XpSelectInput" >&6; }
-if test "x$ac_cv_lib_Xp_XpSelectInput" = x""yes; then :
-  XP_LIBS="-lXp"
-
-$as_echo "#define HAVE_XP 1" >>confdefs.h
-
-fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XmInternAtom in -lXm" >&5
-$as_echo_n "checking for XmInternAtom in -lXm... " >&6; }
-if test "${ac_cv_lib_Xm_XmInternAtom+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lXm ${X_PRE_LIBS} ${XP_LIBS} ${XPM_LIBS} ${XEXT_LIBS} ${XT_LIBS} ${XEXT_LIBS} ${X11_LIBS} ${LIBGEN} $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char XmInternAtom ();
-int
-main ()
-{
-return XmInternAtom ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_Xm_XmInternAtom=yes
-else
-  ac_cv_lib_Xm_XmInternAtom=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_Xm_XmInternAtom" >&5
-$as_echo "$ac_cv_lib_Xm_XmInternAtom" >&6; }
-if test "x$ac_cv_lib_Xm_XmInternAtom" = x""yes; then :
-  XM_LIBS="-lXm"
-
-$as_echo "#define HAVE_MOTIF 1" >>confdefs.h
-
-fi
-
-  fi
-
-
-   if test "$XM_LIBS" != "" -a "$motif_includes" != "no"; then
-  HAVE_MOTIF_TRUE=
-  HAVE_MOTIF_FALSE='#'
-else
-  HAVE_MOTIF_TRUE='#'
-  HAVE_MOTIF_FALSE=
-fi
-
-  ac_x="yes"
-else
-     if test "motif" = "no"; then
-  HAVE_MOTIF_TRUE=
-  HAVE_MOTIF_FALSE='#'
-else
-  HAVE_MOTIF_TRUE='#'
-  HAVE_MOTIF_FALSE=
-fi
-
-   if false; then
+     if false; then
   HAVE_XAW_TRUE=
   HAVE_XAW_FALSE='#'
 else
@@ -18880,6 +18757,12 @@ fi
 
 
 
+if test -e /etc/gentoo-release; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This is a Gentoo system." >&5
+$as_echo "$as_me: WARNING: This is a Gentoo system." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Adjust your PYTHONPATH to see library directories under /usr/local/lib" >&5
+$as_echo "$as_me: WARNING: Adjust your PYTHONPATH to see library directories under /usr/local/lib" >&2;}
+fi
 
 echo ""
 echo "=========================================="
@@ -19095,14 +18978,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_XAW_TRUE}" && test -z "${HAVE_XAW_FALSE}"; then
   as_fn_error "conditional \"HAVE_XAW\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_MOTIF_TRUE}" && test -z "${HAVE_MOTIF_FALSE}"; then
-  as_fn_error "conditional \"HAVE_MOTIF\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_MOTIF_TRUE}" && test -z "${HAVE_MOTIF_FALSE}"; then
-  as_fn_error "conditional \"HAVE_MOTIF\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_XAW_TRUE}" && test -z "${HAVE_XAW_FALSE}"; then

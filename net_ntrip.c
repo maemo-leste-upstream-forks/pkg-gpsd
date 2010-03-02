@@ -1,16 +1,23 @@
-/* $Id: net_ntrip.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: net_ntrip.c 6920 2010-01-12 19:22:47Z esr $ */
 /* net_ntrip.c -- gather and dispatch DGNSS data from Ntrip broadcasters */
+#include <stdlib.h>
+#include "gpsd_config.h"
 #include <sys/types.h>
 #ifndef S_SPLINT_S
-#include <sys/socket.h>
+ #ifdef HAVE_SYS_SOCKET_H
+  #include <sys/socket.h>
+ #else
+  #define AF_UNSPEC 0
+ #endif /* HAVE_SYS_SOCKET_H */
 #include <unistd.h>
 #endif /* S_SPLINT_S */
 #include <sys/time.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #ifndef S_SPLINT_S
-#include <netdb.h>
+ #ifdef HAVE_NETDB_H
+  #include <netdb.h>
+ #endif
 #endif /* S_SPLINT_S */
 #include <string.h>
 #include <errno.h>
@@ -281,10 +288,10 @@ static int ntrip_stream_probe(const char *caster,
 			      struct ntrip_stream_t *keep)
 {
     int ret;
-    int dsock;
+    socket_t dsock;
     char buf[BUFSIZ];
 
-    if ((dsock = netlib_connectsock(caster, port, "tcp")) == -1) {
+    if ((dsock = netlib_connectsock(AF_UNSPEC, caster, port, "tcp")) == -1) {
 	    printf("ntrip stream connect error %d\n", dsock);
 	    return -1;
     }
@@ -316,7 +323,7 @@ static int ntrip_auth_encode(const struct ntrip_stream_t *stream,
 	if (!auth)
 	    return -1;
 	memset(authenc, 0, sizeof(authenc));
-	if (b64_ntop((u_char *) auth, strlen(auth), authenc, sizeof(authenc) - 1) < 0)
+	if (b64_ntop((unsigned char *) auth, strlen(auth), authenc, sizeof(authenc) - 1) < 0)
 	    return -1;
 	(void)snprintf(buf, size - 1, "Authorization: Basic %s\r\n", authenc);
     } else {
@@ -341,7 +348,7 @@ static int ntrip_stream_open(const char *caster,
 		    caster, port, stream->mountpoint);	
 	return -1;
     }
-    if ((context->dsock = netlib_connectsock(caster, port, "tcp")) < 0)
+    if ((context->dsock = netlib_connectsock(AF_UNSPEC, caster, port, "tcp")) < 0)
 	return -1;
 
     (void)snprintf(buf, sizeof(buf),

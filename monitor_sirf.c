@@ -1,4 +1,4 @@
-/* $Id: monitor_sirf.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: monitor_sirf.c 7007 2010-02-27 23:46:26Z ckuethe $ */
 /*
  * SiRF object for the GPS packet monitor.
  *
@@ -235,9 +235,8 @@ static void decode_time(int week, int tow)
 static void decode_ecef(double x, double y, double z,
 			double vx, double vy, double vz)
 {
-    const double a = 6378137;
-    const double f = 1 / 298.257223563;
-    const double b = a * (1 - f);
+    const double a = WGS84A;
+    const double b = WGS84B;
     const double e2 = (a*a - b*b) / (a*a);
     const double e_2 = (a*a - b*b) / (b*b);
     double lambda,p,theta,phi,n,h,vnorth,veast,vup,speed,heading;

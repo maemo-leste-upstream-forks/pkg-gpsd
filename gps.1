@@ -2,12 +2,12 @@
 .\"     Title: gps
 .\"    Author: [see the "AUTHORS" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 12/04/2009
+.\"      Date: 03/01/2010
 .\"    Manual: [FIXME: manual]
 .\"    Source: [FIXME: source]
 .\"  Language: English
 .\"
-.TH "GPS" "1" "12/04/2009" "[FIXME: source]" "[FIXME: manual]"
+.TH "GPS" "1" "03/01/2010" "[FIXME: source]" "[FIXME: manual]"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -19,20 +19,20 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-gps, xgps, xgpsspeed, cgps, lcdgps, cgpxlogger \- test clients for gpsd
+gps, xgps, xgpsspeed, cgps, lcdgps \- test clients for gpsd
 .SH "SYNOPSIS"
 .HP \w'\fBxgps\fR\ 'u
-\fBxgps\fR [\fIX\-options\fR] [\-d\ \fIdebug\-level\fR] [\-h] [\-V] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\-altunits\ {[feet]\ |\ [meters]}] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBxgps\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBxgpsspeed\fR\ 'u
-\fBxgpsspeed\fR [\-rv] [\fIX\-options\fR] [\-d\ \fIdebug\-level\fR] [\-h] [\-V] [\-nc\ \fIX\-color\fR] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBxgpsspeed\fR [\-rv] [\fIX\-options\fR] [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-nc\ \fIX\-color\fR] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBcgps\fR\ 'u
-\fBcgps\fR [\fIX\-options\fR] [\-d\ \fIdebug\-level\fR] [\-h] [\-V] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\-altunits\ {[feet]\ |\ [meters]}] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-m] [\-s] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBcgps\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-m] [\-s] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBlcdgps\fR\ 'u
 \fBlcdgps\fR [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBgpxlogger\fR\ 'u
 \fBgpxlogger\fR
 .HP \w'\fBgpxlogger\fR\ 'u
-\fBgpxlogger\fR [\-h] [\-V] [\-i\ \fItrack\ timeout\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBgpxlogger\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-i\ \fItrack\ timeout\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .SH "DESCRIPTION"
 .PP
 These are the demonstration clients shipped with
@@ -50,61 +50,10 @@ The
 \fB\-l\fR
 option, when present, sets the format of latitude and longitude reports\&. The value \'d\' produces decimal degrees and is the default\&. The value \'m\' produces degrees and decimal minutes\&. The value \'s\' produces degrees, minutes, and decimal seconds\&.
 .PP
-The
-\fB\-d\fR
-option, when present, sets a debug level; it is primarily for usee by GPSD developers\&. It enables various progress messages to standard error\&.
-.PP
-An optional argument to any client may specify a server to get data from; a colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a device name to be handed to the daemon in an F= command (or equivalent)\&.
-.PP
-Not all clients shipped with GPSD are documented here\&. See also the separate manual pages for
-\fBgpspipe\fR(1)
-and
-\fBgpsmon\fR(1)\&.
-.SS "xgps"
-.PP
-xgps
-is a simple test client for
-gpsd
-with an X interface\&. It displays current GPS position/time/velocity information and (for GPSes that support the feature) the locations of accessible satellites\&.
-.PP
-In the sky view, satellites are color\-coded to indicate quality of signal; consult the data display to the left for exact figures in dB\&. Diamond icons indicate WAAS/EGNOS satellites, circles indicate ordinary GPS satellites\&. Filled icons were used in the last fix, outline icons were not\&.
-.PP
-The
-\fB\-speedunits\fR
-option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&. This option can also be set as the X resource \'speedunits\'\&.
-.PP
-The
-\fB\-altunits\fR
-option can be used to set the altitude units for display; follow the keyword with \'meters\' or \'feet\'\&. The default is feet\&. This option can also be set as the X resource \'altunits\'\&.
-.PP
-There is a known bug in
-xgps; it assumes the default font size is no more than 18 pixels\&. If this is not the case, the satellite data display will show fewer than 12 satellites\&.
-.SS "xgpsspeed"
-.PP
-xgpsspeed
-is a speedometer that uses position information from the GPS\&. It accepts an \-h option and optional argument as for
-gps, or a \-V option to dump the package version and exit\&. Additionally, it accepts \-rv (reverse video) and \-nc (needle color) options\&.
-.PP
-The \-speedunits option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&. This option can also be set as the X resource \'speedunits\'\&.
-.SS "cgps"
-.PP
-cgps
-is a client resembling
-xgps, but without the pictorial satellite display and able to run on a serial terminal or terminal emulator\&.
-.PP
-The
-\fB\-s\fR
-option prevents
-cgps
-from displaying the raw data\&. This display can also be toggled with the s command\&.
-.PP
-The
-\fB\-m\fR
-option will display your magnetic heading (as opposed to your true heading)\&. This is a calculated value, not a measured value, and is subject to a potential error of up to two degrees in the areas for which the calculation is valid (currently Western Europe, Alaska, and Lower 48 in the USA)\&. The formulas used are those found in the Aviation Formulary v1\&.43\&.
-.PP
-Rather than use X resources to determine which units to use,
-cgps
-looks at variables in its environment\&. Here are the variables and values it checks:
+xgps,
+cgps, and
+ldcgps
+look at variables in the environment to figure out what units they should default to using for display \(em imperial, nautical, or metric\&. Here are the variables and values they check:
 .sp
 .if n \{\
 .RS 4
@@ -129,6 +78,75 @@ looks at variables in its environment\&. Here are the variables and values it ch
 .RE
 .\}
 .PP
+These preferences may be overridden by the
+\fB\-u\fR
+option\&.
+.PP
+Where present, the
+\fB\-u\fR
+option can be used to set the system units for display; follow the keyword with \'i\' for \'imperial\' for American units (feet in altitude and error estimates, miles per hour in speeds), \'n\' for \'nautical\' (feet in altitude and error estimates, knots in speed) or \'m\' for \'metric\' (meters in altitude and error estimates, kiliometers per hour in speeds)\&.
+.PP
+The
+\fB\-D\fR
+option, when present, sets a debug level; it is primarily for use by GPSD developers\&. It enables various progress messages to standard error\&.
+.PP
+By default, clients collect data from all compatible devices on localhost, using the defalt GPSD port 2947\&. An optional argument to any client may specify a server to get data from\&. A colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a specific device name to be watched\&. However, if the server specification contains square brackets, the part inside them is taken as an IPv6 address and port/device suffixes are obnly parsed after the trailing bracket\&. Possible cases look like this:
+.PP
+localhost:/dev/ttyS1
+.RS 4
+Look at the default port of localhost, trying both IPv4 and IPv6 and watching ouput from serial device 1\&.
+.RE
+.PP
+example\&.com:2317
+.RS 4
+Look at port 2317 on example\&.com, trying both IPv4 and IPv6\&.
+.RE
+.PP
+71\&.162\&.241\&.5:2317:/dev/ttyS3
+.RS 4
+Look at port 2317 at the specified IPv4 address, collecting data from attached serial device 3\&.
+.RE
+.PP
+[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:2317:/dev/ttyS5
+.RS 4
+Look at port 2317 at the specified IPv6 address, collecting data from attached serial device 5\&.
+.RE
+.PP
+Not all clients shipped with GPSD are documented here\&. See also the separate manual pages for
+\fBgpspipe\fR(1)
+and
+\fBgpsmon\fR(1)\&.
+.SS "xgps"
+.PP
+xgps
+is a simple test client for
+gpsd
+with an X interface\&. It displays current GPS position/time/velocity information and (for GPSes that support the feature) the locations of accessible satellites\&.
+.PP
+In the sky view, satellites are color\-coded to indicate quality of signal; consult the data display to the left for exact figures in dB\&. Square icons indicate WAAS/EGNOS satellites, circles indicate ordinary GPS satellites\&. Filled icons were used in the last fix, outline icons were not\&.
+.SS "xgpsspeed"
+.PP
+xgpsspeed
+is a speedometer that uses position information from the GPS\&. It accepts an \-h option and optional argument as for
+gps, or a \-V option to dump the package version and exit\&. Additionally, it accepts \-rv (reverse video) and \-nc (needle color) options\&.
+.PP
+The \-speedunits option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&. This option can also be set as the X resource \'speedunits\'\&.
+.SS "cgps"
+.PP
+cgps
+is a client resembling
+xgps, but without the pictorial satellite display and able to run on a serial terminal or terminal emulator\&.
+.PP
+The
+\fB\-s\fR
+option prevents
+cgps
+from displaying the raw data\&. This display can also be toggled with the s command\&.
+.PP
+The
+\fB\-m\fR
+option will display your magnetic heading (as opposed to your true heading)\&. This is a calculated value, not a measured value, and is subject to a potential error of up to two degrees in the areas for which the calculation is valid (currently Western Europe, Alaska, and Lower 48 in the USA)\&. The formulas used are those found in the Aviation Formulary v1\&.43\&.
+.PP
 cgps
 terminates when you send it a SIGHUP or SIGINT; given default terminal settings this will happen when you type Ctl\-C at it\&. It will also terminate on \'q\'
 .SS "lcdgps"
@@ -137,15 +155,6 @@ A client that passes
 gpsd
 data to
 lcdproc, turning your car computer into a very expensive and nearly feature\-free GPS receiver\&. Currently assumes a 4x40 LCD and writes data formatted to fit that size screen\&. Also displays 4\- or 6\-character Maidenhead grid square output\&.
-.PP
-Options are as for
-cgps, except: The
-\fB\-u\fR
-sets the display format the units used for altitude and speed\&. The options are:
-\(lqi\(rq
-for Imperial units (feet/miles\-per\-hour);
-\(lqn\(rq
-for nautical (feet/knots); \'m\' for metric (meters/kilometers\-per\-hour)\&.
 .SS "gpxlogger"
 .PP
 This program collects fixes from
@@ -159,9 +168,7 @@ and defaulting to 5 seconds\&.
 If D\-Bus support is available on the host and GPSD is configured to use it, this program listens to DBUS broadcasts from
 gpsd\&. (org\&.gpsd\&.fix)\&. Otherwise, it uses a conventional socket connection\&.
 .PP
-The
-\fB\-j\fR
-option is only meaningful in socket mode and when collecting fixes from an NMEA device\&. Presence of a server\-port\-device specification forces use of sockets even on a D\-Bus capable system, though this is unlikely to be of interest to anyone except GPSD developers\&.
+Presence of a server\-port\-device specification forces use of sockets even on a D\-Bus capable system, though this is unlikely to be of interest to anyone except GPSD developers\&.
 .SH "SEE ALSO"
 .PP
 

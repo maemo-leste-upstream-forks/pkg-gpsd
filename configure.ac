@@ -1,6 +1,6 @@
-dnl $Id: configure.ac 6710 2009-12-04 20:45:44Z esr $
+dnl $Id: configure.ac 7015 2010-03-01 21:56:55Z esr $
 AC_INIT
-AM_INIT_AUTOMAKE(gpsd, 2.90)
+AM_INIT_AUTOMAKE(gpsd, 2.91)
 dnl AC_PREFIX_PROGRAM(gcc)
 AM_CONFIG_HEADER(gpsd_config.h)
 AC_LANG([C])
@@ -161,14 +161,14 @@ if eval "test x$GCC = xyes"; then
 	dnl -Wcast-qual -W
 fi
 
-AC_CHECK_HEADERS(sys/termios.h sys/select.h sys/time.h sys/modem.h sys/ipc.h sys/shm.h sys/stat.h sys/socket.h)
+AC_CHECK_HEADERS(sys/termios.h sys/select.h sys/time.h sys/modem.h sys/ipc.h sys/shm.h sys/stat.h sys/socket.h sys/ioctl.h sys/un.h)
 AC_CHECK_HEADERS(arpa/inet.h netinet/in_systm.h netinet/in.h netinet/tcp.h)
 AC_CHECK_HEADERS([netinet/ip.h], [], [],
 [[#if HAVE_NETINET_IN_SYSTM_H && HAVE_NETINET_IN_H
 #include netinet/ip.h
 #endif
 ]])
-AC_CHECK_HEADERS(termios.h strings.h getopt.h netdb.h)
+AC_CHECK_HEADERS(termios.h strings.h getopt.h netdb.h syslog.h pwd.h grp.h)
 
 AC_CHECK_FUNCS(round, roundf)
 AC_CHECK_FUNCS(strlcpy)
@@ -265,7 +265,6 @@ if test x"$with_x" != "xno" -a x"$have_x" != "xdisabled"
   if test x"$ac_cv_lib_Xt_XtToolkitInitialize" = "xno"; then
     AC_MSG_WARN([libXt problem - xgps won't be built.])
   fi
-  AC_CHECK_HEADER([X11/Xaw/Label.h],, motif_includes="no")
   dnl We can't use AC_SEARCH_LIBS because it always modifies LIBS.
   dnl Instead, check for two common places (xorg way and the
   dnl traditional way) by hand.
@@ -295,30 +294,8 @@ if test x"$with_x" != "xno" -a x"$have_x" != "xdisabled"
   if test x"$ac_cv_lib_Xpm_XpmCreatePixmapFromXpmImage" = "xno"; then
     AC_MSG_WARN([libXpm problem - xgps won't be built.])
   fi
-
-  dnl Check for Motif widget libraries
-  XM_LIBS=""
-  XP_LIBS=""
-  if test "$motif_includes" != "no" -a "$motif_libraries" != "no"
-  then
-  dnl Motif 2.1 wants '-lXp' (X11R6.3 print server)
-  AC_CHECK_LIB(Xp, XpSelectInput,
-	  XP_LIBS="-lXp"
-	  AC_DEFINE([HAVE_XP],1,[Xp available]),,
-	  ${X_PRE_LIBS} ${XPM_LIBS} ${XEXT_LIBS} ${XT_LIBS} ${XEXT_LIBS} ${X11_LIBS} ${LIBGEN})
-  dnl
-  AC_CHECK_LIB(Xm, XmInternAtom,
-	  XM_LIBS="-lXm"
-	  AC_DEFINE([HAVE_MOTIF],1,[Motif available]),,
-	  ${X_PRE_LIBS} ${XP_LIBS} ${XPM_LIBS} ${XEXT_LIBS} ${XT_LIBS} ${XEXT_LIBS} ${X11_LIBS} ${LIBGEN})
-  fi
-  AC_SUBST(XP_LIBS)
-  AC_SUBST(XM_LIBS)
-  AM_CONDITIONAL([HAVE_MOTIF], [test "$XM_LIBS" != "" -a "$motif_includes" != "no"])
-  ac_x="yes"
 else
   dnl X11 disabled
-  AM_CONDITIONAL([HAVE_MOTIF], [test "motif" = "no"])
   AM_CONDITIONAL([HAVE_XAW],false)
   AC_MSG_WARN([Not including X11 support])
 fi
@@ -997,6 +974,11 @@ AC_SUBST(MANGENERATOR)
 AC_SUBST(MANTARGET)
 AC_SUBST(MANFLAGS)
 
+dnl Gentoo systems can have a problem with the Python path
+if test -e /etc/gentoo-release; then
+    AC_MSG_WARN([This is a Gentoo system.])
+    AC_MSG_WARN([Adjust your PYTHONPATH to see library directories under /usr/local/lib])
+fi 
 
 dnl Output the configuration summary
 echo ""

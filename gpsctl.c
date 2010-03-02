@@ -5,7 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/ioctl.h>
+#include "gpsd_config.h"
+#if HAVE_SYS_IOCTL_H
+ #include <sys/ioctl.h>
+#endif /* HAVE_SYS_IOCTL_H */
 #ifndef S_SPLINT_S
 #include <unistd.h>
 #endif /* S_SPLINT_S */
@@ -77,7 +80,7 @@ static int gps_query(struct gps_data_t *gpsdata, const char *fmt, ... )
     }
     gpsd_report(LOG_PROG, "gps_query(), wrote, %s\n", buf);
     ret = gps_poll(gpsdata);
-    if (ERR_SET & gpsdata->set) {
+    if (ERROR_SET & gpsdata->set) {
 	gpsd_report(LOG_ERROR, "gps_query() error '%s'\n", gpsdata->error);
     }
     return ret;
@@ -200,7 +203,9 @@ int main(int argc, char **argv)
 	case 'D':		/* set debugging level */
 	    debuglevel = atoi(optarg);
 	    gpsd_hexdump_level = debuglevel;
+#ifdef CLIENTDEBUG_ENABLE
 	    gps_enable_debug(debuglevel, stderr);
+#endif /* CLIENTDEBUG_ENABLE */
 	    break;
 	case 'V':
 	    (void)fprintf(stderr, "gpsctl: version %s (revision %s)\n",
@@ -318,7 +323,7 @@ int main(int argc, char **argv)
 	/*@-boolops@*/
 	if (to_nmea) {
 	    (void)gps_query(gpsdata, "?DEVICE={\"path\":\"%s\",\"native\":0}\r\n", device); 
-	    if ((gpsdata->set & ERR_SET) || (gpsdata->dev.driver_mode != MODE_NMEA)) {
+	    if ((gpsdata->set & ERROR_SET) || (gpsdata->dev.driver_mode != MODE_NMEA)) {
 		gpsd_report(LOG_ERROR, "%s mode change to NMEA failed\n", gpsdata->dev.path);
 		status = 1;
 	    } else
@@ -326,7 +331,7 @@ int main(int argc, char **argv)
 	}
 	else if (to_binary) {
 	    (void)gps_query(gpsdata, "?DEVICE={\"path\":\"%s\",\"native\":1}\r\n", device);
-	    if ((gpsdata->set & ERR_SET) || (gpsdata->dev.driver_mode != MODE_BINARY)) {
+	    if ((gpsdata->set & ERROR_SET) || (gpsdata->dev.driver_mode != MODE_BINARY)) {
 		gpsd_report(LOG_ERROR, "%s mode change to native mode failed\n", gpsdata->dev.path);
 		status = 1;
 	    } else

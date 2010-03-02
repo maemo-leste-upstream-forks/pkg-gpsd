@@ -1,4 +1,4 @@
-/* $Id: packet.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: packet.c 6908 2010-01-02 22:29:16Z esr $ */
 /****************************************************************************
 
 NAME:
@@ -24,6 +24,8 @@ connected to the Garmin kernel driver.  But we need to be able to tell the
 others apart and distinguish them from baud barf.
 
 ***************************************************************************/
+#include <stdlib.h>
+#include "gpsd_config.h"
 #include <sys/types.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -33,8 +35,12 @@ others apart and distinguish them from baud barf.
 #include <string.h>
 #include <errno.h>
 #ifndef S_SPLINT_S
-#include <netinet/in.h>	/* for htons() */
-#include <arpa/inet.h>	/* for htons() */
+ #ifdef HAVE_NETINET_IN_H
+  #include <netinet/in.h>      /* for htons() */
+ #endif /* HAVE_NETNET_IN_H */
+ #ifdef HAVE_ARPA_INET_H
+  #include <arpa/inet.h>       /* for htons() */
+ #endif /* HAVE_ARPA_INET_H */
 #endif /* S_SPLINT_S */
 
 #include "bits.h"
@@ -45,13 +51,15 @@ others apart and distinguish them from baud barf.
  * The packet-recognition state machine.  This takes an incoming byte stream
  * and tries to segment it into packets.  There are three types of packets:
  *
- * 1) NMEA lines.  These begin with $, and with \r\n, and have a checksum.
+ * 1) Comments. These begin with # and end with \r\n.
  *
- * 2) Binary packets.  These begin with some fixed leader character(s),
+ * 2) NMEA lines.  These begin with $, and with \r\n, and have a checksum.
+ *
+ * 3) Binary packets.  These begin with some fixed leader character(s),
  *    have a length embedded in them, and end with a checksum (and possibly)
  *    some fixed trailing bytes.  
  *
- * 3) ISGPS packets. The input may be a bitstream containing IS-GPS-200
+ * 4) ISGPS packets. The input may be a bitstream containing IS-GPS-200
  *    packets.  Each includes a fixed leader byte, a length, and check bits.  
  *    In this case, it is not guaranted that packet starts begin on byte 
  *    bounaries; the recognizer has to run a separate state machine against 
@@ -329,7 +337,9 @@ static void nextstate(struct gps_packet_t *lexer,
 	    lexer->state = GROUND_STATE;
 	break;
     case NMEA_RECOGNIZED:
-	if (c == '$')
+	if (c == '#')
+	    lexer->state = COMMENT_BODY;
+	else if (c == '$')
 	    lexer->state = NMEA_DOLLAR;
 	else if (c == '!')
 	    lexer->state = NMEA_BANG;
