@@ -47,8 +47,8 @@ Description: Global Positioning System - debugging symbols
 
 Package: gpsd-clients
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: python-gps, gpsd
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-gps
+Suggests: gpsd
 Conflicts: gps
 Description: Global Positioning System - clients
  The gpsd service daemon can monitor one or more GPS devices connected to
