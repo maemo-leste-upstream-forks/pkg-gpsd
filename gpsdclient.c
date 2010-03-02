@@ -1,4 +1,4 @@
-/* $Id: gpsdclient.c 6185 2009-09-10 18:50:49Z esr $ */
+/* $Id: gpsdclient.c 6926 2010-01-13 07:20:02Z esr $ */
 /* gpsclient.c -- support functions for GPSD clients */
 #include <sys/time.h>
 #include <stdio.h>
@@ -117,7 +117,7 @@ enum unit gpsd_units(void)
 	}
  	if (((envu = getenv("LC_MEASUREMENT")) != NULL && *envu != '\0') 
  	    || ((envu = getenv("LANG")) != NULL && *envu != '\0')) {
-		if (strcasecmp(envu, "en_US")==0 
+	    if (strncasecmp(envu, "en_US", 5)==0 
 		    || strcasecmp(envu, "C")==0
 		    || strcasecmp(envu, "POSIX")==0) {
 			return imperial;
@@ -133,21 +133,28 @@ enum unit gpsd_units(void)
 void gpsd_source_spec(const char *arg, struct fixsource_t *source)
 /* standard parsing of a GPS data source spec */
 {
-    source->server = "127.0.0.1";
+    source->server = "localhost";
     source->port = DEFAULT_GPSD_PORT;
     source->device = NULL;
 
+    /*@-usedef@ Sigh, splint is buggy*/
     if (arg != NULL) {
-	char *colon1;
+	char *colon1, *skipto, *rbrk;
 	source->spec = strdup(arg);
 	assert(source->spec != NULL);
-	colon1 = strchr(source->spec, ':');
+
+	skipto = source->spec;
+	if (*skipto == '[' && (rbrk = strchr(skipto, ']'))!=NULL) {
+	    skipto = rbrk;
+	}
+	colon1 = strchr(skipto, ':');
 
 	if (colon1 != NULL) {
 	    char *colon2;
 	    *colon1 = '\0';
-	    if (colon1 != source->spec)
+	    if (colon1 != source->spec) {
 		source->server = source->spec;
+	    }
 	    source->port = colon1 + 1;
 	    colon2 = strchr(source->port, ':');
 	    if (colon2 != NULL) {
@@ -160,6 +167,16 @@ void gpsd_source_spec(const char *arg, struct fixsource_t *source)
 	    source->server = source->spec;
 	}
     }
+
+    /*@-modobserver@*/
+    if (*source->server == '[') {
+	char *rbrk = strchr(source->server, ']');
+	++source->server;
+	if (rbrk != NULL)
+	    *rbrk = '\0';
+    }
+    /*@+modobserver@*/
+    /*@+usedef@*/
 }
 /*@ +observertrans -statictrans +mustfreeonly +branchstate +kepttrans @*/
 

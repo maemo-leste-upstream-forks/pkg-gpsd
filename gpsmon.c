@@ -1,4 +1,4 @@
-/* $Id: gpsmon.c 6674 2009-12-02 12:05:56Z esr $ */
+/* $Id: gpsmon.c 6920 2010-01-12 19:22:47Z esr $ */
 /*
  * The generic GPS packet monitor.
  */
@@ -51,8 +51,6 @@
 #ifdef S_SPLINT_S
 extern struct tm *localtime_r(const time_t *,/*@out@*/struct tm *tp)/*@modifies tp@*/;
 #endif /* S_SPLINT_S */
-
-extern int netlib_connectsock(const char *, const char *, const char *);
 
 #define BUFLEN		2048
 

@@ -1,17 +1,18 @@
-/* $Id: ntpshm.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: ntpshm.c 7005 2010-02-19 22:39:56Z garyemiller $ */
 /* 
  * ntpshm.c - put time information in SHM segment for xntpd
  * struct shmTime and getShmTime from file in the xntp distribution:
  *	sht.c - Testprogram for shared memory refclock
  */
 
+#include <stdlib.h>
+#include "gpsd_config.h"
 #include <sys/types.h>
 #ifndef S_SPLINT_S
 #include <unistd.h>
 #endif /* S_SPLINT_S */
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <math.h>
 #include <errno.h>
 
@@ -22,8 +23,12 @@
 #include <sys/time.h>
 #endif
 
-#include <sys/ipc.h>
-#include <sys/shm.h>
+#ifdef HAVE_SYS_IPC_H
+ #include <sys/ipc.h>
+#endif /* HAVE_SYS_IPC_H */
+#ifdef HAVE_SYS_SHM_H
+ #include <sys/shm.h>
+#endif /* HAVE_SYS_SHM_H */
 
 #define PPS_MAX_OFFSET	100000		/* microseconds the PPS can 'pull' */
 #define PUT_MAX_OFFSET	1000000		/* microseconds for lost lock */
@@ -52,12 +57,80 @@ struct shmTime {
     int    pad[10];
 };
 
+/* Note: you can start gpsd as non-root, and have it work with ntpd.
+ * However, it will then only use the ntpshm segments 2 and 3.
+ *
+ * Ntpd always runs as root (to be able to control the system clock).
+ * Its logics for the creation of ntpshm segments are:
+ *
+ * Segments 0 and 1: permissions 0600, i.e. other programs can only
+ *                   read and write as root.
+ *
+ * Segments 2 and 3: permissions 0666, i.e. other programs can read
+ *                   and write as any user.  I.e.: if ntpd has been
+ *                   configured to use these segments, any 
+ *                   unpriviliged user is allowed to provide data 
+ *                   for synchronisation.
+ *
+ * As gpsd can be started as both root and non-root, this behaviour is
+ * mimiced by:
+ *
+ * Started as root: do as ntpd when attaching (creating) the segments.
+ * (In contrast to ntpd, which only attaches (creates) configured
+ * segments, gpsd creates all segments.)
+ *
+ * Started as non-root: only attach (create) segments 2 and 3 with
+ * permissions 0666.  As the permissions are for any user, the creator
+ * does not matter.
+ *
+ * For each GPS module gpsd controls, it will use the attached ntpshm
+ * segments in pairs (for coarse clock and pps source, respectively)
+ * starting from the first found segments.  I.e. started as root, one
+ * GPS will deliver data on segments 0 and 1, and as non-root data
+ * will be delivered on segments 2 and 3.
+ *
+ * to debug, try looking at the live segments this way
+ *  ipcs -m
+ * results  should look like this:
+ * ------ Shared Memory Segments --------
+ *  key        shmid      owner      perms      bytes      nattch     status
+ *  0x4e545030 0          root       700        96         2
+ *  0x4e545031 32769      root       700        96         2
+ *  0x4e545032 163842     root       666        96         1
+ *  0x4e545033 196611     root       666        96         1
+ *
+ * For a bit more data try this:
+ *  cat /proc/sysvipc/shm
+ *
+ * If gpsd can not open the segments be sure you are not running SELinux
+ * or apparmor.
+ *
+ * if you see the shared segments (keys 1314148400 -- 1314148403), and
+ * no gpsd or ntpd is running then try removing them like this:
+ *
+ * ipcrm  -M 0x4e545030
+ * ipcrm  -M 0x4e545031
+ * ipcrm  -M 0x4e545032
+ * ipcrm  -M 0x4e545033
+ */
 static /*@null@*/ struct shmTime *getShmTime(int unit)
 {
-    int shmid=shmget ((key_t)(NTPD_BASE+unit),
-		      sizeof (struct shmTime), IPC_CREAT|0644);
+    int shmid;
+    unsigned int perms;
+    // set the SHM perms the way ntpd does
+    if ( unit < 2 ) {
+    	// we are root, be careful
+	perms = 0600;
+    } else {
+        // we are not root, try to work anyway
+	perms = 0666;
+    }
+
+    shmid=shmget ((key_t)(NTPD_BASE+unit),
+		  sizeof (struct shmTime), (int)(IPC_CREAT|perms));
     if (shmid == -1) {
-	gpsd_report(LOG_ERROR, "NTPD shmget fail: %s\n", strerror(errno));
+	gpsd_report(LOG_ERROR, "NTPD shmget(%ld, %zd, %o) fail: %s\n",
+	   (long int)(NTPD_BASE+unit), sizeof (struct shmTime), (int)perms, strerror(errno));
 	return NULL;
     } else {
 	struct shmTime *p=(struct shmTime *)shmat (shmid, 0, 0);
@@ -66,19 +139,25 @@ static /*@null@*/ struct shmTime *getShmTime(int unit)
 	    gpsd_report(LOG_ERROR, "NTPD shmat failed: %s\n", strerror(errno));
 	    return NULL;
 	}
-	gpsd_report(LOG_PROG, "NTPD shmat(%d,0,0) succeeded\n", shmid);
+	gpsd_report(LOG_PROG, "NTPD shmat(%d,0,0) succeeded, segment %d\n", 
+	   shmid, unit);
 	return p;
 	/*@ +mustfreefresh */
     }
 }
 
 void ntpshm_init(struct gps_context_t *context, bool enablepps)
-/* attach all NTP SHM segments.  called once at startup, while still root */
+/* attach all NTP SHM segments.  
+ * called once at startup, while still root,  although root not required */
 {
     int i;
 
-    for (i = 0; i < NTPSHMSEGS; i++)
-	context->shmTime[i] = (i >= 2 || getuid() == 0) ? getShmTime(i) : NULL;
+    for (i = 0; i < NTPSHMSEGS; i++) {
+	// Only grab the first two when running as root.
+	if ( 2 <= i || 0 == getuid()) {
+	    context->shmTime[i] = getShmTime(i);
+	}
+    }
     memset(context->shmTimeInuse,0,sizeof(context->shmTimeInuse));
 # ifdef PPS_ENABLE
     context->shmTimePPS = enablepps;

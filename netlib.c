@@ -1,4 +1,4 @@
-/* $Id: netlib.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: netlib.c 6931 2010-01-13 18:48:02Z esr $ */
 #include <sys/types.h>
 
 #include "gpsd_config.h"
@@ -18,8 +18,12 @@
 #endif
 #endif /* S_SPLINT_S */
 #ifndef S_SPLINT_S
-#include <netdb.h>
-#include <arpa/inet.h>
+ #ifdef HAVE_NETDB_H
+  #include <netdb.h>
+ #endif /* HAVE_NETDB_H */
+ #ifdef HAVE_ARPA_INET_H
+  #include <arpa/inet.h>
+ #endif /* HAVE_ARPA_INET_H */
 #endif /* S_SPLINT_S */
 #include <errno.h>
 #include <stdlib.h>
@@ -29,34 +33,22 @@
 #include <string.h>
 
 #include "gpsd.h"
+#include "sockaddr.h"
 
 #if !defined (INADDR_NONE)
 #define INADDR_NONE   ((in_addr_t)-1)
 #endif
 
-int netlib_connectsock(const char *host, const char *service, const char *protocol)
+/*@-mustfreefresh -usedef@*/
+socket_t netlib_connectsock(int af, const char *host, const char *service, const char *protocol)
 {
-    struct hostent *phe;
-    struct servent *pse;
     struct protoent *ppe;
-    struct sockaddr_in sin;
-    int s, type, proto, one = 1;
+    struct addrinfo hints;
+    struct addrinfo *result, *rp;
+    int ret, type, proto, one = 1;
+    socket_t s = -1;
 
-    memset((char *) &sin, 0, sizeof(sin));
-    /*@ -type -mustfreefresh @*/
-    sin.sin_family = AF_INET;
-    if ((pse = getservbyname(service, protocol)))
-	sin.sin_port = htons(ntohs((unsigned short) pse->s_port));
-    else if ((sin.sin_port = htons((unsigned short) atoi(service))) == 0)
-	return NL_NOSERVICE;
-
-    if ((phe = gethostbyname(host)))
-	memcpy((char *) &sin.sin_addr, phe->h_addr, phe->h_length);
-#ifndef S_SPLINT_S
-    else if ((sin.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE)
-	return NL_NOHOST;
-#endif /* S_SPLINT_S */
-
+    /*@-type@*/
     ppe = getprotobyname(protocol);
     if (strcmp(protocol, "udp") == 0) {
 	type = SOCK_DGRAM;
@@ -65,17 +57,50 @@ int netlib_connectsock(const char *host, const char *service, const char *protoc
 	type = SOCK_STREAM;
 	proto = (ppe) ? ppe->p_proto : IPPROTO_TCP;
     }
+    /*@+type@*/
 
-    if ((s = socket(PF_INET, type, proto)) == -1)
-	return NL_NOSOCK;
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one))==-1) {
-	(void)close(s);
-	return NL_NOSOCKOPT;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = af;
+    hints.ai_socktype = type;
+    hints.ai_protocol = proto;
+#ifndef S_SPLINT_S 
+    if((ret = getaddrinfo(host, service, &hints, &result))) {
+	return NL_NOHOST;
     }
-    if (connect(s, (struct sockaddr *) &sin, sizeof(sin)) == -1) {
-	(void)close(s);
-	return NL_NOCONNECT;
+#endif /* S_SPLINT_S */
+
+    /*
+     * From getaddrinfo(3):
+     *     Normally, the application should try using the addresses in the
+     *     order in which they are returned.  The sorting function used within
+     *     getaddrinfo() is defined in RFC 3484).
+     * From RFC 3484 (Section 10.3):
+     *     The default policy table gives IPv6 addresses higher precedence than
+     *     IPv4 addresses.
+     * Thus, with the default parameters, we get IPv6 addresses first.
+     */
+    /*@-type@*/
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
+	ret = NL_NOCONNECT;
+	if((s = socket(rp->ai_family, rp->ai_socktype,
+			rp->ai_protocol)) < 0)
+	    ret = NL_NOSOCK;
+	else if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one))==-1)
+	    ret = NL_NOSOCKOPT;
+	else if (connect(s, rp->ai_addr, rp->ai_addrlen) == 0) {
+	    ret = 0;
+	    break;
+	}
+
+	if (s > 0) 
+	    (void)close(s);
     }
+    /*@+type@*/
+#ifndef S_SPLINT_S 
+    freeaddrinfo(result);
+#endif /* S_SPLINT_S */
+    if (ret)
+	return ret;
 
 #ifdef IPTOS_LOWDELAY
     {
@@ -87,11 +112,12 @@ int netlib_connectsock(const char *host, const char *service, const char *protoc
 #endif
 #ifdef TCP_NODELAY
     if (type == SOCK_STREAM)
-	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
+	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *)&one, sizeof one);
 #endif
     return s;
     /*@ +type +mustfreefresh @*/
 }
+/*@+mustfreefresh +usedef@*/
 
 char /*@observer@*/ *netlib_errstr(const int err)
 {
@@ -106,21 +132,38 @@ char /*@observer@*/ *netlib_errstr(const int err)
     }
 }
 
-char *sock2ip(int fd)
+char *netlib_sock2ip(int fd)
 {
-    struct sockaddr fsin;
+    sockaddr_t fsin;
     socklen_t alen = (socklen_t)sizeof(fsin);
-    char *ip;
+    /*@i1@*/static char ip[INET6_ADDRSTRLEN];
     int r;
 
-    r = getpeername(fd, (struct sockaddr *) &fsin, &alen);
-    /*@ -branchstate @*/
+    r = getpeername(fd, &(fsin.sa), &alen);
+    /*@ -branchstate -unrecog @*/
     if (r == 0) {
-	ip = inet_ntoa(((struct sockaddr_in *)(&fsin))->sin_addr);
-    } else {
-	gpsd_report(LOG_INF, "getpeername() = %d, error = %s (%d)\n", r, strerror(errno), errno);
-	ip = "<unknown>";
+	switch (fsin.sa.sa_family) {
+	case AF_INET:
+	    r = !inet_ntop(fsin.sa_in.sin_family, &(fsin.sa_in.sin_addr),
+		    ip, sizeof(ip));
+	    break;
+
+	case AF_INET6:
+	    r = !inet_ntop(fsin.sa_in6.sin6_family, &(fsin.sa_in6.sin6_addr),
+		    ip, sizeof(ip));
+	    break;
+
+	default:
+	    gpsd_report(LOG_ERROR, "Unhandled address family %d in %s\n",
+			    fsin.sa.sa_family, __FUNCTION__);
+	    (void)strlcpy(ip,"<unknown AF>", sizeof(ip));
+	    return ip;
+	}
     }
-    /*@ +branchstate @*/
+    if (r != 0){
+	gpsd_report(LOG_INF, "getpeername() = %d, error = %s (%d)\n", r, strerror(errno), errno);
+	(void)strlcpy(ip,"<unknown>", sizeof(ip));
+    }
+    /*@ +branchstate +unrecog @*/
     return ip;
 }

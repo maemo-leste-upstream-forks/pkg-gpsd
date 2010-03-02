@@ -32,7 +32,7 @@ C:
 .fi
 .ft
 .HP \w'struct\ gps_data_t\ *gps_open('u
-.BI "struct gps_data_t *gps_open(char\ *" "server" ", char\ *\ " "port" ");"
+.BI "struct gps_data_t *gps_open(int" "af" ", char\ *" "server" ", char\ *\ " "port" ");"
 .HP \w'int\ gps_open_r('u
 .BI "int gps_open_r(char\ *" "server" ", char\ *\ " "port" ", struct\ gps_data_t\ *" "gpsdata" ");"
 .HP \w'int\ gps_send('u
@@ -41,10 +41,10 @@ C:
 .BI "void gps_set_raw_hook(struct\ gps_data_t\ *" "gpsdata" ", void\ (*" "hook" ")(struct\ gps_data_t\ *,\ char\ *buf,\ size_t\ len));"
 .HP \w'int\ gps_poll('u
 .BI "int gps_poll(struct\ gps_data_t\ *" "gpsdata" ");"
+.HP \w'bool\ gps_waiting('u
+.BI "bool gps_waiting(struct\ gps_data_t\ *" "gpsdata" ");"
 .HP \w'void\ gps_close('u
 .BI "void gps_close(struct\ gps_data_t\ *" "gpsdata" ");"
-.HP \w'void\ rtcm2_unpack('u
-.BI "void rtcm2_unpack(struct\ rtcm_t\ *" "rtcmp" ", char\ *" "buf" ");"
 .HP \w'int\ gps_stream('u
 .BI "int gps_stream(struct\ gps_data_t\ *" "gpsdata" ", unsigned\ int" "flags" ", void\ *" "data" ");"
 .HP \w'char\ *gps_errstr('u
@@ -57,7 +57,7 @@ Python:
 
 import gps
 
-session = gps\&.gps(host="127\&.0\&.0\&.1", port="2947")
+session = gps\&.gps(host="localhost", port="2947")
 
 session\&.set_raw_hook(raw_hook)
 
@@ -90,8 +90,8 @@ and is intended for concurrent use by several applications, and one low\-level i
 .ps -1
 .br
 .PP
-The API described below may change incompatibly at API version 4\&. Take care to conditionalize your code on the major and minor API version symbols in
-gps\&.h; ideally, force a compilation failure if the header is not exporting a version you recognize\&. See the GPSD project website for more information on the protocol and API changes\&.
+Take care to conditionalize your code on the major and minor API version symbols in
+gps\&.h; ideally, force a compilation failure if GPSD_API_MAJOR_VERSION is not a version you recognize\&. See the GPSD project website for more information on the protocol and API changes\&.
 .sp .5v
 .RE
 .PP
@@ -102,10 +102,10 @@ initializes a GPS\-data structure to hold the data collected by the GPS, and ret
 \fBgps_open()\fR
 returns NULL on errors\&. errno is set depending on the error returned from the the socket layer; see
 gps\&.h
-for values and explanations\&.
+for values and explanations\&. The host address may be a DNS name, an IPv4 dotted quad, or an IPV6 address; the library will do the roight thing for any of these\&.
 .PP
 \fBgps_open_r()\fR
-is a reentrent\-friendly version That put the session storage where you wish to allocate it\&. It returns 0 on success and \-1 on failure, with errno set appropriately\&.
+is a reentrent\-friendly version that puts the session storage where you wish to allocate it\&. It returns 0 on success and \-1 on failure, with errno set appropriately\&.
 .PP
 \fBgps_close()\fR
 ends the session\&.
@@ -120,6 +120,9 @@ accepts a response, or sequence of responses, from the daemon and interprets it 
 \fBgps_poll()\fR
 returns the validity mask of the received structure\&. This function does a blocking read waiting for data from the daemon; it returns 0 for success, or \-1 on a Unix\-level read error\&.
 .PP
+\fBgps_waiting()\fR
+can be used to check whether there is data from the daemon\&. It returns true if there is, false on no data waiting or error condition\&. It does not block waiting for input\&.
+.PP
 \fBgps_stream()\fR
 asks
 gpsd
@@ -127,9 +130,68 @@ to stream the reports it has at you, to be made available whenn you poll\&. It i
 \fBgps_query()\fR
 with a "w+" argument, because it insulates your code from whether your client library and your
 gpsd
-are using old or new protocol\&. The second argument is a flag mask that sets various policy bits; see gps\&.h for description\&. Calling
+are using old or new protocol\&. The second argument is a flag mask that sets various policy bits; see trhe list below\&. Calling
 \fBgps_stream()\fR
-more than once with different flag masks is allowed\&.The third argument is not presently used but reserved for expansion\&.
+more than once with different flag masks is allowed\&.
+.PP
+WATCH_DISABLE
+.RS 4
+Disable the reporting modes specified by the other WATCH_ flags\&. Cannot be used to disable POLL_NONBLOCK\&.
+.RE
+.PP
+WATCH_ENABLE
+.RS 4
+Disable the reporting modes specified by the other WATCH_ flags\&. This is the default\&.
+.RE
+.PP
+WATCH_JSON
+.RS 4
+Enable JSON reporting of data\&. If WATCH_ENABLE is set, and nmo other WATCH flags are set, this ids the default\&.
+.RE
+.PP
+WATCH_NMEA
+.RS 4
+Enable generated pseudo\-NMEA reporting on binary devices\&.
+.RE
+.PP
+WATCH_RARE
+.RS 4
+Enable reporting of binary packets in encoded hex\&.
+.RE
+.PP
+WATCH_RAW
+.RS 4
+Enable literal passtrough of binary packets\&.
+.RE
+.PP
+WATCH_SCALED
+.RS 4
+When reporting AIS data, scale integer quantities to floats if they have a divisor or rendering formula assosiated with them\&.
+.RE
+.PP
+WATCH_NEWSTYLE
+.RS 4
+Force issuing a JSON initialization and getting new\-style responses\&. This will become the default in a future release\&.
+.RE
+.PP
+WATCH_OLDSTYLE
+.RS 4
+Force issuing a W or R command and getting old\-style responses\&. This is now the default behavior, but will be removed in a future release\&.
+.RE
+.PP
+WATCH_DEVICE
+.RS 4
+Restrict watching to a speciied device, patch given as second argument\&.
+.RE
+.PP
+POLL_NONBLOCK
+.RS 4
+Normally
+\fBgps_poll()\fR
+blocks until either there is a read error or some data is received from tha daemon\&. In this mode,
+\fBgps_poll()\fR
+returns immediately with a value of 0 if there is no input waiting\&.
+.RE
 .PP
 \fBgps_set_raw_hook()\fR
 takes a function you specify and run it (synchronously) on the raw data pulled by a
@@ -148,17 +210,9 @@ Consult
 gps\&.h
 to learn more about the data members and associated timestamps\&. Note that information will accumulate in the session structure over time, and the \'valid\' field is not automatically zeroed by each poll\&. It is up to the client to zero that field when appropriate and to keep an eye on the fix and sentence timestamps\&.
 .PP
-The
-\fBrtcm_unpack()\fR
-will be useful when you are connected to an RTCM\-104 source in raw mode\&. Use it as part of a raw hook, calling it with the address of the
-struct rtcm_t
-element of your session structure buffer as first argument and the buffer as the second\&. It will unpack a line of RTCM data into the structure\&. This function returns 0 when it has read the last line of an RTCM\-104 message, a positive int when it expects more dump lines, and a negative int on parse failure\&. You must zero out the
-struct rtcm_t
-each time before this function is called on a new header (H) line, as it relies on the message type field being initially zero and uses it to track what kind of following line is expected\&.
-.PP
 The Python implementation supports the same facilities as the C library\&.
 \fBgps_open()\fR
-is replaced by the initialization of a gps session object; the other calls are methods of that object, and have the same names as the corresponding C functions\&. Resources within the session object will be properly released when it is garbage\-collected\&.
+is replaced by the initialization of a gps session object; the other calls are methods of that object, and have the same names as the corresponding C functions\&. Resources within the session object will be properly released when it is garbage\-collected\&. Note one limitation: POLL_NOBLOCK is not yet supported in Python; use the waiting() method instead\&.
 .SH "CODE EXAMPLE"
 .PP
 The following is an excerpted and simplified version of the libgps interface code from
@@ -189,13 +243,11 @@ is a trivial piece of code that calls gps_poll(gpsdata)\&.
 .\}
 .SH "LIMITATIONS"
 .PP
-Incautious use of
+In the C API, incautious use of
 \fBgps_send()\fR
 may lead to subtle bugs\&. In order to not bloat
 struct gps_data_t
 with space used by responses that are not expected to be shipped in close sequence with each other, the storage for fields associated with certain responses are combined in a union\&.
-.PP
-Sends that might invoke this set of responses need to be sequenced carefully so the unpacking of multiple responses arriving in the same socket read cannot result in later updates to the union obliterating data from earlier ones before it becomes visible to the client application\&.
 .PP
 The risky set of responses includes VERSION, DEVICELIST, RTCM2, RTCM3, and AIS; it may not be limited to that set\&. The logic of the daemon\'s watcher mode is careful to avoid dangerous sequences, but you should read and understand the layout of
 struct gps_data_t
@@ -211,6 +263,10 @@ supported in major versions 1 and 2 of this library has been removed\&. With the
 If you must send commands to the daemon explicity, use
 \fBgps_send()\fR
 but beware that this ties your code to the GPSD wire protocol\&. It is not recommended\&.
+.PP
+This API has been stable since GPSD 2\&.90, except that
+\fBgps_waiting()\fR
+was added in 2\&.91\&.
 .SH "SEE ALSO"
 .PP
 

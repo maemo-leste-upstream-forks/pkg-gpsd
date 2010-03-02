@@ -1,16 +1,23 @@
-/* $Id: net_dgpsip.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: net_dgpsip.c 6920 2010-01-12 19:22:47Z esr $ */
 /* net_dgpsip.c -- gather and dispatch DGPS data from DGPSIP servers */
+#include <stdlib.h>
+#include "gpsd_config.h"
 #include <sys/types.h>
 #ifndef S_SPLINT_S
-#include <sys/socket.h>
-#include <unistd.h>
+ #ifdef HAVE_SYS_SOCKET_H
+  #include <sys/socket.h>
+ #else
+  #define AF_UNSPEC 0
+ #endif /* HAVE_SYS_SOCKET_H */
+ #include <unistd.h>
 #endif /* S_SPLINT_S */
 #include <sys/time.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #ifndef S_SPLINT_S
-#include <netdb.h>
+ #ifdef HAVE_NETDB_H
+  #include <netdb.h>
+ #endif /* HAVE_NETDB_H */
 #endif /* S_SPLINT_S */
 #include <string.h>
 #include <errno.h>
@@ -33,7 +40,7 @@ int dgpsip_open(struct gps_context_t *context, const char *dgpsserver)
     if (!getservbyname(dgpsport, "tcp"))
 	dgpsport = DEFAULT_RTCM_PORT;
 
-    context->dsock = netlib_connectsock(dgpsserver, dgpsport, "tcp");
+    context->dsock = netlib_connectsock(AF_UNSPEC, dgpsserver, dgpsport, "tcp");
     if (context->dsock >= 0) {
 	gpsd_report(LOG_PROG,"connection to DGPS server %s established.\n",dgpsserver);
 	(void)gethostname(hn, sizeof(hn));

@@ -1,6 +1,6 @@
 <?php
 
-# $Id: gpsd.php 4690 2008-03-01 07:30:51Z ckuethe $
+# $Id: gpsd.php 6920 2010-01-12 19:22:47Z esr $
 #$CSK: gpsd.php,v 1.39 2006/11/21 22:31:10 ckuethe Exp $
 
 # Copyright (c) 2006 Chris Kuethe <chris.kuethe@gmail.com>
@@ -395,7 +395,7 @@ function write_html($resp){
 		$gmap_body = 'onload="Load()" onunload="GUnload()"';
 		$gmap_code = gen_gmap_code();
 	}
-	$svn ='$Rev: 4690 $';
+	$svn ='$Rev: 6920 $';
 	$part1 = <<<EOF
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -519,8 +519,8 @@ function write_config(){
 	$buf = <<<EOB
 <?PHP
 \$title = 'My GPS Server';
-\$server = '127.0.0.1';
-#\$advertise = '127.0.0.1';
+\$server = 'localhost';
+#\$advertise = 'localhost';
 \$port = 2947;
 \$autorefresh = 0; # number of seconds after which to refresh
 \$googlemap = 0; # set to 1 if you want to have a google map

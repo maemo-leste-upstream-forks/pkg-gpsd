@@ -1,4 +1,4 @@
-$Id: TODO 6705 2009-12-04 12:59:50Z esr $
+$Id: TODO 7011 2010-03-01 02:22:09Z esr $
 
 This is the gpsd to-do list.  If you're viewing it with Emacs, try
 doing Ctl-C Ctl-t and browsing through the outline headers.  Ctl-C Ctl-a 
@@ -26,23 +26,36 @@ to reverse his refusal to send us an eval unit.
 
 *** Driver issues
 
-**** bu303-nofix.log.ck: 
+**** Geodetic fix computation is numerically unstable: 
 
-Test returns a bogus altitude (large and negative) on NetBSD 5.0
-i386, but not on Intel 64. This is probably a 32-vs.64-bit port problem.
+In the bu303-nofix.log test, the expected-correct output has an
+altitude of -6378137m, about earth radius, with lat/lon of 180,0.  On
+NetBSD 5.0/i386, the altitude is -6378253m, on NetBSD 5.0/amd64 it is
+-6378253m, and on NetBSD 5.0/sparc64 it is -6378171m.  On Linux/i386,
+it is -6378143m.
 
-**** navcom.chk:
+Altitude is computed by geoid.c:ecef_to_wgs84fix(), which is a pile of
+trig calculations.  As usual, sin() and cos() aren't guaranteed to be
+cross-architecture stable throughout their range. Note that bu303 logs
+with valid fixes have not been problematic.  It is not clear that
+anyone has hand-validated the expected output.
 
-This testfile triggers a numeric instability in the sin() and cos() 
-functions inside earth_distance().  The result is that epd is unstable.
+(amd64 is what NetBSD labels all implementations of AMD's 64-bit
+architecture; the machine in question above is an Intel CPU under
+Xen.)
+
+**** superstar2.chk:
+
+Packet detection appears to fail completely on big-endian machines.
+Greg Troxel reports this from netbsd-5/sparc64. Output at
+<http://www.lexort.com/gpsd/>. The problem is very likely in the
+packet-checksum computation, which looks a bit dodgy.
 
 ** To do:
 
-*** Ship a DEVICE notification on every driver change
+*** Finish gpssim
 
-There's a race condition where if you start cgps at just the right
-time while an NMEA device is being probed, it may switch to a binary
-type but never update the type display.
+It's blocked on skyview computation.
 
 *** Complete and test the speed/parity/stopbit methods in the drivers
 
@@ -60,12 +73,6 @@ These are used for the '?DEVICE' (old 'B') command.  All work for 8N1.
 SiRF, UBX, TSIP, and even Zodiac can support non-8N1 modes; these need
 to be tested.
 
-*** Rewrite xgps
-
-The Motif/Lesstif dependency is a pain in the butt, the code is a 
-maintainability problem, and we'd like to extend it to display AIS
-messages. Probably the thing to do is write something pygtk-based.
-
 *** Support the D-Bus signals recognized by libgypsy
 
 Ian Holmes's Gypsy daemon is a pale shadow of GPSD, but his ideas 
@@ -79,48 +86,6 @@ At the moment, if a GPS accepts RTCM corrections and they are
 available, gpsd ships them to the serial device from which the GPS is
 reporting fix data.  Some GPSes have auxiliary ports for RTCM; 
 there should be a (privileged) command to redirect RTCM connections.
-
-*** libgps should try to automatically try to reconnect when a poll fails
-
-Petter Reinholdtsen suggests:
-
-At the moment, when a gpsd client using libgps is connected to the
-gpsd server, and the server is restarted, the client loses the
-connection and do not update any more.
-
-It would be nice if gps_poll() would try to reconnect to the server if
-the read() and write() calls on the tcp socket fail.
-
-To test this, start gpsd first (/etc/init.d/gpsd start), xgps second,
-and then restart gpsd (/etc/init.d/gpsd restart).  The xgps client
-will fail to update any more.
-
-I realised how nice this feature would be while comparing the xgps
-client to the roadgps client (part of the roadmap package).  The
-roadgps client would reconnect to the new server and keep updating as
-soon as the server was available. :)
-
-On second thought, and after discussing this on the gpsd mailing list,
-I believe the reconnect need to be handled by the applications in
-addition to the library.  Applications will commonly use the file
-descriptor to detect incoming data, and this file descriptor will
-change on reconnect.
-
-So I rephrase my wish, and ask for reconnect functionality in xgps
-instead.  It will make sure the library support reconnects, and also
-provide an example for other clients using the library.
-
-(ESR thinks maybe this ought to be done at library level anyway, with
-users warned that the gps_fd member of the gps_data_t structure may
-change on reconnect and shouldn't be cached.  This wouldn't be hard to
-implement, but it would change gps_data_t and require a library
-version bump.)
-
-This is Berlios FR #3789.
-
-*** Full Python wrapper for libgpsd
-
-This would be useful for test code of all kinds.
 
 *** Per-driver restore of changed config settings on exit.
 
@@ -150,13 +115,6 @@ The iTrax02 driver sets SYNCMODE to start navigation messages without
 checking to see if it's already on, and stops navigation methods on
 wrapup.  It also forces the set of sentences issued.  There doesn't
 seem to be any way to query these settings.
-
-*** Merge cgps and xgps
-
-Possibly cgps and xgps should merge into a single test client that honors the
-GPSD_UNITS environment variable and chooses its UI mode depending on
-whether or not it's running under X.  There is controversy about this 
-proposal on the dev list.
 
 *** Industry-standard format dumping of raw satellite data
 
@@ -341,6 +299,16 @@ http://www.twinsun.com/tz/tz-link.htm
 
 Free time-zone maps of the U.S.
 http://www.manifold.net/download/freemaps.html
+
+** Documentation
+
+*** GeoClue
+
+Figure out how gpsd should relate to GeoClue and explain this.  A
+particular question is the dbus interface to gpsd and the GeoClue
+provider interface.  There is quite possibly nothing to do; GeoClue
+using gpsd's published interfaces seems sensible.
+http://www.freedesktop.org/wiki/Software/GeoClue
 
 Local variables:
 mode: outline

@@ -1,9 +1,12 @@
-/* $Id: gpxlogger.c 6599 2009-11-25 13:21:01Z esr $ */
+/* $Id: gpxlogger.c 6920 2010-01-12 19:22:47Z esr $ */
+#include <stdlib.h>
+#include "gpsd_config.h"
 #include <sys/types.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif /* HAVE_SYSLOG_H */
 #include <math.h>
 #include <time.h>
 #include <signal.h>
@@ -12,8 +15,6 @@
 #ifndef S_SPLINT_S
 #include <unistd.h>
 #endif /* S_SPLINT_S */
-
-#include "gpsd_config.h"
 #include "gps.h"
 #include "gpsdclient.h"
 
@@ -31,6 +32,9 @@ static time_t int_time, old_int_time;
 static bool intrack = false;
 static bool first = true;
 static time_t timeout = 5; /* seconds */
+#ifdef CLIENTDEBUG_ENABLE
+static int debug;
+#endif /* CLIENTDEBUG_ENABLE */
 
 static void print_gpx_header(void) 
 {
@@ -332,7 +336,7 @@ static void usage(void)
 	    "Usage: %s [-V] [-h] [-i timeout] [-j casoc] [server[:port:[device]]]\n",
 	    progname);
     fprintf(stderr,
-	    "\tdefaults to '%s -i 5 -j 0 127.0.0.1:2947'\n",
+	    "\tdefaults to '%s -i 5 -j 0 localhost:2947'\n",
 	    progname);
     exit(1);
 }
@@ -342,8 +346,14 @@ int main (int argc, char** argv)
     int ch;
 
     progname = argv[0];
-    while ((ch = getopt(argc, argv, "hi:V")) != -1) {
+    while ((ch = getopt(argc, argv, "D:hi:V")) != -1) {
 	switch (ch) {
+	case 'D':
+	    debug = atoi(optarg);
+#ifdef CLIENTDEBUG_ENABLE
+	    gps_enable_debug(debug, stdout);
+#endif /* CLIENTDEBUG_ENABLE */
+	    break;
 	case 'i':		/* set polling interfal */
 	    timeout = (unsigned int)atoi(optarg);
 	    if (timeout < 1)
@@ -353,7 +363,7 @@ int main (int argc, char** argv)
 			"WARNING: track timeout is an hour or more!\n");
 	    break;
 	case 'V':
-	    (void)fprintf(stderr, "SVN ID: $Id: gpxlogger.c 6599 2009-11-25 13:21:01Z esr $ \n");
+	    (void)fprintf(stderr, "SVN ID: $Id: gpxlogger.c 6920 2010-01-12 19:22:47Z esr $ \n");
 	    exit(0);
 	default:
  	    usage();
@@ -384,7 +394,7 @@ int main (int argc, char** argv)
     print_gpx_header ();
 
 #ifdef DBUS_ENABLE
-    /* To force socket use in the default way just give a '127.0.0.1' arg */  
+    /* To force socket use in the default way just give a 'localhost' arg */
     if (optind < argc)
 	return socket_mainloop();
     else

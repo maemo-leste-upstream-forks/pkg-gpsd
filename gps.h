@@ -1,4 +1,4 @@
-/* $Id: gps.h 6692 2009-12-03 15:01:37Z esr $ */
+/* $Id: gps.h 7007 2010-02-27 23:46:26Z ckuethe $ */
 #ifndef _GPSD_GPS_H_
 #define _GPSD_GPS_H_
 
@@ -28,18 +28,16 @@ extern "C" {
 #include <pthread.h>	/* pacifies OpenBSD's compiler */
 #endif
 
-/*
- * Unless otherwise noted, all function signatures and types and
- * constants and structure layouts exposed here are correct for all
- * 3.x versions up to and including this one.
- */
-#define GPSD_API_MAJOR_VERSION	3	/* bump on incompatible changes */
+#define GPSD_API_MAJOR_VERSION	4	/* bump on incompatible changes */
 #define GPSD_API_MINOR_VERSION	1	/* bump on compatible changes */
 
 #define MAXTAGLEN	8	/* maximum length of sentence tag name */
 #define MAXCHANNELS	20	/* maximum GPS channels (*not* satellites!) */
 #define GPS_PRNMAX	32	/* above this number are SBAS satellites */
 
+#define WGS84A 6378137		/* equatorial radius */
+#define WGS84F 298.257223563	/* flattening */
+#define WGS84B 6356752.3142	/* polar radius */
 /* 
  * The structure describing an uncertainty volume in kinematic space.
  * This is what GPSes are meant to produce; all the other info is 
@@ -208,9 +206,9 @@ struct rtcm3_rtk_hdr {		/* header data from 1001, 1002, 1003, 1004 */
     time_t tow;			/* GPS Epoch Time (TOW) in ms, 
 				   or GLONASS Epoch Time in ms */
     bool sync;			/* Synchronous GNSS Message Flag */
-    ushort satcount;		/* # Satellite Signals Processed */
+    unsigned short satcount;	/* # Satellite Signals Processed */
     bool smoothing;		/* Divergence-free Smoothing Indicator */
-    ushort interval;		/* Smoothing Interval */
+    unsigned short interval;	/* Smoothing Interval */
 };
 
 struct rtcm3_basic_rtk {
@@ -223,7 +221,7 @@ struct rtcm3_basic_rtk {
 };
 
 struct rtcm3_extended_rtk {
-    unsigned char indicator;		/* Indicator */
+    unsigned char indicator;	/* Indicator */
     unsigned char channel;	/* Satellite Frequency Channel Number 
 				   (GLONASS only) */
     double pseudorange;		/* Pseudorange */
@@ -231,7 +229,7 @@ struct rtcm3_extended_rtk {
     unsigned char locktime;	/* Lock time Indicator */
     unsigned char ambiguity;	/* Integer Pseudorange 
 					   Modulus Ambiguity */
-    double CNR;		/* Carrier-to-Noise Ratio */
+    double CNR;			/* Carrier-to-Noise Ratio */
 };
 
 struct rtcm3_network_rtk_header {
@@ -265,14 +263,14 @@ struct rtcm3_t {
 	struct {
 	    struct rtcm3_rtk_hdr	header;
 	    struct {
-		unsigned ident;		/* Satellite ID */
+		unsigned ident;			/* Satellite ID */
 		struct rtcm3_basic_rtk L1;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1001;
 	struct {
 	    struct rtcm3_rtk_hdr	header;
 	    struct {
-		unsigned ident;		/* Satellite ID */
+		unsigned ident;			/* Satellite ID */
 		struct rtcm3_extended_rtk L1;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1002;
@@ -293,27 +291,27 @@ struct rtcm3_t {
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1004;
 	struct {
-	    unsigned int station_id;	/* Reference Station ID */
-	    int system;			/* Which system is it? */
-	    bool reference_station;	/* Reference-station indicator */
-	    bool single_receiver;	/* Single Receiver Oscillator */
+	    unsigned int station_id;		/* Reference Station ID */
+	    int system;				/* Which system is it? */
+	    bool reference_station;		/* Reference-station indicator */
+	    bool single_receiver;		/* Single Receiver Oscillator */
 	    double ecef_x, ecef_y, ecef_z;	/* ECEF antenna location */
 	} rtcm3_1005;
 	struct {
-	    unsigned int station_id;	/* Reference Station ID */
-	    int system;		/* Which system is it? */
-	    bool reference_station;	/* Reference-station indicator */
-	    bool single_receiver;	/* Single Receiver Oscillator */
+	    unsigned int station_id;		/* Reference Station ID */
+	    int system;				/* Which system is it? */
+	    bool reference_station;		/* Reference-station indicator */
+	    bool single_receiver;		/* Single Receiver Oscillator */
 	    double ecef_x, ecef_y, ecef_z;	/* ECEF antenna location */
 	    double height;			/* Antenna height */
 	} rtcm3_1006;
 	struct {
-	    unsigned int station_id;	/* Reference Station ID */
+	    unsigned int station_id;			/* Reference Station ID */
 	    char descriptor[RTCM3_MAX_DESCRIPTOR+1];	/* Description string */
 	    unsigned char setup_id;
 	} rtcm3_1007;
 	struct {
-	    unsigned int station_id;	/* Reference Station ID */
+	    unsigned int station_id;			/* Reference Station ID */
 	    char descriptor[RTCM3_MAX_DESCRIPTOR+1];	/* Description string */
 	    unsigned char setup_id;
 	    char serial[RTCM3_MAX_DESCRIPTOR+1];	/* Serial # string */
@@ -477,199 +475,201 @@ typedef /*@unsignedintegraltype@*/ unsigned int gps_mask_t;
 
 struct ais_t
 {
-    uint	type;		/* message type */
-    uint    	repeat;		/* Repeat indicator */
-    uint	mmsi;		/* MMSI */
+    unsigned int	type;		/* message type */
+    unsigned int    	repeat;		/* Repeat indicator */
+    unsigned int	mmsi;		/* MMSI */
     union {
 	/* Types 1-3 Common navigation info */
 	struct {
-	    uint status;		/* navigation status */
+	    unsigned int status;		/* navigation status */
 	    signed turn;			/* rate of turn */
 #define AIS_TURN_HARD_LEFT	-127
 #define AIS_TURN_HARD_RIGHT	127
 #define AIS_TURN_NOT_AVAILABLE	128
-	    uint speed;			/* speed over ground in deciknots */
+	    unsigned int speed;			/* speed over ground in deciknots */
 #define AIS_SPEED_NOT_AVAILABLE	1023
-#define AIS_SPEED_FAST_MOVER	1022	/* >= 102.2 knots */
-	    bool accuracy;		/* position accuracy */
+#define AIS_SPEED_FAST_MOVER	1022		/* >= 102.2 knots */
+	    bool accuracy;			/* position accuracy */
 #define AIS_LATLON_SCALE	600000.0
-	    int lon;			/* longitude */
+	    int lon;				/* longitude */
 #define AIS_LON_NOT_AVAILABLE	0x6791AC0
-	    int lat;			/* latitude */
+	    int lat;				/* latitude */
 #define AIS_LAT_NOT_AVAILABLE	0x3412140
-	    uint course;		/* course over ground */
+	    unsigned int course;		/* course over ground */
 #define AIS_COURSE_NOT_AVAILABLE	3600
-	    uint heading;		/* true heading */
+	    unsigned int heading;		/* true heading */
 #define AIS_HEADING_NOT_AVAILABLE	511
-	    uint second;		/* seconds of UTC timestamp */
+	    unsigned int second;		/* seconds of UTC timestamp */
 #define AIS_SEC_NOT_AVAILABLE	60
 #define AIS_SEC_MANUAL		61
 #define AIS_SEC_ESTIMATED	62
 #define AIS_SEC_INOPERATIVE	63
-	    uint maneuver;		/* maneuver indicator */
-	    //uint spare;		spare bits */
+	    unsigned int maneuver;	/* maneuver indicator */
+	    //unsigned int spare;	spare bits */
 	    bool raim;			/* RAIM flag */
-	    uint radio;			/* radio status bits */
+	    unsigned int radio;		/* radio status bits */
 	} type1;
 	/* Type 4 - Base Station Report & Type 11 - UTC and Date Response */
 	struct {
-	    uint year;			/* UTC year */
+	    unsigned int year;			/* UTC year */
 #define AIS_YEAR_NOT_AVAILABLE	0
-	    uint month;			/* UTC month */
+	    unsigned int month;			/* UTC month */
 #define AIS_MONTH_NOT_AVAILABLE	0
-	    uint day;			/* UTC day */
+	    unsigned int day;			/* UTC day */
 #define AIS_DAY_NOT_AVAILABLE	0
-	    uint hour;			/* UTC hour */
+	    unsigned int hour;			/* UTC hour */
 #define AIS_HOUR_NOT_AVAILABLE	24
-	    uint minute;		/* UTC minute */
+	    unsigned int minute;		/* UTC minute */
 #define AIS_MINUTE_NOT_AVAILABLE	60
-	    uint second;		/* UTC second */
+	    unsigned int second;		/* UTC second */
 #define AIS_SECOND_NOT_AVAILABLE	60
 	    bool accuracy;		/* fix quality */
 	    int lon;			/* longitude */
 	    int lat;			/* latitude */
-	    uint epfd;			/* type of position fix device */
-	    //uint spare;		spare bits */
+	    unsigned int epfd;		/* type of position fix device */
+	    //unsigned int spare;	spare bits */
 	    bool raim;			/* RAIM flag */
-	    uint radio;			/* radio status bits */
+	    unsigned int radio;		/* radio status bits */
 	} type4;
 	/* Type 5 - Ship static and voyage related data */
 	struct {
-	    uint ais_version;		/* AIS version level */
-	    uint imo;			/* IMO identification */
+	    unsigned int ais_version;	/* AIS version level */
+	    unsigned int imo;		/* IMO identification */
 	    char callsign[8];		/* callsign */ 
 #define AIS_SHIPNAME_MAXLEN	20
 	    char shipname[AIS_SHIPNAME_MAXLEN+1];	/* vessel name */
-	    uint shiptype;		/* ship type code */
-	    uint to_bow;		/* dimension to bow */
-	    uint to_stern;		/* dimension to stern */
-	    uint to_port;		/* dimension to port */
-	    uint to_starboard;		/* dimension to starboard */
-	    uint epfd;			/* type of position fix deviuce */
-	    uint month;			/* UTC month */
-	    uint day;			/* UTC day */
-	    uint hour;			/* UTC hour */
-	    uint minute;		/* UTC minute */
-	    uint draught;		/* draft in meters */
+	    unsigned int shiptype;	/* ship type code */
+	    unsigned int to_bow;	/* dimension to bow */
+	    unsigned int to_stern;	/* dimension to stern */
+	    unsigned int to_port;	/* dimension to port */
+	    unsigned int to_starboard;	/* dimension to starboard */
+	    unsigned int epfd;		/* type of position fix deviuce */
+	    unsigned int month;		/* UTC month */
+	    unsigned int day;		/* UTC day */
+	    unsigned int hour;		/* UTC hour */
+	    unsigned int minute;	/* UTC minute */
+	    unsigned int draught;	/* draft in meters */
 	    char destination[21];	/* ship destination */
-	    uint dte;			/* data terminal enable */
-	    //uint spare;		spare bits */
+	    unsigned int dte;		/* data terminal enable */
+	    //unsigned int spare;	spare bits */
 	} type5;
 	/* Type 6 - Addressed Binary Message */
 	struct {
-	    uint seqno;			/* sequence number */
-	    uint dest_mmsi;		/* destination MMSI */
+	    unsigned int seqno;		/* sequence number */
+	    unsigned int dest_mmsi;	/* destination MMSI */
 	    bool retransmit;		/* retransmit flag */
-	    //uint spare;		spare bit(s) */
-	    uint app_id;        	/* Application ID */
+	    //unsigned int spare;	spare bit(s) */
+	    unsigned int app_id;        /* Application ID */
 #define AIS_TYPE6_BINARY_MAX	920	/* 920 bits */
 	    size_t bitcount;		/* bit count of the data */
 	    char bitdata[(AIS_TYPE6_BINARY_MAX + 7) / 8];
 	} type6;
 	/* Type 7 - Binary Acknowledge */
 	struct {
-	    uint mmsi1;
-	    uint mmsi2;
-	    uint mmsi3;
-	    uint mmsi4;
+	    unsigned int mmsi1;
+	    unsigned int mmsi2;
+	    unsigned int mmsi3;
+	    unsigned int mmsi4;
 	    /* spares ignored, they're only padding here */
 	} type7;
 	/* Type 8 - Broadcast Binary Message */
 	struct {
-	    //uint spare;		spare bit(s) */
-	    uint app_id;        	/* Application ID */
+	    //unsigned int spare;	spare bit(s) */
+	    unsigned int app_id;       	/* Application ID */
 #define AIS_TYPE8_BINARY_MAX	952	/* 952 bits */
 	    size_t bitcount;		/* bit count of the data */
 	    char bitdata[(AIS_TYPE8_BINARY_MAX + 7) / 8];
 	} type8;
 	/* Type 9 - Standard SAR Aircraft Position Report */
 	struct {
-	    uint alt;			/* altitude in meters */
+	    unsigned int alt;		/* altitude in meters */
 #define AIS_ALT_NOT_AVAILABLE	4095
-#define AIS_ALT_FAST_MOVER	4094	/* 4094 meters or higher */
-	    uint speed;			/* speed over ground in deciknots */
+#define AIS_ALT_HIGH    	4094	/* 4094 meters or higher */
+	    unsigned int speed;		/* speed over ground in deciknots */
+#define AIS_SAR_SPEED_NOT_AVAILABLE	1023
+#define AIS_SAR_FAST_MOVER  	1022
 	    bool accuracy;		/* position accuracy */
 	    int lon;			/* longitude */
 	    int lat;			/* latitude */
-	    uint course;		/* course over ground */
-	    uint second;		/* seconds of UTC timestamp */
-	    uint regional;		/* regional reserved */
-	    uint dte;			/* data terminal enable */
-	    //uint spare;		spare bits */
+	    unsigned int course;	/* course over ground */
+	    unsigned int second;	/* seconds of UTC timestamp */
+	    unsigned int regional;	/* regional reserved */
+	    unsigned int dte;		/* data terminal enable */
+	    //unsigned int spare;	spare bits */
 	    bool assigned;		/* assigned-mode flag */
 	    bool raim;			/* RAIM flag */
-	    uint radio;			/* radio status bits */
+	    unsigned int radio;		/* radio status bits */
 	} type9;
 	/* Type 10 - UTC/Date Inquiry */
 	struct {
-	    //uint spare;
-	    uint dest_mmsi;		/* destination MMSI */
-	    //uint spare2;
+	    //unsigned int spare;
+	    unsigned int dest_mmsi;	/* destination MMSI */
+	    //unsigned int spare2;
 	} type10;
 	/* Type 12 - Safety-Related Message */
 	struct {
-	    uint seqno;			/* sequence number */
-	    uint dest_mmsi;		/* destination MMSI */
+	    unsigned int seqno;		/* sequence number */
+	    unsigned int dest_mmsi;	/* destination MMSI */
 	    bool retransmit;		/* retransmit flag */
-	    //uint spare;		spare bit(s) */
+	    //unsigned int spare;	spare bit(s) */
 #define AIS_TYPE12_TEXT_MAX	157	/* 936 bits of six-bit, plus NUL */
 	    char text[AIS_TYPE12_TEXT_MAX];
 	} type12;
 	/* Type 14 - Safety-Related Broadcast Message */
 	struct {
-	    //uint spare;		spare bit(s) */
+	    //unsigned int spare;	spare bit(s) */
 #define AIS_TYPE14_TEXT_MAX	161	/* 952 bits of six-bit, plus NUL */
 	    char text[AIS_TYPE14_TEXT_MAX];
 	} type14;
 	/* Type 15 - Interrogation */
 	struct {
-	    //uint spare;		spare bit(s) */
-	    uint mmsi1;
-	    uint type1_1;
-	    uint offset1_1;
-	    //uint spare2;		spare bit(s) */
-	    uint type1_2;
-	    uint offset1_2;
-	    //uint spare3;		spare bit(s) */
-	    uint mmsi2;
-	    uint type2_1;
-	    uint offset2_1;
-	    //uint spare4;		spare bit(s) */
+	    //unsigned int spare;	spare bit(s) */
+	    unsigned int mmsi1;
+	    unsigned int type1_1;
+	    unsigned int offset1_1;
+	    //unsigned int spare2;	spare bit(s) */
+	    unsigned int type1_2;
+	    unsigned int offset1_2;
+	    //unsigned int spare3;	spare bit(s) */
+	    unsigned int mmsi2;
+	    unsigned int type2_1;
+	    unsigned int offset2_1;
+	    //unsigned int spare4;	spare bit(s) */
 	} type15;
 	/* Type 16 - Assigned Mode Command */
 	struct {
-	    //uint spare;		spare bit(s) */
-	    uint mmsi1;
-	    uint offset1;
-	    uint increment1;
-	    uint mmsi2;
-	    uint offset2;
-	    uint increment2;
+	    //unsigned int spare;	spare bit(s) */
+	    unsigned int mmsi1;
+	    unsigned int offset1;
+	    unsigned int increment1;
+	    unsigned int mmsi2;
+	    unsigned int offset2;
+	    unsigned int increment2;
 	} type16;
 	/* Type 17 - GNSS Broadcast Binary Message */
 	struct {
-	    //uint spare;		spare bit(s) */
+	    //unsigned int spare;	spare bit(s) */
 #define AIS_GNSS_LATLON_SCALE	600.0
 	    int lon;			/* longitude */
 	    int lat;			/* latitude */
-	    //uint spare2;		spare bit(s) */
+	    //unsigned int spare2;	spare bit(s) */
 #define AIS_TYPE17_BINARY_MAX	736	/* 920 bits */
 	    size_t bitcount;		/* bit count of the data */
 	    char bitdata[(AIS_TYPE17_BINARY_MAX + 7) / 8];
 	} type17;
 	/* Type 18 - Standard Class B CS Position Report */
 	struct {
-	    uint reserved;		/* altitude in meters */
-	    uint speed;			/* speed over ground in deciknots */
+	    unsigned int reserved;	/* altitude in meters */
+	    unsigned int speed;		/* speed over ground in deciknots */
 	    bool accuracy;		/* position accuracy */
 	    int lon;			/* longitude */
 #define AIS_GNS_LON_NOT_AVAILABLE	0x1a838
 	    int lat;			/* latitude */
 #define AIS_GNS_LAT_NOT_AVAILABLE	0xd548
-	    uint course;		/* course over ground */
-	    uint heading;		/* true heading */
-	    uint second;		/* seconds of UTC timestamp */
-	    uint regional;		/* regional reserved */
+	    unsigned int course;	/* course over ground */
+	    unsigned int heading;	/* true heading */
+	    unsigned int second;	/* seconds of UTC timestamp */
+	    unsigned int regional;	/* regional reserved */
 	    bool cs;     		/* carrier sense unit flag */
 	    bool display;		/* unit has attached display? */
 	    bool dsc;   		/* unit attached to radio with DSC? */
@@ -677,119 +677,148 @@ struct ais_t
 	    bool msg22;	        	/* can accept Message 22 management? */
 	    bool assigned;		/* assigned-mode flag */
 	    bool raim;			/* RAIM flag */
-	    uint radio;			/* radio status bits */
+	    unsigned int radio;		/* radio status bits */
 	} type18;
 	/* Type 19 - Extended Class B CS Position Report */
 	struct {
-	    uint reserved;		/* altitude in meters */
-	    uint speed;			/* speed over ground in deciknots */
+	    unsigned int reserved;	/* altitude in meters */
+	    unsigned int speed;		/* speed over ground in deciknots */
 	    bool accuracy;		/* position accuracy */
 	    int lon;			/* longitude */
 	    int lat;			/* latitude */
-	    uint course;		/* course over ground */
-	    uint heading;		/* true heading */
-	    uint second;		/* seconds of UTC timestamp */
-	    uint regional;		/* regional reserved */
+	    unsigned int course;	/* course over ground */
+	    unsigned int heading;	/* true heading */
+	    unsigned int second;	/* seconds of UTC timestamp */
+	    unsigned int regional;	/* regional reserved */
 	    char shipname[AIS_SHIPNAME_MAXLEN+1];		/* ship name */
-	    uint shiptype;		/* ship type code */
-	    uint to_bow;		/* dimension to bow */
-	    uint to_stern;		/* dimension to stern */
-	    uint to_port;		/* dimension to port */
-	    uint to_starboard;		/* dimension to starboard */
-	    uint epfd;			/* type of position fix deviuce */
+	    unsigned int shiptype;	/* ship type code */
+	    unsigned int to_bow;	/* dimension to bow */
+	    unsigned int to_stern;	/* dimension to stern */
+	    unsigned int to_port;	/* dimension to port */
+	    unsigned int to_starboard;	/* dimension to starboard */
+	    unsigned int epfd;		/* type of position fix deviuce */
 	    bool raim;			/* RAIM flag */
-	    uint dte;    		/* date terminal enable */
+	    unsigned int dte;    	/* date terminal enable */
 	    bool assigned;		/* assigned-mode flag */
-	    //uint spare;		spare bits */
+	    //unsigned int spare;	spare bits */
 	} type19;
 	/* Type 20 - Data Link Management Message */
 	struct {
-	    //uint spare;		spare bit(s) */
-	    uint offset1;		/* TDMA slot offset */
-	    uint number1;		/* number of xlots to allocate */
-	    uint timeout1;		/* allocation timeout */
-	    uint increment1;		/* repeat increment */
-	    uint offset2;		/* TDMA slot offset */
-	    uint number2;		/* number of xlots to allocate */
-	    uint timeout2;		/* allocation timeout */
-	    uint increment2;		/* repeat increment */
-	    uint offset3;		/* TDMA slot offset */
-	    uint number3;		/* number of xlots to allocate */
-	    uint timeout3;		/* allocation timeout */
-	    uint increment3;		/* repeat increment */
-	    uint offset4;		/* TDMA slot offset */
-	    uint number4;		/* number of xlots to allocate */
-	    uint timeout4;		/* allocation timeout */
-	    uint increment4;		/* repeat increment */
+	    //unsigned int spare;	spare bit(s) */
+	    unsigned int offset1;	/* TDMA slot offset */
+	    unsigned int number1;	/* number of xlots to allocate */
+	    unsigned int timeout1;	/* allocation timeout */
+	    unsigned int increment1;	/* repeat increment */
+	    unsigned int offset2;	/* TDMA slot offset */
+	    unsigned int number2;	/* number of xlots to allocate */
+	    unsigned int timeout2;	/* allocation timeout */
+	    unsigned int increment2;	/* repeat increment */
+	    unsigned int offset3;	/* TDMA slot offset */
+	    unsigned int number3;	/* number of xlots to allocate */
+	    unsigned int timeout3;	/* allocation timeout */
+	    unsigned int increment3;	/* repeat increment */
+	    unsigned int offset4;	/* TDMA slot offset */
+	    unsigned int number4;	/* number of xlots to allocate */
+	    unsigned int timeout4;	/* allocation timeout */
+	    unsigned int increment4;	/* repeat increment */
 	} type20;
 	/* Type 21 - Aids to Navigation Report */
 	struct {
-	    uint aid_type;		/* aid type */
+	    unsigned int aid_type;	/* aid type */
 	    char name[35];		/* name of aid to navigation */
 	    bool accuracy;		/* position accuracy */
 	    int lon;			/* longitude */
 	    int lat;			/* latitude */
-	    uint to_bow;		/* dimension to bow */
-	    uint to_stern;		/* dimension to stern */
-	    uint to_port;		/* dimension to port */
-	    uint to_starboard;		/* dimension to starboard */
-	    uint epfd;			/* type of EPFD */
-	    uint second;		/* second of UTC timestamp */
+	    unsigned int to_bow;	/* dimension to bow */
+	    unsigned int to_stern;	/* dimension to stern */
+	    unsigned int to_port;	/* dimension to port */
+	    unsigned int to_starboard;	/* dimension to starboard */
+	    unsigned int epfd;		/* type of EPFD */
+	    unsigned int second;	/* second of UTC timestamp */
 	    bool off_position;		/* off-position indicator */
-	    uint regional;		/* regional reserved field */
+	    unsigned int regional;	/* regional reserved field */
 	    bool raim;			/* RAIM flag */
 	    bool virtual_aid;		/* is virtual station? */
 	    bool assigned;		/* assigned-mode flag */
-	    //uint spare;		unused */
+	    //unsigned int spare;	unused */
 	} type21;
 	/* Type 22 - Channel Management */
 	struct {
-	    //uint spare;		spare bit(s) */
-	    uint channel_a;		/* Channel A number */
-	    uint channel_b;		/* Channel B number */
-	    uint txrx;			/* transmit/receive mode */
+	    //unsigned int spare;	spare bit(s) */
+	    unsigned int channel_a;	/* Channel A number */
+	    unsigned int channel_b;	/* Channel B number */
+	    unsigned int txrx;		/* transmit/receive mode */
 	    bool power;			/* high-power flag */
 #define AIS_CHANNEL_LATLON_SCALE	600.0
-	    int ne_lon;			/* NE corner longitude */
-	    int ne_lat;			/* NE corner latitude */
-	    int sw_lon;			/* SW corner longitude */
-	    int sw_lat;			/* SW corner latitude */
+	    union {
+		struct {
+		    int ne_lon;		/* NE corner longitude */
+		    int ne_lat;		/* NE corner latitude */
+		    int sw_lon;		/* SW corner longitude */
+		    int sw_lat;		/* SW corner latitude */
+		} area;
+		struct {
+		    unsigned int dest1;	/* addressed station MMSI 1 */
+		    unsigned int dest2;	/* addressed station MMSI 2 */
+		} mmsi;
+	    };
 	    bool addressed;		/* addressed vs. broadast flag */
 	    bool band_a;		/* fix 1.5kHz band for channel A */
 	    bool band_b;		/* fix 1.5kHz band for channel B */
-	    uint zonesize;		/* size of transitional zone */
+	    unsigned int zonesize;	/* size of transitional zone */
 	} type22;
 	/* Type 23 - Group Assignment Command */
 	struct {
-	    //uint spare;		spare bit(s) */
 	    int ne_lon;			/* NE corner longitude */
 	    int ne_lat;			/* NE corner latitude */
 	    int sw_lon;			/* SW corner longitude */
 	    int sw_lat;			/* SW corner latitude */
-	    uint stationtype;		/* station type code */
-	    uint shiptype;		/* ship type code */
-	    //uint spare2;		spare bit(s) */
-	    uint txrx;			/* transmit-enable code */
-	    uint interval;		/* report interval */
-	    uint quiet;			/* quiet time */
-	    //uint spare3;		spare bit(s) */
+	    //unsigned int spare;	spare bit(s) */
+	    unsigned int stationtype;	/* station type code */
+	    unsigned int shiptype;	/* ship type code */
+	    //unsigned int spare2;	spare bit(s) */
+	    unsigned int txrx;		/* transmit-enable code */
+	    unsigned int interval;	/* report interval */
+	    unsigned int quiet;		/* quiet time */
+	    //unsigned int spare3;	spare bit(s) */
 	} type23;
 	/* Type 24 - Class B CS Static Data Report */
 	struct {
 	    char shipname[AIS_SHIPNAME_MAXLEN+1];	/* vessel name */
-	    uint shiptype;		/* ship type code */
+	    unsigned int shiptype;	/* ship type code */
 	    char vendorid[8];		/* vendor ID */
 	    char callsign[8];		/* callsign */
 	    union {
-		uint mothership_mmsi;	/* MMSI of main vessel */
+		unsigned int mothership_mmsi;	/* MMSI of main vessel */
 		struct {
-		    uint to_bow;	/* dimension to bow */
-		    uint to_stern;	/* dimension to stern */
-		    uint to_port;	/* dimension to port */
-		    uint to_starboard;	/* dimension to starboard */
+		    unsigned int to_bow;	/* dimension to bow */
+		    unsigned int to_stern;	/* dimension to stern */
+		    unsigned int to_port;	/* dimension to port */
+		    unsigned int to_starboard;	/* dimension to starboard */
 		} dim;
 	    };
 	} type24;
+	/* Type 25 - Addressed Binary Message */
+	struct {
+	    bool addressed;		/* addressed-vs.broadcast flag */
+	    bool structured;		/* structured-binary flag */
+	    unsigned int dest_mmsi;	/* destination MMSI */
+	    unsigned int app_id;        /* Application ID */
+#define AIS_TYPE25_BINARY_MAX	128	/* Up to 128 bits */
+	    size_t bitcount;		/* bit count of the data */
+	    char bitdata[(AIS_TYPE25_BINARY_MAX + 7) / 8];
+	} type25;
+	/* Type 26 - Addressed Binary Message */
+	struct {
+	    bool addressed;		/* addressed-vs.broadcast flag */
+	    bool structured;		/* structured-binary flag */
+	    unsigned int dest_mmsi;	/* destination MMSI */
+	    unsigned int app_id;        /* Application ID */
+#define AIS_TYPE26_BINARY_MAX	1004	/* Up to 128 bits */
+	    size_t bitcount;		/* bit count of the data */
+	    char bitdata[(AIS_TYPE26_BINARY_MAX + 7) / 8];
+	    unsigned int radio;		/* radio status bits */
+	} type26;
     };
 };
 
@@ -842,8 +871,8 @@ struct rawdata_t {
 #define TYPES_PER_DEVICE	4
 
 struct version_t {
-    char release[64];		/* external version */
-    char rev[64];		/* internal revision ID */
+    char release[64];			/* external version */
+    char rev[64];			/* internal revision ID */
     int proto_major, proto_minor;	/* API major and minor versions */
 };
 
@@ -857,7 +886,7 @@ struct devconfig_t {
     char driver[64];
     char subtype[64];
     double activated;
-    uint baudrate, stopbits;		/* RS232 link parameters */
+    unsigned int baudrate, stopbits;	/* RS232 link parameters */
     char parity;			/* 'N', 'O', or 'E' */
     double cycle, mincycle;     	/* refresh cycle time in seconds */
     int driver_mode;    		/* is driver in native mode or not? */
@@ -874,6 +903,14 @@ struct policy_t {
 };
 
 /* this is the main structure that includes all previous substructures */
+
+/* 
+ * Someday we may support Windows, under which socket_t is a separate type.
+ * In the meantime, having a typedef for this semantic kind is no bad thing,
+ * as it makes clearer what some declarations are doing without breaking
+ * binary compatibility. 
+ */
+typedef int socket_t;
 
 struct gps_data_t {
     gps_mask_t set;	/* has field been set since this was last cleared? */
@@ -893,7 +930,6 @@ struct gps_data_t {
 #define VERR_SET	0x00002000u
 #define PERR_SET	0x00004000u
 #define POLICY_SET	0x00008000u	/* only used in client library */
-#define ERR_SET		(HERR_SET|VERR_SET|PERR_SET)
 #define SATELLITE_SET	0x00010000u
 #define RAW_SET		0x00020000u
 #define USED_SET	0x00040000u
@@ -907,7 +943,7 @@ struct gps_data_t {
 #define RTCM2_SET	0x04000000u
 #define RTCM3_SET	0x08000000u
 #define AIS_SET 	0x10000000u
-#define PACKET_SET	0x20000000u	/* only used in the daemon */
+#define PACKET_SET	0x20000000u
 #define CLEAR_SET	0x40000000u	/* sentence starts a reporting cycle */
 #define REPORT_SET	0x80000000u	/* sentence ends a reporting cycle */
 #define DATA_SET	~(ONLINE_SET|PACKET_SET|CLEAR_SET|REPORT_SET)
@@ -921,7 +957,7 @@ struct gps_data_t {
 				 * prone to false zero values.
 				 */
 
-    int gps_fd;			/* socket or file descriptor to GPS */
+    socket_t gps_fd;		/* socket or file descriptor to GPS */
     struct gps_fix_t	fix;	/* accumulated PVT data */
 
     double separation;		/* Geoidal separation, MSL - WGS84 (Meters) */
@@ -980,15 +1016,17 @@ struct gps_data_t {
 };
 
 /* mode flags for gps_stream() */
-#define WATCH_DISABLE	0x00u	/* disable watching */
-#define WATCH_ENABLE	0x01u	/* enable streaming */
-#define WATCH_JSON	0x02u	/* enable JSON output */
-#define WATCH_NMEA	0x04u	/* enable output in NMEA */
-#define WATCH_RARE	0x08u	/* enable output of packets in hex */
-#define WATCH_RAW	0x10u	/* enable output of raw packets */
-#define WATCH_SCALED	0x20u	/* scale output to floats, when applicable */ 
-#define WATCH_NEWSTYLE	0x40u	/* force JSON streaming */
-#define WATCH_OLDSTYLE	0x80u	/* force old-style streaming */
+#define WATCH_DISABLE	0x000u	/* disable watching */
+#define WATCH_ENABLE	0x0001u	/* enable streaming */
+#define WATCH_JSON	0x0002u	/* enable JSON output */
+#define WATCH_NMEA	0x0004u	/* enable output in NMEA */
+#define WATCH_RARE	0x0008u	/* enable output of packets in hex */
+#define WATCH_RAW	0x0010u	/* enable output of raw packets */
+#define WATCH_SCALED	0x0020u	/* scale output to floats, when applicable */ 
+#define WATCH_NEWSTYLE	0x0040u	/* force JSON streaming */
+#define WATCH_OLDSTYLE	0x0080u	/* force old-style streaming */
+#define WATCH_DEVICE	0x0100u	/* watch specific device */
+#define POLL_NONBLOCK	0x1000u	/* set non-blocking poll */
 
 extern int gps_open_r(const char *host, const char *port, 
 		      /*@out@*/struct gps_data_t *gpsdata);
@@ -996,7 +1034,10 @@ extern /*@null@*/struct gps_data_t *gps_open(const char *host,const char *port);
 extern int gps_close(struct gps_data_t *);
 extern int gps_send(struct gps_data_t *gpsdata, const char *fmt, ... );
 extern int gps_poll(struct gps_data_t *gpsdata);
-extern int gps_stream(struct gps_data_t *gpsdata, unsigned int flags, /*@null@*/void *);
+extern bool gps_waiting(struct gps_data_t *gpsdata);
+extern int gps_stream(struct gps_data_t *gpsdata, 
+		      unsigned int flags, 
+		      /*@null@*/void *);
 extern void gps_set_raw_hook(struct gps_data_t *gpsdata, void (*hook)(struct gps_data_t *sentence, char *buf, size_t len));
 extern char /*@observer@*/ *gps_errstr(const int);
 

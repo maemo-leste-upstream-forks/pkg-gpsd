@@ -1,4 +1,4 @@
-/* $Id: driver_garmin.c 6688 2009-12-03 08:41:20Z esr $ */
+/* $Id: driver_garmin.c 7016 2010-03-01 22:29:14Z garyemiller $ */
 /*
  * This file contains two drivers for Garmin receivers and some code
  * shared by both drivers.
@@ -1269,7 +1269,9 @@ const struct gps_type_t garmin_usb_binary =
     .event_hook     = garmin_event_hook,/* lifetime ebent handler */
 #ifdef ALLOW_RECONFIGURE
     .speed_switcher = NULL,		/* no speed switcher */
-    .mode_switcher  = garmin_switcher,	/* how to change modes */
+
+					/* Garmin USB Binary has no NMEA */
+    .mode_switcher  = NULL,	        /* how to change modes */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
     .min_cycle      = 1,		/* not relevant, no rate switch */
 #endif /* ALLOW_RECONFIGURE */

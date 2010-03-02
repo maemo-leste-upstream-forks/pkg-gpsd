@@ -1,4 +1,4 @@
-/* $Id: lcdgps.c 6511 2009-11-17 10:31:52Z esr $ */
+/* $Id: lcdgps.c 7014 2010-03-01 21:27:59Z esr $ */
 /*
  * Copyright (c) 2005 Jeff Francis <jeff@gritch.org>
  *
@@ -35,8 +35,9 @@
 
 #define CLIMB 3
 
-#include <stdio.h>
 #include <stdlib.h>
+#include "gpsd_config.h"
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #ifndef S_SPLINT_S
@@ -44,20 +45,32 @@
 #endif /* S_SPLINT_S */
 #include <math.h>
 #include <errno.h>
-#include <sys/select.h>
+#ifdef HAVE_SYS_SELECT_H
+ #include <sys/select.h>
+#endif /* HAVE_SYS_SELECT_H */
 #ifndef S_SPLINT_S
-#include <sys/socket.h>
+ #ifdef HAVE_SYS_SOCKET_H
+  #include <sys/socket.h>
+ #endif /* HAVE_SYS_SOCKET_H */
 #endif /* S_SPLINT_S */
 
 #include <sys/time.h> /* select() */
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <termios.h>
+#ifdef HAVE_TERMIOS_H
+ #include <termios.h>
+#endif /* HAVE_TERMIOS_H */
 
 #ifndef S_SPLINT_S
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
+ #ifdef HAVE_NETINET_IN_H
+  #include <netinet/in.h>
+ #endif /* HAVE_NETINET_IN_H */
+ #ifdef HAVE_ARPA_INET_H
+  #include <arpa/inet.h>
+ #endif /* HAVE_ARPA_INET_H */
+ #ifdef HAVE_NETDB_H
+  #include <netdb.h>
+ #endif /* HAVE_NETDB_H */
 #endif /* S_SPLINT_S */
 #include <errno.h>
 
@@ -216,15 +229,17 @@ ssize_t sockwriteline(int sockd,const void *vptr,size_t n) {
 int send_lcd(char *buf) {
 
   int res;
-  char rcvbuf[255];
+  char rcvbuf[256];
+  size_t outlen;
 
   /* Limit the size of outgoing strings. */
-  if(strlen(buf)>255) {
-    buf[255]=0;
+  outlen = strlen(buf);
+  if(outlen > 255) {
+    outlen = 256;
   }
 
   /* send the command */
-  res=sockwriteline(sd,buf,strlen(buf));
+  res=sockwriteline(sd,buf,outlen);
 
   /* TODO:  check return status */
 
@@ -364,11 +379,38 @@ int main(int argc, char *argv[])
     for(n=0;n<CLIMB;n++) climb[n]=0.0;
 #endif 
 
+    /*@ -observertrans @*/
+    switch (gpsd_units())
+    {
+    case imperial:
+	altfactor = METERS_TO_FEET;
+	altunits = "ft";
+	speedfactor = MPS_TO_MPH;
+	speedunits = "mph";
+	break;
+    case nautical:
+	altfactor = METERS_TO_FEET;
+	altunits = "ft";
+	speedfactor = MPS_TO_KNOTS;
+	speedunits = "knots";
+	break;
+    case metric:
+	altfactor = 1;
+	altunits = "m";
+	speedfactor = MPS_TO_KPH;
+	speedunits = "kph";
+	break;
+    default:
+	/* leave the default alone */
+	break;
+    }
+    /*@ +observertrans @*/
+
     /* Process the options.  Print help if requested. */
     while ((option = getopt(argc, argv, "Vhl:su:")) != -1) {
 	switch (option) {
 	case 'V':
-	    (void)fprintf(stderr, "$Id: lcdgps.c 6511 2009-11-17 10:31:52Z esr $\n");
+	    (void)fprintf(stderr, "$Id: lcdgps.c 7014 2010-03-01 21:27:59Z esr $\n");
 	    exit(0);
 	case 'h':
 	default:

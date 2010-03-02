@@ -80,6 +80,9 @@
 /* Define to 1 if you have the <getopt.h> header file. */
 #define HAVE_GETOPT_H 1
 
+/* Define to 1 if you have the <grp.h> header file. */
+#define HAVE_GRP_H 1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
@@ -88,9 +91,6 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
-
-/* Motif available */
-#define HAVE_MOTIF 1
 
 /* Define to 1 if you have the <ncurses.h> header file. */
 #define HAVE_NCURSES_H 1
@@ -109,6 +109,9 @@
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
 #define HAVE_NETINET_TCP_H 1
+
+/* Define to 1 if you have the <pwd.h> header file. */
+#define HAVE_PWD_H 1
 
 /* Define to 1 if you have the <Python.h> header file. */
 #define HAVE_PYTHON_H 1
@@ -143,6 +146,12 @@
 /* Define to 1 if `struct tm' is a member of `tm_zone'. */
 #define HAVE_STRUCT_TM_TM_ZONE 1
 
+/* Define to 1 if you have the <syslog.h> header file. */
+#define HAVE_SYSLOG_H 1
+
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#define HAVE_SYS_IOCTL_H 1
+
 /* Define to 1 if you have the <sys/ipc.h> header file. */
 #define HAVE_SYS_IPC_H 1
 
@@ -170,6 +179,9 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H 1
 
+/* Define to 1 if you have the <sys/un.h> header file. */
+#define HAVE_SYS_UN_H 1
+
 /* Define to 1 if you have the <termios.h> header file. */
 #define HAVE_TERMIOS_H 1
 
@@ -195,9 +207,6 @@
 
 /* Define to 1 if you have the <X11/xpm.h> header file. */
 #define HAVE_X11_XPM_H 1
-
-/* Xp available */
-#define HAVE_XP 1
 
 /* Xpm available */
 #define HAVE_XPM 1
@@ -347,7 +356,7 @@
 #define UBX_ENABLE 1
 
 /* Version number of package */
-#define VERSION "2.90"
+#define VERSION "2.91"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

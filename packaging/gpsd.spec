@@ -2,7 +2,7 @@
 
 Name: gpsd
 Summary: Service daemon for mediating access to a GPS
-Version: 2.90
+Version: 2.91
 Release: 1
 License: BSD
 Group: System Environment/Daemons
@@ -45,10 +45,7 @@ You will need to have gpsd installed for it to work.
 %package clients
 Summary: Clients for gpsd with an X interface
 Group: Applications/System
-BuildRequires: lesstif-devel
-#############################################################################
-#  libXaw-devel was repackaged for FC6; on FC<6 this package is not required #
-#############################################################################
+BuildRequires: pygtk
 BuildRequires: libXaw-devel
 
 %description clients
@@ -57,7 +54,7 @@ current GPS position/time/velocity information and (for GPSes that
 support the feature) the locations of accessible satellites.
 
 xgpsspeed is a speedometer that uses position information from the GPS.
-It accepts an -h option and optional argument as for gps, or a -v option
+It accepts an -h option and optional argument as for gps, or a -V option
 to dump the package version and exit. Additionally, it accepts -rv
 (reverse video) and -nc (needle color) options.
 
@@ -121,7 +118,7 @@ cp packaging/etc_init.d_gpsd_rpm "$RPM_BUILD_ROOT"/etc/rc.d/init.d/gpsd
 %{_sysconfdir}/hotplug/usb/gpsd.hotplug
 %{_sysconfdir}/hotplug/usb/gpsd.usermap
 %attr(755, root, root) /etc/rc.d/init.d/gpsd
-%attr(755, root, root) /usr/lib/python*/site-packages/gps.py*
+%attr(755, root, root) /usr/lib/python*/site-packages/gps/*
 %attr(755, root, root) /usr/lib/python*/site-packages/gpscap.py*
 #%{_datadir}/gpsd/dgpsip-servers
 
@@ -131,9 +128,6 @@ cp packaging/etc_init.d_gpsd_rpm "$RPM_BUILD_ROOT"/etc/rc.d/init.d/gpsd
 %attr(755, root, root) %{_bindir}/gpscat
 %attr(755, root, root) %{_bindir}/gpsfake
 %attr(755, root, root) %{_bindir}/gpsdecode
-/usr/lib/python*/site-packages/gpsfake.py*
-/usr/lib/python*/site-packages/gpspacket.so*
-/usr/lib/python*/site-packages/gpslib.so*
 %{_includedir}/gps.h
 %{_includedir}/libgpsmm.h
 %{_includedir}/gpsd.h
@@ -157,7 +151,6 @@ cp packaging/etc_init.d_gpsd_rpm "$RPM_BUILD_ROOT"/etc/rc.d/init.d/gpsd
 %attr(755, root, root) %{_bindir}/gpxlogger
 %{_mandir}/man1/gps.1*
 %{_mandir}/man1/cgps.1*
-%{_mandir}/man1/cgpxlogger.1*
 %{_mandir}/man1/xgps.1*
 %{_mandir}/man1/xgpsspeed.1*
 %{_mandir}/man1/gpspipe.1*

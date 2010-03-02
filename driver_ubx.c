@@ -1,4 +1,4 @@
-/* $Id: driver_ubx.c 6698 2009-12-04 02:10:11Z esr $
+/* $Id: driver_ubx.c 7014 2010-03-01 21:27:59Z esr $
  *
  * UBX driver
  */
@@ -650,13 +650,13 @@ static void ubx_event_hook(struct gps_device_t *session, event_t event)
 static void ubx_nmea_mode(struct gps_device_t *session, int mode)
 {
     int i;
-    unsigned char buf[20];
+    unsigned char buf[sizeof(session->driver.ubx.original_port_settings)];
 
     if(!session->driver.ubx.have_port_configuration)
 	return;
 
     /*@ +charint -usedef @*/
-    for(i=0;i<22;i++)
+    for(i=0;i<(int)sizeof(session->driver.ubx.original_port_settings);i++)
 	buf[i] = session->driver.ubx.original_port_settings[i];	/* copy the original port settings */
     if(buf[0] == 0x01)				/* set baudrate on serial port only */
 	putlelong(buf, 8, session->gpsdata.dev.baudrate);
@@ -676,11 +676,11 @@ static bool ubx_speed(struct gps_device_t *session,
 		      speed_t speed, char parity, int stopbits)
 {
     int i;
-    unsigned char buf[20];
+    unsigned char buf[sizeof(session->driver.ubx.original_port_settings)];
     unsigned long usart_mode;
 
     /*@ +charint -usedef -compdef */
-    for(i=0;i<22;i++)
+    for(i=0;i<(int)sizeof(session->driver.ubx.original_port_settings);i++)
 	buf[i] = session->driver.ubx.original_port_settings[i];	/* copy the original port settings */
     if((!session->driver.ubx.have_port_configuration) || (buf[0] != 0x01))	/* set baudrate on serial port only */
 	return false;

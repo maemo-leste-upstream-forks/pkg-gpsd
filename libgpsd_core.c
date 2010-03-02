@@ -1,17 +1,26 @@
-/* $Id: libgpsd_core.c 6704 2009-12-04 12:56:36Z esr $ */
+/* $Id: libgpsd_core.c 6920 2010-01-12 19:22:47Z esr $ */
 /* libgpsd_core.c -- direct access to GPSes on serial or USB devices. */
+#include <stdlib.h>
+#include "gpsd_config.h"
 #include <sys/time.h>
-#include <sys/ioctl.h>
+#ifdef HAVE_SYS_IOCTL_H
+ #include <sys/ioctl.h>
+#endif /* HAVE_SYS_IOCTL_H */
 #ifndef S_SPLINT_S
-#include <sys/socket.h>
-#include <unistd.h>
+ #ifdef HAVE_SYS_SOCKET_H
+  #include <sys/socket.h>
+ #else
+  #define AF_UNSPEC 0
+ #endif /* HAVE_SYS_SOCKET_H */
+ #include <unistd.h>
 #endif /* S_SPLINT_S */
 #include <sys/time.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #ifndef S_SPLINT_S
-#include <netdb.h>
+ #ifdef HAVE_NETDB_H
+  #include <netdb.h>
+ #endif /* HAVE_NETDB_H */
 #endif /* S_SPLINT_S */
 #include <string.h>
 #include <errno.h>
@@ -47,6 +56,8 @@ int gpsd_switch_driver(struct gps_device_t *session, char* type_name)
 	    /* reconfiguration might be required */
 	    if (identified && session->device_type->event_hook != NULL)
 		session->device_type->event_hook(session, event_driver_switch);
+	    /* clients should be notified */
+	    session->notify_clients = true;
 	    return 1;
 	}
     gpsd_report(LOG_ERROR, "invalid GPS type \"%s\".\n", type_name);
@@ -65,6 +76,7 @@ void gpsd_init(struct gps_device_t *session, struct gps_context_t *context, char
     session->device_type = NULL;	/* start by hunting packets */
     session->observed = 0;
     session->rtcmtime = 0;
+    session->is_serial = false;		/* gpsd_open() setss this */
     /*@ -temptrans @*/
     session->context = context;
     /*@ +temptrans @*/
@@ -83,7 +95,6 @@ void gpsd_init(struct gps_device_t *session, struct gps_context_t *context, char
 
     /* tty-level initialization */
     gpsd_tty_init(session);
-
     /* necessary in case we start reading in the middle of a GPGSV sequence */
     gpsd_zero_satellites(&session->gpsdata);
 
@@ -168,7 +179,7 @@ static /*@null@*/void *gpsd_ppsmonitor(void *arg)
 			"PPS pps-detect (%s) on %s invisible pulse\n",
 			pps_device_str, session->gpsdata.dev.path);
 	    } else if (++unchanged == 10) {
-		unchanged = 0;
+		unchanged = 1;
 		gpsd_report(LOG_WARN,
 	"PPS TIOCMIWAIT returns unchanged state, ppsmonitor sleeps 10\n");
 		(void)sleep(10);
@@ -264,10 +275,16 @@ static /*@null@*/void *gpsd_ppsmonitor(void *arg)
 		log = "Too long for 1Hz, too short for 2Hz\n";
 	    } else if (2001000 > cycle) {
 		/* looks like 0.5 Hz square wave */
-		ok = 1;
-		log = "PPS square wave\n";
+                if (999000 > duration) {
+                    log = "PPS 0.5 Hz square too short duration\n";
+                } else if (1001000 > duration) {
+                    ok = 1;
+                    log = "PPS 0.5 Hz square wave\n";
+                } else {
+                    log = "PPS 0.5 Hz square too long duration\n";
+                }
 	    } else {
-		log = "Too long for 2Hz\n";
+		log = "Too long for 0.5Hz\n";
 	    }
 	} else {
 	    /* not a good fix, but a test for an otherwise good PPS
@@ -294,7 +311,35 @@ static /*@null@*/void *gpsd_ppsmonitor(void *arg)
 int gpsd_activate(struct gps_device_t *session)
 /* acquire a connection to the GPS device */
 {
-    if (gpsd_open(session) < 0)
+    /* special case: source may be a URI to a remote GNSS or DGPS service */
+    if (netgnss_uri_check(session->gpsdata.dev.path))
+	session->gpsdata.gps_fd = netgnss_uri_open(session->context, 
+						   session->gpsdata.dev.path);
+    /* otherwise, could be an AIS data feed */
+    else if (strncmp(session->gpsdata.dev.path, "ais://", 6) == 0) {
+	char server[GPS_PATH_MAX], *port;
+	socket_t dsock;
+	(void)strlcpy(server, session->gpsdata.dev.path+6, sizeof(server));
+	session->gpsdata.gps_fd = -1;
+	port = strchr(server, ':');
+	if (port == NULL) {
+	    gpsd_report(LOG_ERROR, "Missing colon in AIS feed spec.\n");
+	    return -1;
+	}
+	*port++ = '\0';
+	gpsd_report(LOG_INF, "opening AIS feed at %s, port %s.\n", server,port);
+	if ((dsock = netlib_connectsock(AF_UNSPEC, server, port, "tcp")) < 0) {
+	    gpsd_report(LOG_ERROR, "AIS device open error %s.\n", 
+			netlib_errstr(dsock));
+	    return -1;
+	}
+	session->gpsdata.gps_fd = dsock;
+    }
+    /* otherwise, ordinary serial device */
+    else 
+	session->gpsdata.gps_fd = gpsd_open(session);
+
+    if (session->gpsdata.gps_fd < 0)
 	return -1;
     else {
 #ifdef NON_NMEA_ENABLE
@@ -340,7 +385,7 @@ int gpsd_activate(struct gps_device_t *session)
 	 * can do something about this if they choose.
 	 */
 	if (session->device_type != NULL
-		&& session->device_type->event_hook != NULL)
+	    && session->device_type->event_hook != NULL)
 	    session->device_type->event_hook(session, event_reactivate);
     }
 
@@ -613,13 +658,17 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 	    session->device_type->event_hook(session, event_configure);
 
 	/*
-	 * If this is the first time we've achieved sync on this device, that's
-	 * a significant event that the caller needs to know about.  Using
-	 * DEVICE_SET this way is a bit shaky but we're short of bits in
-	 * the flag mask (client library uses it differently).
+	 * If this is the first time we've achieved sync on this
+	 * device, or the the driver type has changed for any other
+	 * reason, that's a significant event that the caller needs to
+	 * know about.  Using DEVICE_SET this way is a bit shaky but
+	 * we're short of bits in the flag mask (client library uses
+	 * it differently).
 	 */
-	if (first_sync)
+	if (first_sync || session->notify_clients) {
+	    session->notify_clients = false;
 	    received |= DEVICE_SET;
+	}
 
 	/* Get data from current packet into the fix structure */
 	if (session->packet.type != COMMENT_PACKET)

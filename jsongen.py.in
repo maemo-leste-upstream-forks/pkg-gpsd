@@ -314,10 +314,12 @@ ais_specs = (
         ('channel_b',     'uinteger',      '0'),
         ('txrx',          'uinteger',      '0'),
         ('power',         'boolean',       'false'),
-        ('ne_lon',        'integer',       'AIS_GNS_LON_NOT_AVAILABLE'),
-        ('ne_lat',        'integer',       'AIS_GNS_LAT_NOT_AVAILABLE'),
-        ('sw_lon',        'integer',       'AIS_GNS_LON_NOT_AVAILABLE'),
-        ('sw_lat',        'integer',       'AIS_GNS_LAT_NOT_AVAILABLE'),
+        ('area.ne_lon',   'integer',       'AIS_GNS_LON_NOT_AVAILABLE'),
+        ('area.ne_lat',   'integer',       'AIS_GNS_LAT_NOT_AVAILABLE'),
+        ('area.sw_lon',   'integer',       'AIS_GNS_LON_NOT_AVAILABLE'),
+        ('area.sw_lat',   'integer',       'AIS_GNS_LAT_NOT_AVAILABLE'),
+        ('mmsi.dest1',    'uinteger',      '0'),
+        ('mmsi.dest2',    'uinteger',      '0'),
         ('addressed',     'boolean',       'false'),
         ('band_a',        'boolean',       'false'),
         ('band_b',        'boolean',       'false'),
@@ -390,9 +392,9 @@ def generate(spec):
             target = structname + "." + attr
         if "." in attr:
             attr = attr[attr.rfind(".")+1:]
-        print '\t{"%s",%s%s,%s.addr.%s = %s%s,' % \
-               (attr, " "*(12-len(attr)), itype, " "*(10-len(itype)), itype, deref, target)
-        leader = " " * 35
+        print '\t{"%s",%st_%s,%s.addr.%s = %s%s,' % \
+               (attr, " "*(14-len(attr)), itype, " "*(10-len(itype)), itype, deref, target)
+        leader = " " * 39
         if itype == "string":
             print leader + ".len = sizeof(%s)}," % target
         else:

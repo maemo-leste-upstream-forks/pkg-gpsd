@@ -16,7 +16,7 @@
 @SET_MAKE@
 
 # Automake description for gpsd
-# $Id: Makefile.am 6709 2009-12-04 20:41:03Z esr $
+# $Id: Makefile.am 7013 2010-03-01 05:18:44Z esr $
 
 
 
@@ -42,15 +42,15 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4) gpsctl$(EXEEXT) gpspipe$(EXEEXT) \
-	gpxlogger$(EXEEXT) lcdgps$(EXEEXT)
+	gpsctl$(EXEEXT) gpspipe$(EXEEXT) gpxlogger$(EXEEXT) \
+	lcdgps$(EXEEXT)
 sbin_PROGRAMS = gpsd$(EXEEXT)
-check_PROGRAMS = test_float$(EXEEXT) test_bits$(EXEEXT) \
-	test_packet$(EXEEXT) test_mkgmtime$(EXEEXT) \
-	test_geoid$(EXEEXT) test_json$(EXEEXT) $(am__EXEEXT_5)
+check_PROGRAMS = test_float$(EXEEXT) test_trig$(EXEEXT) \
+	test_bits$(EXEEXT) test_packet$(EXEEXT) test_mkgmtime$(EXEEXT) \
+	test_geoid$(EXEEXT) test_json$(EXEEXT) $(am__EXEEXT_4)
 @LIBGPSMM_ENABLE_TRUE@am__append_1 = test_gpsmm
 
-# Warning: This overrides autoconf's normal link-line generatyion process
+# Warning: This overrides autoconf's normal link-line generation process
 @LIBGPSMM_ENABLE_TRUE@am__append_2 = libgpsmm.cpp
 @HAVE_PYTHON_TRUE@am__append_3 = stamp-python-modules stamp-python-modules.tmp
 @HAVE_XSLT_PROCESSOR_TRUE@am__append_4 = stamp-gps-manpages stamp-gps-manpages.tmp
@@ -101,11 +101,10 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" \
-	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man3dir)" \
-	"$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man8dir)" \
-	"$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" \
-	"$(DESTDIR)$(includedir)"
+	"$(DESTDIR)$(pythondir)" "$(DESTDIR)$(man1dir)" \
+	"$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man5dir)" \
+	"$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfigdir)" \
+	"$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libgps_la_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -121,8 +120,8 @@ am__libgps_la_SOURCES_DIST = ais_json.c bits.c bsd-base64.c crc24q.c \
 	driver_italk.c driver_navcom.c driver_nmea.c driver_oncore.c \
 	driver_rtcm2.c driver_rtcm3.c driver_sirf.c \
 	driver_superstar2.c driver_tsip.c driver_ubx.c driver_zodiac.c \
-	bsd-base64.h timebase.h bits.h crc24q.h driver_rtcm2.h \
-	packet_states.h libgpsmm.cpp
+	sockaddr.h bsd-base64.h timebase.h bits.h crc24q.h \
+	driver_rtcm2.h packet_states.h libgpsmm.cpp
 am__objects_1 = ais_json.lo bits.lo bsd-base64.lo crc24q.lo \
 	gpsd_report.lo gpsutils.lo geoid.lo gpsd_json.lo hex.lo \
 	isgps.lo json.lo libgps_core.lo libgps_json.lo gpsdclient.lo \
@@ -141,11 +140,10 @@ am_libgps_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
 nodist_libgps_la_OBJECTS =
 libgps_la_OBJECTS = $(am_libgps_la_OBJECTS) \
 	$(nodist_libgps_la_OBJECTS)
-@HAVE_MOTIF_TRUE@am__EXEEXT_1 = xgps$(EXEEXT)
-@HAVE_XAW_TRUE@am__EXEEXT_2 = xgpsspeed$(EXEEXT)
-@HAVE_RTCM104V2_TRUE@am__EXEEXT_3 = gpsdecode$(EXEEXT)
-@HAVE_NCURSES_TRUE@am__EXEEXT_4 = cgps$(EXEEXT) gpsmon$(EXEEXT)
-@LIBGPSMM_ENABLE_TRUE@am__EXEEXT_5 = test_gpsmm$(EXEEXT)
+@HAVE_XAW_TRUE@am__EXEEXT_1 = xgpsspeed$(EXEEXT)
+@HAVE_RTCM104V2_TRUE@am__EXEEXT_2 = gpsdecode$(EXEEXT)
+@HAVE_NCURSES_TRUE@am__EXEEXT_3 = cgps$(EXEEXT) gpsmon$(EXEEXT)
+@LIBGPSMM_ENABLE_TRUE@am__EXEEXT_4 = test_gpsmm$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
 am_cgps_OBJECTS = cgps.$(OBJEXT)
 cgps_OBJECTS = $(am_cgps_OBJECTS)
@@ -205,12 +203,9 @@ test_mkgmtime_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
 am_test_packet_OBJECTS = test_packet.$(OBJEXT)
 test_packet_OBJECTS = $(am_test_packet_OBJECTS)
 test_packet_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
-am_xgps_OBJECTS = xgps.$(OBJEXT)
-xgps_OBJECTS = $(am_xgps_OBJECTS)
-xgps_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) libgps.la
+am_test_trig_OBJECTS = test_trig.$(OBJEXT)
+test_trig_OBJECTS = $(am_test_trig_OBJECTS)
+test_trig_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
 am__objects_5 = xgpsspeed.$(OBJEXT) Tachometer.$(OBJEXT)
 am_xgpsspeed_OBJECTS = $(am__objects_5)
 xgpsspeed_OBJECTS = $(am_xgpsspeed_OBJECTS)
@@ -218,7 +213,7 @@ xgpsspeed_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libgps.la $(am__DEPENDENCIES_1)
-am__dist_bin_SCRIPTS_DIST = gpsprof gpsfake gpscat
+am__dist_bin_SCRIPTS_DIST = gpsprof gpsfake gpscat xgps
 SCRIPTS = $(dist_bin_SCRIPTS) $(noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -249,15 +244,16 @@ SOURCES = $(libgps_la_SOURCES) $(nodist_libgps_la_SOURCES) \
 	$(test_float_SOURCES) $(test_geoid_SOURCES) \
 	$(test_gpsmm_SOURCES) $(test_json_SOURCES) \
 	$(test_mkgmtime_SOURCES) $(test_packet_SOURCES) \
-	$(xgps_SOURCES) $(xgpsspeed_SOURCES)
+	$(test_trig_SOURCES) $(xgpsspeed_SOURCES)
 DIST_SOURCES = $(am__libgps_la_SOURCES_DIST) $(cgps_SOURCES) \
 	$(gpsctl_SOURCES) $(gpsd_SOURCES) $(gpsdecode_SOURCES) \
 	$(gpsmon_SOURCES) $(gpspipe_SOURCES) $(gpxlogger_SOURCES) \
 	$(lcdgps_SOURCES) $(test_bits_SOURCES) $(test_float_SOURCES) \
 	$(test_geoid_SOURCES) $(am__test_gpsmm_SOURCES_DIST) \
 	$(test_json_SOURCES) $(test_mkgmtime_SOURCES) \
-	$(test_packet_SOURCES) $(xgps_SOURCES) $(xgpsspeed_SOURCES)
-am__python_PYTHON_DIST = gps.py gpsfake.py gpscap.py
+	$(test_packet_SOURCES) $(test_trig_SOURCES) \
+	$(xgpsspeed_SOURCES)
+am__python_PYTHON_DIST = gpscap.py
 py_compile = $(top_srcdir)/py-compile
 man1dir = $(mandir)/man1
 man3dir = $(mandir)/man3
@@ -374,9 +370,7 @@ X11_LIBS = @X11_LIBS@
 XAW_LIBS = @XAW_LIBS@
 XEXT_LIBS = @XEXT_LIBS@
 XMKMF = @XMKMF@
-XM_LIBS = @XM_LIBS@
 XPM_LIBS = @XPM_LIBS@
-XP_LIBS = @XP_LIBS@
 XT_LIBS = @XT_LIBS@
 X_CFLAGS = @X_CFLAGS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
@@ -471,23 +465,15 @@ XMLTO = xmlto
 # Conditionally add programs depending on libraries that may or may not be present.
 #
 @HAVE_NCURSES_TRUE@CURSESPROGS = cgps gpsmon
-@HAVE_MOTIF_TRUE@MOTIF_PROGS = xgps
 @HAVE_XAW_TRUE@XAW_PROGS = xgpsspeed
 @HAVE_DBUS_TRUE@INCLUDES = $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) -DDBUS_API_SUBJECT_TO_CHANGE=1
 RTCM104PAGES_DIST = gpsdecode.1
 @HAVE_RTCM104V2_TRUE@RTCM104PROGS = gpsdecode
 @HAVE_RTCM104V2_TRUE@RTCM104PAGES = $(RTCM104PAGES_DIST)
 PYTHONPAGES_DIST = gpsprof.1 gpsfake.1 gpscat.1
-@HAVE_PYTHON_TRUE@dist_bin_SCRIPTS = gpsprof gpsfake gpscat
-@HAVE_PYTHON_TRUE@python_PYTHON = gps.py gpsfake.py gpscap.py
-@HAVE_PYTHON_TRUE@nodist_python_PYTHON = gpspacket.so gpslib.so
+@HAVE_PYTHON_TRUE@dist_bin_SCRIPTS = gpsprof gpsfake gpscat xgps
+@HAVE_PYTHON_TRUE@python_PYTHON = gpscap.py
 @HAVE_PYTHON_TRUE@PYTHONPAGES = $(PYTHONPAGES_DIST)
-
-#
-# Build xgps
-#
-xgps_SOURCES = xgps.c
-xgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(XM_LIBS) $(XT_LIBS) $(X_LIBS) $(X_PRE_LIBS) libgps.la -lm
 
 #
 # Build xgpsspeed
@@ -608,6 +594,7 @@ libgpsd_c_sources = \
 	driver_zodiac.c
 
 libgpsd_h_sources = \
+	sockaddr.h \
 	bsd-base64.h \
 	timebase.h \
 	bits.h \
@@ -624,14 +611,12 @@ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
 #
 # Build Python binding
 #
-# install may require --root depending on what you're doing.
-# python setup.py install --root=$DESTIR --prefix=$PREFIX
 @HAVE_PYTHON_TRUE@PYEXTENSIONS = gpspacket.so gpslib.so
 @HAVE_PYTHON_TRUE@noinst_SCRIPTS = gpspacket.so gpslib.so setup.py
-@LIBGPSMM_ENABLE_FALSE@TESTBINS = test_float test_bits test_packet test_geoid \
+@LIBGPSMM_ENABLE_FALSE@TESTBINS = test_float test_trig test_bits test_packet test_geoid \
 @LIBGPSMM_ENABLE_FALSE@	test_mkgmtime test_json
 
-@LIBGPSMM_ENABLE_TRUE@TESTBINS = test_float test_gpsmm test_bits test_packet test_geoid \
+@LIBGPSMM_ENABLE_TRUE@TESTBINS = test_float test_trig test_gpsmm test_bits test_packet test_geoid \
 @LIBGPSMM_ENABLE_TRUE@	test_mkgmtime test_json
 
 
@@ -640,6 +625,12 @@ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
 #
 test_float_SOURCES = test_float.c
 test_float_LDADD = $(LIBC) libgps.la -lm
+
+#
+# Build test_trig
+#
+test_trig_SOURCES = test_trig.c
+test_trig_LDADD = $(LIBC) libgps.la -lm
 
 #
 # Build test_gpsmm
@@ -682,7 +673,6 @@ MANPAGES_BASE = \
 	xgpsspeed.1 \
 	cgps.1 \
 	lcdgps.1 \
-	cgpxlogger.1 \
 	libgps.3 \
 	libgpsmm.3 \
 	libgpsd.3 \
@@ -717,8 +707,11 @@ nodist_include_HEADERS = gpsd.h
 @LIBGPSMM_ENABLE_TRUE@include_HEADERS = gps.h libgpsmm.h
 
 # Note: packaging/gpsd.spec is generated, but it needs to be in the
-# tarball in order for 'make diat-rpm' to work.
+# tarball in order for 'make diat-rpm' to work.  The BUILT_SOURCES
+# files are here in order to minimize build dependencies for package
+# builders who never alter anything, especially the Python dependency.
 EXTRA_DIST = \
+	$(BUILT_SOURCES) \
 	revision.h \
 	autogen.sh \
 	README \
@@ -731,6 +724,7 @@ EXTRA_DIST = \
 	maskaudit.py.in \
 	dgpsip-servers \
 	test_float.c \
+	test_trig.c \
 	gpsd.php \
 	gpsd.xml \
 	gpsd.h-head \
@@ -749,7 +743,6 @@ EXTRA_DIST = \
 	rtcm-104.xml \
 	srec.xml \
 	$(MANPAGES_DIST) \
-	xgps.ad \
 	xgpsspeed.ad \
 	gpsd.rules \
 	gpsd.hotplug \
@@ -758,7 +751,7 @@ EXTRA_DIST = \
 	valgrind-audit \
 	valgrind-suppressions \
 	gpspacket.c \
-	gpslib.c \
+	gpsclient.c \
 	driver_proto.c \
 	monitor_proto.c \
 	setup.py \
@@ -769,7 +762,9 @@ EXTRA_DIST = \
 	packaging/gpsd.spec \
 	packaging/etc_default_gpsd \
 	packaging/etc_init.d_gpsd \
-	packaging/etc_init.d_gpsd_rpm
+	packaging/etc_init.d_gpsd_rpm \
+	regress-driver \
+	test
 
 pkgconfig_DATA = libgps.pc libgpsd.pc
 pkgconfigdir = $(libdir)/pkgconfig
@@ -1035,9 +1030,9 @@ test_mkgmtime$(EXEEXT): $(test_mkgmtime_OBJECTS) $(test_mkgmtime_DEPENDENCIES)
 test_packet$(EXEEXT): $(test_packet_OBJECTS) $(test_packet_DEPENDENCIES) 
 	@rm -f test_packet$(EXEEXT)
 	$(LINK) $(test_packet_OBJECTS) $(test_packet_LDADD) $(LIBS)
-xgps$(EXEEXT): $(xgps_OBJECTS) $(xgps_DEPENDENCIES) 
-	@rm -f xgps$(EXEEXT)
-	$(LINK) $(xgps_OBJECTS) $(xgps_LDADD) $(LIBS)
+test_trig$(EXEEXT): $(test_trig_OBJECTS) $(test_trig_DEPENDENCIES) 
+	@rm -f test_trig$(EXEEXT)
+	$(LINK) $(test_trig_OBJECTS) $(test_trig_LDADD) $(LIBS)
 xgpsspeed$(EXEEXT): $(xgpsspeed_OBJECTS) $(xgpsspeed_DEPENDENCIES) 
 	@rm -f xgpsspeed$(EXEEXT)
 	$(LINK) $(xgpsspeed_OBJECTS) $(xgpsspeed_LDADD) $(LIBS)
@@ -1150,7 +1145,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_json.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_mkgmtime.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_packet.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xgps.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_trig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xgpsspeed.Po@am__quote@
 
 .c.o:
@@ -1203,44 +1198,6 @@ clean-libtool:
 
 distclean-libtool:
 	-rm -f libtool config.lt
-install-nodist_pythonPYTHON: $(nodist_python_PYTHON)
-	@$(NORMAL_INSTALL)
-	test -z "$(pythondir)" || $(MKDIR_P) "$(DESTDIR)$(pythondir)"
-	@list='$(nodist_python_PYTHON)'; dlist=; list2=; test -n "$(pythondir)" || list=; \
-	for p in $$list; do \
-	  if test -f "$$p"; then b=; else b="$(srcdir)/"; fi; \
-	  if test -f $$b$$p; then \
-	    $(am__strip_dir) \
-	    dlist="$$dlist $$f"; \
-	    list2="$$list2 $$b$$p"; \
-	  else :; fi; \
-	done; \
-	for file in $$list2; do echo $$file; done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pythondir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pythondir)" || exit $$?; \
-	done || exit $$?; \
-	if test -n "$$dlist"; then \
-	  if test -z "$(DESTDIR)"; then \
-	    PYTHON=$(PYTHON) $(py_compile) --basedir "$(pythondir)" $$dlist; \
-	  else \
-	    PYTHON=$(PYTHON) $(py_compile) --destdir "$(DESTDIR)" --basedir "$(pythondir)" $$dlist; \
-	  fi; \
-	else :; fi
-
-uninstall-nodist_pythonPYTHON:
-	@$(NORMAL_UNINSTALL)
-	@list='$(nodist_python_PYTHON)'; test -n "$(pythondir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	test -n "$$files" || exit 0; \
-	filesc=`echo "$$files" | sed 's|$$|c|'`; \
-	fileso=`echo "$$files" | sed 's|$$|o|'`; \
-	echo " ( cd '$(DESTDIR)$(pythondir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(pythondir)" && rm -f $$files || exit $$?; \
-	echo " ( cd '$(DESTDIR)$(pythondir)' && rm -f" $$filesc ")"; \
-	cd "$(DESTDIR)$(pythondir)" && rm -f $$filesc || exit $$?; \
-	echo " ( cd '$(DESTDIR)$(pythondir)' && rm -f" $$fileso ")"; \
-	cd "$(DESTDIR)$(pythondir)" && rm -f $$fileso
 install-pythonPYTHON: $(python_PYTHON)
 	@$(NORMAL_INSTALL)
 	test -z "$(pythondir)" || $(MKDIR_P) "$(DESTDIR)$(pythondir)"
@@ -1805,7 +1762,7 @@ all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(MANS) $(DATA) \
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1836,6 +1793,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+@HAVE_PYTHON_FALSE@install-exec-local:
+@HAVE_PYTHON_FALSE@clean-local:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
@@ -1862,15 +1821,15 @@ info: info-am
 info-am:
 
 install-data-am: install-includeHEADERS install-man \
-	install-nodist_includeHEADERS install-nodist_pythonPYTHON \
-	install-pkgconfigDATA install-pythonPYTHON
+	install-nodist_includeHEADERS install-pkgconfigDATA \
+	install-pythonPYTHON
 
 install-dvi: install-dvi-am
 
 install-dvi-am:
 
 install-exec-am: install-binPROGRAMS install-dist_binSCRIPTS \
-	install-libLTLIBRARIES install-sbinPROGRAMS
+	install-exec-local install-libLTLIBRARIES install-sbinPROGRAMS
 
 install-html: install-html-am
 
@@ -1915,8 +1874,8 @@ ps-am:
 uninstall-am: uninstall-binPROGRAMS uninstall-dist_binSCRIPTS \
 	uninstall-includeHEADERS uninstall-libLTLIBRARIES \
 	uninstall-man uninstall-nodist_includeHEADERS \
-	uninstall-nodist_pythonPYTHON uninstall-pkgconfigDATA \
-	uninstall-pythonPYTHON uninstall-sbinPROGRAMS
+	uninstall-pkgconfigDATA uninstall-pythonPYTHON \
+	uninstall-sbinPROGRAMS
 
 uninstall-man: uninstall-man1 uninstall-man3 uninstall-man5 \
 	uninstall-man8
@@ -1933,22 +1892,21 @@ uninstall-man: uninstall-man1 uninstall-man3 uninstall-man5 \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
 	install-data-am install-dist_binSCRIPTS install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-includeHEADERS install-info \
-	install-info-am install-libLTLIBRARIES install-man \
-	install-man1 install-man3 install-man5 install-man8 \
-	install-nodist_includeHEADERS install-nodist_pythonPYTHON \
-	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
-	install-ps-am install-pythonPYTHON install-sbinPROGRAMS \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-dist_binSCRIPTS \
-	uninstall-includeHEADERS uninstall-libLTLIBRARIES \
-	uninstall-man uninstall-man1 uninstall-man3 uninstall-man5 \
-	uninstall-man8 uninstall-nodist_includeHEADERS \
-	uninstall-nodist_pythonPYTHON uninstall-pkgconfigDATA \
+	install-dvi-am install-exec install-exec-am install-exec-local \
+	install-html install-html-am install-includeHEADERS \
+	install-info install-info-am install-libLTLIBRARIES \
+	install-man install-man1 install-man3 install-man5 \
+	install-man8 install-nodist_includeHEADERS install-pdf \
+	install-pdf-am install-pkgconfigDATA install-ps install-ps-am \
+	install-pythonPYTHON install-sbinPROGRAMS install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-dist_binSCRIPTS uninstall-includeHEADERS \
+	uninstall-libLTLIBRARIES uninstall-man uninstall-man1 \
+	uninstall-man3 uninstall-man5 uninstall-man8 \
+	uninstall-nodist_includeHEADERS uninstall-pkgconfigDATA \
 	uninstall-pythonPYTHON uninstall-sbinPROGRAMS
 
 
@@ -1986,7 +1944,7 @@ maskdump.c: gpsd.h-tail maskaudit.py
 @HAVE_PYTHON_TRUE@	+@WITNESS=stamp-python-modules; $(MULTIOUT_RECOVER_DELETED)
 # TODO:  Should the dependency on libgps.la be enforced inside
 # setup.py?  (See the variable 'needed_files' in setup.py.)
-@HAVE_PYTHON_TRUE@stamp-python-modules: gpspacket.c gpslib.c libgps.la setup.py
+@HAVE_PYTHON_TRUE@stamp-python-modules: gpspacket.c gpsclient.c libgps.la setup.py
 @HAVE_PYTHON_TRUE@	@rm -f '$@' '$@.tmp'
 @HAVE_PYTHON_TRUE@	@echo 'timestamp for $@' > '$@.tmp'
 @HAVE_PYTHON_TRUE@	(cd '$(srcdir)' && \
@@ -1998,9 +1956,14 @@ maskdump.c: gpsd.h-tail maskaudit.py
 @HAVE_PYTHON_TRUE@			--include-dirs '$(srcdir):.'\
 @HAVE_PYTHON_TRUE@			--mangenerator '$(MANGENERATOR)') && \
 @HAVE_PYTHON_TRUE@	mv -f '$@.tmp' '$@'
+
 # Clean up after Python
-clean-local:
-	rm -rf build
+@HAVE_PYTHON_TRUE@clean-local:
+@HAVE_PYTHON_TRUE@	rm -rf build
+
+# Install Python modules
+@HAVE_PYTHON_TRUE@install-exec-local:
+@HAVE_PYTHON_TRUE@	$(PYTHON) setup.py install --prefix=${prefix} # --root=$(DESTDIR)
 
 @HAVE_XSLT_PROCESSOR_TRUE@.xml.1:
 @HAVE_XSLT_PROCESSOR_TRUE@	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $<
@@ -2015,7 +1978,7 @@ clean-local:
 @HAVE_XSLT_PROCESSOR_TRUE@	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $<
 
 # Another instance of the multiple-outputs hack.
-@HAVE_XSLT_PROCESSOR_TRUE@gps.1 xgps.1 xgpsspeed.1 cgps.1 lcdgps.1 cgpxlogger.1: stamp-gps-manpages
+@HAVE_XSLT_PROCESSOR_TRUE@gps.1 xgps.1 xgpsspeed.1 cgps.1 lcdgps.1: stamp-gps-manpages
 @HAVE_XSLT_PROCESSOR_TRUE@	+@WITNESS=stamp-gps-manpages; $(MULTIOUT_RECOVER_DELETED)
 @HAVE_XSLT_PROCESSOR_TRUE@stamp-gps-manpages: gps.xml
 @HAVE_XSLT_PROCESSOR_TRUE@	@rm -f '$@' '$@.tmp'
@@ -2024,13 +1987,11 @@ clean-local:
 @HAVE_XSLT_PROCESSOR_TRUE@	mv -f '$@.tmp' '$@'
 
 # These are not distributed
-libgps: libgps_core.c .libs/libgps.a
+libgps: libgps_core.c gps.h .libs/libgps.a
 	$(CC) $(CFLAGS) -o libgps -lm -DTESTMAIN $(LIBPTHREAD) -g libgps_core.c .libs/libgps.a
 splint: gpsd.h packet_names.h
 	@echo "Running splint on daemon and libraries..."
 	-splint $(SPLINTOPTS) -exportlocal -redef $(gpsd_c_sources) $(libgpsd_c_sources)
-	@echo "Running splint on xgps..."
-	-splint $(SPLINTOPTS) -exportlocal $(xgps_SOURCES)
 	@echo "Running splint on cgps..."
 	-splint $(SPLINTOPTS) -exportlocal $(cgps_SOURCES)
 	@echo "Running splint on xgpsspeed..."
@@ -2054,6 +2015,10 @@ splint: gpsd.h packet_names.h
 	@echo "Running splint on test_json test harness..."
 	-splint $(SPLINTOPTS) $(test_json_SOURCES)
 
+# Report cppcheck warnings.  Requires 1.40 or later.
+cppcheck: gpsd.h packet_names.h
+	cppcheck --template gcc --all --force .
+
 # Re-indenting to a uniform style would be nice, and we leave this here
 # as a rough guide to the project style, but it turns out that indent is
 # an excessively blunt instrument.  As of 2.2.10 it doesn't honor -nfca
@@ -2064,10 +2029,6 @@ indent:
 	indent -i4 -br -cbi0 -bli0 -ncs -npcs -nfca $(gpsd_c_sources) $(libgpsd_c_sources)
 	chmod u-w maskdump.c
 	@echo "Diff lines:" `svn diff | wc -l`
-
-# Bogon-checking the Python tools
-pychecker:
-	for f in gps.py gpsfake.py leapsecond.py; do pychecker $$f; done
 
 version:
 	@echo $(VERSION)

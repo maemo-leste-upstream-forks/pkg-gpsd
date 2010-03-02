@@ -1,4 +1,4 @@
-/* $Id: cgps.c 6654 2009-12-01 08:52:02Z esr $ */
+/* $Id: cgps.c 6856 2009-12-18 03:58:56Z esr $ */
 /*
  * Copyright (c) 2005 Jeff Francis <jeff@gritch.org>
  *
@@ -450,13 +450,22 @@ static void update_gps_panel(struct gps_data_t *gpsdata,
 			char *message,
 			size_t len UNUSED)
 {
-    int i,n;
+    int i,j, n;
     int newstate;
     char scr[128];
+    bool usedflags[MAXCHANNELS];
 
     /* this is where we implement source-device filtering */
     if (gpsdata->dev.path[0]!='\0' && source.device!=NULL && strcmp(source.device, gpsdata->dev.path) != 0)
 	return;
+
+    /* must build bit vector of which statellites are used from list */
+    for (i = 0; i < MAXCHANNELS; i++) {
+	usedflags [i] = false;
+	for (j = 0; j < gpsdata->satellites_used; j++)
+	    if (gpsdata->used[j] == gpsdata->PRN[i])
+		usedflags[i] = true;
+    }
 
     /* This is for the satellite status display.  Originally lifted from
        xgps.c.  Note that the satellite list may be truncated based on
@@ -470,7 +479,7 @@ static void update_gps_panel(struct gps_data_t *gpsdata,
 				   " %3d    %02d    %03d    %02d      %c",
 				   gpsdata->PRN[i],
 				   gpsdata->elevation[i], gpsdata->azimuth[i],
-				   (int)gpsdata->ss[i], gpsdata->used[i] ? 'Y' : 'N');
+				   (int)gpsdata->ss[i], usedflags[i] ? 'Y' : 'N');
 		} else {
 		    (void)strlcpy(scr, "", sizeof(scr));
 		}
@@ -684,52 +693,6 @@ int main(int argc, char *argv[])
     fd_set rfds;
     int data;
 
-    /* Process the options.  Print help if requested. */
-    while ((option = getopt(argc, argv, "hVl:smd:")) != -1) {
-	switch (option) {
-	case 'd':
-	    debug = atoi(optarg);
-#ifdef CLIENTDEBUG_ENABLE
-	    gps_enable_debug(debug, stderr);
-#endif /* CLIENTDEBUG_ENABLE */
-	    break;
-	case 'm':
-	    magnetic_flag=true;
-	    break;
-	case 's':
-	    silent_flag=true;
-	    break;
-	case 'V':
-	    (void)fprintf(stderr, "xgps: %s (revision %s)\n", 
-			  VERSION, REVISION);
-	    exit(0);
-	case 'l':
-	    switch ( optarg[0] ) {
-	    case 'd':
-		deg_type = deg_dd;
-		continue;
-	    case 'm':
-		deg_type = deg_ddmm;
-		continue;
-	    case 's':
-		deg_type = deg_ddmmss;
-		continue;
-	    default:
-		(void)fprintf(stderr, "Unknown -l argument: %s\n", optarg);
-		/*@ -casebreak @*/
-	    }
-	case 'h': default:
-	    usage(argv[0]);
-	    break;
-	}
-    }
-
-    /* Grok the server, port, and device. */
-    if (optind < argc) {
-	gpsd_source_spec(argv[optind], &source);
-    } else
-	gpsd_source_spec(NULL, &source);
-
     /*@ -observertrans @*/
     switch (gpsd_units())
     {
@@ -756,6 +719,79 @@ int main(int argc, char *argv[])
 	break;
     }
     /*@ +observertrans @*/
+
+    /* Process the options.  Print help if requested. */
+    while ((option = getopt(argc, argv, "hVl:smuD:")) != -1) {
+	switch (option) {
+	case 'D':
+	    debug = atoi(optarg);
+#ifdef CLIENTDEBUG_ENABLE
+	    gps_enable_debug(debug, stderr);
+#endif /* CLIENTDEBUG_ENABLE */
+	    break;
+	case 'm':
+	    magnetic_flag=true;
+	    break;
+	case 's':
+	    silent_flag=true;
+	    break;
+	case 'u':
+	    /*@ -observertrans @*/
+	    switch ( optarg[0] ) {
+	    case 'i':
+		altfactor = METERS_TO_FEET;
+		altunits = "ft";
+		speedfactor = MPS_TO_MPH;
+		speedunits = "mph";
+		continue;
+	    case 'n':
+		altfactor = METERS_TO_FEET;
+		altunits = "ft";
+		speedfactor = MPS_TO_KNOTS;
+		speedunits = "knots";
+		continue;
+	    case 'm':
+		altfactor = 1;
+		altunits = "m";
+		speedfactor = MPS_TO_KPH;
+		speedunits = "kph";
+		continue;
+	    default:
+		(void)fprintf(stderr, "Unknown -u argument: %s\n", optarg);
+	    }
+	    break;
+	    /*@ +observertrans @*/
+	case 'V':
+	    (void)fprintf(stderr, "xgps: %s (revision %s)\n", 
+			  VERSION, REVISION);
+	    exit(0);
+	case 'l':
+	    switch ( optarg[0] ) {
+	    case 'd':
+		deg_type = deg_dd;
+		continue;
+	    case 'm':
+		deg_type = deg_ddmm;
+		continue;
+	    case 's':
+		deg_type = deg_ddmmss;
+		continue;
+	    default:
+		(void)fprintf(stderr, "Unknown -l argument: %s\n", optarg);
+		/*@ -casebreak @*/
+	    }
+	    break;
+	case 'h': default:
+	    usage(argv[0]);
+	    break;
+	}
+    }
+
+    /* Grok the server, port, and device. */
+    if (optind < argc) {
+	gpsd_source_spec(argv[optind], &source);
+    } else
+	gpsd_source_spec(NULL, &source);
 
     /* Open the stream to gpsd. */
     /*@i@*/gpsdata = gps_open(source.server, source.port);

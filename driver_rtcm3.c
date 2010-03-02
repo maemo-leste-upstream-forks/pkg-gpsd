@@ -1,4 +1,4 @@
-/* $Id: driver_rtcm3.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: driver_rtcm3.c 6908 2010-01-02 22:29:16Z esr $ */
 /*****************************************************************************
 
 This is a decoder for RTCM-104 3.x, a serial protocol used for
@@ -34,8 +34,11 @@ firmware.
 #include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
+#include "gpsd_config.h"
 #ifndef S_SPLINT_S
-#include <arpa/inet.h>	/* for ntohl(3) and friends */
+ #ifdef HAVE_ARPA_INET
+  #include <arpa/inet.h>	/* for ntohl(3) and friends */
+ #endif /* HAVE_ARPA_INET */
 #endif /* S_SPLINT_S */
 
 #include "gpsd.h"

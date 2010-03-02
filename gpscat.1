@@ -2,12 +2,12 @@
 .\"     Title: gpscat
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 12/04/2009
+.\"      Date: 03/01/2010
 .\"    Manual: [FIXME: manual]
 .\"    Source: [FIXME: source]
 .\"  Language: English
 .\"
-.TH "GPSCAT" "1" "12/04/2009" "[FIXME: source]" "[FIXME: manual]"
+.TH "GPSCAT" "1" "03/01/2010" "[FIXME: source]" "[FIXME: manual]"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 gpscat \- dump the output from a GPS
 .SH "SYNOPSIS"
 .HP \w'\fBgpscat\fR\ 'u
-\fBgpscat\fR [\-s\ \fIspeed\fR] [\-p] [\-t] [\-v\ \fIdebuglevel\fR] \fIserial\-port\fR
+\fBgpscat\fR [\-s\ \fIspeed\fR] [\-p] [\-t] [\-D\ \fIdebuglevel\fR] \fIserial\-port\fR
 .SH "DESCRIPTION"
 .PP
 gpscat
@@ -30,7 +30,7 @@ is a simple program for logging and packetizing GPS data streams\&. It takes inp
 .PP
 In raw mode (the default)
 gpscat
-simply dumps its input to standard output\&. Nonprintable characters are rendered as hexadecimal string escapes, except for CR followed by LF or LF preceded by CR\&.
+simply dumps its input to standard output\&. Nonprintable characters other than ASCII whitepace are rendered as hexadecimal string escapes\&.
 .PP
 In packetizing mode,
 gpscat
@@ -58,7 +58,7 @@ Set the port\'s baud rate (and optionally its parity and stop bits) before readi
 Invoke packetizer mode, with the packet type and length (in parentheses) reported before a colon and space on each line\&.
 .RE
 .PP
-\-v
+\-D
 .RS 4
 In packetizer mode, enable progress messages from the packet getter\&. Probably only of interest to developers testing packet getter changes\&.
 .RE

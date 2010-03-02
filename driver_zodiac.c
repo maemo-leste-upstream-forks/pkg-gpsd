@@ -1,4 +1,4 @@
-/* $Id: driver_zodiac.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: driver_zodiac.c 6908 2010-01-02 22:29:16Z esr $ */
 /*
  * Handle the Rockwell binary packet format supported by the old Zodiac chipset
  */
@@ -54,7 +54,7 @@ static int end_write(int fd, void *d, int len)
 }
 #else
 #define end_write write
-#endif
+#endif /* WORDS_BIGENDIAN */
 
 static ssize_t zodiac_spew(struct gps_device_t *session, unsigned short type, unsigned short *dat, int dlen)
 {

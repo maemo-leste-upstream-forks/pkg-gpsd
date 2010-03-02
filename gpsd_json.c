@@ -66,11 +66,11 @@ char *json_stringify(/*@out@*/char *to, size_t len, /*@in@*/const char *from)
 		break;
 	    default:
 		/* ugh, we'd prefer a C-style escape here, but this is JSON */
-		(void)snprintf(tp, 5, "%u04x", (uint)*sp);
+		(void)snprintf(tp, 5, "%u04x", (unsigned int)*sp);
 		tp += strlen(tp);
 	    }
 	} else {
-	    if (*sp == '"')
+	    if (*sp == '"' || *sp == '\\')
 		*tp++ = '\\';
 	    *tp++ = *sp;
 	}
@@ -297,17 +297,19 @@ void json_device_dump(const struct gps_device_t *device,
 	    (void)strlcat(reply, "\",", replylen);
 	}
 	/*@+mustfreefresh@*/
-	(void)snprintf(reply+strlen(reply), replylen-strlen(reply),
-		       "\"native\":%d,\"bps\":%d,\"parity\":\"%c\",\"stopbits\":%u,\"cycle\":%2.2f",
-		       device->gpsdata.dev.driver_mode,
-		       (int)gpsd_get_speed(&device->ttyset),
-		       device->gpsdata.dev.parity,
-		       device->gpsdata.dev.stopbits,
-		       device->gpsdata.dev.cycle);
-	if (device->device_type != NULL && device->device_type->rate_switcher != NULL)
+	if (device->is_serial) {
 	    (void)snprintf(reply+strlen(reply), replylen-strlen(reply),
-			   ",\"mincycle\":%2.2f",
-			   device->device_type->min_cycle);
+			   "\"native\":%d,\"bps\":%d,\"parity\":\"%c\",\"stopbits\":%u,\"cycle\":%2.2f",
+			   device->gpsdata.dev.driver_mode,
+			   (int)gpsd_get_speed(&device->ttyset),
+			   device->gpsdata.dev.parity,
+			   device->gpsdata.dev.stopbits,
+			   device->gpsdata.dev.cycle);
+	    if (device->device_type != NULL && device->device_type->rate_switcher != NULL)
+		(void)snprintf(reply+strlen(reply), replylen-strlen(reply),
+			       ",\"mincycle\":%2.2f",
+			       device->device_type->min_cycle);
+	}
     }
     if (reply[strlen(reply)-1] == ',')
 	reply[strlen(reply)-1] = '\0';	/* trim trailing comma */
@@ -608,7 +610,7 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	"Other Type - no additional information",
     };
 
-#define SHIPTYPE_DISPLAY(n) (((n) < (uint)NITEMS(ship_type_legends)) ? ship_type_legends[n] : "INVALID SHIP TYPE")
+#define SHIPTYPE_DISPLAY(n) (((n) < (unsigned int)NITEMS(ship_type_legends)) ? ship_type_legends[n] : "INVALID SHIP TYPE")
 
     static char *station_type_legends[16] = {
 	"All types of mobiles",
@@ -629,7 +631,7 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	"Reserved for future use",
     };
 
-#define STATIONTYPE_DISPLAY(n) (((n) < (uint)NITEMS(ship_type_legends)) ? station_type_legends[n] : "INVALID STATION TYPE")
+#define STATIONTYPE_DISPLAY(n) (((n) < (unsigned int)NITEMS(ship_type_legends)) ? station_type_legends[n] : "INVALID STATION TYPE")
 
     static char *navaid_type_legends[] = {
 	"Unspcified",
@@ -666,33 +668,32 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	"Light Vessel / LANBY / Rigs",
     };
 
-#define NAVAIDTYPE_DISPLAY(n) (((n) < (uint)NITEMS(navaid_type_legends[0])) ? navaid_type_legends[n] : "INVALID NAVAID TYPE")
-
-    (void)snprintf(buf, buflen, 
-		   "{\"class\":\"AIS\",\"type\":%u,\"repeat\":%u,"
-		   "\"mmsi\":%u,", 
-		   ais->type, ais->repeat, ais->mmsi);
+#define NAVAIDTYPE_DISPLAY(n) (((n) < (unsigned int)NITEMS(navaid_type_legends[0])) ? navaid_type_legends[n] : "INVALID NAVAID TYPE")
 
 #define JSON_BOOL(x)	((x)?"true":"false")
+    (void)snprintf(buf, buflen, 
+		   "{\"class\":\"AIS\",\"type\":%u,\"repeat\":%u,"
+		   "\"mmsi\":%u,\"scaled\":%s,", 
+		   ais->type, ais->repeat, ais->mmsi, JSON_BOOL(scaled));
     /*@ -formatcode -mustfreefresh @*/
     switch (ais->type) {
     case 1:	/* Position Report */
     case 2:
     case 3:
 	if (scaled) {
-	    char turnlegend[10];
-	    char speedlegend[10];
+	    char turnlegend[20];
+	    char speedlegend[20];
 
 	    /*
 	     * Express turn as nan if not available,
 	     * "fastleft"/"fastright" for fast turns.
 	     */
 	    if (ais->type1.turn == -128)
-		(void) strlcpy(turnlegend, "nan", sizeof(turnlegend));
+		(void) strlcpy(turnlegend, "\"nan\"", sizeof(turnlegend));
 	    else if (ais->type1.turn == -127)
-		(void) strlcpy(turnlegend, "fastleft", sizeof(turnlegend));
+		(void) strlcpy(turnlegend, "\"fastleft\"", sizeof(turnlegend));
 	    else if (ais->type1.turn == 127)
-		(void) strlcpy(turnlegend, "fastright", sizeof(turnlegend));
+		(void) strlcpy(turnlegend, "\"fastright\"", sizeof(turnlegend));
 	    else
 		(void)snprintf(turnlegend, sizeof(turnlegend),
 			       "%.0f",
@@ -703,9 +704,9 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	     * "fast" for fast movers.
 	     */
 	    if (ais->type1.speed == AIS_SPEED_NOT_AVAILABLE)
-		(void) strlcpy(speedlegend, "nan", sizeof(speedlegend));
+		(void) strlcpy(speedlegend, "\"nan\"", sizeof(speedlegend));
 	    else if (ais->type1.speed == AIS_SPEED_FAST_MOVER)
-		(void) strlcpy(speedlegend, "fast", sizeof(speedlegend));
+		(void) strlcpy(speedlegend, "\"fast\"", sizeof(speedlegend));
 	    else
 		(void)snprintf(speedlegend, sizeof(speedlegend),
 			       "%.1f", ais->type1.speed / 10.0);
@@ -872,13 +873,40 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	break;
     case 9:	/* Standard SAR Aircraft Position Report */
 	if (scaled) {
+	    char altlegend[20];
+	    char speedlegend[20];
+
+	    /*
+	     * Express altitude as nan if not available,
+	     * "high" for above the reporting ceiling.
+	     */
+	    if (ais->type9.alt == AIS_ALT_NOT_AVAILABLE)
+		(void) strlcpy(altlegend, "\"nan\"", sizeof(altlegend));
+	    else if (ais->type9.alt == AIS_ALT_HIGH)
+		(void) strlcpy(altlegend, "\"high\"", sizeof(altlegend));
+	    else
+		(void)snprintf(altlegend, sizeof(altlegend),
+			       "%.1f", ais->type9.alt / 10.0);
+
+	    /*
+	     * Express speed as nan if not available,
+	     * "high" for above the reporting ceiling.
+	     */
+	    if (ais->type9.speed == AIS_SAR_SPEED_NOT_AVAILABLE)
+		(void) strlcpy(speedlegend, "\"nan\"", sizeof(speedlegend));
+	    else if (ais->type9.speed == AIS_SAR_FAST_MOVER)
+		(void) strlcpy(speedlegend, "\"fast\"", sizeof(speedlegend));
+	    else
+		(void)snprintf(speedlegend, sizeof(speedlegend),
+			       "%.1f", ais->type1.speed / 10.0);
+
 	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
-			   "\"alt\":%u,\"speed\":%u,\"accuracy\":%s,"
+			   "\"alt\":%s,\"speed\":%s,\"accuracy\":%s,"
 			   "\"lon\":%.4f,\"lat\":%.4f,\"course\":%.1f,"
 			   "\"second\":%u,\"regional\":%u,\"dte\":%u,"
 			   "\"raim\":%s,\"radio\":%u}\r\n",
-			   ais->type9.alt,
-			   ais->type9.speed,
+			   altlegend,
+			   speedlegend,
 			   JSON_BOOL(ais->type9.accuracy),
 			   ais->type9.lon / AIS_LATLON_SCALE,
 			   ais->type9.lat / AIS_LATLON_SCALE,
@@ -927,7 +955,7 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	break;
     case 15:	/* Interrogation */
 	(void)snprintf(buf+strlen(buf), buflen-strlen(buf),
-		       "mmsi1:%u,\"type1_1\":%u,\"offset1_1\":%u,"
+		       "\"mmsi1\":%u,\"type1_1\":%u,\"offset1_1\":%u,"
 		       "\"type1_2\":%u,\"offset1_2\":%u,\"mmsi2\":%u,"
 		       "\"type2_1\":%u,\"offset2_1\":%u}\r\n",
 		      ais->type15.mmsi1,
@@ -1107,7 +1135,7 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
     case 21: /* Aid to Navigation */
 	if (scaled) {
 	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
-			   "\"type\":%s,\"name\":\"%s\",\"lon\":%.4f,"
+			   "\"aid_type\":\"%s\",\"name\":\"%s\",\"lon\":%.4f,"
 			   "\"lat\":%.4f,\"accuracy\":%s,\"to_bow\":%u,"
 			   "\"to_stern\":%u,\"to_port\":%u,"
 			   "\"to_starboard\":%u,\"epfd\":\"%s\","
@@ -1131,7 +1159,7 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 			   JSON_BOOL(ais->type21.virtual_aid));
 	} else {
 	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
-			   "\"type\":%u,\"name\":\"%s\",\"accuracy\":%s,"
+			   "\"aid_type\":%u,\"name\":\"%s\",\"accuracy\":%s,"
 			   "\"lon\":%d,\"lat\":%d,\"to_bow\":%u,"
 			   "\"to_stern\":%u,\"to_port\":%u,\"to_starboard\":%u,"
 			   "\"epfd\":%u,\"second\":%u,\"regional\":%u,"
@@ -1155,55 +1183,49 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	}
 	break;
     case 22:	/* Channel Management */
-	if (scaled) {
+	(void)snprintf(buf+strlen(buf), buflen-strlen(buf),
+		       "\"channel_a\":%u,\"channel_b\":%u,"
+		       "\"txrx\":%u,\"power\":%s,",
+		       ais->type22.channel_a,
+		       ais->type22.channel_b,
+		       ais->type22.txrx,
+		       JSON_BOOL(ais->type22.power));
+	if (ais->type22.addressed) {
 	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
-			   "\"channel_a\":%u,\"channel_b\":%u,"
-			   "\"txrx\":%u,\"power\":%s,"
+			   "\"dest1\":%u,\"dest2\":%u",
+			   ais->type22.mmsi.dest1, ais->type22.mmsi.dest2);
+	} else if (scaled) {
+	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
 			   "\"ne_lon\":\"%f\",\"ne_lat\":\"%f\","
-			   "\"sw_lon\":\"%f\",\"sw_lat\":\"%f\","
-			   "\"addressed\":%s,\"band_a\":%s,"
-			   "\"band_b\":%s,\"zonesize\":\":%u}\r\n",
-			   ais->type22.channel_a,
-			   ais->type22.channel_b,
-			   ais->type22.txrx,
-			   JSON_BOOL(ais->type22.power),
-			   ais->type22.ne_lon / AIS_CHANNEL_LATLON_SCALE,
-			   ais->type22.ne_lat / AIS_CHANNEL_LATLON_SCALE,
-			   ais->type22.sw_lon / AIS_CHANNEL_LATLON_SCALE,
-			   ais->type22.sw_lat / AIS_CHANNEL_LATLON_SCALE,
-			   JSON_BOOL(ais->type22.addressed),
-			   JSON_BOOL(ais->type22.band_a),
-			   JSON_BOOL(ais->type22.band_b),
-			   ais->type22.zonesize);
+			   "\"sw_lon\":\"%f\",\"sw_lat\":\"%f\",",
+			   ais->type22.area.ne_lon / AIS_CHANNEL_LATLON_SCALE,
+			   ais->type22.area.ne_lat / AIS_CHANNEL_LATLON_SCALE,
+			   ais->type22.area.sw_lon / AIS_CHANNEL_LATLON_SCALE,
+			   ais->type22.area.sw_lat / AIS_CHANNEL_LATLON_SCALE);
 	} else {
 	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
-			   "\"channel_a\":%u,\"channel_b\":%u,"
-			   "\"txrx\":%u,\"power\":%s,"
 			   "\"ne_lon\":%d,\"ne_lat\":%d,"
-			   "\"sw_lon\":%d,\"sw_lat\":%d,"
-			   "\"addressed\":%s,\"band_a\":%s,"
-			   "\"band_b\":%s,\"zonesize\":\":%u}\r\n",
-			   ais->type22.channel_a,
-			   ais->type22.channel_b,
-			   ais->type22.txrx,
-			   JSON_BOOL(ais->type22.power),
-			   ais->type22.ne_lon,
-			   ais->type22.ne_lat,
-			   ais->type22.sw_lon,
-			   ais->type22.sw_lat,
-			   JSON_BOOL(ais->type22.addressed),
-			   JSON_BOOL(ais->type22.band_a),
-			   JSON_BOOL(ais->type22.band_b),
-			   ais->type22.zonesize);
+			   "\"sw_lon\":%d,\"sw_lat\":%d,",
+			   ais->type22.area.ne_lon,
+			   ais->type22.area.ne_lat,
+			   ais->type22.area.sw_lon,
+			   ais->type22.area.sw_lat);
 	}
+	(void)snprintf(buf+strlen(buf), buflen-strlen(buf),
+		       "\"addressed\":%s,\"band_a\":%s,"
+		       "\"band_b\":%s,\"zonesize\":%u}\r\n",
+		       JSON_BOOL(ais->type22.addressed),
+		       JSON_BOOL(ais->type22.band_a),
+		       JSON_BOOL(ais->type22.band_b),
+		       ais->type22.zonesize);
 	break;
     case 23:	/* Group Assignment Command */
 	if (scaled) {
 	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
 			   "\"ne_lon\":\"%f\",\"ne_lat\":\"%f\","
 			   "\"sw_lon\":\"%f\",\"sw_lat\":\"%f\","
-			   "\"stationtype\":%s,\"shiptype\":%s,"
-			   "\"interval\":%u,\"quiet\":%u\r\n",
+			   "\"stationtype\":\"%s\",\"shiptype\":\"%s\","
+			   "\"interval\":%u,\"quiet\":%u}\r\n",
 			   ais->type23.ne_lon / AIS_CHANNEL_LATLON_SCALE,
 			   ais->type23.ne_lat / AIS_CHANNEL_LATLON_SCALE,
 			   ais->type23.sw_lon / AIS_CHANNEL_LATLON_SCALE,
@@ -1217,7 +1239,7 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 			   "\"ne_lon\":%d,\"ne_lat\":%d,"
 			   "\"sw_lon\":%d,\"sw_lat\":%d,"
 			   "\"stationtype\":%u,\"shiptype\":%u,"
-			   "\"interval\":%u,\"quiet\":%u\r\n",
+			   "\"interval\":%u,\"quiet\":%u}\r\n",
 			   ais->type23.ne_lon,
 			   ais->type23.ne_lat,
 			   ais->type23.sw_lon,
@@ -1260,7 +1282,9 @@ void aivdm_json_dump(const struct ais_t *ais, bool scaled, /*@out@*/char *buf, s
 	}
 	break;
     default:
-	    (void) strlcat(buf, "}\r\n", buflen);
+	if (buf[strlen(buf)-1] == ',')
+	    buf[strlen(buf)-1] = '\0';
+	(void) strlcat(buf, "}\r\n", buflen);
 	break;
     }
     /*@ +formatcode +mustfreefresh @*/
@@ -1275,28 +1299,28 @@ int json_device_read(const char *buf,
 {
     /*@ -fullinitblock @*/
     const struct json_attr_t json_attrs_device[] = {
-	{"class",      check,      .dflt.check = "DEVICE"},
+	{"class",      t_check,      .dflt.check = "DEVICE"},
 	
-        {"path",       string,     .addr.string  = dev->path,
-	                           .len = sizeof(dev->path)},
-	{"activated",  real,       .addr.real = &dev->activated},
-	{"flags",      integer,    .addr.integer = &dev->flags},
-	{"driver",     string,     .addr.string  = dev->driver,
-	                           .len = sizeof(dev->driver)},
-	{"subtype",    string,     .addr.string  = dev->subtype,
-	                           .len = sizeof(dev->subtype)},
-	{"native",     integer,    .addr.integer = &dev->driver_mode,
-				   .dflt.integer = DEVDEFAULT_NATIVE},
-	{"bps",	       uinteger,   .addr.uinteger = &dev->baudrate,
-				   .dflt.uinteger = DEVDEFAULT_BPS},
-	{"parity",     character,  .addr.character = &dev->parity,
-                                   .dflt.character = DEVDEFAULT_PARITY},
-	{"stopbits",   uinteger,   .addr.uinteger = &dev->stopbits,
-				   .dflt.uinteger = DEVDEFAULT_STOPBITS},
-	{"cycle",      real,       .addr.real = &dev->cycle,
-				   .dflt.real = NAN},
-	{"mincycle",   real,       .addr.real = &dev->mincycle,
-				   .dflt.real = NAN},
+        {"path",       t_string,     .addr.string  = dev->path,
+	                                .len = sizeof(dev->path)},
+	{"activated",  t_real,       .addr.real = &dev->activated},
+	{"flags",      t_integer,    .addr.integer = &dev->flags},
+	{"driver",     t_string,     .addr.string  = dev->driver,
+	                                .len = sizeof(dev->driver)},
+	{"subtype",    t_string,     .addr.string  = dev->subtype,
+	                                .len = sizeof(dev->subtype)},
+	{"native",     t_integer,    .addr.integer = &dev->driver_mode,
+				        .dflt.integer = DEVDEFAULT_NATIVE},
+	{"bps",	       t_uinteger,   .addr.uinteger = &dev->baudrate,
+				        .dflt.uinteger = DEVDEFAULT_BPS},
+	{"parity",     t_character,  .addr.character = &dev->parity,
+                                        .dflt.character = DEVDEFAULT_PARITY},
+	{"stopbits",   t_uinteger,   .addr.uinteger = &dev->stopbits,
+				        .dflt.uinteger = DEVDEFAULT_STOPBITS},
+	{"cycle",      t_real,       .addr.real = &dev->cycle,
+				        .dflt.real = NAN},
+	{"mincycle",   t_real,       .addr.real = &dev->mincycle,
+				        .dflt.real = NAN},
 	{NULL},
     };
     /*@ +fullinitblock @*/
@@ -1315,20 +1339,20 @@ int json_watch_read(const char *buf,
 {
     /*@ -fullinitblock @*/
     struct json_attr_t chanconfig_attrs[] = {
-	{"class",          check,    .dflt.check = "WATCH"},
+	{"class",          t_check,    .dflt.check = "WATCH"},
 	
-	{"enable",         boolean,  .addr.boolean = &ccp->watcher,
-                                     .dflt.boolean = true},
-	{"json",           boolean,  .addr.boolean = &ccp->json,
-                                     .nodefault = true},
-	{"raw",	           integer,  .addr.integer = &ccp->raw,
-	                             .nodefault = true},
-	{"nmea",	   boolean,  .addr.boolean = &ccp->nmea,
-	                             .nodefault = true},
-	{"scaled",         boolean,  .addr.boolean = &ccp->scaled},
-	{"timing",         boolean,  .addr.boolean = &ccp->timing},
-	{"device",         string,   .addr.string = ccp->devpath,
-	                             .len = sizeof(ccp->devpath)},
+	{"enable",         t_boolean,  .addr.boolean = &ccp->watcher,
+                                          .dflt.boolean = true},
+	{"json",           t_boolean,  .addr.boolean = &ccp->json,
+                                          .nodefault = true},
+	{"raw",	           t_integer,  .addr.integer = &ccp->raw,
+	                                  .nodefault = true},
+	{"nmea",	   t_boolean,  .addr.boolean = &ccp->nmea,
+	                                  .nodefault = true},
+	{"scaled",         t_boolean,  .addr.boolean = &ccp->scaled},
+	{"timing",         t_boolean,  .addr.boolean = &ccp->timing},
+	{"device",         t_string,   .addr.string = ccp->devpath,
+	                                  .len = sizeof(ccp->devpath)},
 	{NULL},
     };
     /*@ +fullinitblock @*/

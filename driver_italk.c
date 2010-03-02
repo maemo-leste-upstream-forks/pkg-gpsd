@@ -1,4 +1,4 @@
-/* $Id: driver_italk.c 6566 2009-11-20 03:51:06Z esr $ */
+/* $Id: driver_italk.c 7003 2010-02-16 22:34:15Z esr $ */
 /*
  * Driver for the iTalk binary protocol used by FasTrax
  */
@@ -500,7 +500,6 @@ const struct gps_type_t italk_binary =
 static int literal_send(int fd, const char *fmt, ... )
 /* ship a raw command to the GPS */
 {
-    ssize_t status;
     va_list ap;
 
     va_start(ap, fmt) ;

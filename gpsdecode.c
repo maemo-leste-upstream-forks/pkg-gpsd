@@ -1,4 +1,4 @@
-/* $Id: gpsdecode.c 6623 2009-11-30 01:37:49Z esr $ */
+/* $Id: gpsdecode.c 6965 2010-01-30 14:19:42Z esr $ */
 #include <sys/types.h>
 #ifndef S_SPLINT_S
 #include <unistd.h>
@@ -275,20 +275,34 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       (uint)ais->type21.virtual_aid);
 	break;
     case 22:	/* Channel Management */
-	(void)snprintf(buf+strlen(buf), buflen-strlen(buf),
-		       "%u,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u",
-		       ais->type22.channel_a,
-		       ais->type22.channel_b,
-		       ais->type22.txrx,
-		       (uint)ais->type22.power,
-		       ais->type22.ne_lon,
-		       ais->type22.ne_lat,
-		       ais->type22.sw_lon,
-		       ais->type22.sw_lat,
-		       (uint)ais->type22.addressed,
-		       (uint)ais->type22.band_a,
-		       (uint)ais->type22.band_b,
-		       ais->type22.zonesize);
+	if (!ais->type22.addressed)
+	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
+			   "%u,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u",
+			   ais->type22.channel_a,
+			   ais->type22.channel_b,
+			   ais->type22.txrx,
+			   (uint)ais->type22.power,
+			   ais->type22.area.ne_lon,
+			   ais->type22.area.ne_lat,
+			   ais->type22.area.sw_lon,
+			   ais->type22.area.sw_lat,
+			   (uint)ais->type22.addressed,
+			   (uint)ais->type22.band_a,
+			   (uint)ais->type22.band_b,
+			   ais->type22.zonesize);
+	else
+	    (void)snprintf(buf+strlen(buf), buflen-strlen(buf),
+			   "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
+			   ais->type22.channel_a,
+			   ais->type22.channel_b,
+			   ais->type22.txrx,
+			   (uint)ais->type22.power,
+			   ais->type22.mmsi.dest1,
+			   ais->type22.mmsi.dest2,
+			   (uint)ais->type22.addressed,
+			   (uint)ais->type22.band_a,
+			   (uint)ais->type22.band_b,
+			   ais->type22.zonesize);
 	break;
     case 23:	/* Group Management Command*/
 	(void)snprintf(buf+strlen(buf), buflen-strlen(buf),
@@ -460,7 +474,7 @@ int main(int argc, char **argv)
 	    break;
 
 	case 'V':
-	    (void)fprintf(stderr, "SVN ID: $Id: gpsdecode.c 6623 2009-11-30 01:37:49Z esr $ \n");
+	    (void)fprintf(stderr, "SVN ID: $Id: gpsdecode.c 6965 2010-01-30 14:19:42Z esr $ \n");
 	    exit(0);
 
 	case '?':
