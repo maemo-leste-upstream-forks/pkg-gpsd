@@ -121,6 +121,7 @@
  netgnss_uri_open@Base 2.90~svn6694
  netlib_connectsock@Base 2.39
  netlib_errstr@Base 2.90~svn6694
+ netlib_sock2ip@Base 2.91
  nmea@Base 2.39
  nmea_add_checksum@Base 2.39
  nmea_parse@Base 2.39
@@ -155,7 +156,6 @@
  sbits@Base 2.39
  sirf_binary@Base 2.39
  sirf_parse@Base 2.39
- sock2ip@Base 2.39
  sr_sum@Base 2.39
  srec_fin@Base 2.39
  srec_hdr@Base 2.39
