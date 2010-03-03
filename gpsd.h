@@ -376,7 +376,7 @@
 #define UBX_ENABLE 1
 
 /* Version number of package */
-#define VERSION "2.91"
+#define VERSION "2.92"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
