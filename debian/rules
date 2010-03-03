@@ -215,6 +215,7 @@ clean-patched:
 	rm -rf .deps .libs
 	rm -f gpsd_config.h.in~
 	rm -f $(CURDIR)/debian/gpsd.udev
+	rm -f gps/*.pyc gps/*.so
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
 	rm -f config.sub
 endif
