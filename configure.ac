@@ -1,6 +1,6 @@
-dnl $Id: configure.ac 7015 2010-03-01 21:56:55Z esr $
+dnl $Id: configure.ac 7020 2010-03-03 01:42:28Z esr $
 AC_INIT
-AM_INIT_AUTOMAKE(gpsd, 2.91)
+AM_INIT_AUTOMAKE(gpsd, 2.92)
 dnl AC_PREFIX_PROGRAM(gcc)
 AM_CONFIG_HEADER(gpsd_config.h)
 AC_LANG([C])

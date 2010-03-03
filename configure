@@ -3308,7 +3308,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=gpsd
- VERSION=2.91
+ VERSION=2.92
 
 
 cat >>confdefs.h <<_ACEOF
