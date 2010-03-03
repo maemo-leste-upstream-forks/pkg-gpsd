@@ -1,3 +1,43 @@
+gpsd (2.92-1) unstable; urgency=low
+
+  * New upstream version. The following bugs were fixed by upstream
+    since the last upload:
+    - Wrong test in /lib/udev/gpsd.hotplug.wrapper prevents proper device
+      removal. Thanks to Luca Niccoli (Closes: #561574)
+    - ATTR doesn't match in /lib/udev/rules.d/60-gpsd.rules.
+      Thanks to Philipp Matthias Hahn (Closes: #567827)
+    Below follows a detailed list of changes in the Debian packaging:
+
+  * [85173097] Use upstream's gpsd.hotplug.wrapper.
+  * [d83cdf70] Updating debconf translation: ca.po (Closes: #562717) -
+    thanks to Jordà Polo
+  * [c06f0bcb] Updating debconf translation: fr.po (Closes: #564877) -
+    thanks to Christian Perrier
+  * [c4ca2af7] Updating debconf translation: vi.po (Closes: #569656) -
+    thanks to Clytie Siddall
+  * [b901c8ac] Updating po files according to the fixed template.
+  * [238680d1] Drop xgps related patches as it is written in Python now.
+  * [08ce719f] Don't install xgps.ad anymore.
+  * [baec0c9d] Imported Upstream version 2.91
+  * [3c5c96a1] Work around autotools trying to handle Python stuff.
+  * [8a19e205] Update gpsd-dbg.install to list the new Python dbg
+    modules.
+  * [58a72a9b] gps.py is in the gps module now, update debian/rules
+    accordingly.
+  * [0293e4f3] Updating symbols file for libgps19.
+  * [441f05fb] Don't install gpsd-client binaries in two packages.
+  * [0a6eb429] Require python-gps from gpsd-clients for xgps. 
+  * [cf61c2ab] Bump Standards-Version to 3.8.4. No changes needed.
+  * [25a5d53a] Add ${python:Depends} for gpsd-clients.
+  * [47c910f1] Add postinst script for gpsd-clients. We need to remove
+    the xgps config file as it is not shipped anymore.
+  * [0cda84e5] Cleaning upstream sources from svn leftovers.
+  * [91e1f08d] Imported Upstream version 2.92
+  * [38feb394] Clean .so and .pyc files from the gps folder in the clean
+    target.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 03 Mar 2010 21:19:37 +0100
+
 gpsd (2.90.1~svn6819-1) unstable; urgency=low
 
   * SVN snapshot, uploading to unstable as it fixes
