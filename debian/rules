@@ -160,11 +160,6 @@ install-gpsd: build-gpsd-stamp
 	dh_testroot
 	export SKIP_SETUP_PY="yes"; $(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 
-	# remove python-gps binaries from gpsd-clients package
-	for i in gpsprof gpsfake gpscat; do \
-		rm -f debian/tmp/usr/bin/$$i ;\
-	done
-
 	cp INSTALL TROUBLESHOOTING
 	#ldconfig link
 	dh_link -p$(PACKAGE_LIB) usr/lib/libgps.so.$(LIB_version) \
