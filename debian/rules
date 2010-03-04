@@ -30,9 +30,11 @@ LSB_RELEASE := $(shell lsb_release -si)
 UDEV_BREAKS =
 
 ifeq (Debian,$(strip $(LSB_RELEASE))) ## debian ##
-	## FIXME ##
-else ##debian ##
-ifneq (Ubuntu,$(strip $(LSB_RELEASE))) ## ubuntu ##
+ifeq (0, $(strip $(shell dpkg --compare-versions $(DH_VERSION) ge 7.3.15; echo $$?)))
+UDEV_BREAKS = 125
+endif
+else ## not debian ##
+ifeq (Ubuntu,$(strip $(LSB_RELEASE))) ## ubuntu ##
 ifeq (0, $(strip $(shell dpkg --compare-versions $(DH_VERSION) ge 7.0.17ubuntu2; echo $$?)))
 UDEV_BREAKS = 136-1
 endif
@@ -243,7 +245,7 @@ binary-arch: build install
 	dh_makeshlibs -s -- -c4
 	dh_shlibdeps -s
 ifneq (,$(strip $(UDEV_BREAKS)))
-	echo "gpsd:Breaks=udev (<< $(UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
+	echo "gpsd:Breaks=udev (<< $(strip UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
 endif
 	dh_gencontrol -s
 	dh_installdeb -s
