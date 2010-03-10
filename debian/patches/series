@@ -1,1 +1,2 @@
-skip-setup.py
+0001-setup.py-Do-nothing-when-SKIP_SETUP_PY-is-set-in-the.patch
+0002-Non-streaming-operation-of-the-Python-exerciser-does.patch
