@@ -242,7 +242,11 @@ binary-arch: build install
 	dh_strip -s --dbg-package=$(PACKAGE_GPSDDBG)
 	dh_compress -s
 	dh_fixperms -s -Xgpsd.hotplug.wrapper
+ifeq (,$(DEB_BUILD_OPTIONS))
 	dh_makeshlibs -s -- -c4
+else
+	dh_makeshlibs -s
+endif
 	dh_shlibdeps -s
 ifneq (,$(strip $(UDEV_BREAKS)))
 	echo "gpsd:Breaks=udev (<< $(strip UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
