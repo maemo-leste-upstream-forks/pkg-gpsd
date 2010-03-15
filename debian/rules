@@ -25,7 +25,7 @@ PYTHONS := $(shell pyversions -vr)
 
 
 #debhelper version and settings needed for udev
-DH_VERSION := $(shell dpkg -s debhelper | grep '^Version' | awk '{print $2}')
+DH_VERSION := $(shell dpkg -s debhelper | grep '^Version' | awk '{print $$2}')
 LSB_RELEASE := $(shell lsb_release -si)
 UDEV_BREAKS =
 
@@ -40,7 +40,6 @@ UDEV_BREAKS = 136-1
 endif
 endif ## ubuntu ##
 endif ## debian ##
-
 
 #let's help configure to figure out our host/build system
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
@@ -248,8 +247,8 @@ else
 	dh_makeshlibs -s
 endif
 	dh_shlibdeps -s
-ifneq (,$(strip $(UDEV_BREAKS)))
-	echo "gpsd:Breaks=udev (<< $(strip UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
+ifneq (,$(UDEV_BREAKS))
+	echo "gpsd:Breaks=udev (<< $(UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
 endif
 	dh_gencontrol -s
 	dh_installdeb -s
