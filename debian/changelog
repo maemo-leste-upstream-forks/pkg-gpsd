@@ -1,3 +1,31 @@
+gpsd (2.92-2) unstable; urgency=low
+
+  * [554ff5f1] Remove libxt-dev, lesstif2-dev, libxaw7-dev from Build-
+    Deps. This is necessary to allow gpsd to go into Ubuntu main.
+    Unfortunately there is no working xgpsspeed replacement right now,
+    but this will change again in the future.
+  * [26946196] Install only listed files into the gpsd-clients package.
+  * [0642fc20] Remove all occurences of xgpsspeed.
+  * [83002c3e] Handle Breaks: udev for gpsd in Debian.
+  * [f11f44a5] Delete default_units patch, not needed anymore.
+  * [3723afb4] Add patch from svn r7029 to fix the Python gps
+    excerciser. The non-streaming function failed before as the query
+    function was removed. (Closes: #569703, #562204) - thanks to Travis
+    Hampton and Timo Juhani Lindfors
+  * [992c4ca9] Limit packaging to source format 1.0 for now.
+  * [411b880c] Pick several patches from upstream.
+       - Fix for missing mode information in JSON (Closes: #573752)
+       - Make xgps robust against JSON with no time field.
+       - Default to the new protocol in the library as this is the default
+         protocol the daemon uses.
+  * [ef59451f] Ignore symbols files changes when DEB_BUILD_OPTIONS is
+    set. Not stripping the library leaves some additional symbols, so we
+    just ignore that when the package is being built with debug options.
+    (Closes: #572705) - thanks to Timo Juhani Lindfors
+  * [d94fc908] Fix a small bug in the handling of 'Breaks' for udev.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 15 Mar 2010 11:17:55 +0100
+
 gpsd (2.92-1) unstable; urgency=low
 
   * New upstream version. The following bugs were fixed by upstream
