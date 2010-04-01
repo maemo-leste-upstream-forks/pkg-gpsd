@@ -1,7 +1,6 @@
 From: Eric S. Raymond <esr@thyrsus.com>
 Date: Sun, 14 Mar 2010 18:59:02 -0400
-Subject: [PATCH] Make the library default to new protocol rather than old.
- Old-protocol support is still present.
+Subject: [PATCH] Make the library default to new protocol rather than old. Old-protocol support is still present.
 
 ---
  libgps_core.c |    6 ++----
