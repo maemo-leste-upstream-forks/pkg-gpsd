@@ -1,3 +1,16 @@
+gpsd (2.92-4) unstable; urgency=medium
+
+  * [8fcedc1e] gpsd: Move python to Recommends python is only needed
+    when udev is used, udev is in Recommends only, so it does not make
+    much sense to have Python in Depends.
+  * [d0b914c1] Fix gpsd socket location parsing in gpsd.config. (Closes:
+    #576316) - thanks to Sascha Silbe
+  * [7325341a] Include gpsctl manpage in gpsd-clients.
+  * Keeping the medium urgency as the package was kept out of the
+    archive due to the breakage of ries/ftp-master.debian.org.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 06 Apr 2010 13:14:41 +0200
+
 gpsd (2.92-3) unstable; urgency=medium
 
   * [82dc8560] Pick bugfix from upstream. Actually close the daemon
