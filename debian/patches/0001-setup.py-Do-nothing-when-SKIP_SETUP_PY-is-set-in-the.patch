@@ -7,10 +7,10 @@ Subject: [PATCH] setup.py: Do nothing when SKIP_SETUP_PY is set in the environme
  1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/setup.py b/setup.py
-index 465f15c..06a4e6b 100644
+index f686d8f..d072cec 100644
 --- a/setup.py
 +++ b/setup.py
-@@ -7,6 +7,10 @@ from distutils.core import setup, Extension
+@@ -9,6 +9,10 @@ from distutils.core import setup, Extension
  import os
  import sys
  
