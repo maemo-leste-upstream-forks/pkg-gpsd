@@ -1,4 +1,3 @@
-/* $Id: packet_names.h 5771 2009-07-16 22:22:05Z ckuethe $ */
 /* edit packet_names.h to add new packet types. */
    "GROUND_STATE",	/* we don't know what packet type to expect */
 

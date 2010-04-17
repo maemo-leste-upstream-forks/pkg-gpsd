@@ -1,6 +1,8 @@
-dnl $Id: configure.ac 7020 2010-03-03 01:42:28Z esr $
+dnl This file is Copyright (c)2010 by the GPSD project
+dnl BSD terms apply: see the file COPYING in the distribution root for details.
+
 AC_INIT
-AM_INIT_AUTOMAKE(gpsd, 2.92)
+AM_INIT_AUTOMAKE(gpsd, 2.93)
 dnl AC_PREFIX_PROGRAM(gcc)
 AM_CONFIG_HEADER(gpsd_config.h)
 AC_LANG([C])
@@ -226,13 +228,48 @@ AC_CHECK_LIB(pthread, pthread_setcancelstate,
 	AC_DEFINE([HAVE_LIBPTHREAD], [], [pthread libraries are present])])
 AC_SUBST(LIBPTHREAD)
 
+#
+# We want libusb-1.x or later.  Checking for this is messy in 2010
+# since many Linux systems ship with .0,1.x versions and that's 
+# what you get if you check naively for -lusb.  
+#
+# We use the fact that the obsolete versions put their include file in
+# /usr/include/usb.h, while the newer ones have it in 
+# /usr/include/libusb-*/libusb.h
+#
+AC_MSG_CHECKING([for libusb version >= 1.0.0])
+if test -f /usr/include/libusb-*/libusb.h ;
+then
+    usb=$(basename /usr/lib/libusb-*.so | sed -e s/\.so// -e s/^lib//)
+    AC_DEFINE([HAVE_LIBUSB], [], [will link with -l$usb; ])
+    LIBUSB=-l${usb}
+    INCUSB=-I/usr/include/lib${usb}
+    AC_MSG_RESULT([found.])
+else
+    AC_MSG_RESULT([not found.])
+fi
+AC_SUBST(LIBUSB)
+AC_SUBST(INCUSB)
+
 AH_VERBATIM([_GNU_SOURCE],
 	  [/* Some libc's don't have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT
+# ifdef __cplusplus
+extern "C" {
+# endif
 size_t strlcat(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
+# ifdef __cplusplus
+}
+# endif
 #endif
 #ifndef HAVE_STRLCPY
+# ifdef __cplusplus
+extern "C" {
+# endif
 size_t strlcpy(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
+# ifdef __cplusplus
+}
+# endif
 #endif
 
 #define GPSD_CONFIG_H])
@@ -493,8 +530,8 @@ fi
 dnl check for True North support
 AC_ARG_ENABLE(tnt,
   AC_HELP_STRING([--enable-tnt],
-		 [enable True North Technologies support]),
-  [ac_tnt=$enableval], [ac_tnt=no])
+		 [disable True North Technologies support]),
+  [ac_tnt=$enableval], [ac_tnt=yes])
 AC_MSG_CHECKING([for True North support])
 if test x"$ac_tnt" = "xyes"; then
     ac_nmea=yes
@@ -507,9 +544,9 @@ fi
 
 dnl check for OceanServer support
 AC_ARG_ENABLE(oceanserver,
-  AC_HELP_STRING([--enable-oceanserver],
-		 [enable OceanServer support]),
-  [ac_oceanserver=$enableval], [ac_oceanserver=no])
+  AC_HELP_STRING([--disble-oceanserver],
+		 [disable OceanServer support]),
+  [ac_oceanserver=$enableval], [ac_oceanserver=yes])
 AC_MSG_CHECKING([for OceanServer support])
 if test x"$ac_oceanserver" = "xyes"; then
     ac_nmea=yes
@@ -637,6 +674,7 @@ if test x"$ac_aivdm" = "xyes"; then
 else
   AC_MSG_RESULT([no])
 fi
+AM_CONDITIONAL([HAVE_AIVDM], [test "$ac_aivdm" = "yes"])
 
 dnl check for latency timing support
 AC_ARG_ENABLE(timing,
@@ -926,6 +964,20 @@ fi
 
 AM_CONDITIONAL([LIBGPSMM_ENABLE], [test x"$ac_libgpsmm" = x"yes"])
 
+AC_ARG_ENABLE(ipv6,
+  AC_HELP_STRING([--disable-ipv6],
+		 [don't build IPv6 support]),
+  [ac_ipv6=$enableval], [ac_ipv6=$ISCXX])
+AC_MSG_CHECKING([for IPv6 support])
+if test x"$ac_ipv6" = "xyes"; then
+    AC_MSG_RESULT([yes])
+	AC_DEFINE([IPV6_ENABLE], 1, [IPv6 support])
+else
+  AC_MSG_RESULT([no])
+fi
+
+AM_CONDITIONAL([IPV6_ENABLE], [test x"$ac_ipv6" = x"yes"])
+
 dnl Test for XSLT processor (xsltproc or xmlto)
 AC_CHECK_PROG(WITH_XSLTPROC,[xsltproc],[yes],[no])
 MANGENERATOR=
@@ -1016,8 +1068,6 @@ echo "MTK-3301                : $ac_mtk3301"
 dnl Below this line are non-protocol switches
 echo "	Daemon Features"
 echo "	---------------"
-echo "GPSD-NG                 : $ac_gpsdng"
-echo "Old protocol            : $ac_oldstyle"
 echo "NTP SHM                 : $ac_ntpshm"
 echo "NTP PPS                 : $ac_pps"
 echo -n "PPS input on            : " ; case $ac_ppsoncts in yes) echo "CTS" ;; no) echo "DCD" ;; *) echo "Not defined" ;; esac
@@ -1025,6 +1075,7 @@ echo "Fixed port speed        : $ac_baud"
 echo "Priv-drop user          : $ac_user"
 echo "Enable shared libraries : $enable_shared"
 echo "Enable DBUS support     : $ac_dbus"
+echo "Enable IPv6 support     : $ac_ipv6"
 echo "Limited max clients     : $ac_maxclients"
 echo "Limited max devices     : $ac_maxdevices"
 echo "Allow device reconfig   : $ac_reconfigure"
@@ -1033,6 +1084,7 @@ echo "Squelch logging/hexdump : $ac_squelch"
 echo "Raw Measurements        : $ac_raw"
 echo "	Client Features"
 echo "	---------------"
+echo "Old protocol in libgps  : $ac_oldstyle"
 echo "Build ncurses programs  : $ac_ncurses"
 echo "Enable X11 support      : $ac_x"
 echo "Enable Python support   : $ac_python"

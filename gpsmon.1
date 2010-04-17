@@ -2,12 +2,12 @@
 .\"     Title: gpsmon
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 03/01/2010
-.\"    Manual: [FIXME: manual]
-.\"    Source: [FIXME: source]
+.\"      Date: 17 Feb 2009
+.\"    Manual: GPSD Documentation
+.\"    Source: The GPSD Project
 .\"  Language: English
 .\"
-.TH "GPSMON" "1" "03/01/2010" "[FIXME: source]" "[FIXME: manual]"
+.TH "GPSMON" "1" "17 Feb 2009" "The GPSD Project" "GPSD Documentation"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 gpsmon \- real\-time GPS packet monitor and control utility
 .SH "SYNOPSIS"
 .HP \w'\fBgpsmon\fR\ 'u
-\fBgpsmon\fR [\-h] [\-V] [\-F\ \fIcontrol\-socket\fR] [[\ \fIserver\fR\ [\fI:port\fR\ [\fI:device\fR]]\ |\ \fIdevice\fR]] [\-l] [\-D\ \fIdebuglevel\fR]
+\fBgpsmon\fR [\-h] [\-L] [\-V] [\-l\ \fIlogfile\fR] [\-F\ \fIcontrol\-socket\fR] [[\ \fIserver\fR\ [\fI:port\fR\ [\fI:device\fR]]\ |\ \fIdevice\fR]] [\-D\ \fIdebuglevel\fR]
 .SH "DESCRIPTION"
 .PP
 gpsmon
@@ -50,9 +50,11 @@ The \-F option is only valid in client mode; it specifies a control socket to wh
 .PP
 The \-D option enables packet\-getter debugging output and is probably only useful to developers of the GPSD code\&. Consult the packet\-getter source code for relevant values\&.
 .PP
-The \-l option lists a table showing which GPS device types
+The \-L option lists a table showing which GPS device types
 gpsmon
 has built\-in support for, and which generic commands can be applied to which GPS types, and then exits\&. Note that this does not list type\-specific commands associated with individual GPS types\&.
+.PP
+The \-l option sets up logging to a specified file to start immediately on device open\&. This may be useful is, for example, you want to capture the startup message from a device that displays firmware version information there\&.
 .PP
 After startup, the top part of the screen reports the contents of several especially interesting packet types\&. The bottom half of the screen is a scrolling hex dump of all packets the GPS is issuing\&. Dump lines beginning >>> represent control packets sent to the GPS\&.
 .SH "COMMANDS"

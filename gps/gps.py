@@ -1,17 +1,21 @@
 #!/usr/bin/env python
-# $Id: gps.py 7020 2010-03-03 01:42:28Z esr $
+#
+# This file is Copyright (c) 2010 by the GPSD project
+# BSD terms apply: see the file COPYING in the distribution root for details.
 #
 # gps.py -- Python interface to GPSD.
 #
-import time, calendar, math, socket, sys, select
+# This interface has a lot of historical cruft in it related to old
+# protocol, and was modeled on the C interface. It won't be thrown
+# away, but it's likely to be deprecated in favor of something more
+# Pythonic.
+#
+import time, socket, sys, select
 
 if sys.hexversion >= 0x2060000:
     import json			# For Python 2.6
 else:
     import simplejson as json	# For Python 2.4 and 2.5
-
-api_major_version = 3   # bumped on incompatible changes
-api_minor_version = 1   # bumped on compatible changes
 
 NaN = float('nan')
 def isnan(x): return str(x) == 'nan'
@@ -31,24 +35,24 @@ DOP_SET        	= 0x00000400
 VERSION_SET    	= 0x00000800
 HERR_SET       	= 0x00001000
 VERR_SET       	= 0x00002000
-PERR_SET       	= 0x00004000
-POLICY_SET     	= 0x00020000
-ERR_SET        	= (HERR_SET|VERR_SET|PERR_SET)
-SATELLITE_SET  	= 0x00040000
-RAW_SET        	= 0x00080000
-USED_SET       	= 0x00100000
-SPEEDERR_SET   	= 0x00200000
-TRACKERR_SET   	= 0x00400000
-CLIMBERR_SET   	= 0x00800000
-DEVICE_SET     	= 0x01000000
-DEVICELIST_SET 	= 0x02000000
-DEVICEID_SET   	= 0x04000000
-ERROR_SET      	= 0x08000000
-RTCM2_SET      	= 0x10000000
-RTCM3_SET      	= 0x20000000
-AIS_SET        	= 0x40000000
-PACKET_SET     	= 0x80000000
-DATA_SET       	= ~(ONLINE_SET|PACKET_SET)
+ATTITUDE_SET   	= 0x00004000
+POLICY_SET     	= 0x00008000
+SATELLITE_SET  	= 0x00010000
+RAW_SET        	= 0x00020000
+USED_SET       	= 0x00040000
+SPEEDERR_SET   	= 0x00080000
+TRACKERR_SET   	= 0x00100000
+CLIMBERR_SET   	= 0x00200000
+DEVICE_SET     	= 0x00400000
+DEVICELIST_SET 	= 0x00800000
+DEVICEID_SET   	= 0x01000000
+ERROR_SET      	= 0x02000000
+RTCM2_SET      	= 0x04000000
+RTCM3_SET      	= 0x08000000
+AIS_SET        	= 0x10000000
+PACKET_SET     	= 0x20000000
+AUXDATA_SET    	= 0x80000000
+UNION_SET      	= (RTCM2_SET|RTCM3_SET|AIS_SET|VERSION_SET|DEVICELIST_SET|ERROR_SET)
 
 STATUS_NO_FIX = 0
 STATUS_FIX = 1
@@ -56,7 +60,7 @@ STATUS_DGPS_FIX = 2
 MODE_NO_FIX = 1
 MODE_2D = 2
 MODE_3D = 3
-MAXCHANNELS = 12
+MAXCHANNELS = 20
 SIGNAL_STRENGTH_UNKNOWN = NaN
 
 WATCH_DISABLE	= 0x0000
@@ -172,6 +176,8 @@ class dictwrapper:
     def __setitem__(self, key, val):
         "Emulate dictionary, for new-style interface."
         self.__dict__[key] = val
+    def __contains__(self, key):
+        return key in self.__dict__
     def __str__(self):
         return "<dictwrapper: " + str(self.__dict__) + ">"
     __repr__ = __str__
@@ -248,39 +254,10 @@ class gps(gpsdata):
                 data = field[2:]
                 if data[0] == "?":
                     continue
-                if cmd == 'A':
-                    self.fix.altitude = float(data)
-                    self.valid |= ALTITUDE_SET
-                elif cmd == 'B':
-                    parts = data.split()
-                    self.baudrate = int(parts[0])
-                    self.stopbits = int(parts[3])
-                elif cmd == 'C':
-                    parts = data.split()
-                    if len(parts) == 2:
-                        (self.cycle, self.mincycle) = map(float, parts)
-                    else:
-                        self.mincycle = self.cycle = float(data)
-                elif cmd == 'D':
-                    self.utc = data
-                    self.fix.time = isotime(self.utc)
-                    self.valid |= TIME_SET
-                elif cmd == 'E':
-                    parts = data.split()
-                    (self.epe, eph, self.fix.epv) = map(float, parts)
-                    self.epx = self.epy = eph
-                    self.valid |= HERR_SET | VERR_SET | PERR_SET
-                elif cmd == 'F':
+                if cmd == 'F':
                     self.device = data
                 elif cmd == 'I':
                     self.gps_id = data
-                elif cmd == 'K':
-                    self.devices = data[1:].split()
-                elif cmd == 'M':
-                    self.fix.mode = int(data)
-                    self.valid |= MODE_SET
-                elif cmd == 'N':
-                    self.driver_mode = int(data)
                 elif cmd == 'O':
                     fields = data.split()
                     if fields[0] == '?':
@@ -326,26 +303,6 @@ class gps(gpsdata):
                             else:
                                 self.fix.mode = MODE_3D
                             self.valid |= MODE_SET
-                elif cmd == 'P':
-                    (self.fix.latitude, self.fix.longitude) = map(float, data.split())
-                    self.valid |= LATLON_SET
-                elif cmd == 'Q':
-                    parts = data.split()
-                    self.satellites_used = int(parts[0])
-                    (self.pdop, self.hdop, self.vdop, self.tdop, self.gdop) = map(float, parts[1:])
-                    self.valid |= HDOP_SET | VDOP_SET | PDOP_SET | TDOP_SET | GDOP_SET
-                elif cmd == 'S':
-                    self.status = int(data)
-                    self.valid |= STATUS_SET
-                elif cmd == 'T':
-                    self.fix.track = float(data)
-                    self.valid |= TRACK_SET
-                elif cmd == 'U':
-                    self.fix.climb = float(data)
-                    self.valid |= CLIMB_SET
-                elif cmd == 'V':
-                    self.fix.speed = float(data)
-                    self.valid |= SPEED_SET
                 elif cmd == 'X':
                     self.online = float(data)
                     self.valid |= ONLINE_SET
@@ -487,6 +444,15 @@ class gps(gpsdata):
 
     def next(self):
         "Get next object (new-style interface)."
+        def __set_device__(self, data):
+            if "driver" in data:
+                self.driver = data["driver"]
+                if "subtype" in data:
+                    self.subtype = data["subtype"]
+                if self.driver:
+                    self.gps_id = self.driver
+                    if self.subtype:
+                        self.gps_id += self.subtype
         if self.poll() == -1:
             raise StopIteration
         # There are a few things we need to stash away for later use
@@ -494,15 +460,11 @@ class gps(gpsdata):
         if self.data["class"] == "VERSION":
             self.version = payload
         elif self.data["class"] == "DEVICE":
-            if "driver" in self.data:
-                if "driver" in data:
-                    self.driver = self.data["driver"]
-                if "subtype" in data:
-                    self.subtype = self.data["subtype"]
-                if self.driver:
-                    self.gps_id = self.driver
-                    if self.subtype:
-                        self.gps_id += self.subtype
+            __set_device__(self, data)
+        elif self.data["class"] == "DEVICES":
+            for device in self.data["devices"]:
+                self.__set_device__(self.data)
+                break
         elif self.data["class"] == "TIMING":
             payload.c_recv = self.received
             payload.c_decode = time.time()
@@ -565,128 +527,22 @@ class gps(gpsdata):
                     arg += ',"device":"%s"' % outfile
             return self.send(arg + "}")
 
-# some multipliers for interpreting GPS output
-METERS_TO_FEET	= 3.2808399	# Meters to U.S./British feet
-METERS_TO_MILES	= 0.00062137119	# Meters to miles
-KNOTS_TO_MPH	= 1.1507794	# Knots to miles per hour
-KNOTS_TO_KPH	= 1.852		# Knots to kilometers per hour
-KNOTS_TO_MPS	= 0.51444444	# Knots to meters per second
-MPS_TO_KPH	= 3.6		# Meters per second to klicks/hr
-MPS_TO_MPH	= 2.2369363	# Meters/second to miles per hour
-MPS_TO_KNOTS	= 1.9438445	# Meters per second to knots
-
-# EarthDistance code swiped from Kismet and corrected
-
-def Deg2Rad(x):
-    "Degrees to radians."
-    return x * (math.pi/180)
-
-def Rad2Deg(x):
-    "Radians to degress."
-    return x * (180/math.pi)
-
-def CalcRad(lat):
-    "Radius of curvature in meters at specified latitude."
-    a = 6378.137
-    e2 = 0.081082 * 0.081082
-    # the radius of curvature of an ellipsoidal Earth in the plane of a
-    # meridian of latitude is given by
-    #
-    # R' = a * (1 - e^2) / (1 - e^2 * (sin(lat))^2)^(3/2)
-    #
-    # where a is the equatorial radius,
-    # b is the polar radius, and
-    # e is the eccentricity of the ellipsoid = sqrt(1 - b^2/a^2)
-    #
-    # a = 6378 km (3963 mi) Equatorial radius (surface to center distance)
-    # b = 6356.752 km (3950 mi) Polar radius (surface to center distance)
-    # e = 0.081082 Eccentricity
-    sc = math.sin(Deg2Rad(lat))
-    x = a * (1.0 - e2)
-    z = 1.0 - e2 * sc * sc
-    y = pow(z, 1.5)
-    r = x / y
-
-    r = r * 1000.0      # Convert to meters
-    return r
-
-def EarthDistance((lat1, lon1), (lat2, lon2)):
-    "Distance in meters between two points specified in degrees."
-    x1 = CalcRad(lat1) * math.cos(Deg2Rad(lon1)) * math.sin(Deg2Rad(90-lat1))
-    x2 = CalcRad(lat2) * math.cos(Deg2Rad(lon2)) * math.sin(Deg2Rad(90-lat2))
-    y1 = CalcRad(lat1) * math.sin(Deg2Rad(lon1)) * math.sin(Deg2Rad(90-lat1))
-    y2 = CalcRad(lat2) * math.sin(Deg2Rad(lon2)) * math.sin(Deg2Rad(90-lat2))
-    z1 = CalcRad(lat1) * math.cos(Deg2Rad(90-lat1))
-    z2 = CalcRad(lat2) * math.cos(Deg2Rad(90-lat2))
-    a = (x1*x2 + y1*y2 + z1*z2)/pow(CalcRad((lat1+lat2)/2), 2)
-    # a should be in [1, -1] but can sometimes fall outside it by
-    # a very small amount due to rounding errors in the preceding
-    # calculations (this is prone to happen when the argument points
-    # are very close together).  Thus we constrain it here.
-    if abs(a) > 1: a = 1
-    elif a < -1: a = -1
-    return CalcRad((lat1+lat2) / 2) * math.acos(a)
-
-def MeterOffset((lat1, lon1), (lat2, lon2)):
-    "Return offset in meters of second arg from first."
-    dx = EarthDistance((lat1, lon1), (lat1, lon2))
-    dy = EarthDistance((lat1, lon1), (lat2, lon1))
-    if lat1 < lat2: dy *= -1
-    if lon1 < lon2: dx *= -1
-    return (dx, dy)
-
-def isotime(s):
-    "Convert timestamps in ISO8661 format to and from Unix time."
-    if type(s) == type(1):
-        return time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(s))
-    elif type(s) == type(1.0):
-        date = int(s)
-        msec = s - date
-        date = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(s))
-        return date + "." + `msec`[2:]
-    elif type(s) == type(""):
-        if s[-1] == "Z":
-            s = s[:-1]
-        if "." in s:
-            (date, msec) = s.split(".")
-        else:
-            date = s
-            msec = "0"
-        # Note: no leap-second correction! 
-        return calendar.timegm(time.strptime(date, "%Y-%m-%dT%H:%M:%S")) + float("0." + msec)
-    else:
-        raise TypeError
-
 if __name__ == '__main__':
     import readline, getopt
-    (options, arguments) = getopt.getopt(sys.argv[1:], "vw")
+    (options, arguments) = getopt.getopt(sys.argv[1:], "w")
     streaming = False
     verbose = False
     for (switch, val) in options:
-        if switch == '-w':
-            streaming = True    
-        elif switch == '-v':
+        if switch == '-v':
             verbose = True    
     if len(arguments) > 2:
-        print 'Usage: gps.py [host [port]]'
+        print 'Usage: gps.py [-v] [host [port]]'
         sys.exit(1)
 
-    if streaming:
-        session = gps(*arguments)
-        session.set_raw_hook(lambda s: sys.stdout.write(s.strip() + "\n"))
-        session.stream(WATCH_ENABLE|WATCH_NEWSTYLE)
-        for report in session:
-            print report
-    else:
-        print "This is the exerciser for the Python gps interface."
-        session = gps(*arguments)
-        session.set_raw_hook(lambda s: sys.stdout.write(s.strip() + "\n"))
-        try:
-            while True:
-                session.query(raw_input("> "))
-                print session
-        except EOFError:
-            print "Goodbye!"
-        del session
+    session = gps(*arguments)
+    session.set_raw_hook(lambda s: sys.stdout.write(s.strip() + "\n"))
+    session.stream(WATCH_ENABLE|WATCH_NEWSTYLE)
+    for report in session:
+        print report
 
 # gps.py ends here

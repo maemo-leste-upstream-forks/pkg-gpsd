@@ -4,9 +4,9 @@
 
 #include "gpsd.h"
 
-const char *gpsd_maskdump(gps_mask_t set)
+const char *gps_maskdump(gps_mask_t set)
 {
-    static char buf[173];
+    static char buf[184];
     const struct {
 	gps_mask_t      mask;
 	const char      *name;
@@ -25,7 +25,7 @@ const char *gpsd_maskdump(gps_mask_t set)
 	{VERSION_SET,	"VERSION"},
 	{HERR_SET,	"HERR"},
 	{VERR_SET,	"VERR"},
-	{PERR_SET,	"PERR"},
+	{ATTITUDE_SET,	"ATTITUDE"},
 	{POLICY_SET,	"POLICY"},
 	{SATELLITE_SET,	"SATELLITE"},
 	{RAW_SET,	"RAW"},
@@ -41,8 +41,7 @@ const char *gpsd_maskdump(gps_mask_t set)
 	{RTCM3_SET,	"RTCM3"},
 	{AIS_SET,	"AIS"},
 	{PACKET_SET,	"PACKET"},
-	{CLEAR_SET,	"CLEAR"},
-	{REPORT_SET,	"REPORT"},
+	{AUXDATA_SET,	"AUXDATA"},
     };
 
     memset(buf, '\0', sizeof(buf));

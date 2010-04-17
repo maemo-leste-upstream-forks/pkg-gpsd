@@ -460,6 +460,38 @@
 	{NULL},
     };
 
+    const struct json_attr_t json_ais25[] = {
+	AIS_HEADER,
+	{"addressed",     t_boolean,   .addr.boolean = &ais->type25.addressed,
+                                       .dflt.boolean = false},
+	{"structured",    t_boolean,   .addr.boolean = &ais->type25.structured,
+                                       .dflt.boolean = false},
+	{"dest_mmsi",     t_uinteger,  .addr.uinteger = &ais->type25.dest_mmsi,
+                                       .dflt.uinteger = 0},
+	{"app_id",        t_uinteger,  .addr.uinteger = &ais->type25.app_id,
+                                       .dflt.uinteger = 0},
+	{"data",          t_string,    .addr.string = data,
+                                       .len = sizeof(data)},
+	{NULL},
+    };
+
+    const struct json_attr_t json_ais26[] = {
+	AIS_HEADER,
+	{"addressed",     t_boolean,   .addr.boolean = &ais->type26.addressed,
+                                       .dflt.boolean = false},
+	{"structured",    t_boolean,   .addr.boolean = &ais->type26.structured,
+                                       .dflt.boolean = false},
+	{"dest_mmsi",     t_uinteger,  .addr.uinteger = &ais->type26.dest_mmsi,
+                                       .dflt.uinteger = 0},
+	{"app_id",        t_uinteger,  .addr.uinteger = &ais->type26.app_id,
+                                       .dflt.uinteger = 0},
+	{"data",          t_string,    .addr.string = data,
+                                       .len = sizeof(data)},
+	{"radio",         t_uinteger,  .addr.uinteger = &ais->type26.radio,
+                                       .dflt.uinteger = 0},
+	{NULL},
+    };
+
 
 /*@ +fullinitblock */
 
