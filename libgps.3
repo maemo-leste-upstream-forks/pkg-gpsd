@@ -3,11 +3,11 @@
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
 .\"      Date: 14 Aug 2004
-.\"    Manual: Linux
-.\"    Source: Linux
+.\"    Manual: GPSD Documentation
+.\"    Source: The GPSD Project
 .\"  Language: English
 .\"
-.TH "3" "3" "14 Aug 2004" "Linux" "Linux"
+.TH "3" "3" "14 Aug 2004" "The GPSD Project" "GPSD Documentation"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -118,7 +118,7 @@ writes a command to the daemon\&. The second argument must be a format string co
 \fBgps_poll()\fR
 accepts a response, or sequence of responses, from the daemon and interprets it as though it were a query response (the return value is as for a query)\&.
 \fBgps_poll()\fR
-returns the validity mask of the received structure\&. This function does a blocking read waiting for data from the daemon; it returns 0 for success, or \-1 on a Unix\-level read error\&.
+returns the validity mask of the received structure\&. This function does a blocking read waiting for data from the daemon; it returns 0 for success, \-1 with errno set on a Unix\-level read error, \-1 with errno not set if the socket to the daemon has closed\&.
 .PP
 \fBgps_waiting()\fR
 can be used to check whether there is data from the daemon\&. It returns true if there is, false on no data waiting or error condition\&. It does not block waiting for input\&.
@@ -146,7 +146,7 @@ Disable the reporting modes specified by the other WATCH_ flags\&. This is the d
 .PP
 WATCH_JSON
 .RS 4
-Enable JSON reporting of data\&. If WATCH_ENABLE is set, and nmo other WATCH flags are set, this ids the default\&.
+Enable JSON reporting of data\&. If WATCH_ENABLE is set, and no other WATCH flags are set, this is the default\&.
 .RE
 .PP
 WATCH_NMEA

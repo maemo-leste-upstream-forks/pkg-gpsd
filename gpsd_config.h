@@ -89,6 +89,9 @@
 /* pthread libraries are present */
 #define HAVE_LIBPTHREAD /**/
 
+/* will link with -l$usb; */
+#define HAVE_LIBUSB /**/
+
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
@@ -214,6 +217,9 @@
 /* Define to 1 if you have the <xpm.h> header file. */
 /* #undef HAVE_XPM_H */
 
+/* IPv6 support */
+#define IPV6_ENABLE 1
+
 /* iTrax chipset support */
 #define ITRAX_ENABLE 1
 
@@ -246,7 +252,7 @@
 #define NTRIP_ENABLE 1
 
 /* OceanServer support */
-/* #undef OCEANSERVER_ENABLE */
+#define OCEANSERVER_ENABLE 1
 
 /* oldstyle (pre-JSON) protocol support */
 #define OLDSTYLE_ENABLE 1
@@ -344,7 +350,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* True North Technologies support */
-/* #undef TNT_ENABLE */
+#define TNT_ENABLE 1
 
 /* DeLorme TripMate support */
 #define TRIPMATE_ENABLE 1
@@ -356,7 +362,7 @@
 #define UBX_ENABLE 1
 
 /* Version number of package */
-#define VERSION "2.92"
+#define VERSION "2.93"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -375,10 +381,22 @@
 
 /* Some libc's don't have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT
+# ifdef __cplusplus
+extern "C" {
+# endif
 size_t strlcat(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
+# ifdef __cplusplus
+}
+# endif
 #endif
 #ifndef HAVE_STRLCPY
+# ifdef __cplusplus
+extern "C" {
+# endif
 size_t strlcpy(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
+# ifdef __cplusplus
+}
+# endif
 #endif
 
 #define GPSD_CONFIG_H

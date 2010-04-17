@@ -88,6 +88,9 @@
 /* pthread libraries are present */
 #undef HAVE_LIBPTHREAD
 
+/* will link with -l$usb; */
+#undef HAVE_LIBUSB
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
@@ -212,6 +215,9 @@
 
 /* Define to 1 if you have the <xpm.h> header file. */
 #undef HAVE_XPM_H
+
+/* IPv6 support */
+#undef IPV6_ENABLE
 
 /* iTrax chipset support */
 #undef ITRAX_ENABLE
@@ -374,10 +380,22 @@
 
 /* Some libc's don't have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT
+# ifdef __cplusplus
+extern "C" {
+# endif
 size_t strlcat(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
+# ifdef __cplusplus
+}
+# endif
 #endif
 #ifndef HAVE_STRLCPY
+# ifdef __cplusplus
+extern "C" {
+# endif
 size_t strlcpy(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
+# ifdef __cplusplus
+}
+# endif
 #endif
 
 #define GPSD_CONFIG_H

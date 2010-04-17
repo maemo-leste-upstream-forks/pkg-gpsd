@@ -16,7 +16,10 @@
 @SET_MAKE@
 
 # Automake description for gpsd
-# $Id: Makefile.am 7020 2010-03-03 01:42:28Z esr $
+#
+# This file is Copyright (c) 2010 by the GPSD project
+# BSD terms apply: see the file COPYING in the distribution root for details.
+#
 
 
 
@@ -41,6 +44,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@HAVE_DBUS_TRUE@am__append_1 = $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) -DDBUS_API_SUBJECT_TO_CHANGE=1
 bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 	gpsctl$(EXEEXT) gpspipe$(EXEEXT) gpxlogger$(EXEEXT) \
 	lcdgps$(EXEEXT)
@@ -48,15 +52,14 @@ sbin_PROGRAMS = gpsd$(EXEEXT)
 check_PROGRAMS = test_float$(EXEEXT) test_trig$(EXEEXT) \
 	test_bits$(EXEEXT) test_packet$(EXEEXT) test_mkgmtime$(EXEEXT) \
 	test_geoid$(EXEEXT) test_json$(EXEEXT) $(am__EXEEXT_4)
-@LIBGPSMM_ENABLE_TRUE@am__append_1 = test_gpsmm
+@LIBGPSMM_ENABLE_TRUE@am__append_2 = test_gpsmm
 
 # Warning: This overrides autoconf's normal link-line generation process
-@LIBGPSMM_ENABLE_TRUE@am__append_2 = libgpsmm.cpp
-@HAVE_PYTHON_TRUE@am__append_3 = stamp-python-modules stamp-python-modules.tmp
-@HAVE_XSLT_PROCESSOR_TRUE@am__append_4 = stamp-gps-manpages stamp-gps-manpages.tmp
+@LIBGPSMM_ENABLE_TRUE@am__append_3 = libgpsmm.cpp
+@HAVE_PYTHON_TRUE@am__append_4 = stamp-python-modules stamp-python-modules.tmp
+@HAVE_XSLT_PROCESSOR_TRUE@am__append_5 = stamp-gps-manpages stamp-gps-manpages.tmp
 subdir = .
-DIST_COMMON = README $(am__configure_deps) \
-	$(am__dist_bin_SCRIPTS_DIST) $(am__include_HEADERS_DIST) \
+DIST_COMMON = README $(am__configure_deps) $(am__include_HEADERS_DIST) \
 	$(am__python_PYTHON_DIST) $(noinst_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/gpscat.in $(srcdir)/gpsd_config.h.in \
@@ -100,11 +103,11 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(pythondir)" "$(DESTDIR)$(man1dir)" \
-	"$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man5dir)" \
-	"$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfigdir)" \
-	"$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"
+	"$(DESTDIR)$(sbindir)" "$(DESTDIR)$(pythondir)" \
+	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man3dir)" \
+	"$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man8dir)" \
+	"$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" \
+	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libgps_la_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -113,26 +116,28 @@ libgps_la_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 am__libgps_la_SOURCES_DIST = ais_json.c bits.c bsd-base64.c crc24q.c \
 	gpsd_report.c gpsutils.c geoid.c gpsd_json.c hex.c isgps.c \
 	json.c libgps_core.c libgps_json.c gpsdclient.c libgpsd_core.c \
-	maskdump.c net_dgpsip.c net_gnss_dispatch.c net_ntrip.c \
-	netlib.c ntpshm.c packet.c pseudonmea.c serial.c rtcm2_json.c \
-	srecord.c strl.c subframe.c drivers.c driver_aivdm.c \
-	driver_evermore.c driver_garmin.c driver_garmin_txt.c \
-	driver_italk.c driver_navcom.c driver_nmea.c driver_oncore.c \
-	driver_rtcm2.c driver_rtcm3.c driver_sirf.c \
-	driver_superstar2.c driver_tsip.c driver_ubx.c driver_zodiac.c \
-	sockaddr.h bsd-base64.h timebase.h bits.h crc24q.h \
-	driver_rtcm2.h packet_states.h libgpsmm.cpp
+	gps_maskdump.c gpsd_maskdump.c net_dgpsip.c \
+	net_gnss_dispatch.c net_ntrip.c netlib.c ntpshm.c packet.c \
+	pseudonmea.c serial.c rtcm2_json.c srecord.c shared_json.c \
+	strl.c subframe.c drivers.c driver_aivdm.c driver_evermore.c \
+	driver_garmin.c driver_garmin_txt.c driver_italk.c \
+	driver_navcom.c driver_nmea.c driver_oncore.c driver_rtcm2.c \
+	driver_rtcm3.c driver_sirf.c driver_superstar2.c driver_tsip.c \
+	driver_ubx.c driver_zodiac.c sockaddr.h bsd-base64.h \
+	timebase.h bits.h crc24q.h driver_rtcm2.h packet_states.h \
+	libgpsmm.cpp
 am__objects_1 = ais_json.lo bits.lo bsd-base64.lo crc24q.lo \
 	gpsd_report.lo gpsutils.lo geoid.lo gpsd_json.lo hex.lo \
 	isgps.lo json.lo libgps_core.lo libgps_json.lo gpsdclient.lo \
-	libgpsd_core.lo maskdump.lo net_dgpsip.lo net_gnss_dispatch.lo \
-	net_ntrip.lo netlib.lo ntpshm.lo packet.lo pseudonmea.lo \
-	serial.lo rtcm2_json.lo srecord.lo strl.lo subframe.lo \
-	drivers.lo driver_aivdm.lo driver_evermore.lo driver_garmin.lo \
-	driver_garmin_txt.lo driver_italk.lo driver_navcom.lo \
-	driver_nmea.lo driver_oncore.lo driver_rtcm2.lo \
-	driver_rtcm3.lo driver_sirf.lo driver_superstar2.lo \
-	driver_tsip.lo driver_ubx.lo driver_zodiac.lo
+	libgpsd_core.lo gps_maskdump.lo gpsd_maskdump.lo net_dgpsip.lo \
+	net_gnss_dispatch.lo net_ntrip.lo netlib.lo ntpshm.lo \
+	packet.lo pseudonmea.lo serial.lo rtcm2_json.lo srecord.lo \
+	shared_json.lo strl.lo subframe.lo drivers.lo driver_aivdm.lo \
+	driver_evermore.lo driver_garmin.lo driver_garmin_txt.lo \
+	driver_italk.lo driver_navcom.lo driver_nmea.lo \
+	driver_oncore.lo driver_rtcm2.lo driver_rtcm3.lo \
+	driver_sirf.lo driver_superstar2.lo driver_tsip.lo \
+	driver_ubx.lo driver_zodiac.lo
 am__objects_2 =
 @LIBGPSMM_ENABLE_TRUE@am__objects_3 = libgpsmm.lo
 am_libgps_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
@@ -141,7 +146,7 @@ nodist_libgps_la_OBJECTS =
 libgps_la_OBJECTS = $(am_libgps_la_OBJECTS) \
 	$(nodist_libgps_la_OBJECTS)
 @HAVE_XAW_TRUE@am__EXEEXT_1 = xgpsspeed$(EXEEXT)
-@HAVE_RTCM104V2_TRUE@am__EXEEXT_2 = gpsdecode$(EXEEXT)
+@HAVE_AIVDM_TRUE@@HAVE_RTCM104V2_TRUE@@HAVE_RTCM104V3_TRUE@am__EXEEXT_2 = gpsdecode$(EXEEXT)
 @HAVE_NCURSES_TRUE@am__EXEEXT_3 = cgps$(EXEEXT) gpsmon$(EXEEXT)
 @LIBGPSMM_ENABLE_TRUE@am__EXEEXT_4 = test_gpsmm$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
@@ -158,7 +163,7 @@ am__objects_4 = gpsd_dbus.$(OBJEXT) gpsd.$(OBJEXT)
 am_gpsd_OBJECTS = $(am__objects_4)
 gpsd_OBJECTS = $(am_gpsd_OBJECTS)
 gpsd_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	libgps.la $(am__DEPENDENCIES_1)
+	libgps.la $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_gpsdecode_OBJECTS = gpsdecode.$(OBJEXT)
 gpsdecode_OBJECTS = $(am_gpsdecode_OBJECTS)
 gpsdecode_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la \
@@ -166,7 +171,7 @@ gpsdecode_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la \
 am_gpsmon_OBJECTS = gpsmon.$(OBJEXT) monitor_nmea.$(OBJEXT) \
 	monitor_sirf.$(OBJEXT) monitor_italk.$(OBJEXT) \
 	monitor_ubx.$(OBJEXT) monitor_superstar2.$(OBJEXT) \
-	monitor_oncore.$(OBJEXT)
+	monitor_oncore.$(OBJEXT) monitor_tnt.$(OBJEXT)
 gpsmon_OBJECTS = $(am_gpsmon_OBJECTS)
 gpsmon_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	libgps.la $(am__DEPENDENCIES_1)
@@ -212,9 +217,9 @@ xgpsspeed_OBJECTS = $(am_xgpsspeed_OBJECTS)
 xgpsspeed_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libgps.la $(am__DEPENDENCIES_1)
-am__dist_bin_SCRIPTS_DIST = gpsprof gpsfake gpscat xgps
-SCRIPTS = $(dist_bin_SCRIPTS) $(noinst_SCRIPTS)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) libgps.la \
+	$(am__DEPENDENCIES_1)
+SCRIPTS = $(noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -313,6 +318,7 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 GREP = @GREP@
+INCUSB = @INCUSB@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -328,6 +334,7 @@ LIBPTHREAD = @LIBPTHREAD@
 LIBS = @LIBS@
 LIBSOCKET = @LIBSOCKET@
 LIBTOOL = @LIBTOOL@
+LIBUSB = @LIBUSB@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -387,10 +394,11 @@ am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 
-# Exclude Subversion state from the tarball.  Needed because we 
+# Exclude version-control state from the tarball.  Needed because we 
 # grab the test directory wholesale. Hack appropriately when and if we 
 # change version control systems.
-am__tar = @am__tar@ --exclude '*svn*'
+# \bug This is non-portable and depends on GNU tar beyond-POSIX extensions.
+am__tar = @am__tar@ --exclude '*git*'
 am__untar = @am__untar@
 bindir = @bindir@
 build = @build@
@@ -443,8 +451,8 @@ top_srcdir = @top_srcdir@
 #	cp -p '$(srcdir)/contrib/'* '$(distdir)/contrib'
 #distclean-local:
 #	rm -rf '$(distdir)/contrib'
-CLEANFILES = $(am__append_3) $(am__append_4) $(BUILT_SOURCES) \
-	$(TESTBINS) *.core $(PYEXTENSIONS) $(BUILT_MANPAGES)
+CLEANFILES = $(am__append_4) $(am__append_5) $(BUILT_SOURCES) *.core \
+	$(PYEXTENSIONS) $(BUILT_MANPAGES)
 
 # For a detailed explanation of what this ugly code is doing, see
 # http://www.gnu.org/software/automake/manual/automake.html#Multiple-Outputs
@@ -470,12 +478,13 @@ XMLTO = xmlto
 #
 @HAVE_NCURSES_TRUE@CURSESPROGS = cgps gpsmon
 @HAVE_XAW_TRUE@XAW_PROGS = xgpsspeed
-@HAVE_DBUS_TRUE@INCLUDES = $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) -DDBUS_API_SUBJECT_TO_CHANGE=1
+
+# Conditional includes.
+INCLUDES = $(INCUSB) $(am__append_1)
 RTCM104PAGES_DIST = gpsdecode.1
-@HAVE_RTCM104V2_TRUE@RTCM104PROGS = gpsdecode
-@HAVE_RTCM104V2_TRUE@RTCM104PAGES = $(RTCM104PAGES_DIST)
+@HAVE_AIVDM_TRUE@@HAVE_RTCM104V2_TRUE@@HAVE_RTCM104V3_TRUE@RTCM104PROGS = gpsdecode
+@HAVE_AIVDM_TRUE@@HAVE_RTCM104V2_TRUE@@HAVE_RTCM104V3_TRUE@RTCM104PAGES = $(RTCM104PAGES_DIST)
 PYTHONPAGES_DIST = gpsprof.1 gpsfake.1 gpscat.1
-@HAVE_PYTHON_TRUE@dist_bin_SCRIPTS = gpsprof gpsfake gpscat xgps
 @HAVE_PYTHON_TRUE@python_PYTHON = gpscap.py
 @HAVE_PYTHON_TRUE@PYTHONPAGES = $(PYTHONPAGES_DIST)
 
@@ -492,7 +501,7 @@ xgpsspeed_SOURCES = \
 	$(xgpsspeed_c_sources) \
 	xgpsspeed.icon
 
-xgpsspeed_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(XAW_LIBS) $(X_LIBS) $(X_PRE_LIBS) libgps.la -lm $(LIBPTHREAD)
+xgpsspeed_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(XAW_LIBS) $(XT_LIBS) $(X_LIBS) $(X_PRE_LIBS) libgps.la -lm $(LIBPTHREAD)
 
 #
 # Build cgps
@@ -511,7 +520,7 @@ gpxlogger_LDADD = $(DBUS_GLIB_LIBS) libgps.la  -lm
 #
 gpsd_c_sources = gpsd_dbus.c gpsd.c
 gpsd_SOURCES = $(gpsd_c_sources) gpsd_dbus.h
-gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgps.la -lm $(LIBPTHREAD)
+gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
 
 #
 # Build gpsctl
@@ -536,7 +545,7 @@ lcdgps_LDADD = $(LIBM) libgps.la -lm
 #
 gpsmon_SOURCES = gpsmon.c monitor_nmea.c monitor_sirf.c \
 	monitor_italk.c monitor_ubx.c monitor_superstar2.c \
-	monitor_oncore.c
+	monitor_oncore.c monitor_tnt.c
 
 gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgps.la -lm $(LIBPTHREAD)
 
@@ -567,7 +576,8 @@ libgpsd_c_sources = \
 	libgps_json.c \
 	gpsdclient.c \
 	libgpsd_core.c \
-	maskdump.c \
+	gps_maskdump.c \
+	gpsd_maskdump.c \
 	net_dgpsip.c \
 	net_gnss_dispatch.c \
 	net_ntrip.c \
@@ -578,6 +588,7 @@ libgpsd_c_sources = \
 	serial.c \
 	rtcm2_json.c \
 	srecord.c \
+	shared_json.c \
 	strl.c \
 	subframe.c \
 	drivers.c \
@@ -604,9 +615,9 @@ libgpsd_h_sources = \
 	bits.h \
 	crc24q.h
 
-BUILT_SOURCES = packet_names.h gpsd.h revision.h ais_json.i maskdump.c
+BUILT_SOURCES = packet_names.h gpsd.h revision.h ais_json.i gps_maskdump.c gpsd_maskdump.c
 libgps_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
-	driver_rtcm2.h packet_states.h $(am__append_2)
+	driver_rtcm2.h packet_states.h $(am__append_3)
 @LIBGPSMM_ENABLE_FALSE@libgps_la_LINK = /bin/sh ./libtool --tag=CC --mode=link gcc $(libgps_la_LDFLAGS) -o $@
 @LIBGPSMM_ENABLE_TRUE@libgps_la_LINK = /bin/sh ./libtool --tag=CXX --mode=link g++ $(libgps_la_LDFLAGS) -o $@
 nodist_libgps_la_SOURCES = packet_names.h ais_json.i
@@ -616,13 +627,10 @@ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
 # Build Python binding
 #
 @HAVE_PYTHON_TRUE@PYEXTENSIONS = gpspacket.so gpslib.so
+# Having gpspacket.so gpslib.so in noinst_SCRIPTS forces copies to be dropped 
+# under gps.  This is important, otherwise gpsfake will fail before
+# make install. 
 @HAVE_PYTHON_TRUE@noinst_SCRIPTS = gpspacket.so gpslib.so setup.py
-@LIBGPSMM_ENABLE_FALSE@TESTBINS = test_float test_trig test_bits test_packet test_geoid \
-@LIBGPSMM_ENABLE_FALSE@	test_mkgmtime test_json
-
-@LIBGPSMM_ENABLE_TRUE@TESTBINS = test_float test_trig test_gpsmm test_bits test_packet test_geoid \
-@LIBGPSMM_ENABLE_TRUE@	test_mkgmtime test_json
-
 
 #
 # Build test_float
@@ -709,12 +717,28 @@ noinst_HEADERS = gpsd_config.h \
 nodist_include_HEADERS = gpsd.h
 @LIBGPSMM_ENABLE_FALSE@include_HEADERS = gps.h
 @LIBGPSMM_ENABLE_TRUE@include_HEADERS = gps.h libgpsmm.h
+XML = \
+	gpsd.xml \
+	gps.xml \
+	libgps.xml \
+	libgpsmm.xml \
+	libgpsd.xml \
+	gpsmon.xml \
+	gpsdecode.xml \
+	gpsprof.xml \
+	gpsfake.xml \
+	gpsctl.xml \
+	gpscat.xml \
+	gpspipe.xml \
+	rtcm-104.xml \
+	srec.xml
+
 
 # Note: packaging/gpsd.spec is generated, but it needs to be in the
 # tarball in order for 'make diat-rpm' to work.  The BUILT_SOURCES
 # files are here in order to minimize build dependencies for package
 # builders who never alter anything, especially the Python dependency.
-# Alsoo note that the test and gps directories are here rather than
+# Also note that the test and gps directories are here rather than
 # being the contents of a SUBDIRS variable so that autconf won't 
 # go looking for makefiles in them.
 EXTRA_DIST = \
@@ -735,19 +759,7 @@ EXTRA_DIST = \
 	gpsd.xml \
 	gpsd.h-head \
 	gpsd.h-tail \
-	gps.xml \
-	libgpsd.xml \
-	libgps.xml \
-	libgpsmm.xml \
-	gpsprof.xml \
-	gpsfake.xml \
-	gpscat.xml \
-	gpsctl.xml \
-	gpsmon.xml \
-	gpspipe.xml \
-	gpsdecode.xml \
-	rtcm-104.xml \
-	srec.xml \
+	$(XML) \
 	$(BUILT_SOURCES) \
 	$(MANPAGES_DIST) \
 	xgpsspeed.ad \
@@ -770,9 +782,13 @@ EXTRA_DIST = \
 	packaging/etc_default_gpsd \
 	packaging/etc_init.d_gpsd \
 	packaging/etc_init.d_gpsd_rpm \
+	do-tests \
 	regress-driver \
-	test \
-	gps
+	gps/__init__.py \
+	gps/client.so \
+	gps/fake.py \
+	gps/gps.py \
+	test
 
 pkgconfig_DATA = libgps.pc libgpsd.pc
 pkgconfigdir = $(libdir)/pkgconfig
@@ -780,17 +796,31 @@ pkgconfigdir = $(libdir)/pkgconfig
 # Report splint warnings
 SPLINTOPTS = -I/usr/include/dbus-1.0/ +quiet
 
-# automake has support for running programs, but not make targets.
-# However, TESTS_ENVIRONMENT can be used to specify an interpreter,
-# which we use to re-invoke make.
-TESTS_ENVIRONMENT = $(MAKE)
-TESTS = gps-regress rtcm-regress aivdm-regress packet-regress time-regress unpack-regress json-regress
+# Re-indent the codebase in aa uniform style for readability.
+# FIXME: Except for xgpsspeed - Tachometer.c makes GNI indent lose it.
+INDENT_FILES = $(gpsd_c_sources) $(libgpsd_c_sources) \
+	$(cgps_SOURCES) $(gpsmon_SOURCES) $(gpspipe_SOURCES) \
+	$(gpxlogger_SOURCES) $(gpsdecode_SOURCES) \
+	$(test_bits_SOURCES) $(test_packet_SOURCES) \
+	$(test_mkgmtime_SOURCES)  $(test_geoid_SOURCES) $(test_json_SOURCES)
 
-#
-# This is how to tag a release for the SVN repository.
-# It requires developer access verified via ssh.
-#
-REPO = https://svn.berlios.de/svnroot/repos/gpsd
+INDENT_OPTIONS = --indent-level4 \
+		--honour-newlines \
+		--dont-break-procedure-type \
+		--cuddle-else \
+		--braces-on-if-line \
+		--case-brace-indentation0 \
+		--brace-indent0 \
+		--no-space-after-casts \
+		--no-space-after-function-call-names \
+		--start-left-side-of-comments \
+		--dont-format-comments
+
+
+# do-tests is a shell script that invokes make with target testregress.
+# This works around automake's lack of support for make targets as tests.
+TESTS_ENVIRONMENT = MAKE=$(MAKE)
+TESTS = do-tests
 all: $(BUILT_SOURCES) gpsd_config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -1044,40 +1074,6 @@ test_trig$(EXEEXT): $(test_trig_OBJECTS) $(test_trig_DEPENDENCIES)
 xgpsspeed$(EXEEXT): $(xgpsspeed_OBJECTS) $(xgpsspeed_DEPENDENCIES) 
 	@rm -f xgpsspeed$(EXEEXT)
 	$(LINK) $(xgpsspeed_OBJECTS) $(xgpsspeed_LDADD) $(LIBS)
-install-dist_binSCRIPTS: $(dist_bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
-	@list='$(dist_bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n' \
-	    -e 'h;s|.*|.|' \
-	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
-	      if (++n[d] == $(am__install_max)) { \
-		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
-	    else { print "f", d "/" $$4, $$1 } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	     test -z "$$files" || { \
-	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
-	     } \
-	; done
-
-uninstall-dist_binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_bin_SCRIPTS)'; test -n "$(bindir)" || exit 0; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	       sed -e 's,.*/,,;$(transform)'`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && rm -f $$files
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -1108,10 +1104,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/driver_zodiac.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/drivers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geoid.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gps_maskdump.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsctl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsd_dbus.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsd_json.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsd_maskdump.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsd_report.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsdclient.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpsdecode.Po@am__quote@
@@ -1127,12 +1125,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgps_json.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgpsd_core.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgpsmm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/maskdump.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monitor_italk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monitor_nmea.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monitor_oncore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monitor_sirf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monitor_superstar2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monitor_tnt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monitor_ubx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net_dgpsip.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net_gnss_dispatch.Plo@am__quote@
@@ -1143,6 +1141,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pseudonmea.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtcm2_json.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serial.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shared_json.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srecord.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subframe.Plo@am__quote@
@@ -1770,7 +1769,7 @@ all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(MANS) $(DATA) \
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1836,8 +1835,8 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS install-dist_binSCRIPTS \
-	install-exec-local install-libLTLIBRARIES install-sbinPROGRAMS
+install-exec-am: install-binPROGRAMS install-exec-local \
+	install-libLTLIBRARIES install-sbinPROGRAMS
 
 install-html: install-html-am
 
@@ -1879,11 +1878,10 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-dist_binSCRIPTS \
-	uninstall-includeHEADERS uninstall-libLTLIBRARIES \
-	uninstall-man uninstall-nodist_includeHEADERS \
-	uninstall-pkgconfigDATA uninstall-pythonPYTHON \
-	uninstall-sbinPROGRAMS
+uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
+	uninstall-libLTLIBRARIES uninstall-man \
+	uninstall-nodist_includeHEADERS uninstall-pkgconfigDATA \
+	uninstall-pythonPYTHON uninstall-sbinPROGRAMS
 
 uninstall-man: uninstall-man1 uninstall-man3 uninstall-man5 \
 	uninstall-man8
@@ -1899,24 +1897,25 @@ uninstall-man: uninstall-man1 uninstall-man3 uninstall-man5 \
 	distclean-libtool distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dist_binSCRIPTS install-dvi \
-	install-dvi-am install-exec install-exec-am install-exec-local \
-	install-html install-html-am install-includeHEADERS \
-	install-info install-info-am install-libLTLIBRARIES \
-	install-man install-man1 install-man3 install-man5 \
-	install-man8 install-nodist_includeHEADERS install-pdf \
-	install-pdf-am install-pkgconfigDATA install-ps install-ps-am \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-exec-local install-html \
+	install-html-am install-includeHEADERS install-info \
+	install-info-am install-libLTLIBRARIES install-man \
+	install-man1 install-man3 install-man5 install-man8 \
+	install-nodist_includeHEADERS install-pdf install-pdf-am \
+	install-pkgconfigDATA install-ps install-ps-am \
 	install-pythonPYTHON install-sbinPROGRAMS install-strip \
 	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-dist_binSCRIPTS uninstall-includeHEADERS \
-	uninstall-libLTLIBRARIES uninstall-man uninstall-man1 \
-	uninstall-man3 uninstall-man5 uninstall-man8 \
-	uninstall-nodist_includeHEADERS uninstall-pkgconfigDATA \
-	uninstall-pythonPYTHON uninstall-sbinPROGRAMS
+	uninstall-includeHEADERS uninstall-libLTLIBRARIES \
+	uninstall-man uninstall-man1 uninstall-man3 uninstall-man5 \
+	uninstall-man8 uninstall-nodist_includeHEADERS \
+	uninstall-pkgconfigDATA uninstall-pythonPYTHON \
+	uninstall-sbinPROGRAMS
 
+@HAVE_PYTHON_TRUE@export PYTHON
 
 packet_names.h: packet_states.h
 	rm -f packet_names.h && \
@@ -1938,13 +1937,18 @@ ais_json.i: jsongen.py
 
 revision.h: Makefile
 	@rm -f revision.h && \
-	echo '#define' REVISION '"svn'`svnversion -n`'"' >revision.h && \
+	echo '#define' REVISION '"'`date -u +%Y-%m-%dT%H:%M:%S`'"' >revision.h && \
 	chmod a-w revision.h
 
-maskdump.c: gpsd.h-tail maskaudit.py
-	rm -f maskdump.c && \
-	$(PYTHON) maskaudit.py -c >maskdump.c && \
-	chmod a-w maskdump.c
+gps_maskdump.c: gps.h maskaudit.py
+	rm -f gps_maskdump.c && \
+	$(PYTHON) maskaudit.py -c >gps_maskdump.c && \
+	chmod a-w gps_maskdump.c
+
+gpsd_maskdump.c: gpsd.h-tail maskaudit.py
+	rm -f gpsd_maskdump.c && \
+	$(PYTHON) maskaudit.py -d >gpsd_maskdump.c && \
+	chmod a-w gpsd_maskdump.c
 
 # Multiple-outputs hack.  See
 # http://www.gnu.org/software/automake/manual/automake.html#Multiple-Outputs
@@ -1960,18 +1964,17 @@ maskdump.c: gpsd.h-tail maskaudit.py
 @HAVE_PYTHON_TRUE@	    MAKE='$(MAKE)' \
 @HAVE_PYTHON_TRUE@		$(PYTHON) setup.py build_ext \
 @HAVE_PYTHON_TRUE@			--build-lib '$(srcdir)' \
-@HAVE_PYTHON_TRUE@			--build-temp '$(srcdir)/build' \
 @HAVE_PYTHON_TRUE@			--include-dirs '$(srcdir):.'\
 @HAVE_PYTHON_TRUE@			--mangenerator '$(MANGENERATOR)') && \
 @HAVE_PYTHON_TRUE@	mv -f '$@.tmp' '$@'
 
 # Clean up after Python
 @HAVE_PYTHON_TRUE@clean-local:
-@HAVE_PYTHON_TRUE@	rm -rf build
+@HAVE_PYTHON_TRUE@	rm -rf build gps/*.so
 
 # Install Python modules
 @HAVE_PYTHON_TRUE@install-exec-local:
-@HAVE_PYTHON_TRUE@	$(PYTHON) setup.py install --prefix=${prefix} # --root=$(DESTDIR)
+@HAVE_PYTHON_TRUE@	$(PYTHON) setup.py install --prefix=${prefix} --root=$(DESTDIR)
 
 @HAVE_XSLT_PROCESSOR_TRUE@.xml.1:
 @HAVE_XSLT_PROCESSOR_TRUE@	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $<
@@ -2011,7 +2014,9 @@ splint: gpsd.h packet_names.h
 	@echo "Running splint on gpspipe..."
 	-splint $(SPLINTOPTS) $(gpspipe_SOURCES)
 	@echo "Running splint on gpsdecode..."
-	-splint $(SPLINTOPTS) -exportlocal gpsdecode.c
+	-splint $(SPLINTOPTS) $(gpsdecode_SOURCES)
+	@echo "Running splint on gpxlogger..."
+	-splint $(SPLINTOPTS) $(gpxlogger_SOURCES)
 	@echo "Running splint on test_bits test harness..."
 	-splint $(SPLINTOPTS) $(test_bits_SOURCES)
 	@echo "Running splint on test_packet test harness..."
@@ -2026,17 +2031,16 @@ splint: gpsd.h packet_names.h
 # Report cppcheck warnings.  Requires 1.40 or later.
 cppcheck: gpsd.h packet_names.h
 	cppcheck --template gcc --all --force .
-
-# Re-indenting to a uniform style would be nice, and we leave this here
-# as a rough guide to the project style, but it turns out that indent is
-# an excessively blunt instrument.  As of 2.2.10 it doesn't honor -nfca
-# and produces loads of spurious changes to splint directives.  Nor does
-# it seem to honor -npcs.
 indent:
-	chmod u+w maskdump.c
-	indent -i4 -br -cbi0 -bli0 -ncs -npcs -nfca $(gpsd_c_sources) $(libgpsd_c_sources)
-	chmod u-w maskdump.c
-	@echo "Diff lines:" `svn diff | wc -l`
+	chmod u+w *maskdump.c
+	indent $(INDENT_OPTIONS) $(INDENT_FILES)
+	for f in $(INDENT_FILES); \
+		do \
+			sed <$${f} >/tmp/reindent$$$$ -e 's/@ \*/@*/' ; \
+			mv /tmp/reindent$$$$ $${f} ; \
+		done
+	chmod u-w *maskdump.c
+	@echo "Diff lines:" `git diff | wc -l`
 
 version:
 	@echo $(VERSION)
@@ -2051,9 +2055,20 @@ version:
 # apparently increases the accuracy of computation in a way that affects
 # the low-order digits of the track field in the O response.
 
+# Our regression tests are make targets, while automake expects
+# programs.  Thus, our approach is to construct the test
+# infrastructure our way, with make targets, and to have one TEST from
+# automake's viewpoint: a trivial shell script to invoke make with our
+# top-level regression target.
+
+# One might think that using TESTS_ENVIRONMENT=$(MAKE) would work
+# around this, but because the generated rule (check-TESTS) both
+# depends on each TEST as well as invokes it (with TESTS_ENVIRONMENT)
+# the entire list of tests is run twice.
+
 # Regression-test the daemon
 gps-regress: gpsd 
-	$(srcdir)/regress-driver -t $(srcdir)/test/daemon/*.log
+	$(srcdir)/regress-driver $(srcdir)/test/daemon/*.log
 
 # Test that super-raw mode works. Compare each logfile against itself 
 # dumped through the daemon running in R=2 mode.  (This test is not
@@ -2075,13 +2090,13 @@ rtcm-regress: gpsdecode
 	@mkdir -p test
 	@for f in $(srcdir)/test/*.rtcm2; do \
 		echo "Testing $${f}..."; \
-		$(srcdir)/gpsdecode <$${f} >$(srcdir)/test/test.chk; \
-		diff -ub $${f}.chk $(srcdir)/test/test.chk; \
+		$(srcdir)/gpsdecode <$${f} >/tmp/test-$$$$.chk; \
+		diff -ub $${f}.chk /tmp/test-$$$$.chk; \
 	done;
 	@echo "Testing idempotency of JSON dump/decode for RTCM2"
-	@gpsdecode -e -j <test/synthetic-rtcm2.json >$(srcdir)/test/test.chk
-	@grep -v '^#' test/synthetic-rtcm2.json | diff -ub - $(srcdir)/test/test.chk
-	@rm $(srcdir)/test/test.chk
+	@$(srcdir)/gpsdecode -e -j <test/synthetic-rtcm2.json >/tmp/test-$$$$.chk; \
+		grep -v '^#' test/synthetic-rtcm2.json | diff -ub - /tmp/test-$$$$.chk; \
+		rm /tmp/test-$$$$.chk
 
 # Rebuild the RTCM regression tests.
 rtcm-makeregress: gpsdecode
@@ -2091,17 +2106,17 @@ rtcm-makeregress: gpsdecode
 
 # Regression-test the AIVDM decoder.
 aivdm-regress: gpsdecode
-	@echo "Testing AIVDM decoding..."
+	echo "Testing AIVDM decoding..."
 	@mkdir -p $(srcdir)/test
 	@for f in $(srcdir)/test/*.aivdm; do \
 		echo "Testing $${f}..."; \
-		$(srcdir)/gpsdecode -u -c <$${f} >$(srcdir)/test/test.chk; \
-		diff -ub $${f}.chk $(srcdir)/test/test.chk; \
+		$(srcdir)/gpsdecode -u -c <$${f} >/tmp/test-$$$$.chk; \
+		diff -ub $${f}.chk /tmp/test-$$$$.chk; \
 	done;
 	@echo "Testing idempotency of JSON dump/decode for AIS"
-	@gpsdecode -e -j <test/synthetic-ais.json >$(srcdir)/test/test.chk
-	@grep -v '^#' test/synthetic-ais.json | diff -ub - $(srcdir)/test/test.chk
-	@rm $(srcdir)/test/test.chk
+	@$(srcdir)/gpsdecode -e -j <$(srcdir)/test/synthetic-ais.json >/tmp/test-$$$$.chk; \
+		grep -v '^#' $(srcdir)/test/synthetic-ais.json | diff -ub - /tmp/test-$$$$.chk; \
+		rm /tmp/test-$$$$.chk
 
 # Rebuild the AIVDM regression tests.
 aivdm-makeregress: gpsdecode
@@ -2131,12 +2146,12 @@ geoid-makeregress: test_geoid
 
 # Regression-test the calendar functions
 time-regress: test_mkgmtime
-	./test_mkgmtime
+	$(srcdir)/test_mkgmtime
 
 # Regression test the unpacking code in libgps
 unpack-regress: libgps
 	@echo "Testing the client-library sentence decoder..."
-	$(srcdir)/regress-driver -c -t $(srcdir)/test/clientlib/*.log
+	$(srcdir)/regress-driver -c $(srcdir)/test/clientlib/*.log
 
 # Build the regression test for the sentence unpacker
 unpack-makeregress: libgps
@@ -2145,15 +2160,72 @@ unpack-makeregress: libgps
 
 # Unit-test the JSON parsing
 json-regress: test_json
-	test_json
+	$(srcdir)/test_json
 
 # Unit-test the bitfield extractor - not in normal tests
 bits-regress: test_bits
-	test_bits
+	$(srcdir)/test_bits
 
-# Do all normal regression tests
+# Do all normal regression tests.
 testregress: gps-regress rtcm-regress aivdm-regress packet-regress time-regress unpack-regress json-regress
 	@echo "Regressions complete."
+
+# The website directory
+#
+# None of these productions are fired by 'make all'.
+
+# FIXME: Needs to be replaced by a $(MANGENERATOR) rule
+%.html: %.xml
+	xmlto xhtml-nochunks $<
+
+website: $(XML:.xml=.html) \
+		www/AIVDM.html www/NMEA.html \
+		www/protocol-evolution.html www/protocol-transition.html \
+		www/client-howto.html www/writing-a-driver.html \
+		www/index.html www/hardware.html \
+		www/performance/performance.html \
+		www/internals.html
+	@cp $(XML:.xml=.html) www
+
+www/AIVDM.html: www/AIVDM.txt
+	asciidoc -a toc -o www/AIVDM.html www/AIVDM.txt
+
+www/NMEA.html: www/NMEA.txt
+	asciidoc -a toc -o www/NMEA.html NMEA.txt
+
+www/protocol-evolution.html: www/protocol-evolution.txt
+	asciidoc -a toc -o www/protocol-evolution.html www/protocol-evolution.txt
+
+www/protocol-transition.html: www/protocol-transition.txt
+	asciidoc -a toc -o www/protocol-transition.html www/protocol-transition.txt
+
+www/client-howto.html: www/client-howto.txt
+	asciidoc -a toc -o www/client-howto.html www/client-howto.txt
+
+www/writing-a-driver.html: www/writing-a-driver.xml
+	xmlto xhtml-nochunks www/writing-a-driver.xml; mv writing-a-driver.html www
+
+www/index.html: www/index.html.in
+	sed -e "/@DATE@/s//`date '+%B %d, %Y'`/" <www/index.html.in >www/index.html
+
+www/hardware.html: www/hardware-head.html gpscap.ini www/hardware-tail.html
+	(cat www/hardware-head.html; python gpscap.py; cat www/hardware-tail.html) >www/hardware.html
+
+www/performance/performance.html: www/performance/performance.xml
+	(cd www/performance; xmlto xhtml-nochunks performance.xml)
+
+www/internals.html: $(shell ls doc/*.xml)
+	cd doc; xmlto xhtml-nochunks explanation.xml; cp explanation.html ../www/internals.html
+
+# Experimenting with pydoc.  Not yet fired by any other productions.
+
+pydoc: www/pydoc/index.html
+
+www/pydoc/index.html: gps gpsfake gpscat gpsprof
+	mkdir -p www/pydoc
+	epydoc -v -q --html --graph all -n GPSD gps gpsfake gpscat gpsprof -o www/pydoc
+
+.PHONY: pydoc
 
 # Productions for setting up and performing udev tests.
 #
@@ -2176,16 +2248,6 @@ udev-uninstall:
 udev-test:
 	$(srcdir)/gpsd -N -F /var/run/gpsd.sock -D 4
 
-#
-# Productions for testing unstable drivers.
-#
-
-unstable-regress: gpsd 
-	./regress-driver -t $(srcdir)/test/unstable/*.log
-
-unstable-makeregress: gpsd
-	./regress-driver -b $(srcdir)/test/unstable/*.log
-
 # Release machinery begins here
 #
 
@@ -2201,15 +2263,21 @@ dist-rpm: distdir
 upload-ftp: dist
 	shasum gpsd-$(VERSION).tar.gz >gpsd.sum
 	lftp -c "open ftp://ftp.berlios.de/incoming; mput gpsd-$(VERSION).tar.gz gpsd.sum"
-svn-tag:
-	svn copy $(REPO)/trunk $(REPO)/tags/release-$(VERSION) \
-		-m "Tagged for external release $(VERSION)"
+
+#
+# This is how to tag a release.
+# It requires developer access verified via ssh.
+#
+release-tag:
+	git tag -s -m "Tagged for external release $(VERSION)" HEAD
+	git push --tags
+
 #
 # Ship a release, providing all regression tests pass.
 # The clean is necessary so that dist will remake revision.h
 # with the current revision level in it.
 #
-ship: testregress clean dist upload-ftp svn-tag
+ship: testregress clean dist upload-ftp release-tag
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
