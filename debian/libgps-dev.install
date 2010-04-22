@@ -1,8 +1,8 @@
-debian/tmp/usr/include/*
-debian/tmp/usr/share/man/man3/*
+debian/tmp/usr/include/libgpsmm.h
+debian/tmp/usr/include/gps.h
+debian/tmp/usr/share/man/man3/libgps.3
+debian/tmp/usr/share/man/man3/libgpsmm.3
 debian/tmp/usr/share/man/man5/*
-debian/tmp/usr/lib/pkgconfig/*
+debian/tmp/usr/lib/pkgconfig/libgps.pc
 debian/tmp/usr/lib/libgps.la
-debian/tmp/usr/lib/libgpsd.la
 debian/tmp/usr/lib/libgps.a
-debian/tmp/usr/lib/libgpsd.a
