@@ -1,0 +1,36 @@
+From: Bernd Zeimetz <bernd@bzed.de>
+Date: Thu, 22 Apr 2010 23:14:51 +0200
+Subject: [PATCH] libgpsd requires libgps at link time.
+
+---
+ Makefile.am |    2 +-
+ Makefile.in |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 66a6bbb..b64627e 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -252,7 +252,7 @@ endif
+ 
+ nodist_libgpsd_la_SOURCES = packet_names.h ais_json.i
+ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
+-libgpsd_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
++libgpsd_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD) libgps.la
+ 
+ #
+ # Build Python binding
+diff --git a/Makefile.in b/Makefile.in
+index 87cd6aa..200aa7d 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -628,7 +628,7 @@ libgpsd_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
+ @LIBGPSMM_ENABLE_TRUE@libgps_la_LINK = /bin/sh ./libtool --tag=CXX --mode=link g++ $(libgps_la_LDFLAGS) -o $@
+ nodist_libgpsd_la_SOURCES = packet_names.h ais_json.i
+ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
+-libgpsd_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
++libgpsd_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD) libgps.la
+ 
+ #
+ # Build Python binding
+-- 
