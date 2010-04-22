@@ -2,7 +2,7 @@ dnl This file is Copyright (c)2010 by the GPSD project
 dnl BSD terms apply: see the file COPYING in the distribution root for details.
 
 AC_INIT
-AM_INIT_AUTOMAKE(gpsd, 2.93)
+AM_INIT_AUTOMAKE(gpsd, 2.94)
 dnl AC_PREFIX_PROGRAM(gcc)
 AM_CONFIG_HEADER(gpsd_config.h)
 AC_LANG([C])
@@ -31,7 +31,7 @@ ACREQUIRE_BUGFIX
 dnl AM_PATH_PYTHON provided with automake can be too old.  Look
 dnl for newer python first, and include 2.6 on the list.
 m4_define([_AM_PYTHON_INTERPRETER_LIST],
-	    [python3.0 python2.6 python2.5 python2.4 python])
+	    [python2.6 python2.5 python2.4 python])
 AM_PATH_PYTHON([2.4])
 ac_python=yes
 if test "x$PYTHON" = "x"; then
@@ -45,13 +45,16 @@ fi
 
 if test "x$ac_python" = "xyes"; then
 	AC_MSG_CHECKING(Python version and location)
-	PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
-	PYTHON_VERSION_MAJOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[0]);"`]
-	PYTHON_VERSION_MINOR=[`$PYTHON -c "import sys; print '%d' % (sys.version_info[1]);"`]
+	PYTHON_PREFIX=`$PYTHON -c "import sys; print(sys.prefix)"`
+	PYTHON_VERSION_MAJOR=[`$PYTHON -c "import sys; print('%d' % (sys.version_info[0]));"`]
+	PYTHON_VERSION_MINOR=[`$PYTHON -c "import sys; print('%d' % (sys.version_info[1]));"`]
 	PYTHON_VERSION="${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
 	AC_MSG_RESULT([$PYTHON, $PYTHON_VERSION, $PYTHON_PREFIX])
 
 	PYTHON_CFLAGS="-DHAVE_PYTHON -I$PYTHON_PREFIX/include/python$PYTHON_VERSION"
+
+	PYTHON_DISTUTILS_LIBDIR=[`$PYTHON -c 'import distutils.util; import sys; print ("build/lib.%s-%s" %(distutils.util.get_platform(), sys.version[0:3]))'`]
+	PYTHON_DISTUTILS_SCRIPTDIR=[`$PYTHON  -c 'import sys; print ("build/scripts-%s" %(sys.version[0:3], ))'`]
 
 	OLD_CPPFLAGS="$CPPFLAGS"
 	OLD_CXXFLAGS="$CXXFLAGS"
@@ -66,6 +69,8 @@ if test "x$ac_python" = "xyes"; then
 
 	if test "x$ac_python" = "xyes"; then
 		AC_SUBST([PYTHON_CFLAGS])
+		AC_SUBST([PYTHON_DISTUTILS_LIBDIR])
+		AC_SUBST([PYTHON_DISTUTILS_SCRIPTDIR])
 
 		ac_python=no
 		for pylibpath in '/usr/lib' $PYTHON_PREFIX/lib $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config; do
@@ -244,8 +249,10 @@ then
     AC_DEFINE([HAVE_LIBUSB], [], [will link with -l$usb; ])
     LIBUSB=-l${usb}
     INCUSB=-I/usr/include/lib${usb}
+    ac_libusb=yes
     AC_MSG_RESULT([found.])
 else
+    ac_libusb=yes
     AC_MSG_RESULT([not found.])
 fi
 AC_SUBST(LIBUSB)
@@ -282,7 +289,7 @@ if test x"$with_x" != "xno" -a x"$have_x" != "xdisabled"
   AC_CHECK_HEADERS(X11/xpm.h xpm.h)
   if test x"$ac_cv_header_X11_xpm_h" = "xno" &&
      test x"$ac_cv_header_xpm_h" = "xno"; then
-    AC_MSG_WARN([xpm.h problem - xgps won't be built.])
+    AC_MSG_WARN([xpm.h problem - xgpsspeed won't be built.])
   fi
   AC_PATH_XTRA
   if test x"$ac_cv_have_x" = "xno"; then
@@ -322,14 +329,14 @@ if test x"$with_x" != "xno" -a x"$have_x" != "xdisabled"
 	  ${X_PRE_LIBS} ${X11_LIBS})
   AC_SUBST(XEXT_LIBS)
   if test x"$ac_cv_lib_Xext_XShapeQueryVersion" = "xno"; then
-    AC_MSG_WARN([libXext problem - xgps won't be built.])
+    AC_MSG_WARN([libXext problem - xgpsspeed won't be built.])
   fi
   AC_CHECK_LIB(Xpm, XpmCreatePixmapFromXpmImage,
 	  XPM_LIBS="-lXpm"
 	  AC_DEFINE([HAVE_XPM],1,[Xpm available]),,${X_PRE_LIBS} ${X11_LIBS})
   AC_SUBST(XPM_LIBS)
   if test x"$ac_cv_lib_Xpm_XpmCreatePixmapFromXpmImage" = "xno"; then
-    AC_MSG_WARN([libXpm problem - xgps won't be built.])
+    AC_MSG_WARN([libXpm problem - xgpsspeed won't be built.])
   fi
 else
   dnl X11 disabled
@@ -544,7 +551,7 @@ fi
 
 dnl check for OceanServer support
 AC_ARG_ENABLE(oceanserver,
-  AC_HELP_STRING([--disble-oceanserver],
+  AC_HELP_STRING([--disable-oceanserver],
 		 [disable OceanServer support]),
   [ac_oceanserver=$enableval], [ac_oceanserver=yes])
 AC_MSG_CHECKING([for OceanServer support])
@@ -1082,6 +1089,7 @@ echo "Allow device reconfig   : $ac_reconfigure"
 echo "Allow control send      : $ac_controlsend"
 echo "Squelch logging/hexdump : $ac_squelch"
 echo "Raw Measurements        : $ac_raw"
+echo "libusb device discovery : $ac_libusb"
 echo "	Client Features"
 echo "	---------------"
 echo "Old protocol in libgps  : $ac_oldstyle"
@@ -1115,7 +1123,7 @@ if test "xdummy" = "xdummy" -a \
 fi
 AC_OUTPUT(Makefile packaging/gpsd.spec libgps.pc libgpsd.pc
 		   jsongen.py maskaudit.py
-		   gpscat gpsfake gpsprof valgrind-audit,
-		   [chmod +x jsongen.py maskaudit.py gpscat gpsfake gpsprof valgrind-audit])
+		   valgrind-audit,
+		   [chmod +x jsongen.py maskaudit.py gpscat gpsfake gpsprof xgps valgrind-audit])
 echo "Configure finished, type 'make' to build."
 

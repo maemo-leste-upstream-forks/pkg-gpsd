@@ -72,10 +72,12 @@ ubx_msg_nav_sol(struct gps_device_t *session, unsigned char *buf,
     if ((flags & (UBX_SOL_VALID_WEEK | UBX_SOL_VALID_TIME)) != 0) {
 	tow = (unsigned int)getleul(buf, 0);
 	gw = (unsigned short)getlesw(buf, 8);
-	session->driver.ubx.gps_week = gw;
+	session->context->gps_week = gw;
+	session->context->gps_tow = tow / 1000.0;
 
-	t = gpstime_to_unix((int)session->driver.ubx.gps_week,
-			    tow / 1000.0) - session->context->leap_seconds;
+	t = gpstime_to_unix((int)session->context->gps_week, 
+				session->context->gps_tow)
+			    - session->context->leap_seconds;
 	session->newdata.time = t;
 	mask |= TIME_IS;
     }
@@ -172,15 +174,17 @@ ubx_msg_nav_timegps(struct gps_device_t *session, unsigned char *buf,
 
     tow = (unsigned int)getleul(buf, 0);
     gw = (unsigned int)getlesw(buf, 8);
-    if (gw > session->driver.ubx.gps_week)
-	session->driver.ubx.gps_week = gw;
+    if (gw > session->context->gps_week)
+	session->context->gps_week = (unsigned short)gw;
 
     flags = (unsigned int)getub(buf, 11);
     if ((flags & 0x7) != 0)
 	session->context->leap_seconds = (int)getub(buf, 10);
 
-    t = gpstime_to_unix((int)session->driver.ubx.gps_week,
-			tow / 1000.0) - session->context->leap_seconds;
+    session->context->gps_tow = tow / 1000.0;
+    t = gpstime_to_unix((int)session->context->gps_week,
+    			session->context->gps_tow)
+			- session->context->leap_seconds;
     session->newdata.time = t;
 
     gpsd_report(LOG_DATA, "TIMEGPS: time=%.2f mask={TIME}\n",
@@ -201,12 +205,6 @@ ubx_msg_nav_svinfo(struct gps_device_t *session, unsigned char *buf,
 	gpsd_report(LOG_PROG, "runt svinfo (datalen=%zd)\n", data_len);
 	return 0;
     }
-#if 0
-    // Alas, this sentence doesn't supply GPS week
-    tow = getleul(buf, 0);
-    session->gpsdata.skyview_time = gpstime_to_unix(gps_week, tow)
-	- session->context->leap_seconds;
-#endif
     /*@ +charint @*/
     nchan = (unsigned int)getub(buf, 4);
     if (nchan > MAXCHANNELS) {
@@ -274,25 +272,17 @@ static void ubx_msg_sbas(struct gps_device_t *session, unsigned char *buf)
  */
 static void ubx_msg_sfrb(struct gps_device_t *session, unsigned char *buf)
 {
-    unsigned int preamble, words[10], chan, svid;
+    unsigned int i, words[10], chan, svid;
 
     chan = (unsigned int)getub(buf, 0);
     svid = (unsigned int)getub(buf, 1);
     gpsd_report(LOG_PROG, "UBX_RXM_SFRB: %u %u\n", chan, svid);
+
     /* UBX does all the parity checking, but still bad data gets through */
-    words[0] = (unsigned int)getleul(buf, 2) & 0xffffff;
-    preamble = (words[0] >> 16) & 0xff;
-    if ((preamble != 0x74) && (preamble != 0x8b))
-	return;
-    words[1] = (unsigned int)getleul(buf, 6) & 0xffffff;
-    words[2] = (unsigned int)getleul(buf, 10) & 0xffffff;
-    words[3] = (unsigned int)getleul(buf, 14) & 0xffffff;
-    words[4] = (unsigned int)getleul(buf, 18) & 0xffffff;
-    words[5] = (unsigned int)getleul(buf, 22) & 0xffffff;
-    words[6] = (unsigned int)getleul(buf, 26) & 0xffffff;
-    words[7] = (unsigned int)getleul(buf, 30) & 0xffffff;
-    words[8] = (unsigned int)getleul(buf, 34) & 0xffffff;
-    words[9] = (unsigned int)getleul(buf, 38) & 0xffffff;
+    for (i = 0; i < 10; i++) {
+	words[i] = (unsigned int)getleul(buf, 4 * i + 2) & 0xffffff;
+    }
+
     gpsd_interpret_subframe(session, words);
 }
 

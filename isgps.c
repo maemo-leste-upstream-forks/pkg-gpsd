@@ -151,15 +151,11 @@ unsigned int isgps_parity(isgps30bits_t th)
     return (p);
 }
 
-
-#define isgps_parityok(w)	(isgps_parity(w) == ((w) & 0x3f))
-
-#if 0
 /* 
  * ESR found a doozy of a bug...
  *
- * Defining the above as a function triggers an optimizer bug in gcc 3.4.2.
- * The symptom is that parity computation is screwed up and the decoder
+ * Defining isgps_parityok as a function triggers an optimizer bug in gcc
+ * 3.4.2. The symptom is that parity computation is screwed up and the decoder
  * never achieves sync lock.  Something steps on the argument to 
  * isgpsparity(); the lossage appears to be related to the compiler's 
  * attempt to fold the isgps_parity() call into isgps_parityok() in some
@@ -174,11 +170,7 @@ unsigned int isgps_parity(isgps30bits_t th)
  *
  *  gcc 4.0 does not manifest these bugs.
  */
-static bool isgps_parityok(isgps30bits_t w)
-{
-    return (isgpsparity(w) == (w & 0x3f));
-}
-#endif
+#define isgps_parityok(w)	(isgps_parity(w) == ((w) & 0x3f))
 
 void isgps_init( /*@out@*/ struct gps_packet_t *session)
 {
@@ -326,34 +318,3 @@ enum isgpsstat_t isgps_decode(struct gps_packet_t *session,
 }
 
 /*@ +usereleased +compdef @*/
-
-#ifdef __UNUSED__
-void isgps_output_magnavox(isgps30bits_t * ip, unsigned int len, FILE * fp)
-/* ship an IS-GPS-200 message to standard output in Magnavox format */
-{
-    isgps30bits_t w = 0;
-
-    while (len-- > 0) {
-	w <<= 30;
-	w |= *ip++ & W_DATA_MASK;
-
-	w |= isgps_parity(w);
-
-	/* weird-assed inversion */
-	if (w & P_30_MASK)
-	    w ^= W_DATA_MASK;
-
-	/*
-	 * Write each 30-bit IS-GPS-200 data word as 5 Magnavox-format bytes
-	 * with data in the low 6-bits of the byte.  MSB first.
-	 */
-	/*@ -type @*/
-	(void)fputc(MAG_TAG_DATA | reverse_bits[(w >> 24) & 0x3f], fp);
-	(void)fputc(MAG_TAG_DATA | reverse_bits[(w >> 18) & 0x3f], fp);
-	(void)fputc(MAG_TAG_DATA | reverse_bits[(w >> 12) & 0x3f], fp);
-	(void)fputc(MAG_TAG_DATA | reverse_bits[(w >> 6) & 0x3f], fp);
-	(void)fputc(MAG_TAG_DATA | reverse_bits[(w) & 0x3f], fp);
-	/*@ +type @*/
-    }
-}
-#endif /* __UNUSED__ */

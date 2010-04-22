@@ -46,10 +46,8 @@ C:
 .BI "void gpsd_report(int\ " "d" ", const\ char\ *\ " "fmt" ", " "\&.\&.\&." ");"
 .SH "DESCRIPTION"
 .PP
-\fBlibgps\fR
-is a service library which supports querying GPS devices; link it with the linker option \-lgps\&. There are two interfaces supported in it; one high\-level interface that goes through
-\fBgpsd\fR(1)
-and is intended for concurrent use by several applications, and one low\-level interface that speaks directly with the serial or USB device to which the GPS is attached\&. This page describes the low\-level interface, which
+\fBlibgpsd\fR
+is a service library which supports querying GPS devices; link it with the linker option \-lgpsd\&. It is a set of low\-level device\-handling calls, which
 \fBgpsd\fR(1)
 itself uses\&. See
 \fBgpsd\fR(3)
@@ -104,7 +102,7 @@ Writes to the context structure members are not guarded by a mutex\&.
 
 \fBgpsd\fR(8),
 \fBgps\fR(1),
-\fBlibgpsd\fR(3)\&.
+\fBlibgps\fR(3)\&.
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond <esr@thyrsus\&.com> based partly on earlier work by Remco Treffkorn, Derrick Brashear, and Russ Nelson\&.

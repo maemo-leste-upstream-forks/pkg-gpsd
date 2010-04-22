@@ -385,7 +385,7 @@
 #define UBX_ENABLE 1
 
 /* Version number of package */
-#define VERSION "2.93"
+#define VERSION "2.94"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -594,6 +594,8 @@ struct gps_context_t {
     double rtcmtime;			/* timestamp of last RTCM104 report */ 
     /* timekeeping */
     int leap_seconds;			/* Unix seconds to UTC */
+    unsigned short gps_week;            /* GPS week, actually 10 bits */
+    double gps_tow;                     /* GPS time of week, actually 19 bits */
     int century;			/* for NMEA-only devices without ZDA */
 #ifdef NTPSHM_ENABLE
     bool enable_ntpshm;
@@ -801,13 +803,11 @@ struct gps_device_t {
 #endif /* SIRF_ENABLE */
 #ifdef SUPERSTAR2_ENABLE
 	struct {
-	    unsigned short gps_week;
 	    time_t last_iono;
 	} superstar2;
 #endif /* SUPERSTAR2_ENABLE */
 #ifdef TSIP_ENABLE
 	struct {
-	    int16_t gps_week;		/* Current GPS week number */
 	    bool superpkt;		/* Super Packet mode requested */
 	    time_t last_41;		/* Timestamps for packet requests */
 	    time_t last_48;
@@ -840,7 +840,6 @@ struct gps_device_t {
 #endif /* ZODIAC_ENABLE */
 #ifdef UBX_ENABLE
 	struct {
-            unsigned int gps_week;
 	    bool have_port_configuration;
 	    unsigned char original_port_settings[20];
 	    unsigned char sbas_in_use;
@@ -960,6 +959,7 @@ extern void gpsd_close(struct gps_device_t *);
 
 extern void gpsd_zero_satellites(/*@out@*/struct gps_data_t *sp)/*@modifies sp@*/;
 extern void gpsd_interpret_subframe(struct gps_device_t *, unsigned int[]);
+extern int gpsd_interpret_subframe_raw(struct gps_device_t *, unsigned int[]);
 extern int gpsd_hexdump_level;
 extern /*@ observer @*/ char *gpsd_hexdump(/*@null@*/const void *, size_t);
 extern /*@ observer @*/ char *gpsd_hexdump_wrapper(/*@null@*/const void *, size_t, int);
@@ -969,7 +969,6 @@ extern ssize_t hex_escapes(/*@out@*/char *cooked, const char *raw);
 extern void ntpd_link_activate(struct gps_device_t *session);
 extern char /*@observer@*/ *gpsd_id(/*@in@*/struct gps_device_t *);
 extern void gpsd_position_fix_dump(struct gps_device_t *, /*@out@*/char[], size_t);
-extern void gpsd_error_model(struct gps_device_t *, struct gps_fix_t *, struct gps_fix_t *);
 extern void gpsd_clear_data(struct gps_device_t *);
 extern socket_t netlib_connectsock(int, const char *, const char *, const char *);
 extern char /*@observer@*/ *netlib_errstr(const int);

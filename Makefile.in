@@ -62,14 +62,12 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(am__include_HEADERS_DIST) \
 	$(am__python_PYTHON_DIST) $(noinst_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/gpscat.in $(srcdir)/gpsd_config.h.in \
-	$(srcdir)/gpsfake.in $(srcdir)/gpsprof.in \
-	$(srcdir)/jsongen.py.in $(srcdir)/libgps.pc.in \
-	$(srcdir)/libgpsd.pc.in $(srcdir)/maskaudit.py.in \
-	$(srcdir)/valgrind-audit.in $(top_srcdir)/configure \
-	$(top_srcdir)/packaging/gpsd.spec.in AUTHORS COPYING INSTALL \
-	NEWS TODO config.guess config.sub depcomp install-sh ltmain.sh \
-	missing py-compile
+	$(srcdir)/gpsd_config.h.in $(srcdir)/jsongen.py.in \
+	$(srcdir)/libgps.pc.in $(srcdir)/libgpsd.pc.in \
+	$(srcdir)/maskaudit.py.in $(srcdir)/valgrind-audit.in \
+	$(top_srcdir)/configure $(top_srcdir)/packaging/gpsd.spec.in \
+	AUTHORS COPYING INSTALL NEWS TODO config.guess config.sub \
+	depcomp install-sh ltmain.sh missing py-compile
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -79,7 +77,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = gpsd_config.h
 CONFIG_CLEAN_FILES = packaging/gpsd.spec libgps.pc libgpsd.pc \
-	jsongen.py maskaudit.py gpscat gpsfake gpsprof valgrind-audit
+	jsongen.py maskaudit.py valgrind-audit
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -113,38 +111,33 @@ am__DEPENDENCIES_1 =
 libgps_la_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am__libgps_la_SOURCES_DIST = ais_json.c bits.c bsd-base64.c crc24q.c \
-	gpsd_report.c gpsutils.c geoid.c gpsd_json.c hex.c isgps.c \
-	json.c libgps_core.c libgps_json.c gpsdclient.c libgpsd_core.c \
-	gps_maskdump.c gpsd_maskdump.c net_dgpsip.c \
-	net_gnss_dispatch.c net_ntrip.c netlib.c ntpshm.c packet.c \
-	pseudonmea.c serial.c rtcm2_json.c srecord.c shared_json.c \
-	strl.c subframe.c drivers.c driver_aivdm.c driver_evermore.c \
-	driver_garmin.c driver_garmin_txt.c driver_italk.c \
-	driver_navcom.c driver_nmea.c driver_oncore.c driver_rtcm2.c \
-	driver_rtcm3.c driver_sirf.c driver_superstar2.c driver_tsip.c \
-	driver_ubx.c driver_zodiac.c sockaddr.h bsd-base64.h \
-	timebase.h bits.h crc24q.h driver_rtcm2.h packet_states.h \
+am__libgps_la_SOURCES_DIST = ais_json.c gpsd_report.c gpsutils.c \
+	geoid.c gpsdclient.c gps_maskdump.c hex.c json.c libgps_core.c \
+	libgps_json.c netlib.c rtcm2_json.c shared_json.c strl.c \
 	libgpsmm.cpp
-am__objects_1 = ais_json.lo bits.lo bsd-base64.lo crc24q.lo \
-	gpsd_report.lo gpsutils.lo geoid.lo gpsd_json.lo hex.lo \
-	isgps.lo json.lo libgps_core.lo libgps_json.lo gpsdclient.lo \
-	libgpsd_core.lo gps_maskdump.lo gpsd_maskdump.lo net_dgpsip.lo \
-	net_gnss_dispatch.lo net_ntrip.lo netlib.lo ntpshm.lo \
-	packet.lo pseudonmea.lo serial.lo rtcm2_json.lo srecord.lo \
-	shared_json.lo strl.lo subframe.lo drivers.lo driver_aivdm.lo \
-	driver_evermore.lo driver_garmin.lo driver_garmin_txt.lo \
-	driver_italk.lo driver_navcom.lo driver_nmea.lo \
-	driver_oncore.lo driver_rtcm2.lo driver_rtcm3.lo \
-	driver_sirf.lo driver_superstar2.lo driver_tsip.lo \
-	driver_ubx.lo driver_zodiac.lo
-am__objects_2 =
-@LIBGPSMM_ENABLE_TRUE@am__objects_3 = libgpsmm.lo
-am_libgps_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3)
-nodist_libgps_la_OBJECTS =
-libgps_la_OBJECTS = $(am_libgps_la_OBJECTS) \
-	$(nodist_libgps_la_OBJECTS)
+am__objects_1 = ais_json.lo gpsd_report.lo gpsutils.lo geoid.lo \
+	gpsdclient.lo gps_maskdump.lo hex.lo json.lo libgps_core.lo \
+	libgps_json.lo netlib.lo rtcm2_json.lo shared_json.lo strl.lo
+@LIBGPSMM_ENABLE_TRUE@am__objects_2 = libgpsmm.lo
+am_libgps_la_OBJECTS = $(am__objects_1) $(am__objects_2)
+libgps_la_OBJECTS = $(am_libgps_la_OBJECTS)
+libgpsd_la_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am__objects_3 = bits.lo bsd-base64.lo crc24q.lo gpsd_json.lo isgps.lo \
+	gpsd_maskdump.lo libgpsd_core.lo net_dgpsip.lo \
+	net_gnss_dispatch.lo net_ntrip.lo ntpshm.lo packet.lo \
+	pseudonmea.lo serial.lo srecord.lo subframe.lo drivers.lo \
+	driver_aivdm.lo driver_evermore.lo driver_garmin.lo \
+	driver_garmin_txt.lo driver_italk.lo driver_navcom.lo \
+	driver_nmea.lo driver_oncore.lo driver_rtcm2.lo \
+	driver_rtcm3.lo driver_sirf.lo driver_superstar2.lo \
+	driver_tsip.lo driver_ubx.lo driver_zodiac.lo
+am__objects_4 =
+am_libgpsd_la_OBJECTS = $(am__objects_3) $(am__objects_4)
+nodist_libgpsd_la_OBJECTS =
+libgpsd_la_OBJECTS = $(am_libgpsd_la_OBJECTS) \
+	$(nodist_libgpsd_la_OBJECTS)
 @HAVE_XAW_TRUE@am__EXEEXT_1 = xgpsspeed$(EXEEXT)
 @HAVE_AIVDM_TRUE@@HAVE_RTCM104V2_TRUE@@HAVE_RTCM104V3_TRUE@am__EXEEXT_2 = gpsdecode$(EXEEXT)
 @HAVE_NCURSES_TRUE@am__EXEEXT_3 = cgps$(EXEEXT) gpsmon$(EXEEXT)
@@ -157,24 +150,26 @@ cgps_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libgps.la $(am__DEPENDENCIES_1)
 am_gpsctl_OBJECTS = gpsctl.$(OBJEXT)
 gpsctl_OBJECTS = $(am_gpsctl_OBJECTS)
-gpsctl_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la \
-	$(am__DEPENDENCIES_1)
-am__objects_4 = gpsd_dbus.$(OBJEXT) gpsd.$(OBJEXT)
-am_gpsd_OBJECTS = $(am__objects_4)
+gpsctl_DEPENDENCIES = $(am__DEPENDENCIES_1) libgpsd.la libgps.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am__objects_5 = gpsd_dbus.$(OBJEXT) gpsd.$(OBJEXT)
+am_gpsd_OBJECTS = $(am__objects_5)
 gpsd_OBJECTS = $(am_gpsd_OBJECTS)
 gpsd_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	libgps.la $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	libgpsd.la libgps.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_gpsdecode_OBJECTS = gpsdecode.$(OBJEXT)
 gpsdecode_OBJECTS = $(am_gpsdecode_OBJECTS)
-gpsdecode_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la \
-	$(am__DEPENDENCIES_1)
+gpsdecode_DEPENDENCIES = $(am__DEPENDENCIES_1) libgpsd.la libgps.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_gpsmon_OBJECTS = gpsmon.$(OBJEXT) monitor_nmea.$(OBJEXT) \
 	monitor_sirf.$(OBJEXT) monitor_italk.$(OBJEXT) \
 	monitor_ubx.$(OBJEXT) monitor_superstar2.$(OBJEXT) \
 	monitor_oncore.$(OBJEXT) monitor_tnt.$(OBJEXT)
 gpsmon_OBJECTS = $(am_gpsmon_OBJECTS)
 gpsmon_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	libgps.la $(am__DEPENDENCIES_1)
+	libgpsd.la libgps.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_gpspipe_OBJECTS = gpspipe.$(OBJEXT)
 gpspipe_OBJECTS = $(am_gpspipe_OBJECTS)
 gpspipe_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -187,10 +182,11 @@ lcdgps_OBJECTS = $(am_lcdgps_OBJECTS)
 lcdgps_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
 am_test_bits_OBJECTS = test_bits.$(OBJEXT)
 test_bits_OBJECTS = $(am_test_bits_OBJECTS)
-test_bits_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
+test_bits_DEPENDENCIES = $(am__DEPENDENCIES_1) libgpsd.la libgps.la \
+	$(am__DEPENDENCIES_1)
 am_test_float_OBJECTS = test_float.$(OBJEXT)
 test_float_OBJECTS = $(am_test_float_OBJECTS)
-test_float_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
+test_float_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_test_geoid_OBJECTS = test_geoid.$(OBJEXT)
 test_geoid_OBJECTS = $(am_test_geoid_OBJECTS)
 test_geoid_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
@@ -198,7 +194,7 @@ am__test_gpsmm_SOURCES_DIST = test_gpsmm.cpp
 @LIBGPSMM_ENABLE_TRUE@am_test_gpsmm_OBJECTS = test_gpsmm.$(OBJEXT)
 test_gpsmm_OBJECTS = $(am_test_gpsmm_OBJECTS)
 @LIBGPSMM_ENABLE_TRUE@test_gpsmm_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-@LIBGPSMM_ENABLE_TRUE@	libgps.la
+@LIBGPSMM_ENABLE_TRUE@	libgps.la $(am__DEPENDENCIES_1)
 am_test_json_OBJECTS = test_json.$(OBJEXT)
 test_json_OBJECTS = $(am_test_json_OBJECTS)
 test_json_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
@@ -207,12 +203,13 @@ test_mkgmtime_OBJECTS = $(am_test_mkgmtime_OBJECTS)
 test_mkgmtime_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
 am_test_packet_OBJECTS = test_packet.$(OBJEXT)
 test_packet_OBJECTS = $(am_test_packet_OBJECTS)
-test_packet_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
+test_packet_DEPENDENCIES = $(am__DEPENDENCIES_1) libgpsd.la libgps.la \
+	$(am__DEPENDENCIES_1)
 am_test_trig_OBJECTS = test_trig.$(OBJEXT)
 test_trig_OBJECTS = $(am_test_trig_OBJECTS)
-test_trig_DEPENDENCIES = $(am__DEPENDENCIES_1) libgps.la
-am__objects_5 = xgpsspeed.$(OBJEXT) Tachometer.$(OBJEXT)
-am_xgpsspeed_OBJECTS = $(am__objects_5)
+test_trig_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_6 = xgpsspeed.$(OBJEXT) Tachometer.$(OBJEXT)
+am_xgpsspeed_OBJECTS = $(am__objects_6)
 xgpsspeed_OBJECTS = $(am_xgpsspeed_OBJECTS)
 xgpsspeed_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -242,22 +239,23 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libgps_la_SOURCES) $(nodist_libgps_la_SOURCES) \
+SOURCES = $(libgps_la_SOURCES) $(libgpsd_la_SOURCES) \
+	$(nodist_libgpsd_la_SOURCES) $(cgps_SOURCES) $(gpsctl_SOURCES) \
+	$(gpsd_SOURCES) $(gpsdecode_SOURCES) $(gpsmon_SOURCES) \
+	$(gpspipe_SOURCES) $(gpxlogger_SOURCES) $(lcdgps_SOURCES) \
+	$(test_bits_SOURCES) $(test_float_SOURCES) \
+	$(test_geoid_SOURCES) $(test_gpsmm_SOURCES) \
+	$(test_json_SOURCES) $(test_mkgmtime_SOURCES) \
+	$(test_packet_SOURCES) $(test_trig_SOURCES) \
+	$(xgpsspeed_SOURCES)
+DIST_SOURCES = $(am__libgps_la_SOURCES_DIST) $(libgpsd_la_SOURCES) \
 	$(cgps_SOURCES) $(gpsctl_SOURCES) $(gpsd_SOURCES) \
 	$(gpsdecode_SOURCES) $(gpsmon_SOURCES) $(gpspipe_SOURCES) \
 	$(gpxlogger_SOURCES) $(lcdgps_SOURCES) $(test_bits_SOURCES) \
 	$(test_float_SOURCES) $(test_geoid_SOURCES) \
-	$(test_gpsmm_SOURCES) $(test_json_SOURCES) \
+	$(am__test_gpsmm_SOURCES_DIST) $(test_json_SOURCES) \
 	$(test_mkgmtime_SOURCES) $(test_packet_SOURCES) \
 	$(test_trig_SOURCES) $(xgpsspeed_SOURCES)
-DIST_SOURCES = $(am__libgps_la_SOURCES_DIST) $(cgps_SOURCES) \
-	$(gpsctl_SOURCES) $(gpsd_SOURCES) $(gpsdecode_SOURCES) \
-	$(gpsmon_SOURCES) $(gpspipe_SOURCES) $(gpxlogger_SOURCES) \
-	$(lcdgps_SOURCES) $(test_bits_SOURCES) $(test_float_SOURCES) \
-	$(test_geoid_SOURCES) $(am__test_gpsmm_SOURCES_DIST) \
-	$(test_json_SOURCES) $(test_mkgmtime_SOURCES) \
-	$(test_packet_SOURCES) $(test_trig_SOURCES) \
-	$(xgpsspeed_SOURCES)
 am__python_PYTHON_DIST = gpscap.py
 py_compile = $(top_srcdir)/py-compile
 man1dir = $(mandir)/man1
@@ -360,6 +358,8 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PYTHON = @PYTHON@
 PYTHON_CFLAGS = @PYTHON_CFLAGS@
+PYTHON_DISTUTILS_LIBDIR = @PYTHON_DISTUTILS_LIBDIR@
+PYTHON_DISTUTILS_SCRIPTDIR = @PYTHON_DISTUTILS_SCRIPTDIR@
 PYTHON_EXEC_PREFIX = @PYTHON_EXEC_PREFIX@
 PYTHON_LIBS = @PYTHON_LIBS@
 PYTHON_PLATFORM = @PYTHON_PLATFORM@
@@ -484,6 +484,8 @@ INCLUDES = $(INCUSB) $(am__append_1)
 RTCM104PAGES_DIST = gpsdecode.1
 @HAVE_AIVDM_TRUE@@HAVE_RTCM104V2_TRUE@@HAVE_RTCM104V3_TRUE@RTCM104PROGS = gpsdecode
 @HAVE_AIVDM_TRUE@@HAVE_RTCM104V2_TRUE@@HAVE_RTCM104V3_TRUE@RTCM104PAGES = $(RTCM104PAGES_DIST)
+PYTHONSCRIPTS_DIST = gpscat gpsfake gpsprof xgps
+PYTHONMODULES_DIST = gps/__init__.py gps/misc.py gps/fake.py gps/gps.py
 PYTHONPAGES_DIST = gpsprof.1 gpsfake.1 gpscat.1
 @HAVE_PYTHON_TRUE@python_PYTHON = gpscap.py
 @HAVE_PYTHON_TRUE@PYTHONPAGES = $(PYTHONPAGES_DIST)
@@ -513,20 +515,20 @@ cgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(NCURSES_LIBS) libgps.la -l
 # Build gpxlogger
 #
 gpxlogger_SOURCES = gpxlogger.c
-gpxlogger_LDADD = $(DBUS_GLIB_LIBS) libgps.la  -lm
+gpxlogger_LDADD = $(DBUS_GLIB_LIBS) libgps.la -lm
 
 #
 # Build gpsd
 #
 gpsd_c_sources = gpsd_dbus.c gpsd.c
 gpsd_SOURCES = $(gpsd_c_sources) gpsd_dbus.h
-gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
+gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
 
 #
 # Build gpsctl
 #
 gpsctl_SOURCES = gpsctl.c
-gpsctl_LDADD = $(LIBM) libgps.la -lm $(LIBPTHREAD)
+gpsctl_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
 
 #
 # Build gpspipe
@@ -547,49 +549,51 @@ gpsmon_SOURCES = gpsmon.c monitor_nmea.c monitor_sirf.c \
 	monitor_italk.c monitor_ubx.c monitor_superstar2.c \
 	monitor_oncore.c monitor_tnt.c
 
-gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgps.la -lm $(LIBPTHREAD)
+gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB)
 
 #
 # Build gpsdecode
 #
 gpsdecode_SOURCES = gpsdecode.c
-gpsdecode_LDADD = $(LIBM) libgps.la -lm $(LIBPTHREAD)
+gpsdecode_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB)
 
 #
 # Build shared libraries
 #
 libgps_la_LDFLAGS = -version-number 19:0:0
-lib_LTLIBRARIES = libgps.la
-libgpsd_c_sources = \
+lib_LTLIBRARIES = libgps.la libgpsd.la
+libgps_c_sources = \
 	ais_json.c \
-	bits.c \
-	bsd-base64.c \
-	crc24q.c \
 	gpsd_report.c \
 	gpsutils.c \
 	geoid.c \
-	gpsd_json.c \
+	gpsdclient.c \
+	gps_maskdump.c \
 	hex.c \
-	isgps.c \
 	json.c \
 	libgps_core.c \
 	libgps_json.c \
-	gpsdclient.c \
-	libgpsd_core.c \
-	gps_maskdump.c \
+	netlib.c \
+	rtcm2_json.c \
+	shared_json.c \
+	strl.c
+
+libgpsd_c_sources = \
+	bits.c \
+	bsd-base64.c \
+	crc24q.c \
+	gpsd_json.c \
+	isgps.c \
 	gpsd_maskdump.c \
+	libgpsd_core.c \
 	net_dgpsip.c \
 	net_gnss_dispatch.c \
 	net_ntrip.c \
-	netlib.c \
 	ntpshm.c \
 	packet.c \
 	pseudonmea.c \
 	serial.c \
-	rtcm2_json.c \
 	srecord.c \
-	shared_json.c \
-	strl.c \
 	subframe.c \
 	drivers.c \
 	driver_aivdm.c \
@@ -616,51 +620,51 @@ libgpsd_h_sources = \
 	crc24q.h
 
 BUILT_SOURCES = packet_names.h gpsd.h revision.h ais_json.i gps_maskdump.c gpsd_maskdump.c
-libgps_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
-	driver_rtcm2.h packet_states.h $(am__append_3)
+libgps_la_SOURCES = $(libgps_c_sources) $(am__append_3)
+libgpsd_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
+				driver_rtcm2.h packet_states.h
+
 @LIBGPSMM_ENABLE_FALSE@libgps_la_LINK = /bin/sh ./libtool --tag=CC --mode=link gcc $(libgps_la_LDFLAGS) -o $@
 @LIBGPSMM_ENABLE_TRUE@libgps_la_LINK = /bin/sh ./libtool --tag=CXX --mode=link g++ $(libgps_la_LDFLAGS) -o $@
-nodist_libgps_la_SOURCES = packet_names.h ais_json.i
+nodist_libgpsd_la_SOURCES = packet_names.h ais_json.i
 libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
+libgpsd_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
 
 #
 # Build Python binding
 #
 @HAVE_PYTHON_TRUE@PYEXTENSIONS = gpspacket.so gpslib.so
-# Having gpspacket.so gpslib.so in noinst_SCRIPTS forces copies to be dropped 
-# under gps.  This is important, otherwise gpsfake will fail before
-# make install. 
-@HAVE_PYTHON_TRUE@noinst_SCRIPTS = gpspacket.so gpslib.so setup.py
+@HAVE_PYTHON_TRUE@noinst_SCRIPTS = stamp-python-modules setup.py
 
 #
 # Build test_float
 #
 test_float_SOURCES = test_float.c
-test_float_LDADD = $(LIBC) libgps.la -lm
+test_float_LDADD = $(LIBC) -lm
 
 #
 # Build test_trig
 #
 test_trig_SOURCES = test_trig.c
-test_trig_LDADD = $(LIBC) libgps.la -lm
+test_trig_LDADD = $(LIBC) -lm
 
 #
 # Build test_gpsmm
 #
 @LIBGPSMM_ENABLE_TRUE@test_gpsmm_SOURCES = test_gpsmm.cpp
-@LIBGPSMM_ENABLE_TRUE@test_gpsmm_LDADD = $(LIBC) libgps.la -lm
+@LIBGPSMM_ENABLE_TRUE@test_gpsmm_LDADD = $(LIBC) libgps.la -lm  $(LIBUSB)
 
 #
 # Build test_bits tester
 #
 test_bits_SOURCES = test_bits.c
-test_bits_LDADD = $(LIBC) libgps.la
+test_bits_LDADD = $(LIBC) libgpsd.la libgps.la  $(LIBUSB)
 
 #
 # Build packets tester
 #
 test_packet_SOURCES = test_packet.c
-test_packet_LDADD = $(LIBC) libgps.la -lm
+test_packet_LDADD = $(LIBC) libgpsd.la libgps.la -lm  $(LIBUSB)
 
 #
 # Build geoid model tester
@@ -784,21 +788,19 @@ EXTRA_DIST = \
 	packaging/etc_init.d_gpsd_rpm \
 	do-tests \
 	regress-driver \
-	gps/__init__.py \
-	gps/client.so \
-	gps/fake.py \
-	gps/gps.py \
+	$(PYTHONSCRIPTS_DIST) \
+	$(PYTHONMODULES_DIST) \
 	test
 
 pkgconfig_DATA = libgps.pc libgpsd.pc
 pkgconfigdir = $(libdir)/pkgconfig
 
 # Report splint warnings
-SPLINTOPTS = -I/usr/include/dbus-1.0/ +quiet
+SPLINTOPTS = -I/usr/include/dbus-1.0/ $(INCUSB) +quiet
 
 # Re-indent the codebase in aa uniform style for readability.
 # FIXME: Except for xgpsspeed - Tachometer.c makes GNI indent lose it.
-INDENT_FILES = $(gpsd_c_sources) $(libgpsd_c_sources) \
+INDENT_FILES = $(gpsd_c_sources) $(libgpsd_c_sources) $(libgps_c_sources) \
 	$(cgps_SOURCES) $(gpsmon_SOURCES) $(gpspipe_SOURCES) \
 	$(gpxlogger_SOURCES) $(gpsdecode_SOURCES) \
 	$(test_bits_SOURCES) $(test_packet_SOURCES) \
@@ -817,9 +819,31 @@ INDENT_OPTIONS = --indent-level4 \
 		--dont-format-comments
 
 
+#
+# Regression tests begin here
+#
+# Note that the *-makeregress targets re-create the *.log.chk source
+# files from the *.log source files.
+#
+# These require gcc4; use of the math coprocessor's on-board trig functions
+# apparently increases the accuracy of computation in a way that affects
+# the low-order digits of the track field in the O response.
+
+# Our regression tests are make targets, while automake expects
+# programs.  Thus, our approach is to construct the test
+# infrastructure our way, with make targets, and to have one TEST from
+# automake's viewpoint: a trivial shell script to invoke make with our
+# top-level regression target.
+
+# One might think that using TESTS_ENVIRONMENT=$(MAKE) would work
+# around this, but because the generated rule (check-TESTS) both
+# depends on each TEST as well as invokes it (with TESTS_ENVIRONMENT)
+# the entire list of tests is run twice.
+run_regress_driver = PYTHON=$(PYTHON) $(srcdir)/regress-driver
+
 # do-tests is a shell script that invokes make with target testregress.
 # This works around automake's lack of support for make targets as tests.
-TESTS_ENVIRONMENT = MAKE=$(MAKE)
+TESTS_ENVIRONMENT = MAKE=$(MAKE) PYTHON=$(PYTHON)
 TESTS = do-tests
 all: $(BUILT_SOURCES) gpsd_config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -887,12 +911,6 @@ jsongen.py: $(top_builddir)/config.status $(srcdir)/jsongen.py.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 maskaudit.py: $(top_builddir)/config.status $(srcdir)/maskaudit.py.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-gpscat: $(top_builddir)/config.status $(srcdir)/gpscat.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-gpsfake: $(top_builddir)/config.status $(srcdir)/gpsfake.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-gpsprof: $(top_builddir)/config.status $(srcdir)/gpsprof.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 valgrind-audit: $(top_builddir)/config.status $(srcdir)/valgrind-audit.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
@@ -928,6 +946,8 @@ clean-libLTLIBRARIES:
 	done
 libgps.la: $(libgps_la_OBJECTS) $(libgps_la_DEPENDENCIES) 
 	$(libgps_la_LINK) -rpath $(libdir) $(libgps_la_OBJECTS) $(libgps_la_LIBADD) $(LIBS)
+libgpsd.la: $(libgpsd_la_OBJECTS) $(libgpsd_la_DEPENDENCIES) 
+	$(LINK) -rpath $(libdir) $(libgpsd_la_OBJECTS) $(libgpsd_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -1915,7 +1935,6 @@ uninstall-man: uninstall-man1 uninstall-man3 uninstall-man5 \
 	uninstall-pkgconfigDATA uninstall-pythonPYTHON \
 	uninstall-sbinPROGRAMS
 
-@HAVE_PYTHON_TRUE@export PYTHON
 
 packet_names.h: packet_states.h
 	rm -f packet_names.h && \
@@ -1962,10 +1981,13 @@ gpsd_maskdump.c: gpsd.h-tail maskaudit.py
 @HAVE_PYTHON_TRUE@	(cd '$(srcdir)' && \
 @HAVE_PYTHON_TRUE@	env abs_builddir='$(abs_builddir)' \
 @HAVE_PYTHON_TRUE@	    MAKE='$(MAKE)' \
-@HAVE_PYTHON_TRUE@		$(PYTHON) setup.py build_ext \
-@HAVE_PYTHON_TRUE@			--build-lib '$(srcdir)' \
-@HAVE_PYTHON_TRUE@			--include-dirs '$(srcdir):.'\
+@HAVE_PYTHON_TRUE@		$(PYTHON) setup.py build \
+@HAVE_PYTHON_TRUE@			--build-lib '$(srcdir)/$(PYTHON_DISTUTILS_LIBDIR)' \
+@HAVE_PYTHON_TRUE@			--build-scripts '$(srcdir)/$(PYTHON_DISTUTILS_SCRIPTDIR)' \
 @HAVE_PYTHON_TRUE@			--mangenerator '$(MANGENERATOR)') && \
+@HAVE_PYTHON_TRUE@	(cd '$(srcdir)/gps' && \
+@HAVE_PYTHON_TRUE@	    rm -f *.so && \
+@HAVE_PYTHON_TRUE@	    ln -s ../$(PYTHON_DISTUTILS_LIBDIR)/gps/*.so . ) && \
 @HAVE_PYTHON_TRUE@	mv -f '$@.tmp' '$@'
 
 # Clean up after Python
@@ -2002,7 +2024,7 @@ libgps: libgps_core.c gps.h .libs/libgps.a
 	$(CC) $(CFLAGS) -o libgps -lm -DTESTMAIN $(LIBPTHREAD) -g libgps_core.c .libs/libgps.a
 splint: gpsd.h packet_names.h
 	@echo "Running splint on daemon and libraries..."
-	-splint $(SPLINTOPTS) -exportlocal -redef $(gpsd_c_sources) $(libgpsd_c_sources)
+	-splint $(SPLINTOPTS) -exportlocal -redef $(gpsd_c_sources) $(libgpsd_c_sources) $(libgps_c_sources)
 	@echo "Running splint on cgps..."
 	-splint $(SPLINTOPTS) -exportlocal $(cgps_SOURCES)
 	@echo "Running splint on xgpsspeed..."
@@ -2045,40 +2067,19 @@ indent:
 version:
 	@echo $(VERSION)
 
-#
-# Regression tests begin here
-#
-# Note that the *-makeregress targets re-create the *.log.chk source
-# files from the *.log source files.
-#
-# These require gcc4; use of the math coprocessor's on-board trig functions
-# apparently increases the accuracy of computation in a way that affects
-# the low-order digits of the track field in the O response.
-
-# Our regression tests are make targets, while automake expects
-# programs.  Thus, our approach is to construct the test
-# infrastructure our way, with make targets, and to have one TEST from
-# automake's viewpoint: a trivial shell script to invoke make with our
-# top-level regression target.
-
-# One might think that using TESTS_ENVIRONMENT=$(MAKE) would work
-# around this, but because the generated rule (check-TESTS) both
-# depends on each TEST as well as invokes it (with TESTS_ENVIRONMENT)
-# the entire list of tests is run twice.
-
 # Regression-test the daemon
 gps-regress: gpsd 
-	$(srcdir)/regress-driver $(srcdir)/test/daemon/*.log
+	$(run_regress_driver) $(srcdir)/test/daemon/*.log
 
 # Test that super-raw mode works. Compare each logfile against itself 
 # dumped through the daemon running in R=2 mode.  (This test is not
 # included in the normal regressions.)
 raw-regress:
-	$(srcdir)/regress-driver -r  $(srcdir)/test/daemon/*.log
+	$(run_regress_driver) -r  $(srcdir)/test/daemon/*.log
 
 # Build the regression tests for the daemon.
 gps-makeregress: gpsd
-	$(srcdir)/regress-driver -b $(srcdir)/test/daemon/*.log
+	$(run_regress_driver) -b $(srcdir)/test/daemon/*.log
 
 # To build an individual test for a load named foo.log, put it in
 # test/daemon and do this:
@@ -2151,12 +2152,12 @@ time-regress: test_mkgmtime
 # Regression test the unpacking code in libgps
 unpack-regress: libgps
 	@echo "Testing the client-library sentence decoder..."
-	$(srcdir)/regress-driver -c $(srcdir)/test/clientlib/*.log
+	$(run_regress_driver) -c $(srcdir)/test/clientlib/*.log
 
 # Build the regression test for the sentence unpacker
 unpack-makeregress: libgps
 	@echo "Rebuilding the client sentence-unpacker tests..."
-	$(srcdir)/regress-driver -c -b $(srcdir)/test/clientlib/*.log
+	$(run_regress_driver) -c -b $(srcdir)/test/clientlib/*.log
 
 # Unit-test the JSON parsing
 json-regress: test_json
@@ -2191,7 +2192,7 @@ www/AIVDM.html: www/AIVDM.txt
 	asciidoc -a toc -o www/AIVDM.html www/AIVDM.txt
 
 www/NMEA.html: www/NMEA.txt
-	asciidoc -a toc -o www/NMEA.html NMEA.txt
+	asciidoc -a toc -o www/NMEA.html www/NMEA.txt
 
 www/protocol-evolution.html: www/protocol-evolution.txt
 	asciidoc -a toc -o www/protocol-evolution.html www/protocol-evolution.txt
@@ -2221,7 +2222,7 @@ www/internals.html: $(shell ls doc/*.xml)
 
 pydoc: www/pydoc/index.html
 
-www/pydoc/index.html: gps gpsfake gpscat gpsprof
+www/pydoc/index.html: gps gpsfake gpscat gpsprof stamp-python-modules
 	mkdir -p www/pydoc
 	epydoc -v -q --html --graph all -n GPSD gps gpsfake gpscat gpsprof -o www/pydoc
 
@@ -2269,7 +2270,7 @@ upload-ftp: dist
 # It requires developer access verified via ssh.
 #
 release-tag:
-	git tag -s -m "Tagged for external release $(VERSION)" HEAD
+	git tag -s -m "Tagged for external release $(VERSION)" release-$(VERSION)
 	git push --tags
 
 #

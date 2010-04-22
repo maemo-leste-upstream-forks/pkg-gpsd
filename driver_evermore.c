@@ -183,11 +183,12 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
 
     switch (type) {
     case 0x02:			/* Navigation Data Output */
+	session->context->gps_week = (unsigned short)getleuw(buf2, 2);
+	session->context->gps_tow = (double)getleul(buf2, 4) * 0.01;
 	/*@ ignore @*//*@ splint is confused @ */
 	session->newdata.time =
-	    gpstime_to_unix((int)getleuw(buf2, 2),
-			    getleul(buf2,
-				    4) * 0.01) -
+	    gpstime_to_unix(session->context->gps_week,
+			    session->context->gps_tow) -
 	    session->context->leap_seconds;
 	/*@ end @*/
 	ecef_to_wgs84fix(&session->newdata, &session->gpsdata.separation,
@@ -222,11 +223,12 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
 	return mask | CLEAR_IS | REPORT_IS;
 
     case 0x04:			/* DOP Data Output */
+	session->context->gps_week = (unsigned short)getleuw(buf2, 2);
+	session->context->gps_tow = (double)getleul(buf2, 4) * 0.01;
 	/*@ ignore @*//*@ splint is confused @ */
 	session->newdata.time =
-	    gpstime_to_unix((int)getleuw(buf2, 2),
-			    getleul(buf2,
-				    4) * 0.01) -
+	    gpstime_to_unix(session->context->gps_week,
+			    session->context->gps_tow) -
 	    session->context->leap_seconds;
 	/*@ end @*/
 	clear_dop(&session->gpsdata.dop);
@@ -265,11 +267,12 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
 	return mask;
 
     case 0x06:			/* Channel Status Output */
+	session->context->gps_week = (unsigned short)getleuw(buf2, 2);
+	session->context->gps_tow = (double)getleul(buf2, 4) * 0.01;
 	/*@ ignore @*//*@ splint is confused @ */
 	session->gpsdata.skyview_time =
-	    gpstime_to_unix((int)getleuw(buf2, 2),
-			    getleul(buf2,
-				    4) * 0.01) -
+	    gpstime_to_unix(session->context->gps_week,
+			    session->context->gps_tow) -
 	    session->context->leap_seconds;
 	/*@ end @*/
 	session->gpsdata.satellites_visible = (int)getub(buf2, 8);
@@ -324,11 +327,12 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
     case 0x08:			/* Measurement Data Output */
 	/* clock offset is a manufacturer diagnostic */
 	/* (int)getleuw(buf2, 8);  clock offset, 29000..29850 ?? */
+	session->context->gps_week = (unsigned short)getleuw(buf2, 2);
+	session->context->gps_tow = (double)getleul(buf2, 4) * 0.01;
 	/*@ ignore @*//*@ splint is confused @ */
 	session->newdata.time =
-	    gpstime_to_unix((int)getleuw(buf2, 2),
-			    getleul(buf2,
-				    4) * 0.01) -
+	    gpstime_to_unix(session->context->gps_week,
+			    session->context->gps_tow) -
 	    session->context->leap_seconds;
 	/*@ end @*/
 	visible = (unsigned char)getub(buf2, 10);
