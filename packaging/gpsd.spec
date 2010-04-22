@@ -2,7 +2,7 @@
 
 Name: gpsd
 Summary: Service daemon for mediating access to a GPS
-Version: 2.93
+Version: 2.94
 Release: 1
 License: BSD
 Group: System Environment/Daemons
@@ -111,6 +111,9 @@ cp packaging/etc_init.d_gpsd_rpm "$RPM_BUILD_ROOT"/etc/rc.d/init.d/gpsd
 %{_libdir}/libgps.la
 %{_libdir}/libgps.so*
 %{_libdir}/libgps.a
+%{_libdir}/libgpsd.la
+%{_libdir}/libgpsd.so*
+%{_libdir}/libgpsd.a
 %{_mandir}/man8/gpsd.8*
 %{_mandir}/man1/gpsprof.1*
 %{_mandir}/man1/gpsmon.1*

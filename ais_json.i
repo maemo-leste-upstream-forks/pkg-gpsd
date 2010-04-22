@@ -31,7 +31,7 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type1.radio,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     char timestamp[JSON_VAL_MAX+1];
@@ -51,7 +51,7 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type4.radio,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     char eta[JSON_VAL_MAX+1];
@@ -85,7 +85,7 @@
                                        .len = sizeof(ais->type5.destination)},
 	{"dte",           t_uinteger,  .addr.uinteger = &ais->type5.dte,
                                        .dflt.uinteger = 1},
-	{NULL},
+	{NULL}
     };
 
     char data[JSON_VAL_MAX+1];
@@ -101,7 +101,7 @@
                                        .dflt.uinteger = 0},
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais7[] = {
@@ -114,7 +114,7 @@
                                        .dflt.uinteger = 0},
 	{"mmsi4",         t_uinteger,  .addr.uinteger = &ais->type7.mmsi4,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais8[] = {
@@ -123,7 +123,7 @@
                                        .dflt.uinteger = 0},
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais9[] = {
@@ -150,14 +150,14 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type9.radio,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais10[] = {
 	AIS_HEADER,
 	{"dest_mmsi",     t_uinteger,  .addr.uinteger = &ais->type10.dest_mmsi,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais12[] = {
@@ -170,14 +170,14 @@
                                        .dflt.boolean = 0},
 	{"text",          t_string,    .addr.string = ais->type12.text,
                                        .len = sizeof(ais->type12.text)},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais14[] = {
 	AIS_HEADER,
 	{"text",          t_string,    .addr.string = ais->type14.text,
                                        .len = sizeof(ais->type14.text)},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais15[] = {
@@ -198,7 +198,7 @@
                                        .dflt.uinteger = 0},
 	{"offset2_1",     t_uinteger,  .addr.uinteger = &ais->type15.offset2_1,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais16[] = {
@@ -215,7 +215,7 @@
                                        .dflt.uinteger = 0},
 	{"increment2",    t_uinteger,  .addr.uinteger = &ais->type16.increment2,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais17[] = {
@@ -226,7 +226,7 @@
                                        .dflt.integer = AIS_GNS_LAT_NOT_AVAILABLE},
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais18[] = {
@@ -263,7 +263,7 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type18.radio,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais19[] = {
@@ -306,7 +306,7 @@
                                        .dflt.uinteger = 1},
 	{"assigned",      t_boolean,   .addr.boolean = &ais->type19.assigned,
                                        .dflt.boolean = false},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais20[] = {
@@ -343,7 +343,7 @@
                                        .dflt.uinteger = 0},
 	{"increment4",    t_uinteger,  .addr.uinteger = &ais->type20.increment4,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais21[] = {
@@ -378,7 +378,7 @@
                                        .dflt.boolean = false},
 	{"virtual_aid",   t_boolean,   .addr.boolean = &ais->type21.virtual_aid,
                                        .dflt.boolean = false},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais22[] = {
@@ -411,7 +411,7 @@
                                        .dflt.boolean = false},
 	{"zonesize",      t_uinteger,  .addr.uinteger = &ais->type22.zonesize,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais23[] = {
@@ -434,7 +434,7 @@
                                        .dflt.uinteger = 0},
 	{"quiet",         t_uinteger,  .addr.uinteger = &ais->type23.quiet,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais24[] = {
@@ -457,7 +457,7 @@
                                        .dflt.uinteger = 0},
 	{"to_starboard",  t_uinteger,  .addr.uinteger = &ais->type24.dim.to_starboard,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais25[] = {
@@ -472,7 +472,7 @@
                                        .dflt.uinteger = 0},
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL},
+	{NULL}
     };
 
     const struct json_attr_t json_ais26[] = {
@@ -489,7 +489,7 @@
                                        .len = sizeof(data)},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type26.radio,
                                        .dflt.uinteger = 0},
-	{NULL},
+	{NULL}
     };
 
 

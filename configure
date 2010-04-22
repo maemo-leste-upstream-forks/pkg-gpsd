@@ -825,6 +825,8 @@ LN_S
 HAVE_PYTHON_FALSE
 HAVE_PYTHON_TRUE
 PYTHON_LIBS
+PYTHON_DISTUTILS_SCRIPTDIR
+PYTHON_DISTUTILS_LIBDIR
 PYTHON_CFLAGS
 pkgpyexecdir
 pyexecdir
@@ -1625,7 +1627,7 @@ Optional Features:
   --disable-garmin        disable Garmin kernel driver support
   --enable-garmintxt      enable Garmin Simple Text support
   --enable-tnt            disable True North Technologies support
-  --disble-oceanserver    disable OceanServer support
+  --disable-oceanserver   disable OceanServer support
   --disable-ubx           disable UBX Protocol support
   --disable-evermore      disable EverMore binary support
   --disable-mtk3301       disable MTK-3301 support
@@ -3316,7 +3318,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=gpsd
- VERSION=2.93
+ VERSION=2.94
 
 
 cat >>confdefs.h <<_ACEOF
@@ -4646,7 +4648,7 @@ if test "${am_cv_pathless_PYTHON+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
 
-	for am_cv_pathless_PYTHON in python3.0 python2.6 python2.5 python2.4 python none; do
+	for am_cv_pathless_PYTHON in python2.6 python2.5 python2.4 python none; do
 	  test "$am_cv_pathless_PYTHON" = none && break
 	  prog="import sys
 # split strings by '.' and convert to numeric.  Append some zeros
@@ -4873,14 +4875,17 @@ fi
 if test "x$ac_python" = "xyes"; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Python version and location" >&5
 $as_echo_n "checking Python version and location... " >&6; }
-	PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
-	PYTHON_VERSION_MAJOR=`$PYTHON -c "import sys; print '%d' % (sys.version_info[0]);"`
-	PYTHON_VERSION_MINOR=`$PYTHON -c "import sys; print '%d' % (sys.version_info[1]);"`
+	PYTHON_PREFIX=`$PYTHON -c "import sys; print(sys.prefix)"`
+	PYTHON_VERSION_MAJOR=`$PYTHON -c "import sys; print('%d' % (sys.version_info[0]));"`
+	PYTHON_VERSION_MINOR=`$PYTHON -c "import sys; print('%d' % (sys.version_info[1]));"`
 	PYTHON_VERSION="${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON, $PYTHON_VERSION, $PYTHON_PREFIX" >&5
 $as_echo "$PYTHON, $PYTHON_VERSION, $PYTHON_PREFIX" >&6; }
 
 	PYTHON_CFLAGS="-DHAVE_PYTHON -I$PYTHON_PREFIX/include/python$PYTHON_VERSION"
+
+	PYTHON_DISTUTILS_LIBDIR=`$PYTHON -c 'import distutils.util; import sys; print ("build/lib.%s-%s" %(distutils.util.get_platform(), sys.version[0:3]))'`
+	PYTHON_DISTUTILS_SCRIPTDIR=`$PYTHON  -c 'import sys; print ("build/scripts-%s" %(sys.version[0:3], ))'`
 
 	OLD_CPPFLAGS="$CPPFLAGS"
 	OLD_CXXFLAGS="$CXXFLAGS"
@@ -5038,6 +5043,8 @@ done
 	CXXFLAGS="$OLD_CXXFLAGS"
 
 	if test "x$ac_python" = "xyes"; then
+
+
 
 
 		ac_python=no
@@ -5709,13 +5716,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5712: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5719: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5715: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5722: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5718: output\"" >&5)
+  (eval echo "\"\$as_me:5725: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6909,7 +6916,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6912 "configure"' > conftest.$ac_ext
+  echo '#line 6919 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8167,11 +8174,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8170: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8177: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8174: \$? = $ac_status" >&5
+   echo "$as_me:8181: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8506,11 +8513,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8509: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8516: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8513: \$? = $ac_status" >&5
+   echo "$as_me:8520: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8611,11 +8618,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8614: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8621: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8618: \$? = $ac_status" >&5
+   echo "$as_me:8625: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8666,11 +8673,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8669: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8676: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8673: \$? = $ac_status" >&5
+   echo "$as_me:8680: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11049,7 +11056,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11052 "configure"
+#line 11059 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11145,7 +11152,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11148 "configure"
+#line 11155 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14031,11 +14038,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14034: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14041: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14038: \$? = $ac_status" >&5
+   echo "$as_me:14045: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14130,11 +14137,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14133: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14140: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14137: \$? = $ac_status" >&5
+   echo "$as_me:14144: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14182,11 +14189,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14185: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14192: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14189: \$? = $ac_status" >&5
+   echo "$as_me:14196: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16639,9 +16646,11 @@ $as_echo "#define HAVE_LIBUSB /**/" >>confdefs.h
 
     LIBUSB=-l${usb}
     INCUSB=-I/usr/include/lib${usb}
+    ac_libusb=yes
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: found." >&5
 $as_echo "found." >&6; }
 else
+    ac_libusb=yes
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found." >&5
 $as_echo "not found." >&6; }
 fi
@@ -16670,8 +16679,8 @@ done
 
   if test x"$ac_cv_header_X11_xpm_h" = "xno" &&
      test x"$ac_cv_header_xpm_h" = "xno"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: xpm.h problem - xgps won't be built." >&5
-$as_echo "$as_me: WARNING: xpm.h problem - xgps won't be built." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: xpm.h problem - xgpsspeed won't be built." >&5
+$as_echo "$as_me: WARNING: xpm.h problem - xgpsspeed won't be built." >&2;}
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for X" >&5
 $as_echo_n "checking for X... " >&6; }
@@ -17598,8 +17607,8 @@ fi
 
 
   if test x"$ac_cv_lib_Xext_XShapeQueryVersion" = "xno"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libXext problem - xgps won't be built." >&5
-$as_echo "$as_me: WARNING: libXext problem - xgps won't be built." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libXext problem - xgpsspeed won't be built." >&5
+$as_echo "$as_me: WARNING: libXext problem - xgpsspeed won't be built." >&2;}
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XpmCreatePixmapFromXpmImage in -lXpm" >&5
 $as_echo_n "checking for XpmCreatePixmapFromXpmImage in -lXpm... " >&6; }
@@ -17646,8 +17655,8 @@ fi
 
 
   if test x"$ac_cv_lib_Xpm_XpmCreatePixmapFromXpmImage" = "xno"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libXpm problem - xgps won't be built." >&5
-$as_echo "$as_me: WARNING: libXpm problem - xgps won't be built." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libXpm problem - xgpsspeed won't be built." >&5
+$as_echo "$as_me: WARNING: libXpm problem - xgpsspeed won't be built." >&2;}
   fi
 else
      if false; then
@@ -18884,6 +18893,7 @@ echo "Allow device reconfig   : $ac_reconfigure"
 echo "Allow control send      : $ac_controlsend"
 echo "Squelch logging/hexdump : $ac_squelch"
 echo "Raw Measurements        : $ac_raw"
+echo "libusb device discovery : $ac_libusb"
 echo "	Client Features"
 echo "	---------------"
 echo "Old protocol in libgps  : $ac_oldstyle"
@@ -18915,7 +18925,7 @@ if test "xdummy" = "xdummy" -a \
     x"$ac_ubx" = "xno"; then
     as_fn_error "Can't build gpsd with no protocols enabled" "$LINENO" 5
 fi
-ac_config_files="$ac_config_files Makefile packaging/gpsd.spec libgps.pc libgpsd.pc jsongen.py maskaudit.py gpscat gpsfake gpsprof valgrind-audit"
+ac_config_files="$ac_config_files Makefile packaging/gpsd.spec libgps.pc libgpsd.pc jsongen.py maskaudit.py valgrind-audit"
 
 ac_config_commands="$ac_config_commands default"
 
@@ -20054,9 +20064,6 @@ do
     "libgpsd.pc") CONFIG_FILES="$CONFIG_FILES libgpsd.pc" ;;
     "jsongen.py") CONFIG_FILES="$CONFIG_FILES jsongen.py" ;;
     "maskaudit.py") CONFIG_FILES="$CONFIG_FILES maskaudit.py" ;;
-    "gpscat") CONFIG_FILES="$CONFIG_FILES gpscat" ;;
-    "gpsfake") CONFIG_FILES="$CONFIG_FILES gpsfake" ;;
-    "gpsprof") CONFIG_FILES="$CONFIG_FILES gpsprof" ;;
     "valgrind-audit") CONFIG_FILES="$CONFIG_FILES valgrind-audit" ;;
     "default") CONFIG_COMMANDS="$CONFIG_COMMANDS default" ;;
 
@@ -21540,7 +21547,7 @@ compiler_lib_search_path=$lt_compiler_lib_search_path_CXX
 _LT_EOF
 
  ;;
-    "default":C) chmod +x jsongen.py maskaudit.py gpscat gpsfake gpsprof valgrind-audit ;;
+    "default":C) chmod +x jsongen.py maskaudit.py gpscat gpsfake gpsprof xgps valgrind-audit ;;
 
   esac
 done # for ac_tag

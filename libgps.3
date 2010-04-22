@@ -73,10 +73,8 @@ del session
 .SH "DESCRIPTION"
 .PP
 \fBlibgps\fR
-is a service library which supports querying GPS devices; link it with the linker option \-lgps\&. There are two interfaces supported in it; one high\-level interface that goes through
-\fBgpsd\fR(1)
-and is intended for concurrent use by several applications, and one low\-level interface that speaks directly with the serial or USB device to which the GPS is attached\&. This page describes the high\-level interface that is safe for multiple applications to use simultaneously; it is probably the one you want\&. The low\-level interface is documented at
-\fBlibgpsd\fR(3)\&.
+is a service library which supports communicating with an instance of the
+\fBgpsd\fR(8); link it with the linker option \-lgps\&.
 .if n \{\
 .sp
 .\}
@@ -272,7 +270,7 @@ was added in 2\&.91\&.
 
 \fBgpsd\fR(8),
 \fBgps\fR(1),
-\fBlibgps\fR(3)\&.
+\fBlibgpsd\fR(3)\&.
 \fBlibgpsmm\fR(3)\&.
 .SH "AUTHOR"
 .PP
