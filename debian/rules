@@ -203,7 +203,7 @@ clean-patched:
 	debconf-updatepo
 	rm -f *-stamp
 	rm -f TROUBLESHOOTING
-	[ ! -r setup.py ] || python setup.py clean
+	[ ! -r setup.py ] || python setup.py clean || true
 	rm -rf build
 	[ ! -r Makefile ] || $(MAKE) distclean
 	rm -f *.1 *.3 *.5 *.8 .1
