@@ -189,19 +189,23 @@ install-gpsd: build-gpsd-stamp
 
 
 install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-python%-dbg)
+# xgps needs to go into the clients package, not python-gps.
+# Move after installing.
+	mkdir -p $(CURDIR)/debian/tmp/usr/bin
+	mv $(CURDIR)/debian/$(PACKAGE_PY)/usr/bin/xgps \
+		$(CURDIR)/debian/tmp/usr/bin
 
 install-python%:
 	set -e ;\
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
 	  case $* in *-dbg) \
 	    python$* setup.py install --root=$(CURDIR)/debian/tmp \
-		--install-data=/tmp \
+		--install-data=/tmp --install-scripts=/tmp \
 		$(py_setup_install_args) ;; \
 	  *) \
 	    python$* setup.py install --root=$(CURDIR)/debian/$(PACKAGE_PY) \
 		$(py_setup_install_args) ;; \
 	  esac
-
 
 clean: clean-patched unpatch
 clean-patched:
