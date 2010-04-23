@@ -1,3 +1,24 @@
+gpsd (2.94-1) unstable; urgency=low
+
+  * [3d0e6783] Merge commit 'upstream/2.93'
+  * [f59e0254] Updating patches for the new upstream version.
+  * [51fb722a] Merge commit 'upstream/2.94'
+  * [baf251fd] Add python-gtk2 as dependency of gpsd-clients.
+  * [3db586ad] Adding patch to fix missing definition of MAKE in
+    setup.py clean.
+  * [ffbcd0c0] Allow setup.py clean to fail as it needs to be patched to
+    work.
+  * [a3215888] Add patch to fix linking of libgpsd.
+  * [64d6d97d] Install libgpsd into libgps(-dev).
+  * [1a82a76e] Update symbols file after the library split.
+  * [a37176ee] Don't install -dev files of libgpsd. Upstream does not
+    want to expose the library more than necessary. So we remove/do not
+    install all related files.
+  * [c1f8fc05] Don't install xgps into the python-gps package.
+  * [46c6bca9] Add patch to fix version detection in setup.py.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 23 Apr 2010 03:02:20 +0200
+
 gpsd (2.92-4) unstable; urgency=medium
 
   * [8fcedc1e] gpsd: Move python to Recommends python is only needed
