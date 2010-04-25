@@ -149,6 +149,9 @@ build-gpsd-stamp: configure-stamp
 build-python-pre: build-python-pre-stamp
 build-python-pre-stamp: configure-stamp
 	$(MAKE) packet_names.h gpscat.1 gpsfake.1 gpsprof.1
+	set -e;
+	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
+	  python setup.py build_scripts
 	touch $@
 
 build-python%-stamp: build-gpsd-stamp build-python-pre-stamp
