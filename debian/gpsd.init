@@ -6,6 +6,7 @@
 # Required-Stop:     $remote_fs $syslog $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
+# X-Start-Before:    ntp
 # Short-Description: GPS (Global Positioning System) daemon start/stop script
 # Description:       Start/Stop script for the gpsd service daemon,
 #                    which is able to monitor one or more GPS devices
