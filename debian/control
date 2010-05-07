@@ -66,6 +66,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
  python (>= 2.6) | python-simplejson
 Recommends: gpsd
 Provides: ${python:Provides}
+Conflicts: python-json
 Description: Global Positioning System - Python libraries
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
