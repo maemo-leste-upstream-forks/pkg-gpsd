@@ -1,0 +1,1041 @@
+From: Bernd Zeimetz <bernd@bzed.de>
+Date: Mon, 10 May 2010 00:11:35 +0200
+Subject: [PATCH] Backport Python related changes/fixes from git master.
+
+---
+ gps/client.py |  202 +++++++++++++++++++++++++++++++++++++++++++++
+ gps/fake.py   |  138 +++++++++++++++++++++----------
+ gps/gps.py    |  254 +++++++--------------------------------------------------
+ gpscat        |    8 +--
+ gpsfake       |   18 ++--
+ gpsprof       |   21 +++--
+ xgps          |   17 ++--
+ 7 files changed, 359 insertions(+), 299 deletions(-)
+ create mode 100644 gps/client.py
+
+diff --git a/gps/client.py b/gps/client.py
+new file mode 100644
+index 0000000..6a62da5
+--- /dev/null
++++ b/gps/client.py
+@@ -0,0 +1,202 @@
++# This file is Copyright (c) 2010 by the GPSD project
++# BSD terms apply: see the file COPYING in the distribution root for details.
++#
++import time, socket, sys, select
++
++if sys.hexversion >= 0x2060000:
++    import json			# For Python 2.6
++else:
++    import simplejson as json	# For Python 2.4 and 2.5
++
++GPSD_PORT="2947"
++
++class gpscommon:
++    "Isolate socket handling and buffering from the protcol interpretation."
++    def __init__(self, host="127.0.0.1", port=GPSD_PORT, verbose=0):
++        self.sock = None        # in case we blow up in connect
++        self.linebuffer = ""
++        self.verbose = verbose
++        self.connect(host, port)
++
++    def connect(self, host, port):
++        """Connect to a host on a given port.
++
++        If the hostname ends with a colon (`:') followed by a number, and
++        there is no port specified, that suffix will be stripped off and the
++        number interpreted as the port number to use.
++        """
++        if not port and (host.find(':') == host.rfind(':')):
++            i = host.rfind(':')
++            if i >= 0:
++                host, port = host[:i], host[i+1:]
++            try: port = int(port)
++            except ValueError:
++                raise socket.error, "nonnumeric port"
++        #if self.verbose > 0:
++        #    print 'connect:', (host, port)
++        msg = "getaddrinfo returns an empty list"
++        self.sock = None
++        for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
++            af, socktype, proto, canonname, sa = res
++            try:
++                self.sock = socket.socket(af, socktype, proto)
++                #if self.debuglevel > 0: print 'connect:', (host, port)
++                self.sock.connect(sa)
++            except socket.error, msg:
++                #if self.debuglevel > 0: print 'connect fail:', (host, port)
++                self.close()
++                continue
++            break
++        if not self.sock:
++            raise socket.error, msg
++
++    def close(self):
++        if self.sock:
++            self.sock.close()
++        self.sock = None
++
++    def __del__(self):
++        self.close()
++
++    def waiting(self):
++        "Return True if data is ready for the client."
++        if self.linebuffer:
++            return True
++        (winput, woutput, wexceptions) = select.select((self.sock,), (), (), 0)
++        return winput != []
++
++    def read(self):
++        "Wait for and read data being streamed from the daemon."
++        if self.verbose > 1:
++            sys.stderr.write("poll: reading from daemon...\n")
++        eol = self.linebuffer.find('\n')
++        if eol == -1:
++            frag = self.sock.recv(4096)
++            self.linebuffer += frag
++            if self.verbose > 1:
++                sys.stderr.write("poll: read complete.\n")
++            if not self.linebuffer:
++                if self.verbose > 1:
++                    sys.stderr.write("poll: returning -1.\n")
++                # Read failed
++                return -1
++            eol = self.linebuffer.find('\n')
++            if eol == -1:
++                if self.verbose > 1:
++                    sys.stderr.write("poll: returning 0.\n")
++                # Read succeeded, but only got a fragment
++                return 0
++        else:
++            if self.verbose > 1:
++                sys.stderr.write("poll: fetching from buffer.\n")
++
++        # We got a line
++        eol += 1
++        self.response = self.linebuffer[:eol]
++        self.linebuffer = self.linebuffer[eol:]
++
++        # Can happen if daemon terminates while we're reading.
++        if not self.response:
++            return -1
++        if self.verbose:
++            sys.stderr.write("poll: data is %s\n" % repr(self.response))
++        self.received = time.time()
++        # We got a \n-terminated line
++        return len(self.response)
++
++    def send(self, commands):
++        "Ship commands to the daemon."
++        if not commands.endswith("\n"):
++            commands += "\n"
++        self.sock.send(commands)
++
++WATCH_DISABLE	= 0x0000
++WATCH_ENABLE	= 0x0001
++WATCH_JSON	= 0x0002
++WATCH_NMEA	= 0x0004
++WATCH_RARE	= 0x0008
++WATCH_RAW	= 0x0010
++WATCH_SCALED	= 0x0020
++WATCH_DEVICE	= 0x0040
++
++class gpsjson(gpscommon):
++    "Basic JSON decoding."
++    def __iter__(self):
++        return self
++
++    def json_unpack(self, buf):
++        def asciify(d):
++            "De-Unicodify everything so we can copy dicts into Python objects."
++            t = {}
++            for (k, v) in d.items():
++                ka = k.encode("ascii")
++                if type(v) == type(u"x"):
++                    va = v.encode("ascii")
++                elif type(v) == type({}):
++                    va = asciify(v)
++                elif type(v) == type([]):
++                    va = map(asciify, v)
++                else:
++                    va = v
++                t[ka] = va
++            return t
++        self.data = dictwrapper(**asciify(json.loads(buf.strip(), encoding="ascii")))
++        # Should be done for any other array-valued subobjects, too.
++        if self.data["class"] == "SKY" and hasattr(self.data, "satellites"):
++            self.data.satellites = map(lambda x: dictwrapper(**x), self.data.satellites)
++
++    def stream(self, flags=0, outfile=None):
++        "Control streaming reports from the daemon,"
++        if flags & WATCH_DISABLE:
++            arg = '?WATCH={"enable":false'
++            if flags & WATCH_JSON:
++                arg += ',"json":false'
++            if flags & WATCH_NMEA:
++                arg += ',"nmea":false'
++            if flags & WATCH_RARE:
++                arg += ',"raw":1'
++            if flags & WATCH_RAW:
++                arg += ',"raw":2'
++            if flags & WATCH_SCALED:
++                arg += ',"scaled":false'
++        else: # flags & WATCH_ENABLE:
++            arg = '?WATCH={"enable":true'
++            if flags & WATCH_JSON:
++                arg += ',"json":true'
++            if flags & WATCH_NMEA:
++                arg += ',"nmea":true'
++            if flags & WATCH_RAW:
++                arg += ',"raw":1'
++            if flags & WATCH_RARE:
++                arg += ',"raw":0'
++            if flags & WATCH_SCALED:
++                arg += ',"scaled":true'
++            if flags & WATCH_DEVICE:
++                arg += ',"device":"%s"' % outfile
++        return self.send(arg + "}")
++
++class dictwrapper:
++    "Wrapper that yields both class and dictionary behavior,"
++    def __init__(self, **ddict):
++        self.__dict__ = ddict
++    def get(self, k, d=None):
++        return self.__dict__.get(k, d)
++    def keys(self):
++        return self.__dict__.keys()
++    def __getitem__(self, key):
++        "Emulate dictionary, for new-style interface."
++        return self.__dict__[key]
++    def __setitem__(self, key, val):
++        "Emulate dictionary, for new-style interface."
++        self.__dict__[key] = val
++    def __contains__(self, key):
++        return key in self.__dict__
++    def __str__(self):
++        return "<dictwrapper: " + str(self.__dict__) + ">"
++    __repr__ = __str__
++
++#
++# Someday a cleaner Python iterface using this machiner will live here
++#
++
++# End
+diff --git a/gps/fake.py b/gps/fake.py
+index e6446ba..d5ea5f5 100644
+--- a/gps/fake.py
++++ b/gps/fake.py
+@@ -86,10 +86,14 @@ class TestLoad:
+     "Digest a logfile into a list of sentences we can cycle through."
+     def __init__(self, logfp, predump=False):
+         self.sentences = []	# This is the interesting part
++        if type(logfp) == type(""):
++            logfp = open(logfp, "r");            
++        self.name = logfp.name
+         self.logfp = logfp
+         self.predump = predump
+         self.logfile = logfp.name
+         self.type = None
++        self.sourcetype = "pty"
+         self.serial = None
+         # Grab the packets
+         getter = sniffer.new()
+@@ -99,8 +103,6 @@ class TestLoad:
+             (len, ptype, packet) = getter.get(logfp.fileno())
+             if len <= 0:
+                 break
+-            elif ptype == sniffer.BAD_PACKET:
+-                break
+             elif ptype == sniffer.COMMENT_PACKET:
+                 # Some comments are magic
+                 if "Serial:" in packet:
+@@ -123,9 +125,10 @@ class TestLoad:
+                             raise ValueError
+                     except (ValueError, IndexError):
+                         raise TestLoadError("bad serial-parameter spec in %s"%\
+-                                            logfp.name)
+-                    
++                                            logfp.name)                    
+                     self.serial = (baud, databits, parity, stopbits)
++                elif "UDP" in packet:
++                    self.sourcetype = "UDP"
+                 elif "%" in packet:
+                     # Pass through for later interpretation 
+                     self.sentences.append(packet)
+@@ -134,6 +137,9 @@ class TestLoad:
+                     type_latch = ptype
+                 if self.predump:
+                     print `packet`
++                if not packet:
++                    raise TestLoadError("zero-length packet from %s"%\
++                                        logfp.name)                    
+                 self.sentences.append(packet)
+         # Look at the first packet to grok the GPS type
+         self.textual = (type_latch == sniffer.NMEA_PACKET)
+@@ -147,16 +153,38 @@ class PacketError(exceptions.Exception):
+         self.msg = msg
+ 
+ class FakeGPS:
+-    "A fake GPS is a pty with a test log ready to be cycled to it."
+-    def __init__(self, logfp,
+-                 speed=4800, databits=8, parity='N', stopbits=1,
+-                 predump=False, progress=None):
++    def __init__(self, testload, progress=None):
++        self.testload = testload
+         self.progress = progress
+         self.go_predicate = lambda: True
+         self.readers = 0
+         self.index = 0
++        self.progress("gpsfake: %s provides %d sentences\n" % (self.testload.name, len(self.testload.sentences)))
++
++    def feed(self):
++        "Feed a line from the contents of the GPS log to the daemon."
++        line = self.testload.sentences[self.index % len(self.testload.sentences)]
++        if "%Delay:" in line:
++            # Delay specified number of seconds
++            delay = line.split()[1]
++            time.sleep(int(delay))
++        # self.write has to be set by the derived class
++        self.write(line)
++        if self.progress:
++            self.progress("gpsfake: %s feeds %d=%s\n" % (self.testload.name, len(line), `line`))
++        time.sleep(WRITE_PAD)
++        self.index += 1
++
++class FakePTY(FakeGPS):
++    "A FakePTY is a pty with a test log ready to be cycled to it."
++    def __init__(self, testload,
++                 speed=4800, databits=8, parity='N', stopbits=1,
++                 progress=None):
++        FakeGPS.__init__(self, testload, progress)
++        # Allow Serial: header to be overridden by explicit spped.
++        if self.testload.serial:
++            (speed, databits, parity, stopbits) = self.testload.serial
+         self.speed = speed
+-        self.name = None
+         baudrates = {
+             0: termios.B0,
+             50: termios.B50,
+@@ -179,16 +207,8 @@ class FakeGPS:
+             230400: termios.B230400,
+         }
+         speed = baudrates[speed]	# Throw an error if the speed isn't legal
+-        if type(logfp) == type(""):
+-            logfp = open(logfp, "r");            
+-        self.name = logfp.name
+-        self.testload = TestLoad(logfp, predump)
+-        self.progress("gpsfake: %s provides %d sentences\n" % (self.name, len(self.testload.sentences)))
+-        # FIXME: explicit arguments should probably override this
+-        #if self.testload.serial:
+-        #    (speed, databits, parity, stopbits) = self.testload.serial
+-        (self.master_fd, self.slave_fd) = pty.openpty()
+-        self.slave = os.ttyname(self.slave_fd)
++        (self.fd, self.slave_fd) = pty.openpty()
++        self.byname = os.ttyname(self.slave_fd)
+         (iflag, oflag, cflag, lflag, ispeed, ospeed, cc) = termios.tcgetattr(self.slave_fd)
+         cc[termios.VMIN] = 1
+         cflag &= ~(termios.PARENB | termios.PARODD | termios.CRTSCTS)
+@@ -214,7 +234,7 @@ class FakeGPS:
+     def read(self):
+         "Discard control strings written by gpsd."
+         # A tcflush implementation works on Linux but fails on OpenBSD 4.
+-        termios.tcflush(self.master_fd, termios.TCIFLUSH)
++        termios.tcflush(self.fd, termios.TCIFLUSH)
+         # Alas, the FIONREAD version also works on Linux and fails on OpenBSD.
+         #try:
+         #    buf = array.array('i', [0])
+@@ -224,22 +244,34 @@ class FakeGPS:
+         #except IOError:
+         #    pass
+ 
+-    def feed(self):
+-        "Feed a line from the contents of the GPS log to the daemon."
+-        line = self.testload.sentences[self.index % len(self.testload.sentences)]
+-        if "%Delay:" in line:
+-            # Delay specified number of seconds
+-            delay = line.split()[1]
+-            time.sleep(int(delay))
+-        os.write(self.master_fd, line)
+-        if self.progress:
+-            self.progress("gpsfake: %s feeds %d=%s\n" % (self.name, len(line), `line`))
+-        time.sleep(WRITE_PAD)
+-        self.index += 1
++    def write(self, line):
++        os.write(self.fd, line)
++
++    def drain(self):
++        "Wait for the associated device to drain (e.g. before closing)."
++        termios.tcdrain(self.fd)
++
++class FakeUDP(FakeGPS):
++    "A UDP broadcaster with a test log ready to be cycled to it."
++    def __init__(self, testload,
++                 ipaddr, port,
++                 progress=None):
++        FakeGPS.__init__(self, testload, progress)
++        self.ipaddr = ipaddr
++        self.port = port
++        self.byname = "udp://" + ipaddr + ":" + port
++        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
++
++    def read(self):
++        "Discard control strings written by gpsd."
++        pass
++
++    def write(self, line):
++        self.sock.sendto(line, (self.ipaddr, int(self.port)))
+ 
+     def drain(self):
+         "Wait for the associated device to drain (e.g. before closing)."
+-        termios.tcdrain(self.master_fd)
++        pass	# shutdown() fails on UDP
+ 
+ class DaemonError(exceptions.Exception):
+     def __init__(self, msg):
+@@ -320,13 +352,19 @@ class DaemonInstance:
+     def add_device(self, path):
+         "Add a device to the daemon's internal search list."
+         if self.__get_control_socket():
+-            self.sock.sendall("+%s\r\n" % path)
++            self.sock.sendall("+%s\r\n\x00" % path)
+             self.sock.recv(12)
+             self.sock.close()
+     def remove_device(self, path):
+         "Remove a device from the daemon's internal search list."
+         if self.__get_control_socket():
+-            self.sock.sendall("-%s\r\n" % path)
++            self.sock.sendall("-%s\r\n\x00" % path)
++            self.sock.recv(12)
++            self.sock.close()
++    def quit_on_quiesce(self, num):
++        "Tell the daemon to quit when it next goes quiescent."
++        if self.__get_control_socket():
++            self.sock.sendall("$%d\r\n\x00" % num)
+             self.sock.recv(12)
+             self.sock.close()
+     def kill(self):
+@@ -346,13 +384,15 @@ class TestSessionError(exceptions.Exception):
+ class TestSession:
+     "Manage a session including a daemon with fake GPSes and clients."
+     CLOSE_DELAY = 1
+-    def __init__(self, prefix=None, port=None, options=None, verbose=0, predump=False):
++    def __init__(self, prefix=None, port=None, options=None, verbose=0, predump=False, expected=0, udp=False):
+         "Initialize the test session by launching the daemon."
+         self.prefix = prefix
+         self.port = port
+         self.options = options
+         self.verbose = verbose
+         self.predump = predump
++        self.expected = expected
++        self.udp = udp
+         self.daemon = DaemonInstance()
+         self.fakegpslist = {}
+         self.client_id = 0
+@@ -377,21 +417,26 @@ class TestSession:
+     def set_predicate(self, pred):
+         "Set a default go predicate for the session."
+         self.default_predicate = pred
+-    def gps_add(self, logfile, speed=4800, pred=None):
++    def gps_add(self, logfile, speed=19200, pred=None):
+         "Add a simulated GPS being fed by the specified logfile."
+         self.progress("gpsfake: gps_add(%s, %d)\n" % (logfile, speed))
+         if logfile not in self.fakegpslist:
+-            newgps = FakeGPS(logfile, speed=speed, predump=self.predump,
+-                             progress=self.progress)
++            testload = TestLoad(logfile, predump=self.predump)
++            if testload.sourcetype == "UDP" or self.udp:
++                newgps = FakeUDP(testload, ipaddr="127.0.1.255", port="5000",
++                                   progress=self.progress)
++            else:
++                newgps = FakePTY(testload, speed=speed, 
++                                   progress=self.progress)
+             if pred:
+                 newgps.go_predicate = pred
+             elif self.default_predicate:
+                 newgps.go_predicate = self.default_predicate
+-            self.fakegpslist[newgps.slave] = newgps
++            self.fakegpslist[newgps.byname] = newgps
+             self.append(newgps)
+             newgps.exhausted = 0
+-        self.daemon.add_device(newgps.slave)
+-        return newgps.slave
++        self.daemon.add_device(newgps.byname)
++        return newgps.byname
+     def gps_remove(self, name):
+         "Remove a simulated GPS from the daemon's search list."
+         self.progress("gpsfake: gps_remove(%s)\n" % name)
+@@ -454,12 +499,12 @@ class TestSession:
+                     # before removing it.  This should give its subscribers time
+                     # to get gpsd's response before we call cleanup()
+                     if chosen.exhausted and (time.time() - chosen.exhausted > TestSession.CLOSE_DELAY):
+-                        self.remove(chosen)
+-                        self.progress("gpsfake: GPS %s removed\n" % chosen.slave)
++                        self.gps_remove(chosen.byname)
++                        self.progress("gpsfake: GPS %s removed\n" % chosen.byname)
+                     elif not chosen.go_predicate(chosen.index, chosen):
+                         if chosen.exhausted == 0:
+                             chosen.exhausted = time.time()
+-                            self.progress("gpsfake: GPS %s ran out of input\n" % chosen.slave)
++                            self.progress("gpsfake: GPS %s ran out of input\n" % chosen.byname)
+                     else:
+                         chosen.feed()
+                 elif isinstance(chosen, gps.gps):
+@@ -470,6 +515,9 @@ class TestSession:
+                         chosen.poll()
+                         if chosen.valid & gps.PACKET_SET:
+                             self.reporter(chosen.response)
++                            if self.expected:
++                                self.daemon.quit_on_quiesce(self.expected)
++                                self.expected = 0
+                         had_output = True
+                 else:
+                     raise TestSessionError("test object of unknown type")
+diff --git a/gps/gps.py b/gps/gps.py
+index ca145eb..9b2c62f 100755
+--- a/gps/gps.py
++++ b/gps/gps.py
+@@ -1,4 +1,5 @@
+ #!/usr/bin/env python
++# -*- coding: utf-8 -*-
+ #
+ # This file is Copyright (c) 2010 by the GPSD project
+ # BSD terms apply: see the file COPYING in the distribution root for details.
+@@ -10,139 +11,11 @@
+ # away, but it's likely to be deprecated in favor of something more
+ # Pythonic.
+ #
+-import time, socket, sys, select
+-
+-if sys.hexversion >= 0x2060000:
+-    import json			# For Python 2.6
+-else:
+-    import simplejson as json	# For Python 2.4 and 2.5
+-
+-GPSD_PORT="2947"
+-
+-class gpscommon:
+-    "Isolate socket handling and buffering from the protcol interpretation."
+-    def __init__(self, host="127.0.0.1", port=GPSD_PORT, verbose=0):
+-        self.sock = None        # in case we blow up in connect
+-        self.linebuffer = ""
+-        self.verbose = verbose
+-        self.connect(host, port)
+-
+-    def connect(self, host, port):
+-        """Connect to a host on a given port.
+-
+-        If the hostname ends with a colon (`:') followed by a number, and
+-        there is no port specified, that suffix will be stripped off and the
+-        number interpreted as the port number to use.
+-        """
+-        if not port and (host.find(':') == host.rfind(':')):
+-            i = host.rfind(':')
+-            if i >= 0:
+-                host, port = host[:i], host[i+1:]
+-            try: port = int(port)
+-            except ValueError:
+-                raise socket.error, "nonnumeric port"
+-        #if self.verbose > 0:
+-        #    print 'connect:', (host, port)
+-        msg = "getaddrinfo returns an empty list"
+-        self.sock = None
+-        for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
+-            af, socktype, proto, canonname, sa = res
+-            try:
+-                self.sock = socket.socket(af, socktype, proto)
+-                #if self.debuglevel > 0: print 'connect:', (host, port)
+-                self.sock.connect(sa)
+-            except socket.error, msg:
+-                #if self.debuglevel > 0: print 'connect fail:', (host, port)
+-                self.close()
+-                continue
+-            break
+-        if not self.sock:
+-            raise socket.error, msg
+-
+-    def close(self):
+-        if self.sock:
+-            self.sock.close()
+-        self.sock = None
+-
+-    def __del__(self):
+-        self.close()
+-
+-    def waiting(self):
+-        "Return True if data is ready for the client."
+-        if self.linebuffer:
+-            return True
+-        (winput, woutput, wexceptions) = select.select((self.sock,), (), (), 0)
+-        return winput != []
+-
+-    def read(self):
+-        "Wait for and read data being streamed from the daemon."
+-        if self.verbose > 1:
+-            sys.stderr.write("poll: reading from daemon...\n")
+-        eol = self.linebuffer.find('\n')
+-        if eol == -1:
+-            frag = self.sock.recv(4096)
+-            self.linebuffer += frag
+-            if self.verbose > 1:
+-                sys.stderr.write("poll: read complete.\n")
+-            if not self.linebuffer:
+-                if self.verbose > 1:
+-                    sys.stderr.write("poll: returning -1.\n")
+-                # Read failed
+-                return -1
+-            eol = self.linebuffer.find('\n')
+-            if eol == -1:
+-                if self.verbose > 1:
+-                    sys.stderr.write("poll: returning 0.\n")
+-                # Read succeeded, but only got a fragment
+-                return 0
+-        else:
+-            if self.verbose > 1:
+-                sys.stderr.write("poll: fetching from buffer.\n")
+-
+-        # We got a line
+-        eol += 1
+-        self.response = self.linebuffer[:eol]
+-        self.linebuffer = self.linebuffer[eol:]
+-
+-        # Can happen if daemon terminates while we're reading.
+-        if not self.response:
+-            return -1
+-        if self.verbose:
+-            sys.stderr.write("poll: data is %s\n" % repr(self.response))
+-        self.received = time.time()
+-        # We got a \n-terminated line
+-        return len(self.linebuffer)
+-
+-    def send(self, commands):
+-        "Ship commands to the daemon."
+-        if not commands.endswith("\n"):
+-            commands += "\n"
+-        self.sock.send(commands)
+-
+-class dictwrapper:
+-    "Wrapper that yields both class and dictionary behavior,"
+-    def __init__(self, **ddict):
+-        self.__dict__ = ddict
+-    def get(self, k, d=None):
+-        return self.__dict__.get(k, d)
+-    def keys(self):
+-        return self.__dict__.keys()
+-    def __getitem__(self, key):
+-        "Emulate dictionary, for new-style interface."
+-        return self.__dict__[key]
+-    def __setitem__(self, key, val):
+-        "Emulate dictionary, for new-style interface."
+-        self.__dict__[key] = val
+-    def __contains__(self, key):
+-        return key in self.__dict__
+-    def __str__(self):
+-        return "<dictwrapper: " + str(self.__dict__) + ">"
+-    __repr__ = __str__
+-
+-
+-#
+-# Stuff below this line is specific to the old interface 
++# The JSON parts of this (which will be reused by any new interface)
++# now live in a different module.
+ #
++import time
++from client import *
+ 
+ NaN = float('nan')
+ def isnan(x): return str(x) == 'nan'
+@@ -190,16 +63,8 @@ MODE_3D = 3
+ MAXCHANNELS = 20
+ SIGNAL_STRENGTH_UNKNOWN = NaN
+ 
+-WATCH_DISABLE	= 0x0000
+-WATCH_ENABLE	= 0x0001
+-WATCH_JSON	= 0x0002
+-WATCH_NMEA	= 0x0004
+-WATCH_RARE	= 0x0008
+-WATCH_RAW	= 0x0010
+-WATCH_SCALED	= 0x0020
+-WATCH_NEWSTYLE	= 0x0040
+-WATCH_OLDSTYLE	= 0x0080
+-WATCH_DEVICE	= 0x0100
++WATCH_NEWSTYLE	= 0x00080
++WATCH_OLDSTYLE	= 0x10000
+ 
+ class gpsfix:
+     def __init__(self):
+@@ -287,7 +152,7 @@ class gpsdata:
+           st += "    %r\n" % sat
+         return st
+ 
+-class gps(gpsdata, gpscommon):
++class gps(gpsdata, gpsjson):
+     "Client interface to a running gpsd instance."
+     def __init__(self, host="127.0.0.1", port=GPSD_PORT, verbose=0, mode=0):
+         gpscommon.__init__(self, host, port, verbose)
+@@ -297,9 +162,6 @@ class gps(gpsdata, gpscommon):
+         if mode:
+             self.stream(mode)
+ 
+-    def __iter__(self):
+-        return self
+-
+     def set_raw_hook(self, hook):
+         self.raw_hook = hook
+ 
+@@ -377,24 +239,7 @@ class gps(gpsdata, gpscommon):
+                     self.satellites = newsats
+                     self.valid |= SATELLITE_SET
+ 
+-    def __json_unpack(self, buf):
+-        self.newstyle = True
+-        def asciify(d):
+-            "De-Unicodify everything so we can copy dicts into Python objects."
+-            t = {}
+-            for (k, v) in d.items():
+-                ka = k.encode("ascii")
+-                if type(v) == type(u"x"):
+-                    va = v.encode("ascii")
+-                elif type(v) == type({}):
+-                    va = asciify(v)
+-                elif type(v) == type([]):
+-                    va = map(asciify, v)
+-                else:
+-                    va = v
+-                t[ka] = va
+-            return t
+-        self.data = dictwrapper(**asciify(json.loads(buf.strip(), encoding="ascii")))
++    def __oldstyle_shim(self):
+         # The rest is backwards compatibility for the old interface
+         def default(k, dflt, vbit=0):
+             if k not in self.data.keys():
+@@ -459,40 +304,23 @@ class gps(gpsdata, gpscommon):
+             return status
+         if self.raw_hook:
+             self.raw_hook(self.response);
+-        if self.response.startswith("{"):
+-            self.__json_unpack(self.response)
+-        else:
++        if self.response.startswith("{") and self.response.endswith("}\r\n"):
++            self.json_unpack(self.response)
++            self.__oldstyle_shim()
++            self.newstyle = True
++            self.valid |= PACKET_SET
++        elif self.response.startswith("GPSD"):
+             self.__oldstyle_unpack(self.response)
+-        self.valid |= PACKET_SET
++            self.valid |= PACKET_SET
+         return 0
+ 
+     def next(self):
+-        "Get next object (new-style interface)."
+-        def __set_device__(self, data):
+-            if "driver" in data:
+-                self.driver = data["driver"]
+-                if "subtype" in data:
+-                    self.subtype = data["subtype"]
+-                if self.driver:
+-                    self.gps_id = self.driver
+-                    if self.subtype:
+-                        self.gps_id += self.subtype
+         if self.poll() == -1:
+             raise StopIteration
+-        # There are a few things we need to stash away for later use
+-        payload = dictwrapper(**self.data)
+-        if self.data["class"] == "VERSION":
+-            self.version = payload
+-        elif self.data["class"] == "DEVICE":
+-            __set_device__(self, data)
+-        elif self.data["class"] == "DEVICES":
+-            for device in self.data["devices"]:
+-                self.__set_device__(self.data)
+-                break
+-        elif self.data["class"] == "TIMING":
+-            payload.c_recv = self.received
+-            payload.c_decode = time.time()
+-        return payload
++        if hasattr(self, "data"):
++            return self.data
++        else:
++            return self.response
+ 
+     def stream(self, flags=0, outfile=None):
+         "Ask gpsd to stream reports at your client."
+@@ -517,47 +345,27 @@ class gps(gpsdata, gpscommon):
+                     arg += 'r+'
+                     return self.send(arg)
+         else: # flags & WATCH_NEWSTYLE:
+-            if flags & WATCH_DISABLE:
+-                arg = '?WATCH={"enable":false'
+-                if flags & WATCH_JSON:
+-                    arg += ',"json":false'
+-                if flags & WATCH_NMEA:
+-                    arg += ',"nmea":false'
+-                if flags & WATCH_RARE:
+-                    arg += ',"raw":1'
+-                if flags & WATCH_RAW:
+-                    arg += ',"raw":2'
+-                if flags & WATCH_SCALED:
+-                    arg += ',"scaled":false'
+-            else: # flags & WATCH_ENABLE:
+-                arg = '?WATCH={"enable":true'
+-                if flags & WATCH_JSON:
+-                    arg += ',"json":true'
+-                if flags & WATCH_NMEA:
+-                    arg += ',"nmea":true'
+-                if flags & WATCH_RAW:
+-                    arg += ',"raw":1'
+-                if flags & WATCH_RARE:
+-                    arg += ',"raw":0'
+-                if flags & WATCH_SCALED:
+-                    arg += ',"scaled":true'
+-                if flags & WATCH_DEVICE:
+-                    arg += ',"device":"%s"' % outfile
+-            return self.send(arg + "}")
++            gpsjson.stream(self, flags)
+ 
+ if __name__ == '__main__':
+-    import readline, getopt
+-    (options, arguments) = getopt.getopt(sys.argv[1:], "w")
++    import readline, getopt, sys
++    (options, arguments) = getopt.getopt(sys.argv[1:], "v")
+     streaming = False
+     verbose = False
+     for (switch, val) in options:
+         if switch == '-v':
+-            verbose = True    
++            verbose = True
+     if len(arguments) > 2:
+         print 'Usage: gps.py [-v] [host [port]]'
+         sys.exit(1)
+ 
+-    session = gps(*arguments)
++    opts = { "verbose" : verbose }
++    if len(arguments) > 0:
++        opts["host"] = arguments[0]
++    if len(arguments) > 1:
++        opts["port"] = arguments[1]
++
++    session = gps(**opts)
+     session.set_raw_hook(lambda s: sys.stdout.write(s.strip() + "\n"))
+     session.stream(WATCH_ENABLE|WATCH_NEWSTYLE)
+     for report in session:
+diff --git a/gpscat b/gpscat
+index 2db80df..3fe1fd8 100755
+--- a/gpscat
++++ b/gpscat
+@@ -107,13 +107,7 @@ if __name__ == '__main__':
+                 else:
+                     (length, ptype, packet) = getter.get(tty)
+                     seqno += 1
+-                    # Don't crap out if the first packet is bad, we might
+-                    # be seeing an incomplete read from a tty.
+-                    if ptype == sniffer.BAD_PACKET and seqno >= 2:
+-                        if debuglevel >= BASELEVEL:
+-                            sys.stdout.write("gpscat: terminating on bad packet\n")
+-                        break
+-                    elif length == 0:
++                    if length == 0:
+                         break
+                     if typeflag:
+                         sys.stdout.write(`ptype` + " (" + `length` + "): " + hexdump(packet))
+diff --git a/gpsfake b/gpsfake
+index 663443c..f5e2c6e 100755
+--- a/gpsfake
++++ b/gpsfake
+@@ -71,7 +71,7 @@ def fakehook(linenumber, fakegps):
+         if progress:
+             baton.twirl('*\010')
+         elif not singleshot:
+-            sys.stderr.write("gpsfake: log cycle of %s begins.\n" % fakegps.name)
++            sys.stderr.write("gpsfake: log cycle of %s begins.\n" % fakegps.testload.name)
+     time.sleep(cycle)
+     if linedump and fakegps.testload.legend:
+         ml = fakegps.testload.sentences[linenumber % len(fakegps.testload.sentences)].strip()
+@@ -88,7 +88,7 @@ def fakehook(linenumber, fakegps):
+ 
+ if __name__ == '__main__':
+     try:
+-        (options, arguments) = getopt.getopt(sys.argv[1:], "1bc:D:fghilm:no:pr:s:vx")
++        (options, arguments) = getopt.getopt(sys.argv[1:], "1bc:D:fghilm:no:pr:s:uvx")
+     except getopt.GetoptError, msg:
+         print "gpsfake: " + str(msg)
+         raise SystemExit, 1
+@@ -106,10 +106,10 @@ if __name__ == '__main__':
+     predump = False
+     pipe = False
+     singleshot = False
+-    flicker = False
+     promptme = False
+     client_init = '?WATCH={"json":true,"nmea":true}'
+     doptions = ""
++    udp = False
+     verbose = 0
+     for (switch, val) in options:
+         if (switch == '-1'):
+@@ -138,12 +138,11 @@ if __name__ == '__main__':
+         elif (switch == '-p'):
+             pipe = True
+         elif (switch == '-r'):
+-            if flicker:
+-                client_init += val
+-            else:
+-                client_init = val
++            client_init = val
+         elif (switch == '-s'):
+             speed = int(val)
++        elif (switch == '-u'):
++            udp = True
+         elif (switch == '-v'):
+             verbose += 1
+         elif (switch == '-h'):
+@@ -155,10 +154,11 @@ if __name__ == '__main__':
+     else:
+         print >>sys.stderr, "Processing %s" % ",".join(arguments)
+ 
+-    test = gps.fake.TestSession(prefix=monitor, port=port, options=doptions, verbose=verbose, predump=predump)
++    test = gps.fake.TestSession(prefix=monitor, port=port, options=doptions, udp=udp, verbose=verbose, predump=predump)
+ 
+     if pipe:
+         test.reporter = sys.stdout.write
++        test.expected = 1
+         if verbose:
+             progress = False
+             test.progress = sys.stdout.write
+@@ -190,7 +190,7 @@ if __name__ == '__main__':
+                 # Without a delay here there's a window for test
+                 # sentences to arrive before the watch takes effect.
+                 # This needs to increase if leading sentences in
+-                # test loads aren't being process.
++                # test loads aren't being processed.
+                 time.sleep(1)
+             test.run()
+         except socket.error, msg:
+diff --git a/gpsprof b/gpsprof
+index d35732f..e88936b 100755
+--- a/gpsprof
++++ b/gpsprof
+@@ -78,19 +78,25 @@ class spaceplot:
+         cep_meters = gps.EarthDistance(self.centroid[:2], self.fixes[len(self.fixes)/2][:2])
+         alt_sum = 0
+         alt_num = 0
++        alt_fixes = []
+         lon_max = -9999
+         for i in range(len(self.recentered)):
+             (lat, lon) = self.recentered[i][:2]
+             (raw1, raw2, alt) = self.fixes[i]
+             if not gps.isnan(alt):
+                     alt_sum += alt
++                    alt_fixes.append( alt)
+                     alt_num += 1
+             if lon > lon_max :
+                     lon_max = lon
+         if alt_num == 0:
+             alt_avg = gps.NaN
++            alt_ep = gps.NaN
+         else:
+             alt_avg = alt_sum / alt_num
++            # Sort fixes by distance from average altitude
++            alt_fixes.sort(lambda x, y: cmp(abs(alt_avg - x), abs(alt_avg - y)))
++            alt_ep = abs( alt_fixes[ len(alt_fixes)/2 ] - alt_avg)
+         if self.centroid[0] < 0:
+             latstring = "%fS" % -self.centroid[0]
+         elif self.centroid[0] == 0:
+@@ -124,10 +130,10 @@ class spaceplot:
+         fmt += 'chlen = cep/20\n'
+         fmt += "set arrow from -chlen,0 to chlen,0 nohead\n"
+         fmt += "set arrow from 0,-chlen to 0,chlen nohead\n"
+-        fmt += 'plot cx(t, cep),cy(t, cep) title "CEP (50%%) = %f meters",  ' % (cep_meters)
++        fmt += 'plot  cx(t, cep),cy(t, cep) title "CEP (50%%) = %f meters",  ' % (cep_meters)
+         fmt += ' "-" using 1:2 with points ls 3 title "%d GPS fixes" ' % (len(self.fixes))
+         if not gps.isnan(alt_avg):
+-            fmt += ', "-" using ( %f ):($5 < 100000 ? $5 - %f : 1/0) axes x1y2 with points ls 2 title " %d Altitude fixes, Average = %f" \n' % (lon_max +1, alt_avg, alt_num, alt_avg)
++            fmt += ', "-" using ( %f ):($5 < 100000 ? $5 - %f : 1/0) axes x1y2 with points ls 2 title " %d Altitude fixes, Average = %f, EP (50%%) = %f" \n' % (lon_max +1, alt_avg, alt_num, alt_avg, alt_ep)
+         else:
+             fmt += "\n"
+         fmt += self.header(session)
+@@ -451,14 +457,15 @@ def plotframe(await, fname, speed, threshold, title):
+ 
+ if __name__ == '__main__':
+     try:
+-        (options, arguments) = getopt.getopt(sys.argv[1:], "f:hm:n:s:t:v")
++	(options, arguments) = getopt.getopt(sys.argv[1:], "f:hm:n:s:t:D:")
++
+         formatter = "space"
+         raw = False
+         speed = 0
+         title = time.ctime()
+         threshold = 0
+         await = 100
+-        verbose = False
++        verbose = 0
+         for (switch, val) in options:
+             if (switch == '-f'):
+                 formatter = val
+@@ -470,11 +477,11 @@ if __name__ == '__main__':
+                 speed = int(val)
+             elif (switch == '-t'):
+                 title = val
+-            elif (switch == '-v'):
+-                verbose = True
++            elif (switch == '-D'):
++                verbose = int(val)
+             elif (switch == '-h'):
+                 sys.stderr.write(\
+-                    "usage: gpsprof [-h] [-m threshold] [-n samplecount] \n"
++                    "usage: gpsprof [-h] [-D debuglevel] [-m threshold] [-n samplecount] \n"
+                      + "\t[-f {" + "|".join(map(lambda x: x.name, formatters)) + "}] [-s speed] [-t title]\n")
+                 sys.exit(0)
+         sys.stdout.write(plotframe(await,formatter,speed,threshold,title))
+diff --git a/xgps b/xgps
+index 37ddfc8..79902c2 100755
+--- a/xgps
++++ b/xgps
+@@ -149,7 +149,7 @@ class SkyView(gtk.DrawingArea):
+         self.draw_string(widget, x+10, y, "W")
+         # The satellites
+         for sat in self.satellites:
+-            (x, y) = self.pol2cart(sat.azimuth, sat.elevation)
++            (x, y) = self.pol2cart(sat.az, sat.el)
+             if sat.ss < 10:
+                 self.set_color("Black")
+             elif sat.ss < 30:
+@@ -419,9 +419,9 @@ class Base:
+                 colbase = 0
+             else:
+                 colbase = 2
+-            label = gtk.Label(Base.gpsfields[i][0])
+-            # FIXME: Right-justification isn't working
+-            label.set_justify(gtk.JUSTIFY_RIGHT)
++            label = gtk.Label(Base.gpsfields[i][0] + ": ")
++            # Wacky way to force right alignment 
++            label.set_alignment(xalign=1, yalign=0.5)
+             datatable.attach(label, colbase, colbase+1, i % 7, i % 7 + 1)
+             entry = gtk.Entry()
+             datatable.attach(entry, colbase+1, colbase+2, i % 7, i % 7 + 1)
+@@ -561,12 +561,13 @@ class Base:
+             if hook:	# Remove this guard when we have all hooks 
+                 widget.set_text(hook(self, tpv))
+ 
+-    def update_skyview(self, satellites):
++    def update_skyview(self, data):
+         "Update the satellite list and skyview."
++        satellites = data.satellites
+         for (i, satellite) in enumerate(satellites): 
+             self.set_satlist_field(i, 0, satellite.PRN)
+-            self.set_satlist_field(i, 1, satellite.elevation)
+-            self.set_satlist_field(i, 2, satellite.azimuth)
++            self.set_satlist_field(i, 1, satellite.el)
++            self.set_satlist_field(i, 2, satellite.az)
+             self.set_satlist_field(i, 3, satellite.ss)
+             yesno = 'N'
+             if satellite.used:
+@@ -602,7 +603,7 @@ class Base:
+                 return True
+             self.rawdisplay.set_text(self.daemon.response.strip())
+             if self.daemon.data["class"] == "SKY":
+-                self.update_skyview(self.daemon.satellites)
++                self.update_skyview(self.daemon.data)
+             elif self.daemon.data["class"] == "TPV":
+                 self.update_gpsdata(self.daemon.data)
+             elif self.daemon.data["class"] == "AIS":
+-- 
