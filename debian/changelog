@@ -1,7 +1,7 @@
 gpsd (2.94-2) unstable; urgency=low
 
   * [fbf3a00f] Build Python scripts with 'python' first.
-  * [997bbb72] Add libusv-dev as build dependency.
+  * [997bbb72] Add libusb-dev as build dependency.
   * [325a0fe8] Although not necessary any more, start gpsd before ntp.
   * [79029259] python-gps needs to conflict with python-json.
   * [e42b75ed] Backport Python related changes/fixes from git master.
