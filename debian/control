@@ -96,7 +96,7 @@ Description: Global Positioning System - library
 Package: libgps-dev
 Architecture: any
 Section: libdevel
-Depends: libgps19 (= ${binary:Version}), ${misc:Depends}
+Depends: libgps19 (= ${binary:Version}), ${misc:Depends}, pkg-config
 Conflicts: gpsd (<< 2.34.dfsg-1)
 Description: Global Positioning System - development files
  The gpsd service daemon can monitor one or more GPS devices connected to
