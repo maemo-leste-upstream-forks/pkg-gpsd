@@ -80,6 +80,8 @@ CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
 #support dbus
 CONFFLAGS += --enable-dbus
 
+#enable bluetooth support
+CONFFLAGS += --enable-bluetooth
 
 #library versions
 LIB_version_number := $(shell grep '^libgps_la_LDFLAGS' Makefile.am | sed 's,.*-version-number ,,')
