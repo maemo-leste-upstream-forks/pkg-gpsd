@@ -70,8 +70,10 @@ endif
 #LDFLAGS
 LDFLAGS +=  -Wl,-z,defs
 
-CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
+#ugly workaround workaround for the libusb bug in makefile.am
+LDFLAGS +=  -Wl,--as-needed -lusb-1.0
 
+CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
 
 #we build the python extension manually
 # --disable-python is broken at the moment...
