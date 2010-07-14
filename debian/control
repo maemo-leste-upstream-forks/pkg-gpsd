@@ -120,3 +120,19 @@ Description: Global Positioning System - QT wrapper for libgps
  It is a wrapper over libgps, the service library for querying GPS
  devices. libQgpsmm is available on all platforms which are supported
  by QT4.
+
+Package: libqgpsmm-dev
+Architecture: all
+Section: libdevel
+Depends: ${misc:Depends}, pkg-config,
+ libqgpsmm19 (>= ${source:Upstream-Version}), libqgpsmm19 (<< ${source:Upstream-Version}+1~),
+ libgps-dev (>= ${source:Upstream-Version}), libgps-dev (<< ${source:Upstream-Version}+1~)
+Description: Global Positioning System - QT wrapper for libgps (development)
+ The gpsd service daemon can monitor one or more GPS devices connected to
+ a host computer, making all data on the location and movements of the
+ sensors available to be queried on TCP port 2947.
+ .
+ This package provides libQgpsmm, the QT version of libgpsmm.
+ It is a wrapper over libgps, the service library for querying GPS
+ devices. libQgpsmm is available on all platforms which are supported
+ by QT4.
