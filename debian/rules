@@ -185,8 +185,6 @@ install-gpsd: build-gpsd-stamp
         # care of that, we'll install them later manually.
 	rm -f $(CURDIR)/debian/tmp/usr/share/man/man1/*.1 
 
-
-	install -d -m 755 debian/$(PACKAGE_CLIENTS)/etc/X11/app-defaults
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgpsd.so.$(LIBgpsd_version)
 
