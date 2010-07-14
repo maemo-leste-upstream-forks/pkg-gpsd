@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: gpsctl
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 29 Oct 2006
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "GPSCTL" "1" "29 Oct 2006" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -46,7 +55,7 @@ Put the GPS into binary mode\&. After the GPS resets itself, autobaud to the new
 .PP
 \-c
 .RS 4
-Change the GPS\'s cycle time\&. Units are seconds\&. Note, most GPSes have a fixed cycle time of 1 second\&.
+Change the GPS\*(Aqs cycle time\&. Units are seconds\&. Note, most GPSes have a fixed cycle time of 1 second\&.
 .RE
 .PP
 \-e
@@ -115,11 +124,11 @@ The argument of the forcing option\&.
 \fB\-t\fR, should be a string which should be contained in exactly one of the known driver names; for a list, do
 \fBgpsctl \-l\fR\&.
 .PP
-Forcing the device type behaves somewhat differently depending on whether this tool is going through the daemon or not\&. In high\-level mode, if the device that daemon selects for you doesn\'t match the driver you specified,
+Forcing the device type behaves somewhat differently depending on whether this tool is going through the daemon or not\&. In high\-level mode, if the device that daemon selects for you doesn\*(Aqt match the driver you specified,
 gpsctl
 exits with a warning\&. (This may be useful in scripts\&.)
 .PP
-In low\-level mode, if the device identifies as a Generic NMEA, use the selected driver instead\&. This will be useful if you have a GPS device of known type that is in NMEA mode and not responding to probes\&. (This option was originally implemented for talking to SiRFStar I chips, which don\'t respond to the normal SiRF ID probe\&.)
+In low\-level mode, if the device identifies as a Generic NMEA, use the selected driver instead\&. This will be useful if you have a GPS device of known type that is in NMEA mode and not responding to probes\&. (This option was originally implemented for talking to SiRFStar I chips, which don\*(Aqt respond to the normal SiRF ID probe\&.)
 .PP
 If no options are given, the program will display a message identifying the GPS type of the selected device and exit\&.
 .PP
@@ -130,7 +139,7 @@ Reset (\-r) operations must stand alone; others can be combined\&. Multiple opat
 .RS 4
 Attempt to identify the device on USB serial device 0\&. Time out after the default number of seconds\&. Adding the
 \fB\-f\fR
-will force low\-level access and suppress the normal complaint when this tool can\'t find a GPSD to work through\&.
+will force low\-level access and suppress the normal complaint when this tool can\*(Aqt find a GPSD to work through\&.
 .RE
 .PP
 gpsctl \-f \-n \-s 9600 /dev/ttyUSB0

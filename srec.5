@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: srec
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 15 Jul 2005
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "SREC" "5" "15 Jul 2005" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -73,7 +82,7 @@ There are 9 record types, as follows:
 .PP
 S0
 .RS 4
-The type of record is \'S0\' (0x5330)\&. The address field is unused and will be filled with zeros (0x0000)\&. The header information within the data field is divided into the following subfields\&.
+The type of record is \*(AqS0\*(Aq (0x5330)\&. The address field is unused and will be filled with zeros (0x0000)\&. The header information within the data field is divided into the following subfields\&.
 .sp
 .RS 4
 .ie n \{\
@@ -118,43 +127,43 @@ rev is char[2] and is the revision number\&.
 .\}
 description is char[0\-36] and is a text comment\&.
 .RE
-.RS 4
+.sp
 Each of the subfields is composed of ASCII bytes whose associated characters, when paired, represent one byte hexadecimal values in the case of the version and revision numbers, or represent the hexadecimal values of the ASCII characters comprising the module name and description\&.
 .RE
 .PP
 S1
 .RS 4
-The type of record field is \'S1\' (0x5331)\&. The address field is interpreted as a 2\-byte big\-endian address\&. The data field is composed of memory loadable data\&.
+The type of record field is \*(AqS1\*(Aq (0x5331)\&. The address field is interpreted as a 2\-byte big\-endian address\&. The data field is composed of memory loadable data\&.
 .RE
 .PP
 S2
 .RS 4
-The type of record field is \'S2\' (0x5332)\&. The address field is interpreted as a 3\-byte big\-endian address\&. The data field is composed of memory loadable data\&.
+The type of record field is \*(AqS2\*(Aq (0x5332)\&. The address field is interpreted as a 3\-byte big\-endian address\&. The data field is composed of memory loadable data\&.
 .RE
 .PP
 S3
 .RS 4
-The type of record field is \'S3\' (0x5333)\&. The address field is interpreted as a 4\-byte big\-endian address\&. The data field is composed of memory loadable data\&.
+The type of record field is \*(AqS3\*(Aq (0x5333)\&. The address field is interpreted as a 4\-byte big\-endian address\&. The data field is composed of memory loadable data\&.
 .RE
 .PP
 S5
 .RS 4
-The type of record field is \'S5\' (0x5335)\&. The address field is interpreted as a 2\-byte big\-endian value and contains the count of S1, S2, and S3 records previously transmitted\&. There is no data field\&.
+The type of record field is \*(AqS5\*(Aq (0x5335)\&. The address field is interpreted as a 2\-byte big\-endian value and contains the count of S1, S2, and S3 records previously transmitted\&. There is no data field\&.
 .RE
 .PP
 S7
 .RS 4
-The type of record field is \'S7\' (0x5337)\&. The address field contains the starting execution address and is interpreted as a 4\-byte big\-endian address\&. There is no data field\&.
+The type of record field is \*(AqS7\*(Aq (0x5337)\&. The address field contains the starting execution address and is interpreted as a 4\-byte big\-endian address\&. There is no data field\&.
 .RE
 .PP
 S8
 .RS 4
-The type of record field is \'S8\' (0x5338)\&. The address field contains the starting execution address and is interpreted as a 3\-byte big\-endian address\&. There is no data field\&.
+The type of record field is \*(AqS8\*(Aq (0x5338)\&. The address field contains the starting execution address and is interpreted as a 3\-byte big\-endian address\&. There is no data field\&.
 .RE
 .PP
 S9
 .RS 4
-The type of record field is \'S9\' (0x5339)\&. The address field contains the starting execution address and is interpreted as a 2\-byte big\-endian address\&. There is no data field\&.
+The type of record field is \*(AqS9\*(Aq (0x5339)\&. The address field contains the starting execution address and is interpreted as a 2\-byte big\-endian address\&. There is no data field\&.
 .RE
 .SH "EXAMPLE"
 .PP
@@ -395,7 +404,7 @@ FC The checksum\&.
 .sp -1
 .IP \(bu 2.3
 .\}
-There isn\'t any evidence that Motorola ever made use of the header information within the data field of the S0 record, as described above\&. This may have been used by some third party vendors\&.
+There isn\*(Aqt any evidence that Motorola ever made use of the header information within the data field of the S0 record, as described above\&. This may have been used by some third party vendors\&.
 .RE
 .sp
 .RS 4
@@ -406,7 +415,7 @@ There isn\'t any evidence that Motorola ever made use of the header information 
 .sp -1
 .IP \(bu 2.3
 .\}
-The Unix manual page on S\-records is the only place that a 78\-byte limit on total record length or 64\-byte limit on data length is documented\&. These values shouldn\'t be trusted for the general case\&.
+The Unix manual page on S\-records is the only place that a 78\-byte limit on total record length or 64\-byte limit on data length is documented\&. These values shouldn\*(Aqt be trusted for the general case\&.
 .RE
 .sp
 .RS 4

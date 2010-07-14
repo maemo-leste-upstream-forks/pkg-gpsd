@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: gpsdecode
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 13 Jul 2005
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "GPSDECODE" "1" "13 Jul 2005" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -59,7 +68,7 @@ sets the dump format to JSON, with each each field preceded by a quoted label an
 .PP
 The
 \fB\-c\fR
-sets the AIS dump format to CSV\&. Fields are dumped in the order they occur in the AIS packet\&. Numerics are not scaled\&. Strings are unpacked from six\-bit to full ASCII
+sets the AIS dump format to separate fields with an ASCII pipe symbol\&. Fields are dumped in the order they occur in the AIS packet\&. Numerics are not scaled\&. Strings are unpacked from six\-bit to full ASCII
 .PP
 The
 \fB\-V\fR
@@ -72,9 +81,9 @@ option sets a debug verbosity level\&. It is mainly of interest to developers\&.
 .PP
 Without the
 \fB\-j\fR
-option, dump lines are values of AIS payload fields, comma\-separated, in the order that they occur in the payload\&. Spans of fields expressing a date are emitted as an ISO8601 timestamp (look for colons and the trailing Z indicating Zulu/UTC time), and the 19\-bit group of TDMA status fields found at the end of message types 1\-4 are are dumped as a single unsigned integer (in hex preceded by "0x")\&. Unused regional\-authority fields are also dumped (in hex preceded by "0x")\&. Variable\-length binary fields are dumped as an integer bit length, followed by a colon, followed by a hex dump\&.
+option, dump lines are values of AIS payload fields, pipe\-separated, in the order that they occur in the payload\&. Spans of fields expressing a date are emitted as an ISO8601 timestamp (look for colons and the trailing Z indicating Zulu/UTC time), and the 19\-bit group of TDMA status fields found at the end of message types 1\-4 are are dumped as a single unsigned integer (in hex preceded by "0x")\&. Unused regional\-authority fields are also dumped (in hex preceded by "0x")\&. Variable\-length binary fields are dumped as an integer bit length, followed by a colon, followed by a hex dump\&.
 .PP
-By default, certain scaling and conversion operations are performed for the output\&. Latitudes and longitudes are scaled to decimal degrees rather than the native AIS unit of 1/10000th of a minute of arc\&. Ship (but not air) speeds are scaled to knots rather than tenth\-of\-knot unit\&. Navigation status and positioning\-system type are dumped as text strings rather than IAS numeric codes\&. Rate of turn may appear as "nan" if is unavailable, or as one of the strings "fastright" or "fastleft" if it is out of the IAS encoding range; otherwise it is quadratically mapped back to the turn sensor number in degrees per minute\&. Vessel draughts are converted to decimal meters rather than native AIS decimeters\&.
+By default, certain scaling and conversion operations are performed for the output\&. Latitudes and longitudes are scaled to decimal degrees rather than the native AIS unit of 1/10000th of a minute of arc\&. Ship (but not air) speeds are scaled to knots rather than tenth\-of\-knot units\&. Navigation status and positioning\-system type are dumped as text strings rather than IAS numeric codes\&. Rate of turn may appear as "nan" if is unavailable, or as one of the strings "fastright" or "fastleft" if it is out of the IAS encoding range; otherwise it is quadratically mapped back to the turn sensor number in degrees per minute\&. Vessel draughts are converted to decimal meters rather than native AIS decimeters\&.
 .PP
 With the
 \fB\-j\fR
@@ -104,7 +113,7 @@ ITU\-R M\&.1371: ITU Recommendation on the Technical Characteristics for a Unive
 on the references page of the GPSD project website\&.
 .SH "BUGS AND LIMITATIONS"
 .PP
-AIDVM decoding presently only parses fields for the sentence types 1\-21 and 24\&. Decoding of types 6\-8, 12\-17, and 20\-21 is unverified\&. AIVDM encoding is not yet supported\&.
+AIDVM decoding of types 16\-17, 22\-23, and 25\-26 is unverified\&.
 .PP
 RTCM3 decoding is buggy and incomplete\&.
 .PP
@@ -113,6 +122,10 @@ RTCM2 represents floating\-point quantities as an integer multiple of a fixed sc
 option to suppress scaling\&.
 .PP
 The RTCM2 decoder logic is sufficiently convoluted to confuse some compiler optimizers, notably in GCC 3\&.x at \-O2, into generating bad code\&.
+.PP
+Older version of this utility used comma as a field separator with the
+\fB\-c\fR
+option\&. This was a mistake, as ship name and other string fields can contain commas\&.
 .SH "SEE ALSO"
 .PP
 

@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: libgpsmm
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 13 May 2005
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "LIBGPSMM" "3" "13 May 2005" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -19,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-libgpsmm \- C++ class wrapper for the GPS daemon
+libgpsmm, libQgpsmm \- C++ and QT class wrapper for the GPS daemon
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -47,9 +56,12 @@ C++:
 .BI "struct gps_data_t *stream(unsigned\ int" "flags" ");"
 .SH "DESCRIPTION"
 .PP
-\fBlibgpsmm\fR
-is a mere wrapper over
-\fBlibgps\fR\&. Method names are the same as the analogue C functions\&. For a detailed description of the functions please read
+\fBlibgpsmm and libQgpsmm\fR
+are mere wrappers over
+\fBlibgps\fR\&. The important difference between the libraries is that libgpsmm is targeted at C++ applications and contained in
+\fBlibgps\fR, while libQgpsmm is platform independant by using QTcpSocket to connect to
+\fBgpsd\fR
+and shipped as an additional library due to the necessary linking to QT\&. Method names are the same as the analogue C functions\&. For a detailed description of the functions please read
 \fBlibgps\fR(3)\&.
 \fBopen()\fR
 must be called after class constructor and before any other method (\fBopen()\fR

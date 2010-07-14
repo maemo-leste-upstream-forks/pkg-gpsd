@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: rtcm-104
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 27 Aug 2009
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "RTCM\-104" "5" "27 Aug 2009" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -37,7 +46,7 @@ under "Publications"\&.
 .PP
 Differential\-GPS correction stations consist of a GPS reference receiver coupled to a low frequency (LF) transmitter\&. The GPS reference receiver is a survey\-grade GPS that does GPS carrier tracking and can work out its own position to a few millimeters\&. It generates range and range\-rate corrections and encodes them into RTCM104\&. It ships the RTCM104 to the LF transmitter over serial rs\-232 signal at 100 baud or 200 baud depending on the requirements of the transmitter\&.
 .PP
-The LF transmitter broadcasts the the approximately 300khz radio signal that differential\-GPS radio receivers pick up\&. Transmitters that are meant to have a higher range will need to transmit at the slower rate\&. The higher the data rate the harder it will be for the remote radio receiver to receive with a good signal\-to\-noise ration\&. (Higher data rate signals can\'t be averaged over as long a time frame, hence they appear noisier\&.)
+The LF transmitter broadcasts the the approximately 300khz radio signal that differential\-GPS radio receivers pick up\&. Transmitters that are meant to have a higher range will need to transmit at the slower rate\&. The higher the data rate the harder it will be for the remote radio receiver to receive with a good signal\-to\-noise ration\&. (Higher data rate signals can\*(Aqt be averaged over as long a time frame, hence they appear noisier\&.)
 .SH "RTCM WIRE FORMATS"
 .PP
 An RTCM 2\&.x message consists of a sequence of up to 33 30\-bit words\&. The 24 most significant bits of each word are data and the six least significant bits are parity\&. The parity algorithm used is the same ISGPS\-2000 as that used on GPS satellite downlinks\&. Each RTCM 2\&.x message consists of two header words followed by zero or more data words, depending upon message type\&.
@@ -119,7 +128,7 @@ special message \(em a text message from the beacon operator\&.
 .PP
 <reference station id> is the id of the GPS reference receiver\&. The LF transmitters also have (different) id numbers\&.
 .PP
-<modified z_count> is the reference time of the corrections in the message in seconds within the current hour\&. Note that it is in GPS time, which is some seconds ahead of UTC (see the U\&.S\&. Naval Observatory\'s
+<modified z_count> is the reference time of the corrections in the message in seconds within the current hour\&. Note that it is in GPS time, which is some seconds ahead of UTC (see the U\&.S\&. Naval Observatory\*(Aqs
 \m[blue]\fBtable of leap second corrections\fR\m[]\&\s-2\u[2]\d\s+2)\&.
 .PP
 <sequence no> is a number which increments, modulo 8, for each message transmitted\&.
@@ -366,7 +375,7 @@ T	THLS TRIAL SERVICE
 This just indicates a null message\&. There are no fields\&.
 .SS "Unknown message (U)"
 .PP
-This is used to dump message words in hexadecimal when the message type field doesn\'t match any of the known ones\&.
+This is used to dump message words in hexadecimal when the message type field doesn\*(Aqt match any of the known ones\&.
 .PP
 Here is the format:
 .sp
