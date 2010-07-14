@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: 3
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 14 Aug 2004
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "3" "3" "14 Aug 2004" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -100,7 +109,7 @@ initializes a GPS\-data structure to hold the data collected by the GPS, and ret
 \fBgps_open()\fR
 returns NULL on errors\&. errno is set depending on the error returned from the the socket layer; see
 gps\&.h
-for values and explanations\&. The host address may be a DNS name, an IPv4 dotted quad, or an IPV6 address; the library will do the roight thing for any of these\&.
+for values and explanations\&. The host address may be a DNS name, an IPv4 dotted quad, or an IPV6 address; the library will do the right thing for any of these\&.
 .PP
 \fBgps_open_r()\fR
 is a reentrent\-friendly version that puts the session storage where you wish to allocate it\&. It returns 0 on success and \-1 on failure, with errno set appropriately\&.
@@ -206,7 +215,7 @@ returns an ASCII string (in English) describing the error indicated by a nonzero
 .PP
 Consult
 gps\&.h
-to learn more about the data members and associated timestamps\&. Note that information will accumulate in the session structure over time, and the \'valid\' field is not automatically zeroed by each poll\&. It is up to the client to zero that field when appropriate and to keep an eye on the fix and sentence timestamps\&.
+to learn more about the data members and associated timestamps\&. Note that information will accumulate in the session structure over time, and the \*(Aqvalid\*(Aq field is not automatically zeroed by each poll\&. It is up to the client to zero that field when appropriate and to keep an eye on the fix and sentence timestamps\&.
 .PP
 The Python implementation supports the same facilities as the C library\&.
 \fBgps_open()\fR
@@ -247,7 +256,7 @@ may lead to subtle bugs\&. In order to not bloat
 struct gps_data_t
 with space used by responses that are not expected to be shipped in close sequence with each other, the storage for fields associated with certain responses are combined in a union\&.
 .PP
-The risky set of responses includes VERSION, DEVICELIST, RTCM2, RTCM3, and AIS; it may not be limited to that set\&. The logic of the daemon\'s watcher mode is careful to avoid dangerous sequences, but you should read and understand the layout of
+The risky set of responses includes VERSION, DEVICELIST, RTCM2, RTCM3, and AIS; it may not be limited to that set\&. The logic of the daemon\*(Aqs watcher mode is careful to avoid dangerous sequences, but you should read and understand the layout of
 struct gps_data_t
 before using
 \fBgps_send()\fR

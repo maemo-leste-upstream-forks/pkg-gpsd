@@ -8,16 +8,8 @@
 #ifndef _GPSD_H_
 #define _GPSD_H_
 
-#include "gpsd_config.h"
 #include <stdbool.h>
 #include <stdio.h>
-#ifdef HAVE_TERMIOS_H
-#include <termios.h>
-#endif
-#ifdef HAVE_SYS_TERMIOS_H
-#include <sys/termios.h>
-#endif
-#include "gps.h"
 
 #ifndef GPSD_CONFIG_H
 /* Feature configuration switches begin here */
@@ -90,6 +82,9 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #define HAVE_ARPA_INET_H 1
 
+/* Define if we have Bluez */
+/* #undef HAVE_BLUEZ */
+
 /* Define if you have the external 'daylight' variable. */
 #define HAVE_DAYLIGHT 1
 
@@ -112,8 +107,8 @@
 /* pthread libraries are present */
 #define HAVE_LIBPTHREAD /**/
 
-/* will link with -l$usb; */
-#define HAVE_LIBUSB /**/
+/* libusb support */
+#define HAVE_LIBUSB 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -169,7 +164,7 @@
 /* Define to 1 if you have the `strtonum' function. */
 /* #undef HAVE_STRTONUM */
 
-/* Define to 1 if `struct tm' is a member of `tm_zone'. */
+/* Define to 1 if `tm_zone' is a member of `struct tm'. */
 #define HAVE_STRUCT_TM_TM_ZONE 1
 
 /* Define to 1 if you have the <syslog.h> header file. */
@@ -230,15 +225,6 @@
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #define HAVE_VSNPRINTF 1
-
-/* Define to 1 if you have the <X11/xpm.h> header file. */
-#define HAVE_X11_XPM_H 1
-
-/* Xpm available */
-#define HAVE_XPM 1
-
-/* Define to 1 if you have the <xpm.h> header file. */
-/* #undef HAVE_XPM_H */
 
 /* IPv6 support */
 #define IPV6_ENABLE 1
@@ -385,7 +371,7 @@
 #define UBX_ENABLE 1
 
 /* Version number of package */
-#define VERSION "2.94"
+#define VERSION "2.95"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -398,9 +384,6 @@
 /* #  undef WORDS_BIGENDIAN */
 # endif
 #endif
-
-/* Define to 1 if the X Window System is missing or not being used. */
-/* #undef X_DISPLAY_MISSING */
 
 /* Some libc's don't have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT
@@ -433,13 +416,26 @@ size_t strlcpy(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
  */
 #endif /* GPSD_CONFIG_H */
 
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#endif
+#ifdef HAVE_SYS_TERMIOS_H
+#include <sys/termios.h>
+#endif
+#include "gps.h"
+
 #ifdef _WIN32
 typedef unsigned int speed_t;
 #endif
 
-/* constants for the VERSION response */
+/*
+ * Constants for the VERSION response
+ * 3.1: Base JSON version
+ * 3.2: Added POLL command and response
+ * 3.3: AIS app_id split into DAC and FID
+ */
 #define GPSD_PROTO_MAJOR_VERSION	3	/* bump on incompatible changes */
-#define GPSD_PROTO_MINOR_VERSION	2	/* bump on compatible changes */
+#define GPSD_PROTO_MINOR_VERSION	3	/* bump on compatible changes */
 
 /* Some internal capabilities depend on which drivers we're compiling. */
 #ifdef EARTHMATE_ENABLE
@@ -560,8 +556,6 @@ extern void rtcm2_sager_dump(const struct rtcm2_t *, /*@out@*/char[], size_t);
 extern void rtcm2_json_dump(const struct rtcm2_t *, /*@out@*/char[], size_t);
 extern int rtcm2_undump(/*@out@*/struct rtcm2_t *, char *);
 extern void rtcm2_unpack(/*@out@*/struct rtcm2_t *, char *);
-extern bool rtcm2_repack(struct rtcm2_t *, isgps30bits_t *);
-
 extern void rtcm3_unpack(/*@out@*/struct rtcm3_t *, char *);
 extern void rtcm3_dump(struct rtcm3_t *rtcm, FILE *);
 
@@ -578,6 +572,8 @@ extern size_t oncore_payload_cksum_length(unsigned char id1,unsigned char id2);
 #define GPSD_CONFIDENCE	CEP95_SIGMA
 
 #define NTPSHMSEGS	4		/* number of NTP SHM segments */
+
+#define AIVDM_CHANNELS	2		/* A, B */
 
 struct gps_context_t {
     int valid;				/* member validity flags */
@@ -609,12 +605,11 @@ struct gps_context_t {
 
 struct aivdm_context_t {
     /* hold context for decoding AIDVM packet sequences */
-    int part, await;		/* for tracking AIDVM parts in a multipart sequence */
-    unsigned char *field[NMEA_MAX];
-    unsigned char fieldcopy[NMEA_MAX+1];
+    int decoded_frags;		/* for tracking AIDVM parts in a multipart sequence */
     unsigned char bits[2048];
-    char shipname[AIS_SHIPNAME_MAXLEN+1];
-    size_t bitlen;
+    size_t bitlen; /* how many valid bits */
+    unsigned int mmsi24; /* type 24 specific */
+    char shipname24[AIS_SHIPNAME_MAXLEN+1]; /* type 24 specific */
 };
 
 struct gps_device_t;
@@ -659,7 +654,7 @@ typedef enum {
 #define RAW_IS  	0x00008000u
 #define USED_IS 	0x00010000u
 #define SPEEDERR_IS	0x00020000u
-#define DEVICE_IS	0x00040000u
+#define DRIVER_IS	0x00040000u
 #define DEVICEID_IS	0x00100000u
 #define ERROR_IS	0x00200000u
 #define RTCM2_IS	0x00400000u
@@ -669,6 +664,7 @@ typedef enum {
 #define PACKET_IS	0x04000000u
 #define CLEAR_IS	0x08000000u	/* sentence starts a reporting cycle */
 #define REPORT_IS	0x10000000u	/* sentence ends a reporting cycle */
+#define NODATA_IS	0x20000000u	/* no data read from fd */ 
 #define DATA_IS	~(ONLINE_IS|PACKET_IS|CLEAR_IS|REPORT_IS)
 
 struct gps_type_t {
@@ -701,8 +697,10 @@ typedef enum {source_unknown,
 	      source_blockdev,
 	      source_rs232,
 	      source_usb,
+	      source_bluetooth,
 	      source_pty,
-	      source_socket}
+	      source_tcp,
+	      source_udp}
     sourcetype_t;
 
 struct gps_device_t {
@@ -719,9 +717,12 @@ struct gps_device_t {
     unsigned int baudindex;
     int saved_baud;
     struct gps_packet_t packet;
+    int getcount;
     char subtype[64];			/* firmware version or subtype ID */
     double opentime;
     double releasetime;
+    bool zerokill;
+    double reawake;
 #ifdef NTPSHM_ENABLE
     int shmindex;
     double last_fixtime;		/* so updates happen once */
@@ -884,7 +885,7 @@ struct gps_device_t {
      * systems may come over the same wire with GPS NMEA sentences.
      */
 #ifdef AIVDM_ENABLE
-    struct aivdm_context_t aivdm;
+    struct aivdm_context_t aivdm[AIVDM_CHANNELS];
 #endif /* AIVDM_ENABLE */
 
 #ifdef TIMING_ENABLE
@@ -1014,7 +1015,9 @@ extern bool ubx_write(struct gps_device_t *, unsigned int, unsigned int,
 		      /*@null@*/unsigned char *, unsigned short);
 #endif /* UBX_ENABLE */
 #ifdef AIVDM_ENABLE
-extern bool aivdm_decode(const char *, size_t, struct aivdm_context_t *, struct ais_t *);
+extern bool aivdm_decode(const char *, size_t, 
+			 struct aivdm_context_t [], 
+			 struct ais_t *);
 extern void  aivdm_json_dump(const struct ais_t *, bool, /*@out@*/char *, size_t);
 #endif /* AIVDM_ENABLE */
 #ifdef MTK3301_ENABLE
@@ -1055,7 +1058,7 @@ extern float roundf(float x);
 #define NITEMS(x) (int)(sizeof(x)/sizeof(x[0]))
 
 /* OpenBSD and FreeBSD and Cygwin don't seem to have NAN, NetBSD does, others? */
-/* XXX test for this in configure? */
+/* FIX-ME: test for this in configure? */
 #if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__CYGWIN__)
 #ifndef NAN
 #define NAN (0.0/0.0)

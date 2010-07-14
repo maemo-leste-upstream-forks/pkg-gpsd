@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: gps
 .\"    Author: [see the "AUTHORS" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 9 Aug 2004
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "GPS" "1" "9 Aug 2004" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -24,7 +33,7 @@ gps, xgps, xgpsspeed, cgps, lcdgps \- test clients for gpsd
 .HP \w'\fBxgps\fR\ 'u
 \fBxgps\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBxgpsspeed\fR\ 'u
-\fBxgpsspeed\fR [\-rv] [\fIX\-options\fR] [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-nc\ \fIX\-color\fR] [\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBxgpsspeed\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBcgps\fR\ 'u
 \fBcgps\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-m] [\-s] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBlcdgps\fR\ 'u
@@ -48,7 +57,7 @@ option causes each client to dump the package version and exit\&.
 .PP
 The
 \fB\-l\fR
-option, when present, sets the format of latitude and longitude reports\&. The value \'d\' produces decimal degrees and is the default\&. The value \'m\' produces degrees and decimal minutes\&. The value \'s\' produces degrees, minutes, and decimal seconds\&.
+option, when present, sets the format of latitude and longitude reports\&. The value \*(Aqd\*(Aq produces decimal degrees and is the default\&. The value \*(Aqm\*(Aq produces degrees and decimal minutes\&. The value \*(Aqs\*(Aq produces degrees, minutes, and decimal seconds\&.
 .PP
 xgps,
 cgps, and
@@ -84,7 +93,7 @@ option\&.
 .PP
 Where present, the
 \fB\-u\fR
-option can be used to set the system units for display; follow the keyword with \'i\' for \'imperial\' for American units (feet in altitude and error estimates, miles per hour in speeds), \'n\' for \'nautical\' (feet in altitude and error estimates, knots in speed) or \'m\' for \'metric\' (meters in altitude and error estimates, kiliometers per hour in speeds)\&.
+option can be used to set the system units for display; follow the keyword with \*(Aqi\*(Aq for \*(Aqimperial\*(Aq for American units (feet in altitude and error estimates, miles per hour in speeds), \*(Aqn\*(Aq for \*(Aqnautical\*(Aq (feet in altitude and error estimates, knots in speed) or \*(Aqm\*(Aq for \*(Aqmetric\*(Aq (meters in altitude and error estimates, kiliometers per hour in speeds)\&.
 .PP
 The
 \fB\-D\fR
@@ -128,9 +137,9 @@ In the sky view, satellites are color\-coded to indicate quality of signal; cons
 .PP
 xgpsspeed
 is a speedometer that uses position information from the GPS\&. It accepts an \-h option and optional argument as for
-gps, or a \-V option to dump the package version and exit\&. Additionally, it accepts \-rv (reverse video) and \-nc (needle color) options\&.
+gps, or a \-V option to dump the package version and exit\&.
 .PP
-The \-speedunits option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&. This option can also be set as the X resource \'speedunits\'\&.
+The \-speedunits option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&.
 .SS "cgps"
 .PP
 cgps
@@ -148,7 +157,7 @@ The
 option will display your magnetic heading (as opposed to your true heading)\&. This is a calculated value, not a measured value, and is subject to a potential error of up to two degrees in the areas for which the calculation is valid (currently Western Europe, Alaska, and Lower 48 in the USA)\&. The formulas used are those found in the Aviation Formulary v1\&.43\&.
 .PP
 cgps
-terminates when you send it a SIGHUP or SIGINT; given default terminal settings this will happen when you type Ctl\-C at it\&. It will also terminate on \'q\'
+terminates when you send it a SIGHUP or SIGINT; given default terminal settings this will happen when you type Ctl\-C at it\&. It will also terminate on \*(Aqq\*(Aq
 .SS "lcdgps"
 .PP
 A client that passes
@@ -161,7 +170,7 @@ This program collects fixes from
 gpsd
 and logs them to standard output in GPX, an XML profile for track logging\&.
 .PP
-The output may be composed of multiple tracks\&. A new track is created if there\'s no fix for an interval specified by the
+The output may be composed of multiple tracks\&. A new track is created if there\*(Aqs no fix for an interval specified by the
 \fB\-i\fR
 and defaulting to 5 seconds\&.
 .PP

@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: gpscat
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 16 Nov 2006
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "GPSCAT" "1" "16 Nov 2006" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -26,7 +35,7 @@ gpscat \- dump the output from a GPS
 .SH "DESCRIPTION"
 .PP
 gpscat
-is a simple program for logging and packetizing GPS data streams\&. It takes input from a specified file or serial device (presumed to have a GPS attached) and reports to standard output\&. The program runs until end of input or ot is interrupted by ^C or other means\&.
+is a simple program for logging and packetizing GPS data streams\&. It takes input from a specified file or serial device (presumed to have a GPS attached) and reports to standard output\&. The program runs until end of input or it is interrupted by ^C or other means\&. It does not terminate on a bad backet; this is intentional\&.
 .PP
 In raw mode (the default)
 gpscat
@@ -35,7 +44,7 @@ simply dumps its input to standard output\&. Nonprintable characters other than 
 In packetizing mode,
 gpscat
 uses the same code as
-\fBgpsd\fR(8)\'s packet sniffer to break the input into packets\&. Packets are reported one per line; line breaks in the packets themselves are escaped\&.
+\fBgpsd\fR(8)\*(Aqs packet sniffer to break the input into packets\&. Packets are reported one per line; line breaks in the packets themselves are escaped\&.
 .PP
 This program is useful as a sanity checker when examining a new device\&. It can be used as a primitive NMEA logger, but beware that (a) interrupting it likely to cut off output in mid\-sentence, and (b) to avoid displaying incomplete NMEA sentences right up next to shell prompts that often contain a $, raw mode always emits an extra final linefeed\&.
 .PP
@@ -50,7 +59,7 @@ Invoke packetizer mode\&.
 .PP
 \-s
 .RS 4
-Set the port\'s baud rate (and optionally its parity and stop bits) before reading\&. Argument should begin with one of the normal integer baud rates (300, 1200, 4800, 9600, 19200, 38400, etc\&.)\&. It may be followed by an optional suffix [NOE][12] to set parity (None, Even, Odd) and stop bits (1 or 2)\&.
+Set the port\*(Aqs baud rate (and optionally its parity and stop bits) before reading\&. Argument should begin with one of the normal integer baud rates (300, 1200, 4800, 9600, 19200, 38400, etc\&.)\&. It may be followed by an optional suffix [NOE][12] to set parity (None, Even, Odd) and stop bits (1 or 2)\&.
 .RE
 .PP
 \-t

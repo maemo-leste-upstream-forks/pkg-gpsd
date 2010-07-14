@@ -67,6 +67,9 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #define HAVE_ARPA_INET_H 1
 
+/* Define if we have Bluez */
+/* #undef HAVE_BLUEZ */
+
 /* Define if you have the external 'daylight' variable. */
 #define HAVE_DAYLIGHT 1
 
@@ -89,8 +92,8 @@
 /* pthread libraries are present */
 #define HAVE_LIBPTHREAD /**/
 
-/* will link with -l$usb; */
-#define HAVE_LIBUSB /**/
+/* libusb support */
+#define HAVE_LIBUSB 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -146,7 +149,7 @@
 /* Define to 1 if you have the `strtonum' function. */
 /* #undef HAVE_STRTONUM */
 
-/* Define to 1 if `struct tm' is a member of `tm_zone'. */
+/* Define to 1 if `tm_zone' is a member of `struct tm'. */
 #define HAVE_STRUCT_TM_TM_ZONE 1
 
 /* Define to 1 if you have the <syslog.h> header file. */
@@ -207,15 +210,6 @@
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #define HAVE_VSNPRINTF 1
-
-/* Define to 1 if you have the <X11/xpm.h> header file. */
-#define HAVE_X11_XPM_H 1
-
-/* Xpm available */
-#define HAVE_XPM 1
-
-/* Define to 1 if you have the <xpm.h> header file. */
-/* #undef HAVE_XPM_H */
 
 /* IPv6 support */
 #define IPV6_ENABLE 1
@@ -362,7 +356,7 @@
 #define UBX_ENABLE 1
 
 /* Version number of package */
-#define VERSION "2.94"
+#define VERSION "2.95"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -375,9 +369,6 @@
 /* #  undef WORDS_BIGENDIAN */
 # endif
 #endif
-
-/* Define to 1 if the X Window System is missing or not being used. */
-/* #undef X_DISPLAY_MISSING */
 
 /* Some libc's don't have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT

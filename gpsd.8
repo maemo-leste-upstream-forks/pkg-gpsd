@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: gpsd
 .\"    Author: [see the "AUTHORS" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 9 Aug 2004
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "GPSD" "8" "9 Aug 2004" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -112,7 +121,7 @@ The program accepts the following options:
 .PP
 \-F
 .RS 4
-Create a control socket for device addition and removal commands\&. You must specify a valid pathname on your local filesystem; this will be created as a Unix\-domain socket to which you can write commands that edit the daemon\'s internal device list\&.
+Create a control socket for device addition and removal commands\&. You must specify a valid pathname on your local filesystem; this will be created as a Unix\-domain socket to which you can write commands that edit the daemon\*(Aqs internal device list\&.
 .RE
 .PP
 \-S
@@ -147,12 +156,12 @@ control commands supported by that driver\&.
 .PP
 \-n
 .RS 4
-Don\'t wait for a client to connect before polling whatever GPS is associated with it\&. Many GPSes go to a standby mode (drawing less power) before the host machine asserts DTR, so waiting for the first actual request saves battery power\&.
+Don\*(Aqt wait for a client to connect before polling whatever GPS is associated with it\&. Many GPSes go to a standby mode (drawing less power) before the host machine asserts DTR, so waiting for the first actual request saves battery power\&.
 .RE
 .PP
 \-N
 .RS 4
-Don\'t daemonize; run in foreground\&. Also suppresses privilege\-dropping\&. This switch is mainly useful for debugging\&.
+Don\*(Aqt daemonize; run in foreground\&. Also suppresses privilege\-dropping\&. This switch is mainly useful for debugging\&.
 .RE
 .PP
 \-h
@@ -162,7 +171,7 @@ Display help message and terminate\&.
 .PP
 \-P
 .RS 4
-Specify the name and path to record the daemon\'s process ID\&.
+Specify the name and path to record the daemon\*(Aqs process ID\&.
 .RE
 .PP
 \-D
@@ -187,10 +196,16 @@ A normal Unix device name of a serial or USB device to which a sensor is attache
 /dev/ttyUSB0\&.
 .RE
 .PP
-AIS feed
+TCP feed
 .RS 4
-A URI with the prefix "ais://", followed by a hostname, a colon, and a port number\&. The daemon will open a socket to the indicated server and read AIVDM/AIVDO packets from it\&. Example:
-ais://data\&.aishub\&.net:4006\&.
+A URI with the prefix "tcp://", followed by a hostname, a colon, and a port number\&. The daemon will open a socket to the indicated address and port and read data packets from it, which will be interpreted as though they had been issued by a serial device\&. Example:
+tcp://data\&.aishub\&.net:4006\&.
+.RE
+.PP
+UDP feed
+.RS 4
+A URI with the prefix "udp://", followed by a hostname, a colon, and a port number\&. The daemon will open a socket listening for UDP datagrams arriving on the indicated address and port, which will be interpreted as though they had been issued by a serial device\&. Example:
+udp://127\&.0\&.0\&.1:5000\&.
 .RE
 .PP
 Ntrip caster
@@ -204,6 +219,8 @@ A URI with the prefix "dgpsip://" followed by a hostname, a colon, and an option
 dgpsip://dgps\&.wsrcc\&.com:2101\&.
 .RE
 .PP
+(The "ais:://" source type supported in some older versions of the daemon has been retired in favor of the more general "tcp://"\&.)
+.PP
 Internally, the daemon maintains a device pool holding the pathnames of devices and remote servers known to the daemon\&. Initially, this list is the list of device\-name arguments specified on the command line\&. That list may be empty, in which case the daemon will have no devices on its search list until they are added by a control\-socket command (see
 the section called \(lqGPS DEVICE MANAGEMENT\(rq
 for details on this)\&. Daemon startup will abort with an error if neither any devices nor a control socket are specified\&.
@@ -215,7 +232,7 @@ client library and take appropriate care to conditionalize their code on the maj
 .PP
 The GPSD protocol is built on top of JSON, JaveScript Object Notation\&. Use of this metaprotocol to pass structured data between daemon and client avoids the non\-extensibility problems of the old protocol, and permits a richer set of record types to be passed up to clients\&.
 .PP
-A request line is introduced by "?" and may include multiple commands\&. Commands begin with a command identifier, followed either by a terminating \';\' or by an equal sign "=" and a JSON object treated as an argument\&. Any \';\' or newline indication (either LF or CR\-LF) after the end of a command is ignored\&. All request lines must be composed of US\-ASCII characters and may be no more than 80 characters in length, exclusive of the trailing newline\&.
+A request line is introduced by "?" and may include multiple commands\&. Commands begin with a command identifier, followed either by a terminating \*(Aq;\*(Aq or by an equal sign "=" and a JSON object treated as an argument\&. Any \*(Aq;\*(Aq or newline indication (either LF or CR\-LF) after the end of a command is ignored\&. All request lines must be composed of US\-ASCII characters and may be no more than 80 characters in length, exclusive of the trailing newline\&.
 .PP
 Responses are JSON objects all of which have a "class" attribute the value of which is either the name of the invoking command or one of the strings "DEVICE" or "ERROR"\&. Their length limit is 1024 characters, including trailing newline\&.
 .PP
@@ -434,7 +451,7 @@ T}
 .sp 1
 When the C client library parses a response of this kind, it will assert validity bits in the top\-level set member for each field actually received; see gps\&.h for bitmask names and values\&.
 .sp
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -703,7 +720,7 @@ Note that satellite objects do not have a "class" field\&.\&., as they are never
 .sp
 When the C client library parses a SKY response, it will assert the SATELLITE_SET bit in the top\-level set member\&.
 .sp
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -1066,7 +1083,7 @@ T}
 .sp 1
 When the C client library parses a response of this kind, it will assert ATT_IS\&.
 .sp
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -1162,7 +1179,7 @@ The daemon ships a VERSION response to each client when the client first connect
 .sp
 When the C client library parses a response of this kind, it will assert the VERSION_SET bit in the top\-level set member\&.
 .sp
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -1221,7 +1238,7 @@ T}
 .sp 1
 When the C client library parses a response of this kind, it will assert the DEVICELIST_SET bit in the top\-level set member\&.
 .sp
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -1240,7 +1257,7 @@ The daemon occasionally ships a bare DEVICE object to the client (that is, one n
 .PP
 ?WATCH;
 .RS 4
-This command sets watcher mode\&. It also sets or elicits a report of per\-subscriber policy and the raw bit\&. An argument WATCH object changes the subscriber\'s policy\&. The responce describes the subscriber\'s policy\&. The response will also include a DEVICES object\&.
+This command sets watcher mode\&. It also sets or elicits a report of per\-subscriber policy and the raw bit\&. An argument WATCH object changes the subscriber\*(Aqs policy\&. The responce describes the subscriber\*(Aqs policy\&. The response will also include a DEVICES object\&.
 .sp
 A WATCH object has the following elements:
 .sp
@@ -1316,7 +1333,7 @@ No
 T}:T{
 integer
 T}:T{
-Controls \'raw\' mode\&. When this attribute is set to 1
+Controls \*(Aqraw\*(Aq mode\&. When this attribute is set to 1
 	for a channel, gpsd reports the
 	unprocessed NMEA or AIVDM data stream from whatever device is attached\&.
 	Binary GPS packets are hex\-dumped\&.  RTCM2 and RTCM3
@@ -1341,7 +1358,7 @@ string
 T}:T{
 If present, enable watching only of the specified device
 	rather than all devices\&.  Useful with raw and NMEA modes
-	in which device responses aren\'t tagged\&. Has no effect when
+	in which device responses aren\*(Aqt tagged\&. Has no effect when
 	used with enable:false\&.
 T}
 .TE
@@ -1352,7 +1369,7 @@ In watcher mode, GPS reports are dumped as TPV and SKY responses\&. AIS and RTCM
 .sp
 When the C client library parses a response of this kind, it will assert the POLICY_SET bit in the top\-level set member\&.
 .sp
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -1446,7 +1463,7 @@ Comma\-separated list of SKY objects\&.
 T}
 .TE
 .sp 1
-Here\'s an example of a POLL response:
+Here\*(Aqs an example of a POLL response:
 .sp
 .if n \{\
 .RS 4
@@ -1493,7 +1510,7 @@ collects and caches more data from more sensor types, those data are likely to f
 .PP
 ?DEVICE
 .RS 4
-This command reports (when followed by \';\') the state of a device, or sets (when followed by \'=\' and a DEVICE object) device\-specific control bits, notably the device\'s speed and serial mode and the native\-mode bit\&. The parameter\-setting form will be rejected if more than one client is attached to the channel\&.
+This command reports (when followed by \*(Aq;\*(Aq) the state of a device, or sets (when followed by \*(Aq=\*(Aq and a DEVICE object) device\-specific control bits, notably the device\*(Aqs speed and serial mode and the native\-mode bit\&. The parameter\-setting form will be rejected if more than one client is attached to the channel\&.
 .sp
 Pay attention to the response, because it is possible for this command to fail if the GPS does not support a speed\-switching command or only supports some combinations of serial modes\&. In case of failure, the daemon and GPS will continue to communicate at the old speed\&.
 .sp
@@ -1571,7 +1588,7 @@ integer
 T}:T{
 Bit vector of property flags\&.  Currently defined flags are:
         describe packet types seen so far (GPS, RTCM2, RTCM3,
-	AIS)\&. Won\'t be reported if empty, e\&.g\&. before
+	AIS)\&. Won\*(Aqt be reported if empty, e\&.g\&. before
 	gpsd has seen identifiable packets
 	from the device\&.
 T}
@@ -1582,7 +1599,7 @@ No
 T}:T{
 string
 T}:T{
-GPSD\'s name for the device driver type\&. Won\'t be reported before
+GPSD\*(Aqs name for the device driver type\&. Won\*(Aqt be reported before
 	gpsd has seen identifiable packets
 	from the device\&.
 T}
@@ -1707,13 +1724,13 @@ SEEN_AIS
 T}:T{
 0x08
 T}:T{
-GPS data has been seen on this device
+AIS data has been seen on this device
 T}
 .TE
 .sp 1
 When the C client library parses a response of this kind, it will assert the DEVICE_SET bit in the top\-level set member\&.
 .sp
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -1730,7 +1747,7 @@ When a client is in watcher mode, the daemon will ship it DEVICE notifications w
 .PP
 When the C client library parses a response of this kind, it will assert the DEVICE_SET bit in the top\-level set member\&.
 .PP
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
@@ -1785,13 +1802,13 @@ T}
 .TE
 .sp 1
 .PP
-Here\'s an example:
+Here\*(Aqs an example:
 .sp
 .if n \{\
 .RS 4
 .\}
 .nf
-{"class":"ERROR","message":"Unrecognized request \'?FOO\'"}
+{"class":"ERROR","message":"Unrecognized request \*(Aq?FOO\*(Aq"}
 .fi
 .if n \{\
 .RE
@@ -1813,9 +1830,9 @@ RTCM2 corrections are dumped in the JSON format described in
 .SH "GPS DEVICE MANAGEMENT"
 .PP
 gpsd
-maintains an internal list of GPS devices (the "device pool")\&. If you specify devices on the command line, the list is initialized with those pathnames; otherwise the list starts empty\&. Commands to add and remove GPS device paths from the daemon\'s device list must be written to a local Unix\-domain socket which will be accessible only to programs running as root\&. This control socket will be located wherever the \-F option specifies it\&.
+maintains an internal list of GPS devices (the "device pool")\&. If you specify devices on the command line, the list is initialized with those pathnames; otherwise the list starts empty\&. Commands to add and remove GPS device paths from the daemon\*(Aqs device list must be written to a local Unix\-domain socket which will be accessible only to programs running as root\&. This control socket will be located wherever the \-F option specifies it\&.
 .PP
-A device may will also be dropped from the pool if GPSD gets a zero length read from it\&. This end\-of\-file condition indicates that the\' device has been disconnected\&.
+A device may will also be dropped from the pool if GPSD gets a zero length read from it\&. This end\-of\-file condition indicates that the\*(Aq device has been disconnected\&.
 .PP
 When
 gpsd
@@ -1829,17 +1846,17 @@ forces it to close all GPSes and all client connections\&. It will then attempt 
 .PP
 To point
 gpsd
-at a device that may be a GPS, write to the control socket a plus sign (\'+\') followed by the device name followed by LF or CR\-LF\&. Thus, to point the daemon at
-/dev/foo\&. send "+/dev/foo\en"\&. To tell the daemon that a device has been disconnected and is no longer available, send a minus sign (\'\-\') followed by the device name followed by LF or CR\-LF\&. Thus, to remove
+at a device that may be a GPS, write to the control socket a plus sign (\*(Aq+\*(Aq) followed by the device name followed by LF or CR\-LF\&. Thus, to point the daemon at
+/dev/foo\&. send "+/dev/foo\en"\&. To tell the daemon that a device has been disconnected and is no longer available, send a minus sign (\*(Aq\-\*(Aq) followed by the device name followed by LF or CR\-LF\&. Thus, to remove
 /dev/foo
 from the search list\&. send "\-/dev/foo\en"\&.
 .PP
-To send a control string to a specified device, write to the control socket a \'!\', followed by the device name, followed by \'=\', followed by the control string\&.
+To send a control string to a specified device, write to the control socket a \*(Aq!\*(Aq, followed by the device name, followed by \*(Aq=\*(Aq, followed by the control string\&.
 .PP
-To send a binary control string to a specified device, write to the control socket a \'&\', followed by the device name, followed by \'=\', followed by the control string in paired hex digits\&.
+To send a binary control string to a specified device, write to the control socket a \*(Aq&\*(Aq, followed by the device name, followed by \*(Aq=\*(Aq, followed by the control string in paired hex digits\&.
 .PP
 Your client may await a response, which will be a line beginning with either "OK" or "ERROR"\&. An ERROR reponse to an add command means the device did not emit data recognizable as GPS packets; an ERROR response to a remove command means the specified device was not in
-gpsd\'s device pool\&. An ERROR response to a ! command means the daemon did not recognize the devicename specified\&.
+gpsd\*(Aqs device pool\&. An ERROR response to a ! command means the daemon did not recognize the devicename specified\&.
 .PP
 The control socket is intended for use by hotplug scripts and other device\-discovery services\&. This control channel is separate from the public
 gpsd
@@ -1863,13 +1880,13 @@ gpsd
 will be negligible, on the order of a millisecond\&. Nevertheless, latency can introduce significant errors for vehicles in motion; at 50km/h (31mi/h) of speed over ground, 1 second of lag corresponds to 13\&.8 meters change in position between updates\&.
 .PP
 The time reporting of the GPS system itself has an intrinsic accuracy limit of 0\&.000,000,340 = 3\&.4\(mu10\-7
-seconds\&. A more important limit is the GPS tick rate\&. While the one\-per\-second PPS pulses emitted by serial GPS units are timed to the GPS system\'s intrinsic accuracy limit,the satellites only emit navigation messages at 0\&.01\-second intervals, and the timestamps in them only carry 0\&.01\-second precision\&. Thus, the timestamps that
+seconds\&. A more important limit is the GPS tick rate\&. While the one\-per\-second PPS pulses emitted by serial GPS units are timed to the GPS system\*(Aqs intrinsic accuracy limit,the satellites only emit navigation messages at 0\&.01\-second intervals, and the timestamps in them only carry 0\&.01\-second precision\&. Thus, the timestamps that
 gpsd
 reports in time/position/velocity messages are normally accurate only to 1/100th of a second\&.
 .SH "USE WITH NTP"
 .PP
 gpsd can provide reference clock information to
-ntpd, to keep the system clock synchronized to the time provided by the GPS receiver\&. This facility is only available when the daemon is started from root\&. If you\'re going to use
+ntpd, to keep the system clock synchronized to the time provided by the GPS receiver\&. This facility is only available when the daemon is started from root\&. If you\*(Aqre going to use
 gpsd
 you probably want to run it
 \fB\-n\fR
@@ -1947,7 +1964,7 @@ remote	   refid      st t when poll reach  delay    offset  jitter
 .RE
 .\}
 .PP
-When the value under "reach" remains zero, check that gpsd is running; and some application is connected to it or the \'\-n\' option was used\&. Make sure the receiver is locked on to at least one satellite, and the receiver is in SiRF binary, Garmin binary or NMEA/PPS mode\&. Plain NMEA will also drive ntpd, but the accuracy as bad as one second\&. When the SHM(0) line does not appear at all, check the system logs for error messages from ntpd\&.
+When the value under "reach" remains zero, check that gpsd is running; and some application is connected to it or the \*(Aq\-n\*(Aq option was used\&. Make sure the receiver is locked on to at least one satellite, and the receiver is in SiRF binary, Garmin binary or NMEA/PPS mode\&. Plain NMEA will also drive ntpd, but the accuracy as bad as one second\&. When the SHM(0) line does not appear at all, check the system logs for error messages from ntpd\&.
 .PP
 When no other reference clocks appear in the NTP configuration, the system clock will lock onto the GPS clock\&. When you have previously used
 ntpd, and other reference clocks appear in your configuration, there may be a fixed offset between the GPS clock and other clocks\&. The
@@ -1962,17 +1979,17 @@ gpsd
 source code to learn more\&.
 .SH "SECURITY AND PERMISSIONS ISSUES"
 .PP
-gpsd, if given the \-G flag, will listen for connections from any reachable host, and then disclose the current position\&. Before using the \-G flag, consider whether you consider your computer\'s location to be sensitive data to be kept private or something that you wish to publish\&.
+gpsd, if given the \-G flag, will listen for connections from any reachable host, and then disclose the current position\&. Before using the \-G flag, consider whether you consider your computer\*(Aqs location to be sensitive data to be kept private or something that you wish to publish\&.
 .PP
 gpsd
-must start up as root in order to open the NTPD shared\-memory segment, open its logfile, and create its local control socket\&. Before doing any processing of GPS data, it tries to drop root privileges by setting its UID to "nobody" (or another userid as set by configure) and its group ID to the group of the initial GPS passed on the command line \(em or, if that device doesn\'t exist, to the group of
+must start up as root in order to open the NTPD shared\-memory segment, open its logfile, and create its local control socket\&. Before doing any processing of GPS data, it tries to drop root privileges by setting its UID to "nobody" (or another userid as set by configure) and its group ID to the group of the initial GPS passed on the command line \(em or, if that device doesn\*(Aqt exist, to the group of
 /dev/ttyS0\&.
 .PP
 Privilege\-dropping is a hedge against the possibility that carefully crafted data, either presented from a client socket or from a subverted serial device posing as a GPS, could be used to induce misbehavior in the internals of
 gpsd\&. It ensures that any such compromises cannot be used for privilege elevation to root\&.
 .PP
 The assumption behind
-gpsd\'s particular behavior is that all the tty devices to which a GPS might be connected are owned by the same non\-root group and allow group read/write, though the group may vary because of distribution\-specific or local administrative practice\&. If this assumption is false,
+gpsd\*(Aqs particular behavior is that all the tty devices to which a GPS might be connected are owned by the same non\-root group and allow group read/write, though the group may vary because of distribution\-specific or local administrative practice\&. If this assumption is false,
 gpsd
 may not be able to open GPS devices in order to read them (such failures will be logged)\&.
 .PP
@@ -1983,12 +2000,12 @@ gpsd
 drops these clients if they fail to read data long enough for the outbound socket write buffer to fill\&. Clients with an assigned device in polling mode are subject to a longer timeout (15 minutes)\&.
 .SH "LIMITATIONS"
 .PP
-If multiple NMEA talkers are feeding RMC, GLL, and GGA sentences to the same serial device (possible with an RS422 adapter hooked up to some marine\-navigation systems), a \'TPV\' response may mix an altitude from one device\'s GGA with latitude/longitude from another\'s RMC/GLL after the second sentence has arrived\&.
+If multiple NMEA talkers are feeding RMC, GLL, and GGA sentences to the same serial device (possible with an RS422 adapter hooked up to some marine\-navigation systems), a \*(AqTPV\*(Aq response may mix an altitude from one device\*(Aqs GGA with latitude/longitude from another\*(Aqs RMC/GLL after the second sentence has arrived\&.
 .PP
 gpsd
 may change control settings on your GPS (such as the emission frequency of various sentences or packets) and not restore the original settings on exit\&. This is a result of inadequacies in NMEA and the vendor binary GPS protocols, which often do not give clients any way to query the values of control settings in order to be able to restore them later\&.
 .PP
-If your GPS uses a SiRF chipset at firmware level 231, reported UTC time may be off by the difference between 13 seconds and whatever leap\-second correction is currently applicable, from startup until complete subframe information is received (normally about six seconds)\&. Firmware levels 232 and up don\'t have this problem\&. You may run
+If your GPS uses a SiRF chipset at firmware level 231, reported UTC time may be off by the difference between 13 seconds and whatever leap\-second correction is currently applicable, from startup until complete subframe information is received (normally about six seconds)\&. Firmware levels 232 and up don\*(Aqt have this problem\&. You may run
 gpsd
 at debug level 4 to see the chipset type and firmware revision level\&.
 .PP

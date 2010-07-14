@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: gpspipe
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 03 Aug 2005
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
 .\"  Language: English
 .\"
 .TH "GPSPIPE" "1" "03 Aug 2005" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +31,7 @@
 gpspipe \- tool to connect to gpsd and retrieve sentences
 .SH "SYNOPSIS"
 .HP \w'\fBgpspipe\fR\ 'u
-\fBgpspipe\fR [\-h] [\-d] [\-l] [\-o\ \fIfilename\fR] [\-n\ \fIcount\fR] [\-r] [\-R] [\-s\ \fIserial\-device\fR] [\-t] [\-w] [\-v] [\-D\ \fIdebug\-level\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBgpspipe\fR [\-h] [\-d] [\-l] [\-o\ \fIfilename\fR] [\-n\ \fIcount\fR] [\-r] [\-R] [\-s\ \fIserial\-device\fR] [\-t] [\-T\ \fItimestamp\-format\fR] [\-w] [\-v] [\-D\ \fIdebug\-level\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .SH "DESCRIPTION"
 .PP
 gpspipe
@@ -81,6 +90,10 @@ gpsdsentences to be output\&.
 .PP
 \-t adds a timestamp to each sentence output\&.
 .PP
+\-T sets the format of the timestamp\&. See
+\fBstrftime\fR(3)
+for the available placeholders\&. Setting this option implies \-t\&.
+.PP
 \-n [count] causes [count] sentences to be output\&.
 gpspipe
 will then exit gracefully\&.
@@ -91,7 +104,7 @@ to show a spinning activity indicator on stderr\&. This is useful if stdout is r
 .PP
 \-V prints the version, then exits\&.
 .PP
-At least one of \-R \-r or \-w must be specified\&.
+At least one of \-R, \-r or \-w must be specified\&.
 .SH "EXAMPLE"
 .PP
 When

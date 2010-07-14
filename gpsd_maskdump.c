@@ -6,7 +6,7 @@
 
 const char *gpsd_maskdump(gps_mask_t set)
 {
-    static char buf[177];
+    static char buf[184];
     const struct {
 	gps_mask_t      mask;
 	const char      *name;
@@ -29,7 +29,7 @@ const char *gpsd_maskdump(gps_mask_t set)
 	{RAW_IS,	"RAW"},
 	{USED_IS,	"USED"},
 	{SPEEDERR_IS,	"SPEEDERR"},
-	{DEVICE_IS,	"DEVICE"},
+	{DRIVER_IS,	"DRIVER"},
 	{DEVICEID_IS,	"DEVICEID"},
 	{ERROR_IS,	"ERROR"},
 	{RTCM2_IS,	"RTCM2"},
@@ -39,6 +39,7 @@ const char *gpsd_maskdump(gps_mask_t set)
 	{PACKET_IS,	"PACKET"},
 	{CLEAR_IS,	"CLEAR"},
 	{REPORT_IS,	"REPORT"},
+	{NODATA_IS,	"NODATA"},
     };
 
     memset(buf, '\0', sizeof(buf));
