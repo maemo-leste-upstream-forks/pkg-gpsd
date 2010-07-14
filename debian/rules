@@ -102,9 +102,10 @@ LIBgpsd_version := $(LIBgpsd_soname).$(LIBgpsd_version_age).$(LIBgpsd_version_re
 #package names
 PACKAGE_GPSD := gpsd
 PACKAGE_CLIENTS := gpsd-clients
-PACKAGE_LIB := $(shell grep '^Package: libgps$(LIB_soname)' debian/control | \
-	               awk '{print $$2}')
+PACKAGE_LIB := libgps$(LIB_soname)
+PACKAGE_QTLIB := libqgpsmm$(LIB_soname)
 PACKAGE_LIB_DEV := libgps-dev
+PACKAGE_QTLIB_DEV := libqgpsmm-dev
 PACKAGE_PY := python-gps
 PACKAGE_GPSDDBG := gpsd-dbg
 
@@ -176,8 +177,12 @@ install-gpsd: build-gpsd-stamp
 	#ldconfig link
 	dh_link -p$(PACKAGE_LIB) usr/lib/libgps.so.$(LIB_version) \
 	                         usr/lib/libgps.so.$(LIB_soname)
+	dh_link -p$(PACKAGE_QTLIB) usr/lib/libQgpsmm.so.$(LIB_version) \
+	                           usr/lib/libQgpsmm.so.$(LIB_soname)
 	dh_link -p$(PACKAGE_LIB_DEV) usr/lib/libgps.so.$(LIB_soname) \
 	                             usr/lib/libgps.so
+	dh_link -p$(PACKAGE_QTLIB_DEV) usr/lib/libQgpsmm.so.$(LIB_soname) \
+		                       usr/lib/libQgpsmm.so
 
 	dh_link -p$(PACKAGE_LIB) usr/lib/libgpsd.so.$(LIBgpsd_version) \
 				 usr/lib/libgpsd.so.$(LIBgpsd_soname)
@@ -187,7 +192,7 @@ install-gpsd: build-gpsd-stamp
 
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
 	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgpsd.so.$(LIBgpsd_version)
-
+	dh_install -p$(PACKAGE_QTLIB) debian/tmp/usr/lib/libQgpsmm.so.$(LIB_version)
 
 install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-python%-dbg)
 # xgps needs to go into the clients package, not python-gps.
