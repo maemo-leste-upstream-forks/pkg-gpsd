@@ -86,11 +86,12 @@ CONFFLAGS += --enable-dbus
 CONFFLAGS += --enable-bluetooth
 
 #library versions
-LIB_version_number := $(shell grep '^libgps_la_LDFLAGS' Makefile.am | sed 's,.*-version-number ,,')
-LIB_version_current := $(shell echo $(LIB_version_number) | awk -F : '{print $$1}')
-LIB_version_revision := $(shell echo $(LIB_version_number) | awk -F : '{print $$2}')
-LIB_version_age := $(shell echo $(LIB_version_number) | awk -F : '{print $$3}')
+LIB_version_number := $(shell awk '/^/ {print $$3}' Makefile.am)
+LIB_version_current := $(shell awk '/^libgps_VERSION_CURRENT/ {print $$3}' Makefile.am)
+LIB_version_revision := $(shell awk '/^libgps_VERSION__REVISION/ {print $$3}' Makefile.am)
+LIB_version_age := $(shell awk '/^libgps_VERSION_AGE/ {print $$3}' Makefile.am)
 LIB_soname := $(shell expr $(LIB_version_current) - $(LIB_version_age))
+LIB_version_number := $(LIB_version_current):$(LIB_version_revision):$(LIB_version_age)
 LIB_version := $(LIB_soname).$(LIB_version_age).$(LIB_version_revision)
 
 #LIBgpsd_version_number := $(shell grep '^libgpsd_la_LDFLAGS' Makefile.am | sed 's,.*-version-number ,,')
