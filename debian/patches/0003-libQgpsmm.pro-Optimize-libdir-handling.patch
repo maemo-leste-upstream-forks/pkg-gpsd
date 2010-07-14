@@ -1,0 +1,39 @@
+From 0118f30c5eca946532619ca1d0baa6fc2e5d2053 Mon Sep 17 00:00:00 2001
+From: Bernd Zeimetz <bernd@bzed.de>
+Date: Thu, 15 Jul 2010 00:43:43 +0200
+Subject: [PATCH 2/2] libQgpsmm.pro: Optimize libdir handling.
+
+---
+ libQgpsmm/libQgpsmm.pro |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/libQgpsmm/libQgpsmm.pro b/libQgpsmm/libQgpsmm.pro
+index 7faed4c..ecd3e98 100644
+--- a/libQgpsmm/libQgpsmm.pro
++++ b/libQgpsmm/libQgpsmm.pro
+@@ -49,9 +49,6 @@ HEADERS += libQgpsmm_global.h \
+     isEmpty( EXEC_PREFIX ) {
+         EXEC_PREFIX = $${PREFIX}
+     }
+-    isEmpty( LIBDIR ) {
+-        LIBDIR = /lib
+-    }
+     isEmpty( INCLUDEDIR ) {
+         INCLUDEDIR = /include
+     }
+@@ -63,7 +60,11 @@ HEADERS += libQgpsmm_global.h \
+     # set from the autotools generated Makefile.
+     # There should be a better way to handle this, though.
+     isEmpty( TARGET_LIBDIR ) {
+-        TARGET_LIBDIR = $${EXEC_PREFIX}$${LIBDIR}
++        isEmpty( LIBDIR ) {
++            TARGET_LIBDIR = $$[QT_INSTALL_LIBS]
++	} else {
++            TARGET_LIBDIR = $${EXEC_PREFIX}$${LIBDIR}
++	}
+     }
+     isEmpty( TARGET_INCLUDEDIR ) {
+         TARGET_INCLUDEDIR = $${PREFIX}$${INCLUDEDIR}
+-- 
+1.7.1
+

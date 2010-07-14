@@ -1,1 +1,3 @@
 0001-setup.py-Do-nothing-when-SKIP_SETUP_PY-is-set-in-the.patch
+0002-Create-pkg_config-and-prl-files-for-Qgpsmm.patch
+0003-libQgpsmm.pro-Optimize-libdir-handling.patch
