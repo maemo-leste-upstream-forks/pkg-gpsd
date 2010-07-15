@@ -1,3 +1,20 @@
+gpsd (2.95-2) unstable; urgency=low
+
+  * [b5f5b537] Add two patches from upstream to fix the json output.
+  * [98f19484] Work around different QT symbols. QT produces different
+    symbols depending on platform and QT version. Use (c++) style
+    symbols and make some of them optional.
+  * [07979908] Ship gpsd.php as example in gpsd-clients. Not sure if
+    thats the best place to do so, but for now it will work. (Closes:
+    #581864) - thanks to Jaap Winius
+  * [acb9f48d] libusb is not available on hurd. Update Build-Depends and
+    debian/rules accordingly.
+  * [2999a1ad] libbluetooth-dev is not available on kfreebsd. Update
+    Build-depends and debian/rules accordingly.
+  * [c4e7e243] Use ${python:Depends} in gpsd's Recommends.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 16 Jul 2010 01:12:00 +0200
+
 gpsd (2.95-1) unstable; urgency=low
 
   * [0d95785d] Fix spelling error in changelog: libusv -> libusb.
