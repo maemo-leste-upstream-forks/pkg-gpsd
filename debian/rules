@@ -87,7 +87,9 @@ CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
 CONFFLAGS += --enable-dbus
 
 #enable bluetooth support
+ifeq (,$(findstring kfreebsd,$(DEB_HOST_ARCH_OS)))
 CONFFLAGS += --enable-bluetooth
+endif
 
 #library versions
 LIB_version_number := $(shell awk '/^/ {print $$3}' Makefile.am)
