@@ -201,10 +201,10 @@ install-gpsd: build-gpsd-stamp gpsd-testregress
 	dh_install -p$(PACKAGE_QTLIB) debian/tmp/usr/lib/libQgpsmm.so.$(LIB_version)
 
 install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-python%-dbg)
-# xgps needs to go into the clients package, not python-gps.
+# xgps and xgpsspeed need to go into the clients package, not python-gps.
 # Move after installing.
 	mkdir -p $(CURDIR)/debian/tmp/usr/bin
-	mv $(CURDIR)/debian/$(PACKAGE_PY)/usr/bin/xgps \
+	mv $(CURDIR)/debian/$(PACKAGE_PY)/usr/bin/xgps* \
 		$(CURDIR)/debian/tmp/usr/bin
 
 install-python%:
