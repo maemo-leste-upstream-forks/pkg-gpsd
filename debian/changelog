@@ -1,3 +1,35 @@
+gpsd (2.95-1) unstable; urgency=low
+
+  * [0d95785d] Fix spelling error in changelog: libusv -> libusb.
+  * [d9843485] Add pkg-config as dependency to libgps-dev.
+  * [a98f04f7] We need libusb 1.0.0 or later.
+  * [8dd45af1] Merge commit 'upstream/2.95'
+  * [76b33dfd] Add new build-dependencies and package for libqgpsmm.
+  * [33adc3de] Remove patches which were applied upstream.
+  * [b7b67af3] Add patches to build pkg_config and prl files for
+    libQgpsmm.
+  * [026d1716] Add libqgpsmm-dev package description to debian/control.
+  * [e7ee7548] Install libqgpsmm19/-dev files into their packages.
+  * [f13517c7] Enable experimental Bluez support
+  * [1232539e] Provide LIBUSB_LDFLAGS to work around a bug in the auto
+    detection.
+  * [1095d27b] Fix lib version handling to work with the current
+    version.
+  * [472f1bd4] Update po files as requested by debconf-updatepo.
+  * [c02f2aac] Remove symbols files for different architectures. The
+    symbols are equal on all arches since some time, no need for them
+    anymore.
+  * [71f1543d] Updating symbols file.
+  * [9957b838] Add symbols file for libqgpsmm19.
+  * [7518cab1] Run regress-driver via UDP as a test.
+  * [a665e097] Add bc as build-dependency as it is used by regress-
+    driver.
+  * [6f820c15] Actually build arch-indep packages.
+  * [6f31cbad] Bumping Standards-Version to 3.9.0, no changes needed.
+  * [2faf3d23] Move xgpsspeed into the gpsd-clients package.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 15 Jul 2010 14:46:02 +0200
+
 gpsd (2.94-2) unstable; urgency=low
 
   * [fbf3a00f] Build Python scripts with 'python' first.
