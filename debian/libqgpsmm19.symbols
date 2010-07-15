@@ -1,27 +1,29 @@
 libQgpsmm.so.19 libqgpsmm19 #MINVER#
- _Z8fill_dopPK10gps_data_tP5dop_t@Base 2.95
- _Z9clear_dopP5dop_t@Base 2.95
- _ZGVZ13qvariant_castI8QVariantET_RKS0_E3vid@Base 2.95
- _ZN5QListI7QStringE4freeEPN9QListData4DataE@Base 2.95
- _ZN5gpsmm12enable_debugEiP8_IO_FILE@Base 2.95
- _ZN5gpsmm4openEPKcS1_@Base 2.95
- _ZN5gpsmm4openEv@Base 2.95
- _ZN5gpsmm4pollEv@Base 2.95
- _ZN5gpsmm4sendEPKc@Base 2.95
- _ZN5gpsmm5closeEv@Base 2.95
- _ZN5gpsmm6streamEi@Base 2.95
- _ZN5gpsmm7waitingEv@Base 2.95
- _ZN5gpsmm9clear_fixEv@Base 2.95
- _ZN5gpsmmC1Ev@Base 2.95
- _ZN5gpsmmC2Ev@Base 2.95
- _ZN5gpsmmD0Ev@Base 2.95
- _ZN5gpsmmD1Ev@Base 2.95
- _ZN5gpsmmD2Ev@Base 2.95
- _ZN6QDebugD1Ev@Base 2.95
- _ZN7QStringD1Ev@Base 2.95
- _ZTI5gpsmm@Base 2.95
- _ZTS5gpsmm@Base 2.95
- _ZTV5gpsmm@Base 2.95
+ (c++|optional)"QByteArray::~QByteArray()@Base" 2.95
+ (c++|optional)"QList<QString>::detach_helper()@Base" 2.95
+ (c++)"fill_dop(gps_data_t const*, dop_t*)@Base" 2.95
+ (c++)"clear_dop(dop_t*)@Base" 2.95
+ (c++)"guard variable for QVariant qvariant_cast<QVariant>(QVariant const&)::vid@Base" 2.95
+ (c++)"QList<QString>::free(QListData::Data*)@Base" 2.95
+ (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 2.95
+ (c++)"gpsmm::open(char const*, char const*)@Base" 2.95
+ (c++)"gpsmm::open()@Base" 2.95
+ (c++)"gpsmm::poll()@Base" 2.95
+ (c++)"gpsmm::send(char const*)@Base" 2.95
+ (c++)"gpsmm::close()@Base" 2.95
+ (c++)"gpsmm::stream(int)@Base" 2.95
+ (c++)"gpsmm::waiting()@Base" 2.95
+ (c++)"gpsmm::clear_fix()@Base" 2.95
+ (c++)"gpsmm::gpsmm()@Base" 2.95
+ (c++)"gpsmm::gpsmm()@Base" 2.95
+ (c++)"gpsmm::~gpsmm()@Base" 2.95
+ (c++)"gpsmm::~gpsmm()@Base" 2.95
+ (c++)"gpsmm::~gpsmm()@Base" 2.95
+ (c++)"QDebug::~QDebug()@Base" 2.95
+ (c++)"QString::~QString()@Base" 2.95
+ (c++)"typeinfo for gpsmm@Base" 2.95
+ (c++)"typeinfo name for gpsmm@Base" 2.95
+ (c++)"vtable for gpsmm@Base" 2.95
  earth_distance@Base 2.95
  gps_clear_fix@Base 2.95
  gps_close@Base 2.95
