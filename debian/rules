@@ -44,6 +44,8 @@ endif ## debian ##
 #let's help configure to figure out our host/build system
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_ARCH_OS    ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+
 ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
   CONFFLAGS += --build $(DEB_HOST_GNU_TYPE)
 else
@@ -71,7 +73,9 @@ endif
 LDFLAGS +=  -Wl,-z,defs
 
 #ugly workaround workaround for the libusb bug in makefile.am
+ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
 LDFLAGS +=  -Wl,--as-needed -lusb-1.0
+endif
 
 CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
 
