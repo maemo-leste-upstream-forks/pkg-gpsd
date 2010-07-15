@@ -22,7 +22,7 @@ Vcs-Git: git://git.recluse.de/debian/pkg-gpsd.git
 Package: gpsd
 Architecture: any
 Depends: netbase, lsb-base (>= 3.2-13), ${shlibs:Depends}, ${misc:Depends}
-Recommends: udev, python
+Recommends: udev, ${python:Depends}
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients, dbus
 Description: Global Positioning System - daemon
