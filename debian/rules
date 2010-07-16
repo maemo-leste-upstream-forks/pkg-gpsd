@@ -87,7 +87,7 @@ CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
 CONFFLAGS += --enable-dbus
 
 #enable bluetooth support
-ifeq (,$(findstring kfreebsd,$(DEB_HOST_ARCH_OS)))
+ifneq (,$(findstring linux,$(DEB_HOST_ARCH_OS)))
 CONFFLAGS += --enable-bluetooth
 endif
 
