@@ -1,3 +1,11 @@
+gpsd (2.95-3) unstable; urgency=low
+
+  * [a708cb3e] Install the new xgpsspeed into gpsd-clients. This went
+    forgotton until now unfortunately.
+  * [2af42abb] Also libbluetooth-dev is not available on hurd.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 16 Jul 2010 11:55:52 +0200
+
 gpsd (2.95-2) unstable; urgency=low
 
   * [b5f5b537] Add two patches from upstream to fix the json output.
