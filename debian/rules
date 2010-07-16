@@ -139,7 +139,7 @@ configure-stamp: $(QUILT_STAMPFN) autotools-dev-stamp
 	$(CONFENV) ./configure $(CONFFLAGS)
 	touch $@
 
-build: build-gpsd build-python
+build: build-gpsd build-python gpsd-testregress
 build-gpsd: build-gpsd-stamp
 build-python: $(PYTHONS:%=build-python%-stamp) $(PYTHONS:%=build-python%-dbg-stamp)
 build-gpsd-stamp: configure-stamp
@@ -169,10 +169,12 @@ build-python%-stamp: build-gpsd-stamp build-python-pre-stamp
 	  python$* setup.py build
 	touch $@
 
-gpsd-testregress: build-gpsd-stamp build-python
+gpsd-testregress: gpsd-testregress-stamp
+gpsd-testregress-stamp: build-gpsd build-python
 ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))	
 	-$(MAKE) testregress REGRESSOPTS=-u
 endif
+	touch $@
 
 install: install-gpsd install-python
 	dh_testdir
@@ -180,7 +182,7 @@ install: install-gpsd install-python
 	dh_install
 	chmod 755 debian/$(PACKAGE_GPSD)/lib/udev/gpsd.hotplug.wrapper
 
-install-gpsd: build-gpsd-stamp gpsd-testregress
+install-gpsd: build-gpsd-stamp
 	dh_testdir
 	dh_testroot
 	export SKIP_SETUP_PY="yes"; $(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
@@ -304,4 +306,5 @@ binary: binary-indep binary-arch
 .PHONY: build build-gpsd build-python build-lib-static \
 	clean clean-patched \
 	binary-indep binary-arch binary install \
-	install-python install-gpsd
+	install-python install-gpsd \
+	gpsd-testregress
