@@ -171,8 +171,12 @@ build-python%-stamp: build-gpsd-stamp build-python-pre-stamp
 
 gpsd-testregress: gpsd-testregress-stamp
 gpsd-testregress-stamp: build-gpsd build-python
-ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))	
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+# disable tests on hurd due to weird ipv6 errors
+# http://deb.li/4C46AEAC.7040906@bzed.de
+ifneq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
 	-$(MAKE) testregress REGRESSOPTS=-u
+endif
 endif
 	touch $@
 
