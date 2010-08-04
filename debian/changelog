@@ -1,3 +1,17 @@
+gpsd (2.95-4) unstable; urgency=low
+
+  * [e8974d54] Avoid running 'make testregress' in the fakeroot
+    environment.
+  * [c2cbc5cb] Disable regression tests on hurd due to weird ipv6
+    errors.
+  * [810ae224] Force Python scripts to be installed with python. This
+    ensures that the scripts' shebangs point to /usr/bin/python instead
+    of python2.X (Closes: #591667) - thanks to Steven Chamberlain
+  * [ef74ca9c] Add patch to avoid waiting for filesystems in the hotplug
+    wrapper. (Closes: #591324) - thanks to Jean-Luc Coulon
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 05 Aug 2010 01:23:33 +0200
+
 gpsd (2.95-3) unstable; urgency=low
 
   * [a708cb3e] Install the new xgpsspeed into gpsd-clients. This went
