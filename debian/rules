@@ -22,7 +22,7 @@ CPPFLAGS =
 
 #python versions
 PYTHONS := $(shell pyversions -vr)
-
+PYTHON_DEFAULT := $(strip $(shell pyversions -vd))
 
 #debhelper version and settings needed for udev
 DH_VERSION := $(shell dpkg -s debhelper | grep '^Version' | awk '{print $$2}')
@@ -222,13 +222,20 @@ install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-py
 install-python%:
 	set -e ;\
 	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
+	  if [ "$*" = "$(PYTHON_DEFAULT)" ]; then \
+	     FORCE="--force" ;\
+	     PYTHON="python" ;\
+	  else \
+	     FORCE="" ;\
+	     PYTHON="python$*" ;\
+	  fi ;\
 	  case $* in *-dbg) \
-	    python$* setup.py install --root=$(CURDIR)/debian/tmp \
+	    $${PYTHON} setup.py install --root=$(CURDIR)/debian/tmp \
 		--install-data=/tmp --install-scripts=/tmp \
-		$(py_setup_install_args) ;; \
+		$(py_setup_install_args) $${FORCE} ;; \
 	  *) \
-	    python$* setup.py install --root=$(CURDIR)/debian/$(PACKAGE_PY) \
-		$(py_setup_install_args) ;; \
+	    $${PYTHON} setup.py install --root=$(CURDIR)/debian/$(PACKAGE_PY) \
+		$(py_setup_install_args) $${FORCE} ;; \
 	  esac
 
 clean: clean-patched unpatch
