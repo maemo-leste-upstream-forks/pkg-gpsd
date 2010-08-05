@@ -136,7 +136,12 @@ endif
 configure: configure-stamp
 configure-stamp: $(QUILT_STAMPFN) autotools-dev-stamp
 	dh_testdir
-	$(CONFENV) ./configure $(CONFFLAGS)
+	$(CONFENV) ./configure $(CONFFLAGS) ;\
+	    CONF_EXIT=$$? ;\
+	    if [ $${CONF_EXIT} -gt 0 ]; then \
+	        cat config.log ;\
+		exit $${CONF_EXIT} ;\
+	    fi ;\
 	touch $@
 
 build: build-gpsd build-python gpsd-testregress
