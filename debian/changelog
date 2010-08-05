@@ -1,3 +1,11 @@
+gpsd (2.95-5) unstable; urgency=low
+
+  * [2b352879] Print config.log if configure was not successful.
+  * [55d159a5] Use pkg-config to retrieve the linking options for
+    libusb-1.0.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 05 Aug 2010 11:32:41 +0200
+
 gpsd (2.95-4) unstable; urgency=low
 
   * [e8974d54] Avoid running 'make testregress' in the fakeroot
