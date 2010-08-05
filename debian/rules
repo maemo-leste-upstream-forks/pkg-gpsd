@@ -74,7 +74,7 @@ LDFLAGS +=  -Wl,-z,defs
 
 #ugly workaround workaround for the libusb bug in makefile.am
 ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
-LDFLAGS +=  -Wl,--as-needed -lusb-1.0
+LDFLAGS +=  -Wl,--as-needed $(shell pkg-config --libs libusb-1.0)
 endif
 
 CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
