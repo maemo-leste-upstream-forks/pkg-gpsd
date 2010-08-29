@@ -1,3 +1,12 @@
+gpsd (2.95-6) unstable; urgency=low
+
+  * [928249f4] Disable testregress on hurd instead of disabling it
+    everywhere else.
+  * [95558a3b] Adding a patch to fix some identation errors in Python
+    scripts/modules.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 29 Aug 2010 21:59:25 +0200
+
 gpsd (2.95-5) unstable; urgency=low
 
   * [2b352879] Print config.log if configure was not successful.
