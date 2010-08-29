@@ -4,3 +4,4 @@
 0004-this-extra-is-not-longer-needed.patch
 0005-fix-the-way-skyview-json-is-produced.patch
 0006-Do-not-wait-for-mountpoints-in-hotplug-wrapper.patch
+0007-Fixing-several-Python-identation-errors.patch
