@@ -6,3 +6,4 @@
 0006-Do-not-wait-for-mountpoints-in-hotplug-wrapper.patch
 0007-Fixing-several-Python-identation-errors.patch
 0008-Fixing-a-segfault-in-cgps.patch
+0009-Fixes-SEGV-on-reception-of-short-aivdm-type-26-messa.patch

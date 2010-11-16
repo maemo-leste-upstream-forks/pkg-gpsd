@@ -1,0 +1,30 @@
+From: =?UTF-8?q?Nirgal=20Vourg=C3=A8re?= <jmv_deb@nirgal.com>
+Date: Sun, 14 Nov 2010 02:27:35 +0000
+Subject: [PATCH] Fixes SEGV on reception of short aivdm type 26 message
+
+gpsd is crashing when receiving some messages such as
+!AIVDM,1,1,,A,J=IJuwOmoTt,2*3F
+because unsigned value ais->type26.bitcount is sometimes assigned
+a negative value.
+
+Signed-off-by: Bernd Zeimetz <bernd@bzed.de>
+---
+ driver_aivdm.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/driver_aivdm.c b/driver_aivdm.c
+index af0c890..2f2138f 100644
+--- a/driver_aivdm.c
++++ b/driver_aivdm.c
+@@ -802,6 +802,10 @@ bool aivdm_decode(const char *buf, size_t buflen,
+ 	    }
+ 	    ais->type26.addressed	= (bool)UBITS(38, 1);
+ 	    ais->type26.structured	= (bool)UBITS(39, 1);
++	    if (ais_context->bitlen < 40 + 16*ais->type26.structured + 30*ais->type26.addressed + 20) {
++		gpsd_report(LOG_WARN, "AIVDM message type 26 too short for mode.\n");
++		return false;
++	    }
+ 	    if (ais->type26.addressed)
+ 		ais->type26.dest_mmsi   = UBITS(40, 30);
+ 	    if (ais->type26.structured)
+-- 
