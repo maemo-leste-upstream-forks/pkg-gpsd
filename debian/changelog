@@ -1,3 +1,12 @@
+gpsd (2.95-8) unstable; urgency=low
+
+  * [b6aae9a2] Stripping unnecessary options/comments from
+    debian/gbp.conf
+  * [405de6db] Add patch to fix a SEGV when receiving short aivdm
+    message type 26. (Closes: #603439) - thanks to Nirgal Vourgère
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 16 Nov 2010 20:26:10 +0100
+
 gpsd (2.95-7) unstable; urgency=low
 
   * [0990a703] Ensure that regression tests run once only.
