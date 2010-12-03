@@ -3,8 +3,8 @@ libQgpsmm.so.19 libqgpsmm19 #MINVER#
  (c++|optional)"QList<QString>::detach_helper()@Base" 2.95
  (c++)"fill_dop(gps_data_t const*, dop_t*)@Base" 2.95
  (c++)"clear_dop(dop_t*)@Base" 2.95
- (c++)"guard variable for QVariant qvariant_cast<QVariant>(QVariant const&)::vid@Base" 2.95
- (c++)"QList<QString>::free(QListData::Data*)@Base" 2.95
+ (c++|optional)"guard variable for QVariant qvariant_cast<QVariant>(QVariant const&)::vid@Base" 2.95
+ (c++|optional)"QList<QString>::free(QListData::Data*)@Base" 2.95
  (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 2.95
  (c++)"gpsmm::open(char const*, char const*)@Base" 2.95
  (c++)"gpsmm::open()@Base" 2.95
@@ -19,8 +19,8 @@ libQgpsmm.so.19 libqgpsmm19 #MINVER#
  (c++)"gpsmm::~gpsmm()@Base" 2.95
  (c++)"gpsmm::~gpsmm()@Base" 2.95
  (c++)"gpsmm::~gpsmm()@Base" 2.95
- (c++)"QDebug::~QDebug()@Base" 2.95
- (c++)"QString::~QString()@Base" 2.95
+ (c++|optional)"QDebug::~QDebug()@Base" 2.95
+ (c++|optional)"QString::~QString()@Base" 2.95
  (c++)"typeinfo for gpsmm@Base" 2.95
  (c++)"typeinfo name for gpsmm@Base" 2.95
  (c++)"vtable for gpsmm@Base" 2.95
