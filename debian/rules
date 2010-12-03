@@ -267,6 +267,7 @@ clean-patched:
 	rm -f gpsd_config.h.in~
 	rm -f $(CURDIR)/debian/gpsd.udev
 	rm -f gps/*.pyc gps/*.so
+	rm -f debian/buildinfo.gz
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
 	rm -f config.sub
 endif
@@ -305,6 +306,7 @@ binary-arch: build install
 	dh_installudev -s
 	dh_link -s
 	dh_strip -s --dbg-package=$(PACKAGE_GPSDDBG)
+	dh_buildinfo -p$(PACKAGE_GPSDDBG)
 	dh_compress -s
 	dh_fixperms -s -Xgpsd.hotplug.wrapper
 ifeq (,$(DEB_BUILD_OPTIONS))
