@@ -136,6 +136,7 @@ endif
 configure: configure-stamp
 configure-stamp: $(QUILT_STAMPFN) autotools-dev-stamp
 	dh_testdir
+	dh_autoreconf
 	$(CONFENV) ./configure $(CONFFLAGS) ;\
 	    CONF_EXIT=$$? ;\
 	    if [ $${CONF_EXIT} -gt 0 ]; then \
@@ -260,6 +261,7 @@ clean-patched:
 	[ ! -r setup.py ] || python setup.py clean || true
 	rm -rf build
 	[ ! -r Makefile ] || $(MAKE) distclean
+	dh_autoreconf_clean
 	rm -f *.1 *.3 *.5 *.8 .1
 	rm -rf .deps .libs
 	rm -f gpsd_config.h.in~
