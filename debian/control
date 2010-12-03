@@ -14,7 +14,7 @@ Build-Depends: debhelper (>= 5.0.61), po-debconf, dpkg-dev (>= 1.14.8),
  libqt4-dev,
  lsb-release, bc,
  dpkg-dev (>= 1.15.6),
- dh-autoreconf
+ dh-autoreconf, dh-buildinfo
 Standards-Version: 3.9.0
 Homepage: http://gpsd.berlios.de/
 Vcs-Browser: http://git.recluse.de/?p=debian/pkg-gpsd.git
