@@ -306,12 +306,21 @@ binary-arch: build install
 	dh_python2 -a -Ngpsd
 	dh_python2 -pgpsd /lib/udev/
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
+<<<<<<< HEAD
 	dh_installudev -a
 	dh_link -a
 	dh_strip -a --dbg-package=$(PACKAGE_GPSDDBG)
 	dh_buildinfo -p$(PACKAGE_GPSDDBG)
 	dh_compress -a
 	dh_fixperms -a -Xgpsd.hotplug.wrapper
+=======
+	dh_installudev -s
+	dh_link -s
+	dh_strip -s --dbg-package=$(PACKAGE_GPSDDBG)
+	dh_buildinfo -p$(PACKAGE_GPSDDBG)
+	dh_compress -s
+	dh_fixperms -s -Xgpsd.hotplug.wrapper
+>>>>>>> 8cc1ccc2cef4f10f64ce530c8c85c20c831a239f
 ifeq (,$(DEB_BUILD_OPTIONS))
 	dh_makeshlibs -a -- -c4
 else
