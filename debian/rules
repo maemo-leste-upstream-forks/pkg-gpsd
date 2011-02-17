@@ -303,7 +303,8 @@ binary-arch: build install
 	dh_installinit -a -- start 26 2 3 4 5 . stop 73 0 1 6 .
 	dh_installexamples -a
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/*-packages/gps/gps.py
-	dh_python2 -a
+	dh_python2 -a -Ngpsd
+	dh_python2 -pgpsd /lib/udev/
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev -a
 	dh_link -a
