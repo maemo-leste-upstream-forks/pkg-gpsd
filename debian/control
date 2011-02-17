@@ -4,8 +4,8 @@ Priority: optional
 Maintainer: Bernd Zeimetz <bzed@debian.org>
 Build-Depends: debhelper (>= 5.0.61), po-debconf, dpkg-dev (>= 1.14.8),
  quilt, autotools-dev,
- python-all-dev (>= 2.3.3-6), python-support (>= 0.7.1),
- python-all-dbg (>= 2.3.3-6),
+ python-all-dev (>= 2.6.6-3),
+ python-all-dbg (>= 2.6.6-3),
  xsltproc, docbook-xsl, docbook-xml,
  libncurses-dev,
  libusb-1.0-0-dev [!hurd-i386],
@@ -19,6 +19,7 @@ Standards-Version: 3.9.0
 Homepage: http://gpsd.berlios.de/
 Vcs-Browser: http://git.recluse.de/?p=debian/pkg-gpsd.git
 Vcs-Git: git://git.recluse.de/debian/pkg-gpsd.git
+X-Python-Version: >= 2.3
 
 Package: gpsd
 Architecture: any
@@ -55,6 +56,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, python-gps, python-gtk2, ${python:Depends}
 Suggests: gpsd
 Conflicts: gps
+Breaks: ${python:Breaks}
 Description: Global Positioning System - clients
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
@@ -71,6 +73,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
  python (>= 2.6) | python-simplejson
 Recommends: gpsd
 Provides: ${python:Provides}
+Breaks: ${python:Breaks}
 Conflicts: python-json
 Description: Global Positioning System - Python libraries
  The gpsd service daemon can monitor one or more GPS devices connected to
