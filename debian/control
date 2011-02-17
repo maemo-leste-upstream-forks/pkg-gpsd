@@ -24,7 +24,7 @@ X-Python-Version: >= 2.3
 Package: gpsd
 Architecture: any
 Depends: netbase, lsb-base (>= 3.2-13), ${shlibs:Depends}, ${misc:Depends}
-Recommends: udev, ${python:Depends}
+Recommends: udev, ${python:Depends}, python
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients, dbus
 Description: Global Positioning System - daemon
