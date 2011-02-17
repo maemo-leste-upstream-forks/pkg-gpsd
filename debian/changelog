@@ -1,3 +1,18 @@
+gpsd (2.95-9) unstable; urgency=low
+
+  * [979fcdf3] Make QT symbols optional in the symbols file. (Closes: #605833)
+  * [09f64fb5] Run dh_autoreconf to reconfigure automake and friends.
+  * [13e861d9] Add dh_buildinfo information to the debug package.
+  * [40d19cf2] Add patch to fix a missing symbol reference. (Closes: #605835)
+  * [17af8fa9] Migrating from python-support to dh_python2.
+  * [77dab448] Use -a instead of -s on debhelper calls.
+    -a is euqally smart now and dh_python2 doesn't implement -s.
+  * [1605f83d] Ensure dh_python2 handles /lib/udev/gpsd.hotplug
+  * [cbb6e2a7] Recommend python for gpsd as workaround.
+    dh_python2 ignores scripts due to a programming error.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 17 Feb 2011 19:27:30 +0100
+
 gpsd (2.95-8) unstable; urgency=low
 
   * [b6aae9a2] Stripping unnecessary options/comments from
