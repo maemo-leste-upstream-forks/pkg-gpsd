@@ -9,3 +9,4 @@
 0009-Fixes-SEGV-on-reception-of-short-aivdm-type-26-messa.patch
 0010-Add-missing-linking-for-libbluetooth-and-libusb.patch
 0011-Apply-Charles-Curley-s-fix-from-20101009162503.60c50.patch
+0012-xgps-xgpsspeed-Check-for-a-usable-display-before-wri.patch
