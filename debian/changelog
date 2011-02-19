@@ -1,3 +1,11 @@
+gpsd (2.95-10) unstable; urgency=low
+
+  * [2ae11d60] Cherry-pick a fix for /lib/udev/gpsd.hotplug.wrapper.
+    It fixes the problem that the wrapper needed a gpsd socket to start gpsd.
+    Thanks to Frédéric Boiteux (Closes: #603025)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 19 Feb 2011 12:58:40 +0100
+
 gpsd (2.95-9) unstable; urgency=low
 
   * [979fcdf3] Make QT symbols optional in the symbols file. (Closes: #605833)
