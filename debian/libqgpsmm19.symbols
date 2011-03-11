@@ -1,6 +1,9 @@
 libQgpsmm.so.19 libqgpsmm19 #MINVER#
  (c++|optional)"QByteArray::~QByteArray()@Base" 2.95
  (c++|optional)"QList<QString>::detach_helper()@Base" 2.95
+ (c++|optional)"QList<QString>::detach_helper(int)@Base" 2.95
+ (c++|optional)"QList<QString>::~QList()@Base" 2.95
+ (c++|optional)"QList<QString>::~QList()@Base" 2.95
  (c++)"fill_dop(gps_data_t const*, dop_t*)@Base" 2.95
  (c++)"clear_dop(dop_t*)@Base" 2.95
  (c++|optional)"guard variable for QVariant qvariant_cast<QVariant>(QVariant const&)::vid@Base" 2.95
