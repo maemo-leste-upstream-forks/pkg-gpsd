@@ -254,7 +254,6 @@ clean: clean-patched unpatch
 clean-patched:
 	dh_testdir
 	dh_testroot
-	dh_clean
 	#sanity check if debian/control lists the right package name
 	grep -q '^Package: libgps$(LIB_soname)' debian/control
 	#update debconf po files
@@ -277,6 +276,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	rm -f config.guess
 endif
+	dh_clean
 
 
 
