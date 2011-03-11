@@ -226,6 +226,7 @@ install-gpsd: build-gpsd-stamp
 install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-python%-dbg)
 # xgps and xgpsspeed need to go into the clients package, not python-gps.
 # Move after installing.
+	sed -i 's,^#!/usr/bin/python.*,#!/usr/bin/python,' $(CURDIR)/debian/tmp/usr/bin/*
 	mkdir -p $(CURDIR)/debian/tmp/usr/bin
 	mv $(CURDIR)/debian/$(PACKAGE_PY)/usr/bin/xgps* \
 		$(CURDIR)/debian/tmp/usr/bin
