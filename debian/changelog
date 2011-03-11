@@ -1,3 +1,9 @@
+gpsd (2.95-12) unstable; urgency=low
+
+  * [698d1af4] Really fix the Python shebang issue.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 11 Mar 2011 22:52:06 +0100
+
 gpsd (2.95-11) unstable; urgency=low
 
   * [37e64446] Add patch to avoid a segfault if the X server doesn't answer.
