@@ -314,7 +314,8 @@ binary-arch: build install
 	dh_compress -a
 	dh_fixperms -a -Xgpsd.hotplug.wrapper
 ifeq (,$(DEB_BUILD_OPTIONS))
-	dh_makeshlibs -a -- -c4
+	dh_makeshlibs -Nlibqgpsmm19 -a -- -c4
+	dh_makeshlibs -plibqgpsmm19 -- -c1
 else
 	dh_makeshlibs -a
 endif
