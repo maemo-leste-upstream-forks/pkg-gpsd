@@ -1,3 +1,17 @@
+gpsd (2.95-11) unstable; urgency=low
+
+  * [37e64446] Add patch to avoid a segfault if the X server doesn't answer.
+    Thanks to Timo Juhani Lindfors (Closes: #602925)
+  * [cfe6b9ac] Cherry pick a spelling mistake fix.
+  * [bba3fff8] Ensure that Python scripts use the default Python version.
+    Thanks to Timo Juhani Lindfors (Closes: #617836)
+  * [e43ca632] Move dh_clean to the end of clean commands.
+    This ensures that debhelper logfiles are removed.
+  * [c25e0a0f] Don't be strict about symbol files if QT is involved.
+  * [4f4f6b5f] Add some new optional QT symbols to the library.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 11 Mar 2011 22:01:29 +0100
+
 gpsd (2.95-10) unstable; urgency=low
 
   * [2ae11d60] Cherry-pick a fix for /lib/udev/gpsd.hotplug.wrapper.
