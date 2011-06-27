@@ -1,3 +1,10 @@
+gpsd (2.95-13) unstable; urgency=low
+
+  * [2cc9b878] Don't call libtool with /bin/sh as sh != bash.
+    Thanks to Stefano Rivera (Closes: #621992)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 28 Jun 2011 01:08:15 +0200
+
 gpsd (2.95-12) unstable; urgency=low
 
   * [698d1af4] Really fix the Python shebang issue.
