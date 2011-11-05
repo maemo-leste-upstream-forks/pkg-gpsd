@@ -5,6 +5,7 @@ libgps.so.19 libgps19 #MINVER#
  _ZN5gpsmm4pollEv@Base 2.39
  _ZN5gpsmm4sendEPKc@Base 2.90~svn6694
  _ZN5gpsmm5closeEv@Base 2.94
+ _ZN5gpsmm6backupEv@Base 2.95
  _ZN5gpsmm6streamEi@Base 2.90~svn6694
  _ZN5gpsmm7waitingEv@Base 2.90.1~svn6819
  _ZN5gpsmm9clear_fixEv@Base 2.39
