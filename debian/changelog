@@ -1,3 +1,14 @@
+gpsd (2.95-14) unstable; urgency=low
+
+  * [cd15ce8c] Use [linux-any] instead of [!kfreebsd-* ].
+  * [3baab888] Import isotime function in gps.gps.
+    Thanks to Dietrich Feist (Closes: #646434)
+  * [06edd34a] Adding a new symbol recent g++ versions seem to produce.
+  * [49fe128a] Ack'ing NMU.
+    Thanks to Luk Claes (Closes: #632126)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 05 Nov 2011 09:33:36 +0100
+
 gpsd (2.95-13.1) unstable; urgency=low
 
   * Non-maintainer upload.
