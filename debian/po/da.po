@@ -1,5 +1,5 @@
 # Danish translation gpsd.
-# Copyright (C) 2011 gpsd & nedenstående oversættere.
+# Copyright (C) 2011 gpsd & nedenstÃ¥ende oversÃ¦ttere.
 # This file is distributed under the same license as the gpsd package.
 # Joe Hansen <joedalton2@yahoo.dk>, 2011.
 #
@@ -41,8 +41,8 @@ msgid ""
 "device autodetection only."
 msgstr ""
 "Flere enheder kan angives som en mellemrumsadskilt liste. Efterlad tom hvis "
-"du ikke ønsker at forbinde gpsd til en enhed ved opstart eller hvis du "
-"ønsker kun at bruge automatisk detektering af enheder."
+"du ikke Ã¸nsker at forbinde gpsd til en enhed ved opstart eller hvis du "
+"Ã¸nsker kun at bruge automatisk detektering af enheder."
 
 #. Type: boolean
 #. Description
@@ -71,7 +71,7 @@ msgid ""
 "default setting."
 msgstr ""
 "Indtast venligst placeringen for gpsd-kontrolsokkelen. Normalt vil "
-"standarden være at foretrække."
+"standarden vÃ¦re at foretrÃ¦kke."
 
 #. Type: string
 #. Description
@@ -86,20 +86,20 @@ msgid ""
 "You can give additional arguments when starting gpsd; see gpsd(8) for a list "
 "of options."
 msgstr ""
-"Du kan angive yderligere argumenter, når du starter gpsd; se gpsd(8) for en "
+"Du kan angive yderligere argumenter, nÃ¥r du starter gpsd; se gpsd(8) for en "
 "liste af tilvalg."
 
 #. Type: string
 #. Description
 #: ../gpsd.templates:4001
 msgid "Do not use '-F' here. The control socket path is set independently."
-msgstr "Brug ikke »-F« her. Stien for kontrolsokkelen angives uafhængigt."
+msgstr "Brug ikke Â»-FÂ« her. Stien for kontrolsokkelen angives uafhÃ¦ngigt."
 
 #. Type: boolean
 #. Description
 #: ../gpsd.templates:5001
 msgid "Should gpsd handle attached USB GPS receivers automatically?"
-msgstr "Skal gpsd håndtere tilsluttede USB GPS-modtagere automatisk?"
+msgstr "Skal gpsd hÃ¥ndtere tilsluttede USB GPS-modtagere automatisk?"
 
 #. Type: boolean
 #. Description
@@ -109,6 +109,6 @@ msgid ""
 "you can disable it if gpsd is causing interference with other attached "
 "devices or programs."
 msgstr ""
-"Da gpsd kun håndterer GPS-enheder, er det sikkert at vælge denne "
-"indstilling. Du kan dog deaktivere den, hvis gpsd medfører interferens med "
+"Da gpsd kun hÃ¥ndterer GPS-enheder, er det sikkert at vÃ¦lge denne "
+"indstilling. Du kan dog deaktivere den, hvis gpsd medfÃ¸rer interferens med "
 "andre tilsluttede enheder eller programmer."
