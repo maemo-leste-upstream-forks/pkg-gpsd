@@ -1,3 +1,14 @@
+gpsd (2.95-15) unstable; urgency=low
+
+  * [3c1beb8b] Fix the broken Danish translation file.
+    Seems the last NMUer uses mutt :)
+    Thanks to Christian Perrier (Closes: #647805)
+  * [41f11f7e] Remove 'start/stop script' from init script descriptions.
+    Thanks to Tollef Fog Heen (Closes: #625535)
+  * [e6c62cf1] Make libgps19.symbols compatible to older g++ versions.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 06 Nov 2011 19:03:05 +0100
+
 gpsd (2.95-14) unstable; urgency=low
 
   * [cd15ce8c] Use [linux-any] instead of [!kfreebsd-* ].
