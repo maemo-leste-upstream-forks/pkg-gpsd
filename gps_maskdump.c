@@ -1,4 +1,10 @@
 /* This code is generated.  Do not hand-hack it! */
+
+/*
+ * Also, beware that it is something of a CPU hog when called on every packet.
+ * Try to write guards so it is only called at higher log levels.
+ */
+
 #include <stdio.h>
 #include <string.h>
 
@@ -6,7 +12,7 @@
 
 const char *gps_maskdump(gps_mask_t set)
 {
-    static char buf[184];
+    static char buf[190];
     const struct {
 	gps_mask_t      mask;
 	const char      *name;
@@ -22,26 +28,35 @@ const char *gps_maskdump(gps_mask_t set)
 	{STATUS_SET,	"STATUS"},
 	{MODE_SET,	"MODE"},
 	{DOP_SET,	"DOP"},
-	{VERSION_SET,	"VERSION"},
 	{HERR_SET,	"HERR"},
 	{VERR_SET,	"VERR"},
 	{ATTITUDE_SET,	"ATTITUDE"},
-	{POLICY_SET,	"POLICY"},
 	{SATELLITE_SET,	"SATELLITE"},
-	{RAW_SET,	"RAW"},
-	{USED_SET,	"USED"},
 	{SPEEDERR_SET,	"SPEEDERR"},
 	{TRACKERR_SET,	"TRACKERR"},
 	{CLIMBERR_SET,	"CLIMBERR"},
 	{DEVICE_SET,	"DEVICE"},
 	{DEVICELIST_SET,	"DEVICELIST"},
 	{DEVICEID_SET,	"DEVICEID"},
-	{ERROR_SET,	"ERROR"},
 	{RTCM2_SET,	"RTCM2"},
 	{RTCM3_SET,	"RTCM3"},
 	{AIS_SET,	"AIS"},
 	{PACKET_SET,	"PACKET"},
-	{AUXDATA_SET,	"AUXDATA"},
+	{SUBFRAME_SET,	"SUBFRAME"},
+	{GST_SET,	"GST"},
+	{VERSION_SET,	"VERSION"},
+	{POLICY_SET,	"POLICY"},
+	{LOGMESSAGE_SET,	"LOGMESSAGE"},
+	{ERROR_SET,	"ERROR"},
+	{RAW_IS,	"RAW"},
+	{USED_IS,	"USED"},
+	{DRIVER_IS,	"DRIVER"},
+	{CLEAR_IS,	"CLEAR"},
+	{REPORT_IS,	"REPORT"},
+	{NODATA_IS,	"NODATA"},
+	{PPSTIME_IS,	"PPSTIME"},
+	{PERR_IS,	"PERR"},
+	{PASSTHROUGH_IS,	"PASSTHROUGH"},
     };
 
     memset(buf, '\0', sizeof(buf));
