@@ -39,9 +39,9 @@ gps, xgps, xgpsspeed, cgps, lcdgps \- test clients for gpsd
 .HP \w'\fBlcdgps\fR\ 'u
 \fBlcdgps\fR [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBgpxlogger\fR\ 'u
-\fBgpxlogger\fR
-.HP \w'\fBgpxlogger\fR\ 'u
-\fBgpxlogger\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-i\ \fItrack\ timeout\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBgpxlogger\fR [\-D\ \fIdebug\-level\fR] [\-d] [\-e\ \fIexport\-method\fR] [\-f\ \fIfilename\fR] [\-l] [\-m\ \fIminmove\fR] [\-h] [\-V] [\-i\ \fItrack\ timeout\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.HP \w'\fBgegps\fR\ 'u
+\fBgegps\fR [\-d\ \fIdirectory\fR] [\-i]
 .SH "DESCRIPTION"
 .PP
 These are the demonstration clients shipped with
@@ -61,7 +61,7 @@ option, when present, sets the format of latitude and longitude reports\&. The v
 .PP
 xgps,
 cgps, and
-ldcgps
+lcdgps
 look at variables in the environment to figure out what units they should default to using for display \(em imperial, nautical, or metric\&. Here are the variables and values they check:
 .sp
 .if n \{\
@@ -93,17 +93,17 @@ option\&.
 .PP
 Where present, the
 \fB\-u\fR
-option can be used to set the system units for display; follow the keyword with \*(Aqi\*(Aq for \*(Aqimperial\*(Aq for American units (feet in altitude and error estimates, miles per hour in speeds), \*(Aqn\*(Aq for \*(Aqnautical\*(Aq (feet in altitude and error estimates, knots in speed) or \*(Aqm\*(Aq for \*(Aqmetric\*(Aq (meters in altitude and error estimates, kiliometers per hour in speeds)\&.
+option can be used to set the system units for display; follow the keyword with \*(Aqi\*(Aq for \*(Aqimperial\*(Aq for American units (feet in altitude and error estimates, miles per hour in speeds), \*(Aqn\*(Aq for \*(Aqnautical\*(Aq (feet in altitude and error estimates, knots in speed) or \*(Aqm\*(Aq for \*(Aqmetric\*(Aq (meters in altitude and error estimates, kilometers per hour in speeds)\&.
 .PP
 The
 \fB\-D\fR
 option, when present, sets a debug level; it is primarily for use by GPSD developers\&. It enables various progress messages to standard error\&.
 .PP
-By default, clients collect data from all compatible devices on localhost, using the defalt GPSD port 2947\&. An optional argument to any client may specify a server to get data from\&. A colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a specific device name to be watched\&. However, if the server specification contains square brackets, the part inside them is taken as an IPv6 address and port/device suffixes are obnly parsed after the trailing bracket\&. Possible cases look like this:
+By default, clients collect data from all compatible devices on localhost, using the default GPSD port 2947\&. An optional argument to any client may specify a server to get data from\&. A colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a specific device name to be watched\&. However, if the server specification contains square brackets, the part inside them is taken as an IPv6 address and port/device suffixes are only parsed after the trailing bracket\&. Possible cases look like this:
 .PP
 localhost:/dev/ttyS1
 .RS 4
-Look at the default port of localhost, trying both IPv4 and IPv6 and watching ouput from serial device 1\&.
+Look at the default port of localhost, trying both IPv4 and IPv6 and watching output from serial device 1\&.
 .RE
 .PP
 example\&.com:2317
@@ -150,7 +150,7 @@ The
 \fB\-s\fR
 option prevents
 cgps
-from displaying the raw data\&. This display can also be toggled with the s command\&.
+from displaying the data coming from the daemon\&. This display can also be toggled with the s command\&.
 .PP
 The
 \fB\-m\fR
@@ -174,10 +174,51 @@ The output may be composed of multiple tracks\&. A new track is created if there
 \fB\-i\fR
 and defaulting to 5 seconds\&.
 .PP
-If D\-Bus support is available on the host and GPSD is configured to use it, this program listens to DBUS broadcasts from
-gpsd\&. (org\&.gpsd\&.fix)\&. Otherwise, it uses a conventional socket connection\&.
+The
+\fB\-d\fR
+option tells
+gpxlogger
+to run as a daemon in background\&. It requires the
+\fB\-f\fR
+option, which directs output to a specified logfile\&.
 .PP
-Presence of a server\-port\-device specification forces use of sockets even on a D\-Bus capable system, though this is unlikely to be of interest to anyone except GPSD developers\&.
+The
+\fB\-m\fR
+option sets a minimum move distance in meters (it may include a fractional decimal part)\&. Motions shorter than this will not be logged\&.
+.PP
+gpxlogger
+can use any of the export methods that
+gpsd
+supports\&. For a list of these methods, use the
+\fB\-l\fR\&. To force the method, give the
+\fB\-e\fR
+one of the colon\-teminated method names from the
+\fB\-l\fR
+table\&.
+.PP
+If D\-Bus support is available on the host, GPSD is configured to use it, and
+\fB\-e dbus\fR
+is specified, this program listens to DBUS broadcasts from
+gpsd
+via org\&.gpsd\&.fix\&.
+.PP
+With
+\fB\-e sockets\fR, or if sockets is the method defaulted to, you may give a server\-port\-device specification as arguments\&.
+.SS "gegps"
+.PP
+This program collects fixes from
+gpsd
+and feeds them to a running instance of Google Earth for live location tracking\&.
+.PP
+The
+\fB\-d\fR
+argument is the location of the Google Earth installation directory\&. If not specified, it defaults to the current directory\&.
+.PP
+If you have the free (non\-subscription) version, start by running with the
+\fB\-i\fR
+option to drop a clue in the Google Earth installation directory, as \*(AqOpen_in_Google_Earth_RT_GPS\&.kml\*(Aq, then open that file in Places (File > Open\&.\&.\&.)\&. Run
+gpsd
+in the normal way after that\&.
 .SH "SEE ALSO"
 .PP
 
@@ -198,16 +239,9 @@ sxpert@sxpert\&.org
 pere@hungry\&.com
 (gpxlogger)\&. Chris Kuethe
 chris\&.kuethe@gmail\&.com
-(cgpxlogger)\&.
+(gpxlogger), Chen Wei
+weichen302@aol\&.com
+(gegps)\&.
 .PP
 This manual page by Eric S\&. Raymond
-esr@thyrsus\&.com\&. There is a project page, with
-xgps
-screenshots, at
-\m[blue]\fBberlios\&.de\fR\m[]\&\s-2\u[1]\d\s+2\&.
-.SH "NOTES"
-.IP " 1." 4
-berlios.de
-.RS 4
-\%http://gpsd.berlios.de/
-.RE
+esr@thyrsus\&.com

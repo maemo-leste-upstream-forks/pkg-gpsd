@@ -31,7 +31,7 @@
 gpsfake \- test harness for gpsd, simulating a GPS
 .SH "SYNOPSIS"
 .HP \w'\fBgpsfake\fR\ 'u
-\fBgpsfake\fR [\-1] [\-h] [\-b] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-u] [\-v] [\fIlogfile\fR...]
+\fBgpsfake\fR [\-1] [\-h] [\-b] [\-f] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-P\ \fIport\fR] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-u] [\-v] [\fIlogfile\fR...]
 .SH "DESCRIPTION"
 .PP
 gpsfake
@@ -39,14 +39,47 @@ is a test harness for
 gpsd
 and its clients\&. It opens a pty (pseudo\-TTY), launches a
 gpsd
-instance that thinks the slave side of the pty is its GPS device, and repeatedly feeds the contents of one or more test logfiles through the master side to the GPS\&. If there are multiple logfiles, sentences from them are interleaved in the order the fuiles are specified\&.
+instance that thinks the slave side of the pty is its GPS device, and repeatedly feeds the contents of one or more test logfiles through the master side to the GPS\&. If there are multiple logfiles, sentences from them are interleaved in the order the files are specified\&.
 .PP
 gpsfake
 does not require root privileges, and can be run concurrently with a production
 gpsd
 instance without causing problems\&.
 .PP
-The logfiles may be of NMEA, SiRF packets, TSIP packets, or Zodiac packets\&. Leading lines beginning with # will be treated as comments and ignored\&.
+The logfiles may contain packets in any supported format, including in particular NMEA, SiRF, TSIP, or Zodiac\&. Leading lines beginning with # will be treated as comments and ignored, except in the following special cases:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+a comment of the form #Date: yyyy\-mm\-dd (ISO8601 date format) may be used to set the initial date for the log\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+a comment of the form #Serial: [0\-9]* [78][NOE][12] may be used to set serial parameters for the log \- baud rate, word length, stop bits\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+a comment of the form #Transport: UDP may be used to fake a UDP source rather than the normal pty\&.
+.RE
 .PP
 The
 gpsd
@@ -55,46 +88,82 @@ instance is run in foreground\&. The thread sending fake GPS data to the daemon 
 .PP
 With the \-1 option, the logfile is interpreted once only rather than repeatedly\&. This option is intended to facilitate regression testing\&.
 .PP
-The \-b option enables a twirling\-baton progress indicator on standard error\&. At termination, it reports elapsed time\&.
+The
+\fB\-b\fR
+enables a twirling\-baton progress indicator on standard error\&. At termination, it reports elapsed time\&.
 .PP
-The \-c option sets the delay between sentences in seconds\&. Fractional values of seconds are legal\&. The default is zero (no delay)\&.
+The
+\fB\-c\fR
+sets the delay between sentences in seconds\&. Fractional values of seconds are legal\&. The default is zero (no delay)\&.
 .PP
-The \-l option makes the program dump a line or packet number just before each sentence is fed to the daemon\&. If the sentence is textual (e\&.g\&. NMEA), the text is dumped as well\&. If not, the packet will be dumped in hexadecimal (except for RTCM packets, which aren\*(Aqt dumped at all)\&. This option is useful for checking that gpsfake is getting packet boundaries right\&.
+The
+\fB\-l\fR
+makes the program dump a line or packet number just before each sentence is fed to the daemon\&. If the sentence is textual (e\&.g\&. NMEA), the text is dumped as well\&. If not, the packet will be dumped in hexadecimal (except for RTCM packets, which aren\*(Aqt dumped at all)\&. This option is useful for checking that gpsfake is getting packet boundaries right\&.
 .PP
-The \-i option is for single\-stepping through logfiles\&. It dumps the line or packet number (and the sentence if the protocol is textual) followed by "? "\&. Only when the user keys Enter is the line actually fed to
+The
+\fB\-i\fR
+is for single\-stepping through logfiles\&. It dumps the line or packet number (and the sentence if the protocol is textual) followed by "? "\&. Only when the user keys Enter is the line actually fed to
 gpsd\&.
 .PP
-The \-m option specifies a monitor program inside which the daemon should be run\&. This option is intended to be used with
+The
+\fB\-m\fR
+specifies a monitor program inside which the daemon should be run\&. This option is intended to be used with
 \fBvalgrind\fR(1),
 \fBgdb\fR(1)
 and similar programs\&.
 .PP
-The \-g option uses the monitor facility to run the
+The
+\fB\-g\fR
+uses the monitor facility to run the
 gpsd
 instance within gpsfake under control of gdb\&.
 .PP
-The \-o option specifies options to pass to the daemon\&. The \-n option passes \-n to start the daemon reading the GPS without waiting for a client (equivalent to \-o "\-n")\&. The \-D option passes a \-D option to the daemon: thus \-D 4 is shorthand for \-o "\-D 4"\&.
+The
+\fB\-f\fR
+configures
+gpsd
+to bind to a random dynamic/private port (range 49152 \- 65535)\&. Its main use is within regression\-test scripts so they won\*(Aqt collide with a production instance\&.
+.PP
+The
+\fB\-o\fR
+specifies options to pass to the daemon\&. The \-n option passes \-n to start the daemon reading the GPS without waiting for a client (equivalent to \-o "\-n")\&. The
+\fB\-D\fR
+passes a \-D option to the daemon: thus \-D 4 is shorthand for \-o "\-D 4"\&.
 .PP
 The \-p ("pipe") option sets watcher mode and dumps the NMEA and GPSD notifications generated by the log to standard output\&. This is useful for regression\-testing\&.
 .PP
-The \-r option specifies an initialization command to use in pipe mode\&. The default is
+The \-P ("port") option sets the daemon\*(Aqs listening port\&.
+.PP
+The
+\fB\-r\fR
+specifies an initialization command to use in pipe mode\&. The default is
 \fB?WATCH={"enable":true,"json":true}\fR\&.
 .PP
-The \-s option sets the baud rate for the slave tty\&. The default is 4800\&.
+The
+\fB\-s\fR
+sets the baud rate for the slave tty\&. The default is 4800\&.
 .PP
-The \-u option forces the test framework to use UDP rather than pty devices\&. This may be useful for testing from within chroot jails where access to pty devices is locked out\&.
+The
+\fB\-u\fR
+forces the test framework to use UDP rather than pty devices\&. This may be useful for testing from within chroot jails where access to pty devices is locked out\&.
 .PP
-The \-v option enables verbose progress reports to stderr\&. It is mainly useful for debugging
+The
+\fB\-v\fR
+enables verbose progress reports to stderr\&. It is mainly useful for debugging
 gpsfake
 itself\&.
 .PP
-The \-x option dumps packets as
+The
+\fB\-x\fR
+dumps packets as
 gpsfake
 gathers them\&. It is mainly useful for debugging
 gpsfake
 itself\&.
 .PP
-The \-h option makes
+The
+\fB\-h\fR
+makes
 gpsfake
 print a usage message and exit\&.
 .PP
@@ -102,7 +171,7 @@ The argument must be the name of a file containing the data to be cycled at the 
 gpsfake
 will print a notification each time it cycles\&.
 .PP
-Normally, gpsfake creates a pty for each logfile and passes the slave side of the debice to the daemon\&. If the header comment in the logfile contains the string "UDP", packets are instead shipped via UDP port 5000 to the addess 192\&.168\&.0\&.1\&.255\&. You can monitoer them with this:
+Normally, gpsfake creates a pty for each logfile and passes the slave side of the device to the daemon\&. If the header comment in the logfile contains the string "UDP", packets are instead shipped via UDP port 5000 to the address 192\&.168\&.0\&.1\&.255\&. You can monitor them with this:
 \fBtcpdump \-s0 \-n \-A \-i lo udp and port 5000\fR\&.
 .SH "CUSTOM TESTS"
 .PP
@@ -128,7 +197,7 @@ from the gpsd distribution, or any other application which is able to create a c
 .PP
 If
 gpsfake
-exits with "Cannot execute gpsd: executable not found\&." the environment variable GPSD_HOME can be set to the path where gpsd can be found\&. (instead of adding that folder to the PATH envirnment variable
+exits with "Cannot execute gpsd: executable not found\&." the environment variable GPSD_HOME can be set to the path where gpsd can be found\&. (instead of adding that folder to the PATH environment variable
 .SH "SEE ALSO"
 .PP
 
@@ -143,12 +212,4 @@ exits with "Cannot execute gpsd: executable not found\&." the environment variab
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond
-esr@thyrsus\&.com\&. There is a project page for
-gpsd
-\m[blue]\fBhere\fR\m[]\&\s-2\u[1]\d\s+2\&.
-.SH "NOTES"
-.IP " 1." 4
-here
-.RS 4
-\%http://gpsd.berlios.de/
-.RE
+esr@thyrsus\&.com\&.

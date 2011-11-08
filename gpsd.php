@@ -1,7 +1,5 @@
 <?php
 
-#$CSK: gpsd.php,v 1.39 2006/11/21 22:31:10 ckuethe Exp $
-
 # Copyright (c) 2006,2010 Chris Kuethe <chris.kuethe@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
@@ -16,7 +14,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-global $head, $blurb, $title, $googlemap, $autorefresh, $footer, $gmap_key;
+global $head, $blurb, $title, $showmap, $autorefresh, $footer, $gmap_key;
 global $server, $advertise, $port, $open, $swap_ew, $testmode;
 $testmode = 1; # leave this set to 1
 
@@ -46,13 +44,13 @@ require_once("gpsd_config.inc");
 
 # sample data
 $resp = <<<EOF
-{"class":"POLL","timestamp":1270517274.846,"active":1,
- "fixes":[{"class":"TPV","tag":"MID41","device":"/dev/ttyUSB0",
+{"class":"POLL","time":"2010-04-05T21:27:54.84Z","active":1,
+ "tpv":[{"class":"TPV","tag":"MID41","device":"/dev/ttyUSB0",
            "time":1270517264.240,"ept":0.005,"lat":40.035093060,
            "lon":-75.519748733,"alt":31.1,"track":99.4319,
            "speed":0.123,"mode":3}],
- "skyviews":[{"class":"SKY","tag":"MID41","device":"/dev/ttyUSB0",
-              "time":1270517264.240,"hdop":9.20,"vdop":12.1,
+ "sky":[{"class":"SKY","tag":"MID41","device":"/dev/ttyUSB0",
+              "time":"2010-04-05T21:27:44.84Z","hdop":9.20,"vdop":12.1,
               "satellites":[{"PRN":16,"el":55,"az":42,"ss":36,"used":true},
                             {"PRN":19,"el":25,"az":177,"ss":0,"used":false},
                             {"PRN":7,"el":13,"az":295,"ss":0,"used":false},
@@ -89,9 +87,11 @@ if (isset($_GET['imgdata']) && $op == 'view'){
 
 	if ($testmode){
 		$sock = @fsockopen($server, $port, $errno, $errstr, 2);
+		@fwrite($sock, "?WATCH={\"enable\":true}\n");
+		usleep(100);
 		@fwrite($sock, "?POLL;\n");
 		for($tries = 0; $tries < 10; $tries++){
-			$resp = @fread($sock, 1536); # SKY can be pretty big
+			$resp = @fread($sock, 2000); # SKY can be pretty big
 			if (preg_match('/{"class":"POLL".+}/i', $resp, $m)){
 				$resp = $m[0];
 				break;
@@ -241,7 +241,7 @@ function imageFilledDiamond($im, $x, $y, $r, $color){
 		imagepolygon($im, $vx, 4, $color);
 		$t -= 0.5;
 	}
-}       
+}
 
 function elevation($im, $sz, $C, $a){
 	$b = 90 - $a;
@@ -305,8 +305,8 @@ function gen_image($resp){
 	if ($sz > 240)
 		legend($im, $sz, $C);
 
-	for($i = 0; $i < count($GPS['skyviews'][0]['satellites']); $i++){
-		splot($im, $sz, $C, $GPS['skyviews'][0]['satellites'][$i]);
+	for($i = 0; $i < count($GPS['sky'][0]['satellites']); $i++){
+		splot($im, $sz, $C, $GPS['sky'][0]['satellites'][$i]);
 	}
 
 	header("Content-type: image/png");
@@ -325,7 +325,7 @@ function dfix($x, $y, $z){
 
 function write_html($resp){
 	global $sock, $errstr, $errno, $server, $port, $head, $body, $open;
-	global $blurb, $title, $autorefresh, $googlemap, $gmap_key, $footer;
+	global $blurb, $title, $autorefresh, $showmap, $gmap_key, $footer;
 	global $testmode, $advertise;
 
 	$GPS = json_decode($resp, true);
@@ -336,8 +336,8 @@ function write_html($resp){
 	header("Content-type: text/html; charset=UTF-8");
 
 	global $lat, $lon;
-	$lat = (float)$GPS['fixes'][0]['lat'];
-	$lon = (float)$GPS['fixes'][0]['lon'];
+	$lat = (float)$GPS['tpv'][0]['lat'];
+	$lon = (float)$GPS['tpv'][0]['lon'];
 	$x = $server; $y = $port;
 	$imgdata = base64_encode($resp);
 	$server = $x; $port = $y;
@@ -347,11 +347,15 @@ function write_html($resp){
 	else
 		$autorefresh = '';
 
-	$gmap_head = $gmap_body = $gmap_code = '';
-	if ($googlemap){
-		$gmap_head = gen_gmap_head();
-		$gmap_body = 'onload="Load()" onunload="GUnload()"';
-		$gmap_code = gen_gmap_code();
+	$map_head = $map_body = $map_code = '';
+	if ($showmap == 1) {
+		$map_head = gen_gmap_head();
+		$map_body = 'onload="Load()" onunload="GUnload()"';
+		$map_code = gen_map_code();
+	} else if ($showmap == 2) {
+		$map_head = gen_osm_head();
+		$map_body = 'onload="Load()"';
+		$map_code = gen_map_code();
 	}
 	$part1 = <<<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -360,7 +364,7 @@ function write_html($resp){
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 {$head}
-{$gmap_head}
+{$map_head}
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <meta http-equiv="Content-Language" content="en,en-us"/>
 <title>{$title} - GPSD Test Station {$lat}, {$lon}</title>
@@ -368,25 +372,25 @@ function write_html($resp){
 <style>
 .warning {
     color: #FF0000;
- }
+}
 
 .fixed {
-    font-family: courier, fixed;
+    font-family: mono-space;
 }
 
 .caption {
-    text-align: left; 
+    text-align: left;
     margin: 1ex 3em 1ex 3em; /* top right bottom left */
 }
 
 .administrivia {
-    font-size: small; 
+    font-size: small;
     font-family: verdana, sans-serif;
 }
 </style>
 </head>
 
-<body {$body} {$gmap_body}>
+<body {$body} {$map_body}>
 <center>
 <table border="0">
 <tr><td align="justify">
@@ -408,9 +412,9 @@ EOF;
 width="600" height="600"/>
 <br clear="all"/>
 <p class="caption">A filled circle means the satellite was used in
-the last fix. Green-yellow-red colors indicate signal strength in dB, 
- green=most and red=least.  Diamonds indicate SBAS satellites.</p>
-{$gmap_code}</td>
+the last fix. Green-yellow-red colors indicate signal strength in dB,
+green=most and red=least.  Diamonds indicate SBAS satellites.</p>
+{$map_code}</td>
 </tr>
 EOF;
 
@@ -434,41 +438,58 @@ Use a different server:<br/>
 EOF;
 
 	if ($testmode && !$sock)
-		$part4 = "<tr><td><font color='red'>The gpsd instance that this page monitors is not running.</font></td></tr>";
+		$part4 = "<tr><td class='warning'>The gpsd instance that this page monitors is not running.</td></tr>";
 	else {
-		$nsv = count($GPS['skyviews'][0]['satellites']);
-		$ts = gmdate("r", $GPS['fixes'][0]['time']);
+		$fix = $GPS['tpv'][0];
+		$sky = $GPS['sky'][0];
+		$sats = $sky['satellites'];
+
+		$nsv = count($sats);
+                $ts = $fix['time'];
+                $sat = '';
+                foreach($sats as $s)
+                        $sat .= sprintf(
+                                "\t<tr><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%s</td></tr>\n",
+                                $s['PRN'], $s['el'], $s['az'], $s['ss'], $s['used'] ? 'Y' : 'N'
+                        );
 		$part4 = <<<EOF
 <!-- ------------------------------------------------------------ -->
-        <tr><td align=center valign=top>
-	<table border=1>
-	<tr><td colspan=2 align=center><b>Current Information</b></td></tr>
-	<tr><td>Time (UTC)</td><td>{$ts}</td></tr>
-	<tr><td>Latitude</td><td>{$GPS['fixes'][0]['lat']}</td></tr>
-	<tr><td>Longitude</td><td>{$GPS['fixes'][0]['lon']}</td></tr>
-	<tr><td>Altitude</td><td>{$GPS['fixes'][0]['alt']}</td></tr>
-	<tr><td>Fix Type</td><td>{$GPS['fixes'][0]['mode']}</td></tr>
-	<tr><td>Satellites</td><td>{$nsv}</td></tr>
-	<tr><td>HDOP</td><td>{$GPS['skyviews'][0]['hdop']}</td></tr>
-	</table>
-</tr>
-<!-- raw response
+<tr><td align=center valign=top>
+    <table border=1>
+        <tr><th colspan=2 align=center>Current Information</th></tr>
+        <tr><td>Time (UTC)</td><td>{$ts}</td></tr>
+        <tr><td>Latitude</td><td>{$fix['lat']}</td></tr>
+        <tr><td>Longitude</td><td>{$fix['lon']}</td></tr>
+        <tr><td>Altitude</td><td>{$fix['alt']}</td></tr>
+        <tr><td>Fix Type</td><td>{$fix['mode']}</td></tr>
+        <tr><td>Satellites</td><td>{$nsv}</td></tr>
+        <tr><td>HDOP</td><td>{$sky['hdop']}</td></tr>
+        <tr><td>VDOP</td><td>{$sky['vdop']}</td></tr>
+    </table>
+    <br/>
+    <table border=1>
+        <tr><th colspan=5 align=center>Current Satellites</th></tr>
+        <tr><th>PRN</th><th>Elevation</th><th>Azimuth</th><th>SS</th><th>Used</th></tr>
+$sat    </table>
+</td></tr>
+
+<!-- raw response:
 {$resp}
 -->
 EOF;
 	}
 
 	$part5 = <<<EOF
+
 </table>
 </center>
-
 {$footer}
-
 <hr/>
-<span class="administrivia">This script is distributed by the <a href="http://gpsd.berlios.de">GPSD project</a>.</span><br/>
-</body>
-</body>
+<p class="administrivia">This script is distributed by the
+<a href="http://catb.org/gpsd">GPSD project</a>.</p>
 
+</body>
+</html>
 EOF;
 
 print $part1 . $part2 . $part3 . $part4 . $part5;
@@ -495,7 +516,7 @@ function write_config(){
 #\$advertise = 'localhost';
 \$port = 2947;
 \$autorefresh = 0; # number of seconds after which to refresh
-\$googlemap = 0; # set to 1 if you want to have a google map
+\$showmap = 0; # set to 1 if you want to have a google map, set it to 2 if you want a map based on openstreetmap
 \$gmap_key = 'GetYourOwnGoogleKey'; # your google API key goes here
 \$swap_ew = 0; # set to 1 if you don't understand projections
 \$open = 0; # set to 1 to show the form to change the GPSd server
@@ -512,7 +533,7 @@ function write_config(){
 \$footer = '';
 \$blurb = <<<EOT
 This is a
-<a href="http://gpsd.berlios.de">gpsd</a>
+<a href="http://catb.org/gpsd">gpsd</a>
 server <blink><font color="red">located someplace</font></blink>.
 
 The hardware is a
@@ -534,9 +555,9 @@ global $gmap_key;
 return <<<EOT
 <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key={$gmap_key}" type="text/javascript"></script>
 <script type="text/javascript">
-    <!--
-    // Create a base icon for all of our markers that specifies the shadow, icon
-    // dimensions, etc.
+<!--
+// Create a base icon for all of our markers that specifies the shadow, icon
+// dimensions, etc.
 function Load() {
   if (GBrowserIsCompatible()) {
     var map = new GMap2(document.getElementById("map"));
@@ -559,22 +580,65 @@ function Load() {
     map.addOverlay(marker);
   }
 }
-
-    -->
-    </script>
+-->
+</script>
 EOT;
 
 }
-function gen_gmap_code() {
+
+function gen_osm_head() {
+global $GPS;
+return <<<EOT
+<script src="http://openlayers.org/api/OpenLayers.js" type="text/javascript"></script>
+<script src="http://www.openstreetmap.org/openlayers/OpenStreetMap.js" type="text/javascript"></script>
+<script type="text/javascript">
+    <!--
+    // Create a base icon for all of our markers that specifies the shadow, icon
+    // dimensions, etc.
+function Load() {
+	document.getElementById("map").firstChild.data = "";
+	map = new OpenLayers.Map("map", {
+		controls: [
+			new OpenLayers.Control.Navigation(),
+			new OpenLayers.Control.PanZoomBar(),
+			new OpenLayers.Control.ScaleLine(),
+			new OpenLayers.Control.LayerSwitcher()
+		],
+		maxResolution: 156543.0339,
+		numZoomLevels: 20,
+		units: 'm',
+		projection: new OpenLayers.Projection("EPSG:900913"),
+		displayProjection: new OpenLayers.Projection("EPSG:4326")
+	});
+	var layerMapnik = new OpenLayers.Layer.OSM.Mapnik("Mapnik");
+	map.addLayer(layerMapnik);
+
+	var layerTilesAtHome = new OpenLayers.Layer.OSM.Osmarender("Osmarender");
+	map.addLayer(layerTilesAtHome);
+
+	center = new OpenLayers.LonLat({$GLOBALS['lon']}, {$GLOBALS['lat']}).transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject());
+
+	markers = new OpenLayers.Layer.Markers( "Markers" );
+	centermarker = new OpenLayers.Marker(center);
+	markers.addMarker(centermarker);
+	map.addLayer(markers);
+
+	map.setCenter(center, 17);
+}
+    -->
+    </script>
+EOT;
+}
+
+function gen_map_code() {
 return <<<EOT
 <br/>
-    <div id="map" style="width: 550px; height: 400px; border:1px; border-style: solid;">
+<div id="map" style="width: 550px; height: 400px; border:1px; border-style: solid;">
     Loading...
     <noscript>
-<span class='warning'>Sorry: you must enable javascript to view our maps.</span><br/>
+        <span class='warning'>Sorry: you must enable javascript to view our maps.</span><br/>
     </noscript>
 </div>
-
 
 EOT;
 }

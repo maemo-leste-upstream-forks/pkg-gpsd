@@ -84,7 +84,7 @@ Put GPS into NMEA mode\&. After the GPS resets itself autobaud to its new speed\
 .RS 4
 Set the baud rate at which the GPS emits packets\&.
 .sp
-Use this option with caution\&. On USB and Bluetooth GPSes it is also possible for serial mode setting to fail either because the serial adaptor chip does not support non\-8N1 modes or because the device firmware does not properly synchronize the serrial adaptor chip with the UART on the GPS chipset whjen the speed changes\&. These failures can hang your device, possibly requiring a GPS power cycle or (in extreme cases) physically disconnecting the NVRAM backup battery\&.
+Use this option with caution\&. On USB and Bluetooth GPSes it is also possible for serial mode setting to fail either because the serial adaptor chip does not support non\-8N1 modes or because the device firmware does not properly synchronize the serial adaptor chip with the UART on the GPS chipset when the speed changes\&. These failures can hang your device, possibly requiring a GPS power cycle or (in extreme cases) physically disconnecting the NVRAM backup battery\&.
 .RE
 .PP
 \-t
@@ -132,7 +132,7 @@ In low\-level mode, if the device identifies as a Generic NMEA, use the selected
 .PP
 If no options are given, the program will display a message identifying the GPS type of the selected device and exit\&.
 .PP
-Reset (\-r) operations must stand alone; others can be combined\&. Multiple opations will be executed in tis order: mode changes (\-b and \-n) first, speed changes (\-s) second, and control\-string sends (\-c) last\&.
+Reset (\-r) operations must stand alone; others can be combined\&. Multiple options will be executed in tis order: mode changes (\-b and \-n) first, speed changes (\-s) second, and control\-string sends (\-c) last\&.
 .SH "EXAMPLES"
 .PP
 \fBgpsctl /dev/ttyUSB0\fR
@@ -153,6 +153,7 @@ SiRF GPSes can only be identified by the success of an attempt to flip them into
 .PP
 
 \fBgpsd\fR(8),
+\fBgpsdctl\fR(8),
 \fBgps\fR(1),
 \fBlibgps\fR(3),
 \fBlibgpsd\fR(3),
@@ -161,12 +162,4 @@ SiRF GPSes can only be identified by the success of an attempt to flip them into
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond
-esr@thyrsus\&.com\&. There is a project page for
-gpsd
-\m[blue]\fBhere\fR\m[]\&\s-2\u[1]\d\s+2\&.
-.SH "NOTES"
-.IP " 1." 4
-here
-.RS 4
-\%http://gpsd.berlios.de/
-.RE
+esr@thyrsus\&.com\&.
