@@ -1,21 +1,19 @@
 libgps.so.19 libgps19 #MINVER#
- _ZN5gpsmm12enable_debugEiP8_IO_FILE@Base 2.90~svn6694
- _ZN5gpsmm4openEPKcS1_@Base 2.39
- _ZN5gpsmm4openEv@Base 2.39
- _ZN5gpsmm4pollEv@Base 2.39
- _ZN5gpsmm4sendEPKc@Base 2.90~svn6694
- _ZN5gpsmm5closeEv@Base 2.94
- _ZN5gpsmm6streamEi@Base 2.90~svn6694
- _ZN5gpsmm7waitingEv@Base 2.90.1~svn6819
- _ZN5gpsmm9clear_fixEv@Base 2.39
- _ZN5gpsmmC1Ev@Base 2.39-2~
- _ZN5gpsmmC2Ev@Base 2.39-2~
- _ZN5gpsmmD0Ev@Base 2.39
- _ZN5gpsmmD1Ev@Base 2.39
- _ZN5gpsmmD2Ev@Base 2.39
- _ZTI5gpsmm@Base 2.39
- _ZTS5gpsmm@Base 2.39
- _ZTV5gpsmm@Base 2.39
+ (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 2.90~svn6694
+ (c++)"gpsmm::open(char const*, char const*)@Base" 2.39
+ (c++)"gpsmm::open()@Base" 2.39
+ (c++)"gpsmm::poll()@Base" 2.39
+ (c++)"gpsmm::send(char const*)@Base" 2.90~svn6694
+ (c++)"gpsmm::close()@Base" 2.94
+ (c++|optional)"gpsmm::backup()@Base" 2.95
+ (c++)"gpsmm::stream(int)@Base" 2.90~svn6694
+ (c++)"gpsmm::waiting()@Base" 2.90.1~svn6819
+ (c++)"gpsmm::clear_fix()@Base" 2.39
+ (c++)"gpsmm::gpsmm()@Base" 2.39-2~
+ (c++)"typeinfo for gpsmm@Base" 2.95
+ (c++)"typeinfo name for gpsmm@Base" 2.95
+ (c++)"vtable for gpsmm@Base" 2.95
+ (c++)"gpsmm::~gpsmm()@Base" 2.39
 #MISSING: 2.94-1# aivdm_decode@Base 2.39
 #MISSING: 2.94-1# aivdm_json_dump@Base 2.90~svn6694
 #MISSING: 2.94-1# ashtech@Base 2.39

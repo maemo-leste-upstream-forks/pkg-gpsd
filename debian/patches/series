@@ -1,3 +1,4 @@
+621992-sh-is-not-bash
 0001-setup.py-Do-nothing-when-SKIP_SETUP_PY-is-set-in-the.patch
 0002-Create-pkg_config-and-prl-files-for-Qgpsmm.patch
 0003-libQgpsmm.pro-Optimize-libdir-handling.patch
@@ -11,3 +12,4 @@
 0011-Apply-Charles-Curley-s-fix-from-20101009162503.60c50.patch
 0012-xgps-xgpsspeed-Check-for-a-usable-display-before-wri.patch
 0013-Spelling-mistake-fix.patch
+646434-isotime-missing-in-gps_py.patch
