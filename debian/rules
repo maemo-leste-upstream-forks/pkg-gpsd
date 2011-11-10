@@ -60,7 +60,11 @@ build-arch: build
 
 build: build-stamp
 build-stamp: $(QUILT_STAMPFN)
-	set -e; for py in $(PYTHONS); do python$${py} /usr/bin/scons $(SCONSOPTS); done
+	set -e; \
+	    for py in $(PYTHONS); do \
+	    	python$${py} /usr/bin/scons $(SCONSOPTS); \
+		python$${py}-dbg /usr/bin/scons $(SCONSOPTS); \
+	    done
 ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	# disable tests on hurd due to weird ipv6 errors
 	# http://deb.li/4C46AEAC.7040906@bzed.de
@@ -73,7 +77,11 @@ clean: clean-patched unpatch
 clean-patched:
 	dh_testdir
 	dh_testroot
-	set -e; for py in $(PYTHONS); do python$${py} /usr/bin/scons $(SCONSOPTS) -c .; done
+	set -e; \
+	    for py in $(PYTHONS); do \
+	    	python$${py} /usr/bin/scons $(SCONSOPTS) -c .; \
+	    	python$${py}-dbg /usr/bin/scons $(SCONSOPTS) -c .; \
+	    done
 	rm -rf \
 	    .sconf_temp \
 	    .scons-option-cache \
@@ -92,6 +100,7 @@ install-stamp: build-stamp
 	set -e ;\
 	    for py in $(PYTHONS); do \
 	    	DESTDIR=`pwd`/debian/tmp python$${py} /usr/bin/scons install $(SCONSOPTS) ;\
+	    	DESTDIR=`pwd`/debian/tmp python$${py}-dbg /usr/bin/scons install $(SCONSOPTS) ;\
 	    done
 	cp INSTALL TROUBLESHOOTING
 	dh_install
