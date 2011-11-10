@@ -1,25 +1,11 @@
 #!/usr/bin/make -f
 
-include /usr/share/quilt/quilt.make
--include /usr/share/python/python.mk
-ifeq (,$(py_sitename))
-py_sitename = site-packages
-py_libdir = /usr/lib/python$(subst python,,$(1))/site-packages
-py_sitename_sh = $(py_sitename)
-py_libdir_sh = $(py_libdir)
-endif
-
-
-
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
 
+include /usr/share/quilt/quilt.make
 
-CONFFLAGS =
-CONFENV =
-CFLAGS =
-LDFLAGS =
-CPPFLAGS =
+
 
 #python versions
 PYTHONS := $(shell pyversions -vr)
@@ -42,72 +28,19 @@ endif
 endif ## ubuntu ##
 endif ## debian ##
 
-#let's help configure to figure out our host/build system
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-DEB_HOST_ARCH_OS    ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 
-ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
-  CONFFLAGS += --build $(DEB_HOST_GNU_TYPE)
-else
-  CONFFLAGS += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
-endif
+SCONSOPTS = \
+	prefix=/usr \
+	systemd=yes \
+	strip=no \
+	dbus_export=yes \
+	docdir=/usr/share/doc/gpsd
 
-
-#where our files go
-PREFIX = /usr
-MANDIR = $(PREFIX)/share/man
-INFODIR = $(PREFIX)/share/info
-CONFFLAGS += --prefix=$(PREFIX) --mandir=$(MANDIR) --infodir=$(INFODIR)
-
-
-
-#let's take care of optimization + debug builds
-CFLAGS += -Wall -g
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
+	SCONSOPTS += debug=yes
 else
-	CFLAGS += -O2
+	SCONSOPTS += debug=no
 endif
-
-#LDFLAGS
-LDFLAGS +=  -Wl,-z,defs
-
-#ugly workaround workaround for the libusb bug in makefile.am
-ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
-LDFLAGS +=  -Wl,--as-needed $(shell pkg-config --libs libusb-1.0)
-endif
-
-CONFENV += LDFLAGS="$(LDFLAGS)" CFLAGS="$(CFLAGS)"
-
-#we build the python extension manually
-# --disable-python is broken at the moment...
-#CONFFLAGS += --disable-python
-
-#support dbus
-CONFFLAGS += --enable-dbus
-
-#enable bluetooth support
-ifneq (,$(findstring linux,$(DEB_HOST_ARCH_OS)))
-CONFFLAGS += --enable-bluetooth
-endif
-
-#library versions
-LIB_version_number := $(shell awk '/^/ {print $$3}' Makefile.am)
-LIB_version_current := $(shell awk '/^libgps_VERSION_CURRENT/ {print $$3}' Makefile.am)
-LIB_version_revision := $(shell awk '/^libgps_VERSION__REVISION/ {print $$3}' Makefile.am)
-LIB_version_age := $(shell awk '/^libgps_VERSION_AGE/ {print $$3}' Makefile.am)
-LIB_soname := $(shell expr $(LIB_version_current) - $(LIB_version_age))
-LIB_version_number := $(LIB_version_current):$(LIB_version_revision):$(LIB_version_age)
-LIB_version := $(LIB_soname).$(LIB_version_age).$(LIB_version_revision)
-
-#LIBgpsd_version_number := $(shell grep '^libgpsd_la_LDFLAGS' Makefile.am | sed 's,.*-version-number ,,')
-LIBgpsd_version_number := 0:0:0
-LIBgpsd_version_current := $(shell echo $(LIBgpsd_version_number) | awk -F : '{print $$1}')
-LIBgpsd_version_revision := $(shell echo $(LIBgpsd_version_number) | awk -F : '{print $$2}')
-LIBgpsd_version_age := $(shell echo $(LIBgpsd_version_number) | awk -F : '{print $$3}')
-LIBgpsd_soname := $(shell expr $(LIBgpsd_version_current) - $(LIBgpsd_version_age))
-LIBgpsd_version := $(LIBgpsd_soname).$(LIBgpsd_version_age).$(LIBgpsd_version_revision)
 
 
 
@@ -122,217 +55,86 @@ PACKAGE_PY := python-gps
 PACKAGE_GPSDDBG := gpsd-dbg
 
 
-autotools-dev-stamp:
-	dh_testdir
+build-indep: build
+build-arch: build
 
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	cp -f /usr/share/misc/config.sub config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	cp -f /usr/share/misc/config.guess config.guess
-endif
+build: build-stamp
+build-stamp: $(QUILT_STAMPFN)
+	set -e; for py in $(PYTHONS); do python$${py} /usr/bin/scons $(SCONSOPTS); done
+	/usr/bin/scons check
 	touch $@
-
-
-configure: configure-stamp
-configure-stamp: $(QUILT_STAMPFN) autotools-dev-stamp
-	dh_testdir
-	chmod 755 ./autogen.sh
-	dh_autoreconf ./autogen.sh
-	$(CONFENV) ./configure $(CONFFLAGS) ;\
-	    CONF_EXIT=$$? ;\
-	    if [ $${CONF_EXIT} -gt 0 ]; then \
-	        cat config.log ;\
-		exit $${CONF_EXIT} ;\
-	    fi ;\
-	touch $@
-
-build: build-gpsd build-python gpsd-testregress
-build-gpsd: build-gpsd-stamp
-build-python: build-python-stamp
-build-python-stamp: $(PYTHONS:%=build-python%-stamp) $(PYTHONS:%=build-python%-dbg-stamp)
-	touch $@
-
-build-gpsd-stamp: configure-stamp
-	dh_testdir
-
-	export SKIP_SETUP_PY="yes"; $(MAKE)
-
-	#this is a rather ugly hack to work around broken linebreaks
-	#from docbook
-	sed -i 's,^.BI "void gps_set_callback(struct,.warn .BI "void gps_set_callback(struct,' libgps.3
-	cp INSTALL TROUBLESHOOTING
-	touch $@
-
-
-build-python-pre: build-python-pre-stamp
-build-python-pre-stamp: configure-stamp
-	$(MAKE) packet_names.h gpscat.1 gpsfake.1 gpsprof.1
-	set -e;
-	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
-	  python setup.py build_scripts
-	touch $@
-
-build-python%-stamp: build-gpsd-stamp build-python-pre-stamp
-	dh_testdir
-	set -e; \
-	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
-	  python$* setup.py build
-	touch $@
-
-gpsd-testregress: gpsd-testregress-stamp
-gpsd-testregress-stamp: build-gpsd-stamp build-python-stamp
-ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
-# disable tests on hurd due to weird ipv6 errors
-# http://deb.li/4C46AEAC.7040906@bzed.de
-ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
-	-$(MAKE) testregress REGRESSOPTS=-u
-endif
-endif
-	touch $@
-
-install: install-gpsd install-python
-	dh_testdir
-	dh_testroot
-	dh_install
-	chmod 755 debian/$(PACKAGE_GPSD)/lib/udev/gpsd.hotplug.wrapper
-
-install-gpsd: build-gpsd-stamp
-	dh_testdir
-	dh_testroot
-	export SKIP_SETUP_PY="yes"; $(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
-
-	cp INSTALL TROUBLESHOOTING
-	#ldconfig link
-	dh_link -p$(PACKAGE_LIB) usr/lib/libgps.so.$(LIB_version) \
-	                         usr/lib/libgps.so.$(LIB_soname)
-	dh_link -p$(PACKAGE_QTLIB) usr/lib/libQgpsmm.so.$(LIB_version) \
-	                           usr/lib/libQgpsmm.so.$(LIB_soname)
-	dh_link -p$(PACKAGE_LIB_DEV) usr/lib/libgps.so.$(LIB_soname) \
-	                             usr/lib/libgps.so
-	dh_link -p$(PACKAGE_QTLIB_DEV) usr/lib/libQgpsmm.so.$(LIB_soname) \
-		                       usr/lib/libQgpsmm.so
-
-	dh_link -p$(PACKAGE_LIB) usr/lib/libgpsd.so.$(LIBgpsd_version) \
-				 usr/lib/libgpsd.so.$(LIBgpsd_soname)
-	# Autofoo installs weird files as manpages sometimes. Take
-        # care of that, we'll install them later manually.
-	rm -f $(CURDIR)/debian/tmp/usr/share/man/man1/*.1 
-
-	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgps.so.$(LIB_version)
-	dh_install -p$(PACKAGE_LIB) debian/tmp/usr/lib/libgpsd.so.$(LIBgpsd_version)
-	dh_install -p$(PACKAGE_QTLIB) debian/tmp/usr/lib/libQgpsmm.so.$(LIB_version)
-
-install-python: build-python $(PYTHONS:%=install-python%) $(PYTHONS:%=install-python%-dbg)
-# xgps and xgpsspeed need to go into the clients package, not python-gps.
-# Move after installing.
-	sed -i 's,^#!/usr/bin/python.*,#!/usr/bin/python,' $(CURDIR)/debian/$(PACKAGE_PY)/usr/bin/*
-	mkdir -p $(CURDIR)/debian/tmp/usr/bin
-	mv $(CURDIR)/debian/$(PACKAGE_PY)/usr/bin/xgps* \
-		$(CURDIR)/debian/tmp/usr/bin
-
-install-python%:
-	set -e ;\
-	  unset CFLAGS CPPFLAGS CXXFLAGS FFLAGS LDFLAGS ;\
-	  if [ "$*" = "$(PYTHON_DEFAULT)" ]; then \
-	     FORCE="--force" ;\
-	     PYTHON="python" ;\
-	  else \
-	     FORCE="" ;\
-	     PYTHON="python$*" ;\
-	  fi ;\
-	  case $* in *-dbg) \
-	    $${PYTHON} setup.py install --root=$(CURDIR)/debian/tmp \
-		--install-data=/tmp --install-scripts=/tmp \
-		$(py_setup_install_args) $${FORCE} ;; \
-	  *) \
-	    $${PYTHON} setup.py install --root=$(CURDIR)/debian/$(PACKAGE_PY) \
-		$(py_setup_install_args) $${FORCE} ;; \
-	  esac
 
 clean: clean-patched unpatch
 clean-patched:
 	dh_testdir
 	dh_testroot
-	#sanity check if debian/control lists the right package name
-	grep -q '^Package: libgps$(LIB_soname)' debian/control
-	#update debconf po files
-	debconf-updatepo
-	rm -f *-stamp
-	rm -f TROUBLESHOOTING
-	[ ! -r setup.py ] || python setup.py clean || true
-	rm -rf build
-	[ ! -r Makefile ] || $(MAKE) distclean
-	dh_autoreconf_clean
-	rm -f *.1 *.3 *.5 *.8 .1
-	rm -rf .deps .libs
-	rm -f gpsd_config.h.in~
-	rm -f $(CURDIR)/debian/gpsd.udev
-	rm -f gps/*.pyc gps/*.so
-	rm -f debian/buildinfo.gz
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	rm -f config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	rm -f config.guess
-endif
+	set -e; for py in $(PYTHONS); do python$${py} /usr/bin/scons $(SCONSOPTS) -c .; done
+	rm -rf \
+	    .sconf_temp \
+	    .scons-option-cache \
+	    .sconsign.dblite \
+	    gps/*.pyc \
+	    TROUBLESHOOTING \
+	    debian/buildinfo.gz \
+	    config.log
 	dh_clean
 
-
-
-binary-indep: build install
+install: install-stamp
+install-stamp: build-stamp
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs -i
-	dh_installdocs -i
-	dh_link -i
-	dh_compress -i
-	dh_fixperms -i
-	dh_gencontrol -i
-	dh_installdeb -i
-	dh_md5sums -i
-	dh_builddeb -i
+	dh_prep
+	set -e ;\
+	    for py in $(PYTHONS); do \
+	    	DESTDIR=`pwd`/debian/tmp python$${py} /usr/bin/scons install $(SCONSOPTS) ;\
+	    done
+	cp INSTALL TROUBLESHOOTING
+	dh_install
+	touch $@
 
-binary-arch: build install
+install-indep: install
+install-arch: install
+
+binary:
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs -a NEWS
-	dh_installdocs -a
-	dh_installman -a
-	dh_installmenu -a
-	dh_installdebconf -a
-	dh_installinit -a -- start 26 2 3 4 5 . stop 73 0 1 6 .
-	dh_installexamples -a
+	dh_installchangelogs  NEWS
+	dh_installdocs 
+	dh_installman 
+	dh_installmenu 
+	dh_installdebconf 
+	dh_installinit  -- start 26 2 3 4 5 . stop 73 0 1 6 .
+	dh_installexamples 
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/*-packages/gps/gps.py
-	dh_python2 -a -Ngpsd
+	dh_python2  -Ngpsd
 	dh_python2 -pgpsd /lib/udev/
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
-	dh_installudev -a
-	dh_link -a
-	dh_strip -a --dbg-package=$(PACKAGE_GPSDDBG)
+	dh_installudev 
+	dh_link 
+	dh_strip  --dbg-package=$(PACKAGE_GPSDDBG)
 	dh_buildinfo -p$(PACKAGE_GPSDDBG)
-	dh_compress -a
-	dh_fixperms -a -Xgpsd.hotplug.wrapper
+	dh_compress 
+	dh_fixperms  -Xgpsd.hotplug.wrapper
 ifeq (,$(DEB_BUILD_OPTIONS))
-	dh_makeshlibs -Nlibqgpsmm19 -a -- -c4
+	dh_makeshlibs -Nlibqgpsmm19  -- -c4
 	dh_makeshlibs -plibqgpsmm19 -- -c1
 else
-	dh_makeshlibs -a
+	dh_makeshlibs 
 endif
-	dh_shlibdeps -a
+	dh_shlibdeps 
 ifneq (,$(UDEV_BREAKS))
 	echo "gpsd:Breaks=udev (<< $(UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
 endif
-	dh_gencontrol -a
-	dh_installdeb -a
-	dh_md5sums -a
-	dh_builddeb -a
-
-binary: binary-indep binary-arch
+	dh_gencontrol 
+	dh_installdeb 
+	dh_md5sums 
+	dh_builddeb 
 
 
-.PHONY: build build-gpsd build-python build-lib-static \
+binary-indep: binary
+binary-arch: binary
+
+.PHONY: binary binary-indep binary-arch \
+	install install-arch install-indep \
 	clean clean-patched \
-	binary-indep binary-arch binary install \
-	install-python install-gpsd \
-	gpsd-testregress
+	build
