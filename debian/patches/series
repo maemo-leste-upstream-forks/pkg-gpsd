@@ -1,1 +1,3 @@
 SConstruct_bugfixes
+824cff24_create_qt_prl_pc_files
+2867071c_Integrate_libQgpsmm_global.h_into_libgpsmm.h

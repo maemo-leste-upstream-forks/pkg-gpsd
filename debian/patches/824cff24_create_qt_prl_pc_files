@@ -1,0 +1,31 @@
+824cff24e6a06693bd2bf244d45c0d7601572a6e
+diff --git a/Qgpsmm.pc.in b/Qgpsmm.pc.in
+new file mode 100644
+index 0000000..6d6235a
+--- /dev/null
++++ b/Qgpsmm.pc.in
+@@ -0,0 +1,13 @@
++prefix=@prefix@
++exec_prefix=${prefix}
++libdir=${exec_prefix}@libdir@
++includedir=${prefix}/include
++qt_config=lex yacc warn_on uic resources qt release incremental link_prl def_files_disabled exceptions no_mocdepend stl qt_no_framework create_pc create_prl moc thread dll
++
++Name: Qgpsmm
++Description: GPS Daemon communication library - QT binding
++Version: @VERSION@
++Libs: -L${libdir} -lQgpsmm 
++Libs.private: -L/usr/lib  -lQtNetwork -lQtCore -lpthread   
++Cflags:  -I${includedir}
++Requires: QtNetwork
+diff --git a/libQgpsmm.prl.in b/libQgpsmm.prl.in
+new file mode 100644
+index 0000000..3e897ab
+--- /dev/null
++++ b/libQgpsmm.prl.in
+@@ -0,0 +1,5 @@
++QMAKE_PRO_INPUT = libQgpsmm.pro
++QMAKE_PRL_TARGET = libQgpsmm.so.@LIBGPSVERSION@
++QMAKE_PRL_CONFIG = include_source_dir lex yacc warn_on uic resources qt warn_on release incremental link_prl def_files_disabled exceptions no_mocdepend release stl qt_no_framework create_pc create_prl moc thread dll
++QMAKE_PRL_VERSION = @LIBGPSVERSION@
++
