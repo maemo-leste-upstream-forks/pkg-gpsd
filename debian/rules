@@ -95,7 +95,7 @@ install-stamp: build-stamp
 install-indep: install
 install-arch: install
 
-binary:
+binary: install-stamp
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs  NEWS
