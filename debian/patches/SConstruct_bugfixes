@@ -218,16 +218,28 @@
          python_compiled_libs[ext] = python_env.SharedLibrary(ext, python_objects[ext])
      python_built_extensions = python_compiled_libs.values()
  
-@@ -957,7 +978,7 @@ env.Command(target="ais_json.i", source=
+@@ -957,12 +978,15 @@ env.Command(target="ais_json.i", source=
      chmod a-w $TARGET''')
  
  # generate revision.h
 -(st, rev) = commands.getstatusoutput('git describe')
-+(st, rev) = _getstatusoutput('git describe')
- if st != 0:
-     from datetime import datetime
-     rev = datetime.now().isoformat()[:-4]
-@@ -1014,6 +1035,7 @@ def substituter(target, source, env):
+-if st != 0:
+-    from datetime import datetime
+-    rev = datetime.now().isoformat()[:-4]
++if 'dev' in gpsd_version:
++    (st, rev) = _getstatusoutput('git describe')
++    if st != 0:
++        from datetime import datetime
++        rev = datetime.now().isoformat()[:-4]
++else:
++    rev = gpsd_version
+ revision='#define REVISION "%s"\n' %(rev.strip(),)
+-env.NoClean(env.Textfile(target="revision.h", source=[revision]))
++env.Textfile(target="revision.h", source=[revision])
+ 
+ # generate pps_pin.h
+ pps_pin = env['pps_pin']
+@@ -1014,6 +1038,7 @@ def substituter(target, source, env):
          ('@WEBFORM@',    webform),
          ('@FORMSERVER@', formserver),
          ('@DEVMAIL@',    devmail),
@@ -235,7 +247,7 @@
          )
      with open(str(source[0])) as sfp:
          content = sfp.read()
-@@ -1130,6 +1152,10 @@ else:
+@@ -1130,6 +1155,10 @@ else:
                          python_egg_info_install]
  
  pc_install = [ env.Install(installdir('pkgconfig'), x) for x in ("libgps.pc", "libgpsd.pc") ]
@@ -246,7 +258,7 @@
  
  maninstall = []
  if manbuilder:
-@@ -1494,7 +1520,7 @@ Utility('udev-test', '', [
+@@ -1494,7 +1523,7 @@ Utility('udev-test', '', [
  # for these productions to work.
  
  if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
@@ -255,7 +267,7 @@
      if ".gitignore" in distfiles:
          distfiles.remove(".gitignore")
      distfiles += generated_sources
-@@ -1540,6 +1566,7 @@ if os.path.exists("gpsd.c") and os.path.
+@@ -1540,6 +1569,7 @@ if os.path.exists("gpsd.c") and os.path.
      tag_release = Utility('tag-release', [], [
          'git tag -s -m "Tagged for external release ${VERSION}" release-${VERSION}'
          ])
@@ -263,7 +275,7 @@
  
      # Local release preparation. This production will require Internet access,
      # but it doesn't do any uploads or public repo mods.
-@@ -1558,7 +1585,7 @@ if os.path.exists("gpsd.c") and os.path.
+@@ -1558,7 +1588,7 @@ if os.path.exists("gpsd.c") and os.path.
      # All a buildup to this.
      env.Alias("release", [releaseprep,
                            upload_release,
