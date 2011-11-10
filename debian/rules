@@ -119,7 +119,7 @@ binary: install-stamp
 	dh_strip  --dbg-package=$(PACKAGE_GPSDDBG)
 	dh_buildinfo -p$(PACKAGE_GPSDDBG)
 	dh_compress 
-	dh_fixperms  -Xgpsd.hotplug.wrapper
+	dh_fixperms  -Xgpsd.hotplug
 ifeq (,$(DEB_BUILD_OPTIONS))
 	dh_makeshlibs -Nlibqgpsmm19  -- -c4
 	dh_makeshlibs -plibqgpsmm19 -- -c1
