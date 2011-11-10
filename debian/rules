@@ -61,8 +61,13 @@ build-arch: build
 build: build-stamp
 build-stamp: $(QUILT_STAMPFN)
 	set -e; for py in $(PYTHONS); do python$${py} /usr/bin/scons $(SCONSOPTS); done
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	# disable tests on hurd due to weird ipv6 errors
+	# http://deb.li/4C46AEAC.7040906@bzed.de
+ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
 	/usr/bin/scons check
-	touch $@
+endif
+endif
 
 clean: clean-patched unpatch
 clean-patched:
