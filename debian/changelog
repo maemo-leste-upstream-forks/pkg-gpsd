@@ -1,3 +1,12 @@
+gpsd (3.3-1~1.gbpb041d5) UNRELEASED; urgency=low
+
+  ** SNAPSHOT build @b041d5e465ee85fb5434c7b68883fe7f3ec19593 **
+
+  * [7f1e77e6] Updating watch file to reflect the move to savannah.
+  * [b041d5e4] Merge commit 'upstream/3.3'
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 08 Nov 2011 23:03:15 +0100
+
 gpsd (2.95-15) unstable; urgency=low
 
   * [3c1beb8b] Fix the broken Danish translation file.
