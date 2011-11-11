@@ -1,2 +1,2 @@
-debian/tmp/usr/lib/pkgconfig/Qgpsmm.pc
-debian/tmp/usr/lib/libQgpsmm.prl
+usr/lib/pkgconfig/Qgpsmm.pc
+usr/lib/libQgpsmm.prl
