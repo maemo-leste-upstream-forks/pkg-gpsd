@@ -1,11 +1,57 @@
-gpsd (3.3-1~1.gbpb041d5) UNRELEASED; urgency=low
+gpsd (3.3-1) experimental; urgency=low
 
-  ** SNAPSHOT build @b041d5e465ee85fb5434c7b68883fe7f3ec19593 **
+  * [4a4e73e9] Merge branch 'master' of git://git.recluse.de/debian/pkg-gpsd
+  * [699cdd58] Updating watch file to reflect the move to savannah.
+  * [8e0670df] Imported Upstream version 3.3 (Closes: #647451)
+  * [c1c77d28] Remove all patches, all applied upstream.
+  * [914e1241] Updating SConstruct to latest versoin from git.
+  * [d229ebde] Use dh compat level 7.
+  * [ef9c15f7] Change build-dependencies form autotools to scons.
+    Also require debhelper 7.
+  * [c6f0b58c] Changelog snapshot.
+  * [4598af00] unfinished new debian/rules file.
+  * [3bda9f0f] Update SConstruct_bugfixes patches.
+  * [96b5a72b] Various fixes in debian/rules.
+  * [bdc5f23e] Current SConstruct requires scons 2.0.1
+  * [f2dc12df] Pick some fixes from upstream:
+     * Integrate libQgpsmm_global.h into libgpsmm.h. (Closes: #636647)
+     * Create QT .pc/.prl files.
+  * [310fd91b] Allow to disable checks with DEB_BUILD_OPTS
+  * [45f6ffc9] gpsd.hotplug.wrapper does not exist anymore.
+  * [4c093c00] Update SConstruct again.
+  * [f3e085fc] Build Python debug extensions.
+  * [babbcce0] Build static libgps library.
+  * [d440261a] Ensure all rpaths are removed from ELF binaries.
+  * [1e2a9e13] Revert "Install libQgpsmm_global.h to /usr/include."
+    This reverts commit 4d38c0e227c96fef286e09b784a9e66cd4c7e2ca.
+  * [94340c88] Rename symbols files.
+  * [dad64865] Install libgps.so into libgps-dev.
+  * [63893ebe] Add dh_install file for python-gps.
+  * [e6695ff2] Use dh_install --fail-missing.
+  * [14f8f038] Rename lib*gps19 to lib*gps20.
+  * [aee30106] Ensure all files from debian/tmp are being installed.
+  * [1c2d6540] Don't install debug files into python-gps.
+  * [551ab0f3] Merge branch 'master' of git.recluse.de:debian/pkg-gpsd
+  * [dcad12f6] Fix merged SConstruct patch.
+  * [af524e52] Fix egg.info file location.
+  * [7c1409fb] Don't install libQgpsmm into libgps20.
+  * [17ec3d0f] Add libqgpsmm20.install file.
+  * [811d3aad] Update symbols files and generation.
+    Don't build symbols for libgpsd - internally used only.
+  * [4d44e94c] Update SConstruct to avoid building leapseconds.cache
+  * [b6f9c342] Fix package name in symbols file.
+  * [167c26f2] Also update soname version in debian/rules.
+  * [60e22600] Fixing W: gpsd: script-not-executable lib/udev/gpsd.hotplug
+  * [dbe9f57f] Bumping Standards-Version to 3.9.2, no additional changes.
+  * [4cfcfe3a] Add lintian override for libgpsd20.
+    libgpsd20 should not be used in other applications, so we don't provide
+    any development files and help.
+  * [7bd1b334] Add some patches to fix lintian warnings.
+  * [7ad23ecd] Add patch from upstream: Add socket and service info for systemd.
+  * [3ba738ea] Install systemd service and socket files.
+    Thanks to Eckhart Wörner (Closes: #640642)
 
-  * [7f1e77e6] Updating watch file to reflect the move to savannah.
-  * [b041d5e4] Merge commit 'upstream/3.3'
-
- -- Bernd Zeimetz <bzed@debian.org>  Tue, 08 Nov 2011 23:03:15 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 11 Nov 2011 23:21:10 +0100
 
 gpsd (2.95-15) unstable; urgency=low
 
