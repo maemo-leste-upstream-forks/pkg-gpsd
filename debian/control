@@ -16,7 +16,7 @@ Build-Depends: debhelper (>= 7), po-debconf, dpkg-dev (>= 1.14.8),
  dpkg-dev (>= 1.15.6),
  scons (>= 2.0.1), chrpath,
  dh-buildinfo
-Standards-Version: 3.9.0
+Standards-Version: 3.9.2
 Homepage: http://gpsd.berlios.de/
 Vcs-Browser: http://git.recluse.de/?p=debian/pkg-gpsd.git
 Vcs-Git: git://git.recluse.de/debian/pkg-gpsd.git
