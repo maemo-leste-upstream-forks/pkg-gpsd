@@ -133,6 +133,11 @@ install-stamp: build-stamp build-static-stamp
 	    rm -f debian/tmp/usr/share/man/man1/$$i ;\
 	    ln -s gps.1 debian/tmp/usr/share/man/man1/$$i ;\
 	done
+	# remove libgpsd development files - we don't want people to use the internal library
+	for i in usr/share/man/man3/libgpsd.3 usr/lib/libgpsd.so usr/lib/pkgconfig/libgpsd.pc; do \
+	    rm debian/tmp/$$i ;\
+	done
+	# install everything
 	dh_install --fail-missing
 	touch $@
 

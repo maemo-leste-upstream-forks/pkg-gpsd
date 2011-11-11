@@ -7,6 +7,7 @@ usr/bin/xgpsspeed
 usr/bin/gpxlogger
 usr/bin/lcdgps
 usr/bin/cgps
+usr/bin/gegps
 usr/share/man/man1/gps.1
 usr/share/man/man1/gpspipe.1
 usr/share/man/man1/gpsmon.1
