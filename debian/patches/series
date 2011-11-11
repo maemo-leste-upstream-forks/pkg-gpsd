@@ -1,3 +1,5 @@
 SConstruct_bugfixes
 824cff24_create_qt_prl_pc_files
 2867071c_Integrate_libQgpsmm_global.h_into_libgpsmm.h
+bb2d471b_whatis_info_gpsdctl.8
+f8cdbbdd_spelling_fix_libgps.3
