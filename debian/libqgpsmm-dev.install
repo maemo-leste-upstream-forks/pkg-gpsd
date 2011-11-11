@@ -1,3 +1,2 @@
 debian/tmp/usr/lib/pkgconfig/Qgpsmm.pc
 debian/tmp/usr/lib/libQgpsmm.prl
-libQgpsmm/libQgpsmm_global.h /usr/include
