@@ -129,6 +129,9 @@ install-stamp: build-stamp build-static-stamp
 	    sed 's,:.*,,' |\
 	    xargs chrpath -d
 	cp INSTALL TROUBLESHOOTING
+	# install systemd files
+	mkdir -p debian/tmp/lib/systemd/system
+	cp systemd/* debian/tmp/lib/systemd/system
 	# fix various manpages
 	for i in cgps.1 gegps.1 lcdgps.1 xgps.1 xgpsspeed.1 gpxlogger.1; do \
 	    rm -f debian/tmp/usr/share/man/man1/$$i ;\
