@@ -166,6 +166,7 @@ binary: install-stamp
 	dh_buildinfo -p$(PACKAGE_GPSDDBG)
 	dh_compress 
 	dh_fixperms  -Xgpsd.hotplug
+	dh_lintian
 ifeq (,$(DEB_BUILD_OPTIONS))
 	dh_makeshlibs -Nlibqgpsmm20  -- -c4 -e'libgps.so.[0-9]*'
 	dh_makeshlibs -plibqgpsmm20 -- -c1
