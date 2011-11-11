@@ -116,6 +116,12 @@ install-stamp: build-stamp build-static-stamp
 	    	DESTDIR=`pwd`/debian/tmp python$${py} /usr/bin/scons install $(SCONSOPTS) ;\
 	    	DESTDIR=`pwd`/debian/tmp python$${py}-dbg /usr/bin/scons install $(SCONSOPTS) ;\
 	    done
+	# remove rpaths
+	find debian/tmp -type f -exec file {} \; |\
+	    grep ELF |\
+	    grep 'dynamically linked' |\
+	    sed 's,:.*,,' |\
+	    xargs chrpath -d
 	cp INSTALL TROUBLESHOOTING
 	dh_install
 	touch $@
