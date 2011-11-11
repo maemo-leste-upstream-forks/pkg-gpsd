@@ -1,0 +1,31 @@
+2d9b1c8e50cdca7d6e9a0eda6e24cbe242229f69
+diff --git a/systemd/gpsd.service b/systemd/gpsd.service
+new file mode 100644
+index 0000000..69b1d13
+--- /dev/null
++++ b/systemd/gpsd.service
+@@ -0,0 +1,9 @@
++[Unit]
++Description=GPS (Global Positioning System) Daemon
++
++[Service]
++type=simple
++ExecStart=/usr/sbin/gpsd -N
++
++[Install]
++Also=gpsd.socket
+diff --git a/systemd/gpsd.socket b/systemd/gpsd.socket
+new file mode 100644
+index 0000000..13c17f2
+--- /dev/null
++++ b/systemd/gpsd.socket
+@@ -0,0 +1,9 @@
++[Unit]
++Description=GPS (Global Positioning System) Daemon Sockets
++
++[Socket]
++ListenStream=/var/run/gpsd.sock
++ListenStream=127.0.0.1:2947
++
++[Install]
++WantedBy=sockets.target
