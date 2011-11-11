@@ -43,14 +43,14 @@ Architecture: any
 Section: debug
 Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
- libgps19 (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python-gps (= ${binary:Version})
+ libgps20 (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
  .
  This package contains the detached debug symbols for gpsd, gpsd-clients,
- python-gps, and libgps19.
+ python-gps, and libgps20.
 
 Package: gpsd-clients
 Architecture: any
@@ -86,7 +86,7 @@ Description: Global Positioning System - Python libraries
  which utilize the interface: gpsprof for latency-profiling, and gpsfake to
  simulate a GPS by playing back a logfile.
 
-Package: libgps19
+Package: libgps20
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -105,7 +105,7 @@ Description: Global Positioning System - library
 Package: libgps-dev
 Architecture: any
 Section: libdevel
-Depends: libgps19 (= ${binary:Version}), ${misc:Depends}, pkg-config
+Depends: libgps20 (= ${binary:Version}), ${misc:Depends}, pkg-config
 Conflicts: gpsd (<< 2.34.dfsg-1)
 Description: Global Positioning System - development files
  The gpsd service daemon can monitor one or more GPS devices connected to
@@ -115,7 +115,7 @@ Description: Global Positioning System - development files
  This package contains the header and development files needed to build
  programs and packages using libgps.
 
-Package: libqgpsmm19
+Package: libqgpsmm20
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -133,7 +133,7 @@ Package: libqgpsmm-dev
 Architecture: all
 Section: libdevel
 Depends: ${misc:Depends}, pkg-config,
- libqgpsmm19 (>= ${source:Upstream-Version}), libqgpsmm19 (<< ${source:Upstream-Version}+1~),
+ libqgpsmm20 (>= ${source:Upstream-Version}), libqgpsmm20 (<< ${source:Upstream-Version}+1~),
  libgps-dev (>= ${source:Upstream-Version}), libgps-dev (<< ${source:Upstream-Version}+1~)
 Description: Global Positioning System - QT wrapper for libgps (development)
  The gpsd service daemon can monitor one or more GPS devices connected to
