@@ -42,6 +42,7 @@ else
 	SCONSOPTS += debug=no
 endif
 
+SCONSSTATICOPTS = python=no shared=no
 
 
 #package names
@@ -58,7 +59,7 @@ PACKAGE_GPSDDBG := gpsd-dbg
 build-indep: build
 build-arch: build
 
-build: build-stamp
+build: build-stamp build-static-stamp
 build-stamp: $(QUILT_STAMPFN)
 	set -e; \
 	    for py in $(PYTHONS); do \
@@ -72,6 +73,18 @@ ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
 	/usr/bin/scons check
 endif
 endif
+
+build-static-stamp: $(QUILT_STAMPFN)
+	mkdir static_lib
+	find . \
+	    -mindepth 1 -maxdepth 1 \
+	    -name static_lib \
+	    -prune \
+	    -o -name debian -prune \
+	    -o -exec cp -pr {} static_lib \;
+	scons -C static_lib $(SCONSOPTS) -c . ;\
+	scons -C static_lib $(SCONSOPTS) $(SCONSSTATICOPTS) libgps.a
+	touch $@
 
 clean: clean-patched unpatch
 clean-patched:
@@ -89,11 +102,12 @@ clean-patched:
 	    gps/*.pyc \
 	    TROUBLESHOOTING \
 	    debian/buildinfo.gz \
-	    config.log
+	    config.log \
+	    static_lib
 	dh_clean
 
 install: install-stamp
-install-stamp: build-stamp
+install-stamp: build-stamp build-static-stamp
 	dh_testdir
 	dh_testroot
 	dh_prep
