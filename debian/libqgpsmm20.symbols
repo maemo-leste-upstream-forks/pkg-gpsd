@@ -1,68 +1,86 @@
-libQgpsmm.so.19 libqgpsmm19 #MINVER#
- (c++|optional)"QByteArray::~QByteArray()@Base" 2.95
- (c++|optional)"QList<QString>::detach_helper()@Base" 2.95
- (c++|optional)"QList<QString>::detach_helper(int)@Base" 2.95
- (c++|optional)"QList<QString>::~QList()@Base" 2.95
- (c++|optional)"QList<QString>::~QList()@Base" 2.95
- (c++)"fill_dop(gps_data_t const*, dop_t*)@Base" 2.95
- (c++)"clear_dop(dop_t*)@Base" 2.95
- (c++|optional)"guard variable for QVariant qvariant_cast<QVariant>(QVariant const&)::vid@Base" 2.95
- (c++|optional)"QList<QString>::free(QListData::Data*)@Base" 2.95
- (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 2.95
- (c++)"gpsmm::open(char const*, char const*)@Base" 2.95
- (c++)"gpsmm::open()@Base" 2.95
- (c++)"gpsmm::poll()@Base" 2.95
- (c++)"gpsmm::send(char const*)@Base" 2.95
- (c++)"gpsmm::close()@Base" 2.95
- (c++)"gpsmm::stream(int)@Base" 2.95
- (c++)"gpsmm::waiting()@Base" 2.95
- (c++)"gpsmm::clear_fix()@Base" 2.95
- (c++)"gpsmm::gpsmm()@Base" 2.95
- (c++)"gpsmm::gpsmm()@Base" 2.95
- (c++)"gpsmm::~gpsmm()@Base" 2.95
- (c++)"gpsmm::~gpsmm()@Base" 2.95
- (c++)"gpsmm::~gpsmm()@Base" 2.95
- (c++|optional)"QDebug::~QDebug()@Base" 2.95
- (c++|optional)"QString::~QString()@Base" 2.95
- (c++)"typeinfo for gpsmm@Base" 2.95
- (c++)"typeinfo name for gpsmm@Base" 2.95
- (c++)"vtable for gpsmm@Base" 2.95
- earth_distance@Base 2.95
- gps_clear_fix@Base 2.95
- gps_close@Base 2.95
- gps_enable_debug@Base 2.95
- gps_errstr@Base 2.95
- gps_merge_fix@Base 2.95
- gps_open@Base 2.95
- gps_open_r@Base 2.95
- gps_poll@Base 2.95
- gps_read@Base 2.95
- gps_send@Base 2.95
- gps_set_raw_hook@Base 2.95
- gps_stream@Base 2.95
- gps_unpack@Base 2.95
- gps_waiting@Base 2.95
- gpsd_hexdump@Base 2.95
- gpsd_hexdump_level@Base 2.95
- gpsd_hexdump_wrapper@Base 2.95
- gpsd_hexpack@Base 2.95
- gpsd_report@Base 2.95
- gpstime_to_unix@Base 2.95
- hex2bin@Base 2.95
- hex_escapes@Base 2.95
- iso8601_to_unix@Base 2.95
- json_ais_read@Base 2.95
- json_device_read@Base 2.95
- json_enable_debug@Base 2.95
- json_error_string@Base 2.95
- json_read_array@Base 2.95
- json_read_object@Base 2.95
- json_rtcm2_read@Base 2.95
- json_watch_read@Base 2.95
- libgps_json_unpack@Base 2.95
- mkgmtime@Base 2.95
- strlcat@Base 2.95
- strlcpy@Base 2.95
- timestamp@Base 2.95
- unix_to_gpstime@Base 2.95
- unix_to_iso8601@Base 2.95
+libQgpsmm.so.20 libgps20 #MINVER#
+ (c++)"gps_sock_data(gps_data_t const*)@Base" 3.3
+ (c++)"gps_sock_open(char const*, char const*, gps_data_t*)@Base" 3.3
+ (c++)"gps_sock_read(gps_data_t*)@Base" 3.3
+ (c++)"gps_sock_send(gps_data_t*, char const*)@Base" 3.3
+ (c++)"gps_sock_close(gps_data_t*)@Base" 3.3
+ (c++)"gps_sock_stream(gps_data_t*, unsigned int, void*)@Base" 3.3
+ (c++)"gps_sock_waiting(gps_data_t const*, int)@Base" 3.3
+ (c++)"gps_sock_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.3
+ (c++|optional)"QList<QString>::detach_helper(int)@Base" 3.3
+ (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 3.3
+ (c++)"gpsmm::gps_inner_open(char const*, char const*)@Base" 3.3
+ (c++)"gpsmm::data()@Base" 3.3
+ (c++)"gpsmm::read()@Base" 3.3
+ (c++)"gpsmm::send(char const*)@Base" 3.3
+ (c++)"gpsmm::stream(int)@Base" 3.3
+ (c++)"gpsmm::waiting(int)@Base" 3.3
+ (c++)"gpsmm::clear_fix()@Base" 3.3
+ (c++)"gpsmm::~gpsmm()@Base" 3.3
+ (c++)"gpsmm::~gpsmm()@Base" 3.3
+ (c++)"gpsmm::~gpsmm()@Base" 3.3
+ (c++|optional)"QDebug::~QDebug()@Base" 3.3
+ (c++|optional)"QDebug::~QDebug()@Base" 3.3
+ (c++|optional)"QString::~QString()@Base" 3.3
+ (c++|optional)"QString::~QString()@Base" 3.3
+ (c++)"typeinfo for gpsmm@Base" 3.3
+ (c++)"typeinfo name for gpsmm@Base" 3.3
+ (c++)"vtable for gpsmm@Base" 3.3
+ deg_to_str@Base 3.3
+ earth_distance@Base 3.3
+ earth_distance_and_bearings@Base 3.3
+ export_default@Base 3.3
+ export_list@Base 3.3
+ export_lookup@Base 3.3
+ gps_clear_dop@Base 3.3
+ gps_clear_fix@Base 3.3
+ gps_close@Base 3.3
+ gps_data@Base 3.3
+ gps_dbus_mainloop@Base 3.3
+ gps_dbus_open@Base 3.3
+ gps_enable_debug@Base 3.3
+ gps_errstr@Base 3.3
+ gps_mainloop@Base 3.3
+ gps_maskdump@Base 3.3
+ gps_merge_fix@Base 3.3
+ gps_open@Base 3.3
+ gps_read@Base 3.3
+ gps_send@Base 3.3
+ gps_shm_close@Base 3.3
+ gps_shm_mainloop@Base 3.3
+ gps_shm_open@Base 3.3
+ gps_shm_read@Base 3.3
+ gps_shm_waiting@Base 3.3
+ gps_stream@Base 3.3
+ gps_unpack@Base 3.3
+ gps_waiting@Base 3.3
+ gpsd_hexdump@Base 3.3
+ gpsd_hexpack@Base 3.3
+ gpsd_source_spec@Base 3.3
+ gpsd_units@Base 3.3
+ hex_escapes@Base 3.3
+ iso8601_to_unix@Base 3.3
+ json_ais_read@Base 3.3
+ json_device_read@Base 3.3
+ json_enable_debug@Base 3.3
+ json_error_string@Base 3.3
+ json_read_array@Base 3.3
+ json_read_object@Base 3.3
+ json_rtcm2_read@Base 3.3
+ json_watch_read@Base 3.3
+ libgps_debuglevel@Base 3.3
+ libgps_dump_state@Base 3.3
+ libgps_json_unpack@Base 3.3
+ libgps_trace@Base 3.3
+ maidenhead@Base 3.3
+ mkgmtime@Base 3.3
+ netlib_connectsock@Base 3.3
+ netlib_errstr@Base 3.3
+ netlib_localsocket@Base 3.3
+ netlib_sock2ip@Base 3.3
+ safe_atof@Base 3.3
+ strlcat@Base 3.3
+ strlcpy@Base 3.3
+ timestamp@Base 3.3
+ true2magnetic@Base 3.3
+ unix_to_iso8601@Base 3.3
