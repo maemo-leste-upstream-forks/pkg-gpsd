@@ -1,4 +1,7 @@
-usr/lib/python*
+usr/lib/python*/*/gps/*.py
+usr/lib/python*/*/gps/clienthelpers.so
+usr/lib/python*/*/gps/packet.so
+usr/lib/python*/*/gps/*.egg-info
 usr/share/man/man1/gpsfake.1
 usr/share/man/man1/gpscat.1
 usr/share/man/man1/gpsprof.1
