@@ -121,6 +121,7 @@ install-stamp: build-stamp build-static-stamp
 	# install hotplug wrapper
 	mkdir -p debian/tmp/lib/udev
 	cp gpsd.hotplug debian/tmp/lib/udev
+	chmod 755 debian/tmp/lib/udev/gpsd.hotplug
 	# remove rpaths
 	find debian/tmp -type f -exec file {} \; |\
 	    grep ELF |\
