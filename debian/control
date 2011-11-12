@@ -54,7 +54,7 @@ Description: Global Positioning System - debugging symbols
 
 Package: gpsd-clients
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, python-gps, python-gtk2, ${python:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-gps, python-gtk2, python-cairo, ${python:Depends}
 Suggests: gpsd
 Conflicts: gps
 Breaks: ${python:Breaks}
