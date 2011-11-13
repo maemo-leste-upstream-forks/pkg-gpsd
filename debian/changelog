@@ -1,3 +1,10 @@
+gpsd (3.3-2) experimental; urgency=low
+
+  * [3c956714] Add python-cairo as dependency of gpsd-clients.
+  * [17bf12aa] Ignore the result of the regression checks.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 13 Nov 2011 21:32:33 +0100
+
 gpsd (3.3-1) experimental; urgency=low
 
   * [4a4e73e9] Merge branch 'master' of git://git.recluse.de/debian/pkg-gpsd
