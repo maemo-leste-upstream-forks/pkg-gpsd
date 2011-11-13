@@ -70,7 +70,7 @@ ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	# disable tests on hurd due to weird ipv6 errors
 	# http://deb.li/4C46AEAC.7040906@bzed.de
 ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
-	/usr/bin/scons check
+	-/usr/bin/scons check
 endif
 endif
 
