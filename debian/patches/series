@@ -4,3 +4,4 @@ SConstruct_bugfixes
 bb2d471b_whatis_info_gpsdctl.8
 f8cdbbdd_spelling_fix_libgps.3
 2d9b1c8e_systemd_service_socket
+9d1e0eb4_c_ispeed_ftbfs_fix
