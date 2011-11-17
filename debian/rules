@@ -85,6 +85,7 @@ ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
 	-$(SCONS_ENV) /usr/bin/scons check
 endif
 endif
+	touch $@
 
 build-static-stamp: $(QUILT_STAMPFN)
 	mkdir static_lib
