@@ -56,6 +56,18 @@ PACKAGE_PY := python-gps
 PACKAGE_GPSDDBG := gpsd-dbg
 
 
+cflags := $(shell dpkg-buildflags --get CFLAGS)
+cppflags := $(shell dpkg-buildflags --get CPPFLAGS)
+cxxflags := $(shell dpkg-buildflags --get CXXFLAGS)
+ldflags := $(shell dpkg-buildflags --get LDFLAGS)
+-include /usr/share/hardening-includes/hardening.make
+-cflags += $(HARDENING_CFLAGS)
+-ldflags += $(HARDENING_LDFLAGS)
+-cxxflags += $(HARDENING_CFLAGS)
+
+SCONS_ENV := LDFLAGS="$(ldflags)" CFLAGS="$(cflags)" CXXFLAGS="$(cxxflags)" CPPFLAGS="$(cppflags)"
+
+
 build-indep: build
 build-arch: build
 
@@ -63,14 +75,14 @@ build: build-stamp build-static-stamp
 build-stamp: $(QUILT_STAMPFN)
 	set -e; \
 	    for py in $(PYTHONS); do \
-	    	python$${py} /usr/bin/scons $(SCONSOPTS); \
-		python$${py}-dbg /usr/bin/scons $(SCONSOPTS); \
+	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS); \
+		$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS); \
 	    done
 ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	# disable tests on hurd due to weird ipv6 errors
 	# http://deb.li/4C46AEAC.7040906@bzed.de
 ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
-	-/usr/bin/scons check
+	-$(SCONS_ENV) /usr/bin/scons check
 endif
 endif
 
@@ -82,8 +94,8 @@ build-static-stamp: $(QUILT_STAMPFN)
 	    -prune \
 	    -o -name debian -prune \
 	    -o -exec cp -pr {} static_lib \;
-	scons -C static_lib $(SCONSOPTS) -c . ;\
-	scons -C static_lib $(SCONSOPTS) $(SCONSSTATICOPTS) libgps.a
+	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) -c . ;\
+	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) $(SCONSSTATICOPTS) libgps.a
 	touch $@
 
 clean: clean-patched unpatch
@@ -92,8 +104,8 @@ clean-patched:
 	dh_testroot
 	set -e; \
 	    for py in $(PYTHONS); do \
-	    	python$${py} /usr/bin/scons $(SCONSOPTS) -c .; \
-	    	python$${py}-dbg /usr/bin/scons $(SCONSOPTS) -c .; \
+	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) -c .; \
+	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) -c .; \
 	    done
 	rm -rf \
 	    .sconf_temp \
@@ -113,8 +125,8 @@ install-stamp: build-stamp build-static-stamp
 	dh_prep
 	set -e ;\
 	    for py in $(PYTHONS); do \
-	    	DESTDIR=`pwd`/debian/tmp python$${py} /usr/bin/scons install $(SCONSOPTS) ;\
-	    	DESTDIR=`pwd`/debian/tmp python$${py}-dbg /usr/bin/scons install $(SCONSOPTS) ;\
+	    	$(SCONS_ENV) DESTDIR=`pwd`/debian/tmp python$${py} /usr/bin/scons install $(SCONSOPTS) ;\
+	    	$(SCONS_ENV) DESTDIR=`pwd`/debian/tmp python$${py}-dbg /usr/bin/scons install $(SCONSOPTS) ;\
 	    done
 	# install static lib
 	cp static_lib/libgps.a debian/tmp/usr/lib
