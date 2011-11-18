@@ -138,7 +138,7 @@ Description: Global Positioning System - QT wrapper for libgps
  by QT4.
 
 Package: libqgpsmm-dev
-Architecture: all
+Architecture: any
 Section: libdevel
 Depends: ${misc:Depends}, pkg-config,
  libqgpsmm20 (>= ${source:Upstream-Version}), libqgpsmm20 (<< ${source:Upstream-Version}+1~),
