@@ -92,6 +92,7 @@ Package: libgps20
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: gpsd
 Conflicts: fso-gpsd
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
