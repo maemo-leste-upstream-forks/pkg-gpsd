@@ -18,7 +18,7 @@ Build-Depends: debhelper (>= 7), po-debconf, dpkg-dev (>= 1.14.8),
  dh-buildinfo,
  hardening-includes
 Standards-Version: 3.9.2
-Homepage: http://gpsd.berlios.de/
+Homepage: http://www.catb.org/gpsd/
 Vcs-Browser: http://git.recluse.de/?p=debian/pkg-gpsd.git
 Vcs-Git: git://git.recluse.de/debian/pkg-gpsd.git
 X-Python-Version: >= 2.3
