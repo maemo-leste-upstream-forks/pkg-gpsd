@@ -63,12 +63,16 @@ cflags := $(shell dpkg-buildflags --get CFLAGS)
 cppflags := $(shell dpkg-buildflags --get CPPFLAGS)
 cxxflags := $(shell dpkg-buildflags --get CXXFLAGS)
 ldflags := $(shell dpkg-buildflags --get LDFLAGS)
--include /usr/share/hardening-includes/hardening.make
--cflags += $(HARDENING_CFLAGS)
--ldflags += $(HARDENING_LDFLAGS)
--cxxflags += $(HARDENING_CFLAGS)
+include /usr/share/hardening-includes/hardening.make
+cflags += $(HARDENING_CFLAGS)
+ldflags += $(HARDENING_LDFLAGS)
+cxxflags += $(HARDENING_CFLAGS)
 
-SCONS_ENV := LDFLAGS="$(ldflags)" CFLAGS="$(cflags)" CXXFLAGS="$(cxxflags)" CPPFLAGS="$(cppflags)"
+SCONS_ENV := set -e ;\
+		export LDFLAGS="$(ldflags)" ;\
+		export CFLAGS="$(cflags)" ;\
+		export CXXFLAGS="$(cxxflags)" ;\
+		export CPPFLAGS="$(cppflags)";
 
 
 build-indep: build
