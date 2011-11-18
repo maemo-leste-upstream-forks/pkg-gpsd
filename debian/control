@@ -2,7 +2,7 @@ Source: gpsd
 Section: misc
 Priority: optional
 Maintainer: Bernd Zeimetz <bzed@debian.org>
-Build-Depends: debhelper (>= 7), po-debconf, dpkg-dev (>= 1.14.8),
+Build-Depends: debhelper (>= 8.1.3~), po-debconf, dpkg-dev (>= 1.14.8),
  quilt, 
  python-all-dev (>= 2.6.6-3),
  python-all-dbg (>= 2.6.6-3),
@@ -92,6 +92,8 @@ Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Conflicts: fso-gpsd
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
 Description: Global Positioning System - library
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
@@ -120,6 +122,8 @@ Package: libqgpsmm20
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
 Description: Global Positioning System - QT wrapper for libgps
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the

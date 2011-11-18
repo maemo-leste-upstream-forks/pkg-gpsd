@@ -29,12 +29,15 @@ endif ## ubuntu ##
 endif ## debian ##
 
 
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
 SCONSOPTS = \
 	prefix=/usr \
 	systemd=yes \
 	strip=no \
 	dbus_export=yes \
-	docdir=/usr/share/doc/gpsd
+	docdir=/usr/share/doc/gpsd \
+	libdir=/usr/lib/$(DEB_HOST_MULTIARCH)
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	SCONSOPTS += debug=yes
@@ -130,7 +133,7 @@ install-stamp: build-stamp build-static-stamp
 	    	$(SCONS_ENV) DESTDIR=`pwd`/debian/tmp python$${py}-dbg /usr/bin/scons install $(SCONSOPTS) ;\
 	    done
 	# install static lib
-	cp static_lib/libgps.a debian/tmp/usr/lib
+	cp static_lib/libgps.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)
 	# install hotplug wrapper
 	mkdir -p debian/tmp/lib/udev
 	cp gpsd.hotplug debian/tmp/lib/udev
@@ -151,7 +154,10 @@ install-stamp: build-stamp build-static-stamp
 	    ln -s gps.1 debian/tmp/usr/share/man/man1/$$i ;\
 	done
 	# remove libgpsd development files - we don't want people to use the internal library
-	for i in usr/share/man/man3/libgpsd.3 usr/lib/libgpsd.so usr/lib/pkgconfig/libgpsd.pc; do \
+	for i in 	usr/share/man/man3/libgpsd.3 \
+	    		usr/lib/$(DEB_HOST_MULTIARCH)/libgpsd.so \
+			usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/libgpsd.pc ;\
+	do \
 	    rm debian/tmp/$$i ;\
 	done
 	# install everything
