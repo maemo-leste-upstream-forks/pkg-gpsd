@@ -159,6 +159,8 @@ install-stamp: build-stamp build-static-stamp
 	    rm -f debian/tmp/usr/share/man/man1/$$i ;\
 	    ln -s gps.1 debian/tmp/usr/share/man/man1/$$i ;\
 	done
+	rm -f debian/tmp/usr/share/man/man3/libQgpsmm.3
+	ln -s libgpsmm.3.gz debian/tmp/usr/share/man/man3/libQgpsmm.3.gz
 	# remove libgpsd development files - we don't want people to use the internal library
 	for i in 	usr/share/man/man3/libgpsd.3 \
 	    		usr/lib/$(DEB_HOST_MULTIARCH)/libgpsd.so \
