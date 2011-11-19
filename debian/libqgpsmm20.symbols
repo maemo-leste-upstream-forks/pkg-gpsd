@@ -26,6 +26,8 @@ libQgpsmm.so.20 libqgpsmm20 #MINVER#
  (c++)"typeinfo for gpsmm@Base" 3.3
  (c++)"typeinfo name for gpsmm@Base" 3.3
  (c++)"vtable for gpsmm@Base" 3.3
+ (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
+ (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
  deg_to_str@Base 3.3
  earth_distance@Base 3.3
  earth_distance_and_bearings@Base 3.3
