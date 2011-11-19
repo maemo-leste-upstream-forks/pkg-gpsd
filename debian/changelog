@@ -1,3 +1,27 @@
+gpsd (3.3-3) experimental; urgency=low
+
+  * [823c8c1c] Add patch to fix FTBFS where c_ispeed is not in the
+    termios struct.
+  * [93b46927] Use dpkg-buildflags and add hardening includes.
+  * [77fb545d] Add missing creation of build-stamp.
+  * [66fc5284] Updating the projct's homepage.
+  * [750f664e] Add support for multi-arch to the library-packages.
+  * [4c8f4d4b] gpsd should conflict with fso-gpsd, too.
+  * [9dd870d3] Recommend gpsd from libgps as it is usually used with
+    the daemon.
+  * [49b76353] Mark gpsd as Multi-Arch: foreign.
+  * [b39d977d] Fix libdir handling with yet another SConstruct update.
+  * [60a5c7b6] Ensure CFLAGS/LDFLAGS/... are passed to scons.
+  * [ab65f568] libqgpsmm-dev needs to be arch:any for multiarch.
+  * [31786978] Ignore libgpsd for shlibs/symbols generation.
+    This also works around dpkg-gensymbols ignoring the -e option.
+  * [c7fcaf8b] Updating lintian-overrides for libgpsd.
+  * [bfbca8e2] Replace manpage with .so link with a symlink.
+  * [bbc14b7c] Disable the default start of gpsd at boot time.
+    Let udev handle it.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 19 Nov 2011 12:45:53 +0100
+
 gpsd (3.3-2) experimental; urgency=low
 
   * [3c956714] Add python-cairo as dependency of gpsd-clients.
