@@ -10,7 +10,7 @@ _Description: Device the GPS receiver is attached to:
 
 Template: gpsd/start_daemon
 Type: boolean
-Default: true
+Default: false
 _Description: Start gpsd automatically?
  If you accept this option, gpsd will be started automatically.
 
