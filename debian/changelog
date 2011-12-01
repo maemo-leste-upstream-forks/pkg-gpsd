@@ -1,3 +1,11 @@
+gpsd (3.3-4) unstable; urgency=low
+
+  * [54b394bf] Adding some optional symbols to libqgpsmm20.symbols
+  * [ca35e059] Fix systemd service file.
+    Thanks to Eckhart Wörner (Closes: #640642)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 01 Dec 2011 21:10:13 +0100
+
 gpsd (3.3-3) experimental; urgency=low
 
   * [823c8c1c] Add patch to fix FTBFS where c_ispeed is not in the
