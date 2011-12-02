@@ -1,0 +1,31 @@
+--- a/gpxlogger.c
++++ b/gpxlogger.c
+@@ -21,6 +21,12 @@
+ #include "gpsdclient.h"
+ #include "revision.h"
+ 
++#ifdef __gnu_hurd__
++  #ifndef PATH_MAX
++  # define PATH_MAX 4096
++  #endif
++#endif
++
+ static char *progname;
+ static struct fixsource_t source;
+ 
+--- a/libgpsd_core.c
++++ b/libgpsd_core.c
+@@ -26,6 +26,13 @@
+ 
+ #include "gpsd.h"
+ 
++#ifdef __gnu_hurd__
++  #ifndef PATH_MAX
++  # define PATH_MAX 4096
++  #endif
++#endif
++
++
+ static void gpsd_run_device_hook(char *device_name, char *hook)
+ {
+     struct stat statbuf;
