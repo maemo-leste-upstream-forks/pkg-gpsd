@@ -1,0 +1,31 @@
+--- a/gpxlogger.c
++++ b/gpxlogger.c
+@@ -22,6 +22,12 @@
+ #include "gpsdclient.h"
+ #include "revision.h"
+ 
++#ifdef __gnu_hurd__
++  #ifndef PATH_MAX
++  # define PATH_MAX 4096
++  #endif
++#endif
++
+ static char *progname;
+ static struct fixsource_t source;
+ 
+--- a/libgpsd_core.c
++++ b/libgpsd_core.c
+@@ -29,6 +29,13 @@
+ #include "driver_nmea2000.h"
+ #endif /* defined(NMEA2000_ENABLE) */
+ 
++#ifdef __gnu_hurd__
++  #ifndef PATH_MAX
++  # define PATH_MAX 4096
++  #endif
++#endif
++
++
+ static void gpsd_run_device_hook(char *device_name, char *hook)
+ {
+     struct stat statbuf;
