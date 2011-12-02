@@ -1,0 +1,14 @@
+311e3d3c096a1a2565a3aa62fa1e0ee4b9384074
+diff --git a/gpsd.xml b/gpsd.xml
+index 9ff5f77..53d0d89 100644
+--- a/gpsd.xml
++++ b/gpsd.xml
+@@ -806,7 +806,7 @@ sufficiently convoluted to confuse some compiler optimizers, notably
+ in GCC 3.x at -O2, into generating bad code.</para>
+ 
+ <para>Devices meant to to use PPS for high-precision timekeeping may
+-fail if they are specifed after startup by a control-socket command,
++fail if they are specified after startup by a control-socket command,
+ as opposed to on the daemon's original command line. (Root privileges
+ are dropped early, and some Unix varients require them in order to set
+ the PPS line discipline.)</para>
