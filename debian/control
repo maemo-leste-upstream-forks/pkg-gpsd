@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 8.1.3~), po-debconf, dpkg-dev (>= 1.14.8),
  python-all-dbg (>= 2.6.6-3),
  xsltproc, docbook-xsl, docbook-xml,
  libncurses-dev,
- libusb-1.0-0-dev [!hurd-i386],
+ libusb-1.0-0-dev [!hurd-any],
  libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev, makedev,
  libbluetooth-dev [linux-any],
  libqt4-dev,
@@ -26,7 +26,7 @@ X-Python-Version: >= 2.3
 Package: gpsd
 Architecture: any
 Depends: netbase, lsb-base (>= 3.2-13), ${shlibs:Depends}, ${misc:Depends}
-Recommends: udev, ${python:Depends}, python
+Recommends: udev [linux-any], ${python:Depends}, python
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients, dbus
 Conflicts: fso-gpsd
@@ -127,15 +127,15 @@ Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
-Description: Global Positioning System - QT wrapper for libgps
+Description: Global Positioning System - Qt wrapper for libgps
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
  .
- This package provides libQgpsmm, the QT version of libgpsmm.
+ This package provides libQgpsmm, the Qt version of libgpsmm.
  It is a wrapper over libgps, the service library for querying GPS
  devices. libQgpsmm is available on all platforms which are supported
- by QT4.
+ by Qt4.
 
 Package: libqgpsmm-dev
 Architecture: any
@@ -143,12 +143,12 @@ Section: libdevel
 Depends: ${misc:Depends}, pkg-config,
  libqgpsmm20 (>= ${source:Upstream-Version}), libqgpsmm20 (<< ${source:Upstream-Version}+1~),
  libgps-dev (>= ${source:Upstream-Version}), libgps-dev (<< ${source:Upstream-Version}+1~)
-Description: Global Positioning System - QT wrapper for libgps (development)
+Description: Global Positioning System - Qt wrapper for libgps (development)
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
  .
- This package provides libQgpsmm, the QT version of libgpsmm.
+ This package provides libQgpsmm, the Qt version of libgpsmm.
  It is a wrapper over libgps, the service library for querying GPS
  devices. libQgpsmm is available on all platforms which are supported
- by QT4.
+ by Qt4.
