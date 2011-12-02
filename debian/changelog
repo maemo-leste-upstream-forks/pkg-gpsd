@@ -1,3 +1,13 @@
+gpsd (3.3-5) unstable; urgency=low
+
+  * [dda63e69] Applying hurd/qt related fixes to debian/control.
+    Thanks to Pino Toscano
+  * [140e3d04] Add patch to work around the PATH_MAX issue on hurd.
+    Thanks again to Pino Toscano
+  * [2cf9d701] Fix typo in gpsd(8). Thanks to lintian!
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 02 Dec 2011 20:40:50 +0100
+
 gpsd (3.3-4) unstable; urgency=low
 
   * [54b394bf] Adding some optional symbols to libqgpsmm20.symbols
