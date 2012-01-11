@@ -11,3 +11,7 @@ f8cdbbdd_spelling_fix_libgps.3
 d63f70b_Improved-version-of-Hurd-patch-for-unlimited-length-hook-names
 5acd4bb_Include-needed-header
 e77e8d5_Fix-glitch-found-by-cppcheck
+f935a8f_Corrected-typos-and-spelling-error
+b34bd07_Fix-bug-in-AIS-Type6-processing.-Fixes-Savannah-bug-35266
+ddeb714_Typo-fix
+9e645c7_Typo-fixes
