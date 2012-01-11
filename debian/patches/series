@@ -17,3 +17,4 @@ ddeb714_Typo-fix
 9e645c7_Typo-fixes
 4e6ffa9_Incorporate-the-latest-IERS-update
 fd802c0_Deal-properly-with-scheduled-IERS-transitions-in-the-future
+f57c742_Debian-Bug-655349-Missing-Requires-in-gpsd.service
