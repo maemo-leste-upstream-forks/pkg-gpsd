@@ -15,3 +15,5 @@ f935a8f_Corrected-typos-and-spelling-error
 b34bd07_Fix-bug-in-AIS-Type6-processing.-Fixes-Savannah-bug-35266
 ddeb714_Typo-fix
 9e645c7_Typo-fixes
+4e6ffa9_Incorporate-the-latest-IERS-update
+fd802c0_Deal-properly-with-scheduled-IERS-transitions-in-the-future
