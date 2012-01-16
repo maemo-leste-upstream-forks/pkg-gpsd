@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <signal.h>
+#include <assert.h>
 #ifndef S_SPLINT_S
 #include <unistd.h>
 #endif /* S_SPLINT_S */
@@ -233,23 +234,35 @@ int main(int argc, char **argv)
 	    break;
        case 'f':       /* Output file name. */
             {
-                char    fname[PATH_MAX];
+		/*@-usedef@*/
+                char   *fname = NULL;
                 time_t  t;
-                size_t  s;
+                size_t  s = 0;
+                size_t fnamesize = strlen(optarg);
 
                 t = time(NULL);
-                s = strftime(fname, sizeof(fname), optarg, localtime(&t));
-                if (s == 0) {
-                        syslog(LOG_ERR,
-                            "Bad template \"%s\", logging to stdout.", optarg);
-                        break;
+                while (s == 0) {
+		    char *newfname = realloc(fname, fnamesize);
+		    if (newfname == NULL) {
+			syslog(LOG_ERR, "realloc failed.");
+			goto bailout;
+		    } else {
+			fnamesize += 1024;
+			fname = newfname;
+		    }
+		    s = strftime(fname, fnamesize-1, optarg, localtime(&t));
                 }
+		assert(fname != NULL); /* pacify splint */
+                fname[s] = '\0';;
                 logfile = fopen(fname, "w");
                 if (logfile == NULL)
-                        syslog(LOG_ERR,
-                            "Failed to open %s: %s, logging to stdout.",
-                            fname, strerror(errno));
+		    syslog(LOG_ERR,
+			   "Failed to open %s: %s, logging to stdout.",
+			   fname, strerror(errno));
+	    bailout:
+                free(fname);
                 break;
+		/*@+usedef@*/
             }
 	case 'i':		/* set polling interfal */
 	    timeout = (time_t) atoi(optarg);

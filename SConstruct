@@ -16,15 +16,16 @@
 # without changing the --prefix prefix.
 
 # Unfinished items:
-# * Qt binding (needs to build .pc, .prl files)
-# * Allow building for multiple python versions)
 # * Out-of-directory builds: see http://www.scons.org/wiki/UsingBuildDir
 
 # Release identification begins here
-gpsd_version = "3.3"
-libgps_major = 20
-libgps_minor = 0
-libgps_age   = 0
+gpsd_version = "3.4"
+
+# library version
+libgps_version_current  = 20
+libgps_version_revision = 0
+libgps_version_age      = 0
+
 # Release identification ends here
 
 # Hosting information (mainly used for templating web pages) begins here
@@ -49,12 +50,23 @@ formserver = "www@mainframe.cx"
 devmail    = "gpsd-dev@lists.nongnu.org"
 # Hosting information ends here
 
-EnsureSConsVersion(1,2,0)
+EnsureSConsVersion(2,0,1)
 
-import copy, os, sys, commands, glob, re, platform, time
+import copy, os, sys, glob, re, platform, time
 from distutils import sysconfig
 from distutils.util import get_platform
 import SCons
+
+# replacement for functions from the commands module, which is deprecated.
+from subprocess import PIPE, STDOUT, Popen
+def _getstatusoutput(cmd, input=None, cwd=None, env=None):
+    pipe = Popen(cmd, shell=True, cwd=cwd, env=env, stdout=PIPE, stderr=STDOUT)
+    (output, errout) = pipe.communicate(input=input)
+    status = pipe.returncode
+    return (status, output)
+def _getoutput(cmd, input=None, cwd=None, env=None):
+    return _getstatusoutput(cmd, input, cwd, env)[1]
+
 
 #
 # Build-control options
@@ -73,6 +85,12 @@ if sys.platform.startswith('linux'):
         if int(version) >= 13:
             # See https://fedoraproject.org/wiki/Features/ChangeInImplicitDSOLinking
             imloads = False
+    elif os.path.exists("/etc/arch-release"):
+        imloads = False
+
+# Does our platform has a working memory-barrier instruction?
+# The shared-memory export won't be reliable without it.
+mfence = (platform.machine() in ('x86_64',))
     
 boolopts = (
     # GPS protocols
@@ -108,7 +126,7 @@ boolopts = (
     # Export methods
     ("socket_export", True,  "data export over sockets"),
     ("dbus_export",   False, "enable DBUS export support"),
-    ("shm_export",    True,  "export via shared memory"),
+    ("shm_export",    mfence,"export via shared memory"),
     # Communication
     ('usb',           True,  "libusb support for USB devices"),
     ("bluez",         True,  "BlueZ support for Bluetooth devices"),
@@ -117,7 +135,7 @@ boolopts = (
     ("passthrough",   True,  "build support for passing through JSON"),
     # Other daemon options
     ("force_global",  False, "force daemon to listen on all addressses"),
-    ("timing",        False,  "latency timing support"),
+    ("timing",        False, "latency timing support"),
     ("control_socket",True,  "control socket for hotplug notifications"),
     ("systemd",       systemd, "systemd socket activation"),
     # Client-side options
@@ -157,13 +175,13 @@ for (name, default, help) in nonboolopts:
     opts.Add(name, help, default)
 
 pathopts = (
-    ("sysconfdir",          "/etc",           "system configuration directory"),
-    ("bindir",              "/bin",           "application binaries directory"),
-    ("includedir",          "/include",       "header file directory"),
-    ("libdir",              "/lib",           "system libraries"),
-    ("sbindir",             "/sbin",          "system binaries directory"),
-    ("mandir",              "/share/man",     "manual pages directory"),
-    ("docdir",              "/share/doc",     "documents directory"),
+    ("sysconfdir",          "etc",           "system configuration directory"),
+    ("bindir",              "bin",           "application binaries directory"),
+    ("includedir",          "include",       "header file directory"),
+    ("libdir",              "lib",           "system libraries"),
+    ("sbindir",             "sbin",          "system binaries directory"),
+    ("mandir",              "share/man",     "manual pages directory"),
+    ("docdir",              "share/doc",     "documents directory"),
     ("pkgconfig",           "$libdir/pkgconfig", "pkgconfig file directory"),
     )
 for (name, default, help) in pathopts:
@@ -202,8 +220,9 @@ env['PYTHON'] = sys.executable
 # explicitly quote them or (better yet) use the "=" form of GNU option
 # settings.
 env['STRIP'] = "strip"
+env['PKG_CONFIG'] = "pkg-config"
 env['CHRPATH'] = 'chrpath'
-for i in ["AR", "ARFLAGS", "CCFLAGS", "CFLAGS", "CC", "CXX", "CXXFLAGS", "STRIP", "CHRPATH", "LD", "TAR"]:
+for i in ["AR", "ARFLAGS", "CCFLAGS", "CFLAGS", "CC", "CXX", "CXXFLAGS", "STRIP", "PKG_CONFIG", "CHRPATH", "LD", "TAR"]:
     if os.environ.has_key(i):
         j = i
         if i == "LD":
@@ -222,15 +241,8 @@ for flags in ["LDFLAGS", "LINKFLAGS", "SHLINKFLAGS", "CPPFLAGS"]:
 env['SRCDIR'] = '.'
 
 def announce(msg):
-    # When we find out how to access the --quiet flag, we use that here
-    print msg
-
-# define a helper function for pkg-config - we need to pass
-# --static for static linking, too.
-if env["shared"]:
-    pkg_config = lambda pkg: ['!pkg-config --cflags --libs %s' %(pkg, )]
-else:
-    pkg_config = lambda pkg: ['!pkg-config --cflags --libs --static %s' %(pkg, )]
+    if not env.GetOption("silent"):
+        print msg
 
 # GCC isn't always named gcc, alas.
 if env['CC'] == 'gcc' or (sys.platform.startswith('freebsd') and env['CC'] == 'cc'):
@@ -248,14 +260,18 @@ if env['CC'] == 'gcc' or (sys.platform.startswith('freebsd') and env['CC'] == 'c
 # DESTDIR environment variable means user wants to prefix the installation root.
 DESTDIR = os.environ.get('DESTDIR', '')
 
-def installdir(dir):
-    wrapped = DESTDIR + env['prefix'] + env[dir]
+def installdir(dir, add_destdir=True):
+    # use os.path.join to handle absolute paths properly.
+    wrapped = os.path.join(env['prefix'], env[dir])
+    if add_destdir:
+        wrapped = os.path.normpath(DESTDIR + os.path.sep + wrapped)
     wrapped.replace("/usr/etc", "/etc")
     return wrapped
 
 # Honor the specified installation prefix in link paths.
 env.Prepend(LIBPATH=[installdir('libdir')])
-env.Prepend(RPATH=[installdir('libdir')])
+if env["shared"]:
+    env.Prepend(RPATH=[installdir('libdir')])
 
 # Give deheader a way to set compiler flags
 if 'MORECFLAGS' in os.environ:
@@ -330,7 +346,7 @@ if "help" in ARGLIST:
 
 def CheckPKG(context, name):
     context.Message( 'Checking for %s... ' % name )
-    ret = context.TryAction('pkg-config --exists \'%s\'' % name)[0]
+    ret = context.TryAction('%s --exists \'%s\'' % (env['PKG_CONFIG'], name))[0]
     context.Result( ret )
     return ret
 
@@ -373,18 +389,18 @@ config = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG,
                                          'CheckExecutable' : CheckExecutable,
                                          'CheckXsltproc' : CheckXsltproc})
 
-# The build is fragile when chrpath is not present, so we've made it mandatory.
+env.Prepend(LIBPATH=[os.path.realpath(os.curdir)])
 if config.CheckExecutable('$CHRPATH -v', 'chrpath'):
     # Tell generated binaries to look in the current directory for
     # shared libraries so we can run tests without hassle. Should be
     # handled sanely by scons on all systems.  Not good to use '.' or
     # a relative path here; it's a security risk.  At install time we
     # use chrpath to edit this out of RPATH.
-    env.Prepend(LIBPATH=[os.path.realpath(os.curdir)])
-    env.Prepend(RPATH=[os.path.realpath(os.curdir)])
+    if env["shared"]:
+        env.Prepend(RPATH=[os.path.realpath(os.curdir)])
 else:
-    print "The chrpath utility is required for GPSD to build."
-    quit()
+    print "chrpath is not available, forcing static linking."
+    env["shared"] = False
 
 confdefs = ["/* gpsd_config.h.  Generated by scons, do not hand-hack.  */\n"]
 
@@ -393,6 +409,13 @@ confdefs.append('#define VERSION "%s"\n' % gpsd_version)
 confdefs.append('#define GPSD_URL "%s"\n' % website)
 
 cxx = config.CheckCXX()
+
+# define a helper function for pkg-config - we need to pass
+# --static for static linking, too.
+if env["shared"]:
+    pkg_config = lambda pkg: ['!%s --cflags --libs %s' %(env['PKG_CONFIG'], pkg, )]
+else:
+    pkg_config = lambda pkg: ['!%s --cflags --libs --static %s' %(env['PKG_CONFIG'], pkg, )]
 
 # The actual distinction here is whether the platform has ncurses in the
 # base system or not. If it does, pkg-config is not likely to tell us
@@ -406,6 +429,8 @@ if env['ncurses']:
         ncurseslibs = ['!ncurses5-config --libs --cflags']
     elif sys.platform.startswith('freebsd'):
         ncurseslibs= [ '-lncurses' ]
+    elif sys.platform.startswith('openbsd'):
+        ncurseslibs= [ '-lcurses' ]
 
 if env['usb']:
     # In FreeBSD except version 7, USB libraries are in the base system
@@ -579,6 +604,9 @@ else:
 
 ## Two shared libraries provide most of the code for the C programs
 
+libgps_version_soname = libgps_version_current - libgps_version_age
+libgps_version = "%d.%d.%d" %(libgps_version_soname, libgps_version_age, libgps_version_revision)
+
 libgps_sources = [
     "ais_json.c",
     "daemon.c",
@@ -641,7 +669,7 @@ libgpsd_sources = [
 # Inspired by Richard Levitte's (slightly buggy) code at
 # http://markmail.org/message/spttz3o4xrsftofr
 
-def VersionedSharedLibrary(env, libname, libversion, lib_objs=[], parse_flags=[]):
+def VersionedSharedLibrary(env, libname, libgps_version, lib_objs=[], parse_flags=[]):
     platform = env.subst('$PLATFORM')
     shlib_pre_action = None
     shlib_suffix = env.subst('$SHLIBSUFFIX')
@@ -649,8 +677,8 @@ def VersionedSharedLibrary(env, libname, libversion, lib_objs=[], parse_flags=[]
     shlink_flags = SCons.Util.CLVar(env.subst('$SHLINKFLAGS'))
 
     if platform == 'posix':
-        ilib_suffix = shlib_suffix + '.' + libversion
-        (major, age, revision) = libversion.split(".")
+        ilib_suffix = shlib_suffix + '.' + libgps_version
+        (major, age, revision) = libgps_version.split(".")
         soname = "lib" + libname + shlib_suffix + "." + major
         shlink_flags += [ '-Wl,-Bsymbolic', '-Wl,-soname=%s' % soname ]
     elif platform == 'cygwin':
@@ -658,9 +686,9 @@ def VersionedSharedLibrary(env, libname, libversion, lib_objs=[], parse_flags=[]
         shlink_flags += [ '-Wl,-Bsymbolic',
                           '-Wl,--out-implib,${TARGET.base}.a' ]
     elif platform == 'darwin':
-        ilib_suffix = '.' + libversion + shlib_suffix
-        shlink_flags += [ '-current_version', '%s' % libversion,
-                          '-compatibility_version', '%s' % libversion,
+        ilib_suffix = '.' + libgps_version + shlib_suffix
+        shlink_flags += [ '-current_version', '%s' % libgps_version,
+                          '-compatibility_version', '%s' % libgps_version,
                           '-undefined', 'dynamic_lookup' ]
 
     ilib = env.SharedLibrary(libname,lib_objs,
@@ -668,20 +696,20 @@ def VersionedSharedLibrary(env, libname, libversion, lib_objs=[], parse_flags=[]
                             SHLINKFLAGS=shlink_flags, parse_flags=parse_flags)
 
     if platform == 'darwin':
-        if libversion.count(".") != 2:
+        if libgps_version.count(".") != 2:
             # We need a library name in libfoo.x.y.z.dylib form to proceed
             raise ValueError
-        lib = 'lib' + libname + '.' + libversion + '.dylib'
+        lib = 'lib' + libname + '.' + libgps_version + '.dylib'
         lib_no_ver = 'lib' + libname + '.dylib'
         # Link libfoo.x.y.z.dylib to libfoo.dylib
         env.AddPostAction(ilib, 'rm -f %s; ln -s %s %s' % (
             lib_no_ver, lib, lib_no_ver))
         env.Clean(lib, lib_no_ver)
     elif platform == 'posix':
-        if libversion.count(".") != 2:
+        if libgps_version.count(".") != 2:
             # We need a library name in libfoo.so.x.y.z form to proceed
             raise ValueError
-        lib = "lib" + libname + ".so." + libversion
+        lib = "lib" + libname + ".so." + libgps_version
         suffix_re = '%s\\.[0-9\\.]*$' % re.escape(shlib_suffix)
         # For libfoo.so.x.y.z, links libfoo.so libfoo.so.x.y libfoo.so.x
         major_name = shlib_suffix + "." + lib.split(".")[2]
@@ -721,7 +749,7 @@ else:
     def Library(env, target, sources, version, parse_flags=[]):
         return VersionedSharedLibrary(env=env,
                                      libname=target,
-                                     libversion=version,
+                                     libgps_version=version,
                                      lib_objs=sources,
                                      parse_flags=parse_flags)
     LibraryInstall = lambda env, libdir, sources: \
@@ -729,20 +757,17 @@ else:
 
 # Klugery to handle sonames ends
 
-# Must be MAJOR.AGE.REVISION
-libversion = "%d.%d.%d" % (libgps_major, libgps_minor, libgps_age)
-
 compiled_gpslib = Library(env=env,
                           target="gps",
                           sources=libgps_sources,
-                          version=libversion,
+                          version=libgps_version,
                           parse_flags= ["-lm"] + dbus_libs)
 env.Clean(compiled_gpslib, "gps_maskdump.c")
 
 compiled_gpsdlib = Library(env=env,
                            target="gpsd",
                            sources=libgpsd_sources,
-                           version=libversion,
+                           version=libgps_version,
                            parse_flags=usblibs + rtlibs + bluezlibs)
 
 libraries = [compiled_gpslib, compiled_gpsdlib]
@@ -768,7 +793,7 @@ if qt_env:
                                              CC=compile_with,
                                              CFLAGS=compile_flags,
                                              parse_flags=dbus_libs))
-    compiled_qgpsmmlib = Library(qt_env, "Qgpsmm", qtobjects, libversion)
+    compiled_qgpsmmlib = Library(qt_env, "Qgpsmm", qtobjects, libgps_version)
     libraries.append(compiled_qgpsmmlib)
 
 # The libraries have dependencies on system libraries
@@ -802,7 +827,8 @@ gpsmon_sources = [
 # know how to force it when linking staticly.
 #
 # It turns out there are two cases where we need to force this.  Some
-# distributions don't do implicit linking by design:
+# distributions don't do implicit linking by design.  See the test
+# code for implicit_link.
 #
 if not env['shared'] or not env["implicit_link"]:
     env.MergeFlags("-lm")
@@ -913,7 +939,13 @@ else:
     for ext, sources in python_extensions.iteritems():
         python_objects[ext] = []
         for src in sources:
-            python_objects[ext].append(python_env.SharedObject(src.split(".")[0] + '-py', src))
+            python_objects[ext].append(
+                python_env.NoCache(
+                    python_env.SharedObject(
+                        src.split(".")[0] + '-py_' + '_'.join(['%s' %(x) for x in sys.version_info]) + so_ext, src
+                    )
+                )
+            )
         python_compiled_libs[ext] = python_env.SharedLibrary(ext, python_objects[ext])
     python_built_extensions = python_compiled_libs.values()
 
@@ -957,12 +989,15 @@ env.Command(target="ais_json.i", source="jsongen.py", action='''\
     chmod a-w $TARGET''')
 
 # generate revision.h
-(st, rev) = commands.getstatusoutput('git describe')
-if st != 0:
-    from datetime import datetime
-    rev = datetime.now().isoformat()[:-4]
+if 'dev' in gpsd_version:
+    (st, rev) = _getstatusoutput('git describe')
+    if st != 0:
+        from datetime import datetime
+        rev = datetime.now().isoformat()[:-4]
+else:
+    rev = gpsd_version
 revision='#define REVISION "%s"\n' %(rev.strip(),)
-env.NoClean(env.Textfile(target="revision.h", source=[revision]))
+env.Textfile(target="revision.h", source=[revision])
 
 # generate pps_pin.h
 pps_pin = env['pps_pin']
@@ -981,12 +1016,13 @@ generated_sources = ['packet_names.h', 'timebase.h', 'gpsd.h', "ais_json.i",
 # build without Internet access.
 from leapsecond import save_leapseconds
 leapseconds_cache_rebuild = lambda target, source, env: save_leapseconds(target[0].abspath)
-leapseconds_cache = env.Command(target="leapseconds.cache",
+if 'dev' in gpsd_version or not os.path.exists('leapseconds.cache'):
+    leapseconds_cache = env.Command(target="leapseconds.cache",
                                 source="leapsecond.py",
                                 action=leapseconds_cache_rebuild)
-env.Clean(leapseconds_cache, "leapsecond.pyc")
-env.NoClean(leapseconds_cache)
-env.Precious(leapseconds_cache)
+    env.Clean(leapseconds_cache, "leapsecond.pyc")
+    env.NoClean(leapseconds_cache)
+    env.Precious(leapseconds_cache)
 
 # Instantiate some file templates.  We'd like to use the Substfile builtin
 # but it doesn't seem to work in scons 1.20
@@ -1014,6 +1050,7 @@ def substituter(target, source, env):
         ('@WEBFORM@',    webform),
         ('@FORMSERVER@', formserver),
         ('@DEVMAIL@',    devmail),
+        ('@LIBGPSVERSION@', libgps_version),
         )
     with open(str(source[0])) as sfp:
         content = sfp.read()
@@ -1102,7 +1139,10 @@ binaryinstall.append(LibraryInstall(env, installdir('libdir'), compiled_gpsdlib)
 if qt_env:
     binaryinstall.append(LibraryInstall(qt_env, installdir('libdir'), compiled_qgpsmmlib))
 
-env.AddPostAction(binaryinstall, '$CHRPATH -r "%s" "$TARGET"' % installdir('libdir'))
+# We don't use installdir here in order to avoid having DESTDIR affect the rpath
+if env["shared"]:
+    env.AddPostAction(binaryinstall, '$CHRPATH -r "%s" "$TARGET"' \
+                      % (installdir('libdir', False), ))
 
 if not env['debug'] and not env['profiling'] and env['strip']:
     env.AddPostAction(binaryinstall, '$STRIP $TARGET')
@@ -1130,6 +1170,10 @@ else:
                         python_egg_info_install]
 
 pc_install = [ env.Install(installdir('pkgconfig'), x) for x in ("libgps.pc", "libgpsd.pc") ]
+if qt_env:
+    pc_install.append(qt_env.Install(installdir('pkgconfig'), 'Qgpsmm.pc'))
+    pc_install.append(qt_env.Install(installdir('libdir'), 'libQgpsmm.prl'))
+
 
 maninstall = []
 if manbuilder:
@@ -1474,9 +1518,10 @@ if env['python']:
 # is plugged in.
 
 Utility('udev-install', '', [
-    'cp $SRCDIR/gpsd.rules /lib/udev/rules.d/25-gpsd.rules',
-    'cp $SRCDIR/gpsd.hotplug /lib/udev/',
-    'chmod a+x /lib/udev/gpsd.hotplug',
+    'mkdir -p ' + DESTDIR + '/lib/udev/rules.d',
+    'cp $SRCDIR/gpsd.rules ' + DESTDIR + '/lib/udev/rules.d/25-gpsd.rules',
+    'cp $SRCDIR/gpsd.hotplug ' + DESTDIR + '/lib/udev/',
+    'chmod a+x ' + DESTDIR + '/lib/udev/gpsd.hotplug',
         ])
 
 Utility('udev-uninstall', '', [
@@ -1494,7 +1539,7 @@ Utility('udev-test', '', [
 # for these productions to work.
 
 if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
-    distfiles = commands.getoutput(r"git ls-files | grep -v '^www/'").split()
+    distfiles = _getoutput(r"git ls-files | grep -v '^www/'").split()
     if ".gitignore" in distfiles:
         distfiles.remove(".gitignore")
     distfiles += generated_sources
@@ -1540,6 +1585,7 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
     tag_release = Utility('tag-release', [], [
         'git tag -s -m "Tagged for external release ${VERSION}" release-${VERSION}'
         ])
+    upload_tags = Utility('upload-tags', [], ['git push --tags'])
 
     # Local release preparation. This production will require Internet access,
     # but it doesn't do any uploads or public repo mods.
@@ -1548,7 +1594,6 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
     # won't be right when revision.h is generated for the tarball. 
     releaseprep = env.Alias("releaseprep",
                             [Utility("distclean", [], ["rm -f revision.h"]),
-                             leapseconds_cache,
                              tag_release,
                              tarball])
     # Undo local release preparation
@@ -1558,7 +1603,7 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
     # All a buildup to this.
     env.Alias("release", [releaseprep,
                           upload_release,
-                          'git push --tags',
+                          upload_tags,
                           upload_web])
 
 # The following sets edit modes for GNU EMACS
