@@ -855,7 +855,7 @@ static void handle_control(int sfd, char *buf)
 	    ignore_return(write(sfd, path, strlen(path)));
 	    ignore_return(write(sfd, "\n", 1));
 	}
-	ignore_return(write(sfd, "OK\n", 6));
+	ignore_return(write(sfd, "OK\n", 3));
     } else {
 	/* unknown command */
 	ignore_return(write(sfd, "ERROR\n", 6));
@@ -1762,7 +1762,8 @@ int main(int argc, char *argv[])
     static char *pid_file = NULL;
     struct gps_device_t *device;
     fd_set rfds;
-    int i, option, msocks[2], dfd;
+    int i, option, dfd;
+    int msocks[2] = {-1, -1};
     bool go_background = true;
     struct timeval tv;
     const struct gps_type_t **dp;
