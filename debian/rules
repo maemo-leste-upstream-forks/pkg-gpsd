@@ -125,7 +125,8 @@ clean-patched:
 	    debian/buildinfo.gz \
 	    config.log \
 	    static_lib \
-	    debian/shlibs.local
+	    debian/shlibs.local \
+	    leapsecond.pyc
 	dh_clean
 
 install: install-stamp
