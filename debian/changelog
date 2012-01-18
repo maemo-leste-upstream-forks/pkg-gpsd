@@ -1,3 +1,29 @@
+gpsd (3.4-1) unstable; urgency=low
+
+  * [586a26d6] Adding patch to add udev support for ublox 6.
+    Thanks to Matthias Cramer (Closes: #650774)
+  * [95ad304d] Removing duplicate dpkg-dev build-dependency.
+  * [dc598b94] Match all multi-arch directories in lintian-overrides.
+  * [21e15bf1] Update PATH_MAX patch with the version from upstream.
+  * [50d20a7e] Add scrpt to retrieve patches by sha.
+  * [1fd3563d] Add some bugfixes from upstream.
+  * [19235ec1] Add patches to incorporate the latest IERS update.
+  * [afd06945] Add missing Requires in gpsd.service.
+    Thanks to Eckhart Wörner (Closes: #655349)
+  * [42fffb44] Imported Upstream version 3.4
+  * [d8cc83c3] Dropping all patches as they were applied upstream
+    (still updating SConstruct, though).
+  * [782cd0ab] Update SConstruct.
+    Taken from upstream, including a fix to avoid building Python modules
+    with -pie/-fPIE.
+    Thanks to Lucas Nussbaum (Closes: #655797)
+  * [0d3308e1] gpsd: depend on netbase | systemd-sysv.
+    Let's support the systemd fans.
+    Thanks to Eckhart Wörner (Closes: #644429)
+  * [461f6051] Clean leapsecond.pyc.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 18 Jan 2012 23:27:05 +0100
+
 gpsd (3.3-5) unstable; urgency=low
 
   * [dda63e69] Applying hurd/qt related fixes to debian/control.
