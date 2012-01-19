@@ -1,3 +1,11 @@
+gpsd (3.4-2) unstable; urgency=low
+
+  * [26984e29] Limit gps_shm_* symbols to amd64.
+    Due to missing hardware memory barrier support  they are only
+    available on amd64 for now.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 19 Jan 2012 23:38:51 +0100
+
 gpsd (3.4-1) unstable; urgency=low
 
   * [586a26d6] Adding patch to add udev support for ublox 6.
