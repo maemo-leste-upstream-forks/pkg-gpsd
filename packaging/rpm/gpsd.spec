@@ -1,7 +1,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name: gpsd
-Version: 3.4~dev
+Version: 3.5~dev
 Release: 1%{?dist}
 Summary: Service daemon for mediating access to a GPS
 
@@ -241,6 +241,7 @@ fi
 %files -n libQgpsmm
 %defattr(-,root,root,-)
 %{_qt4_libdir}/libQgpsmm.so*
+%{_qt4_libdir}/libQgpsmm.prl
 %{_mandir}/man3/libQgpsmm.3*
 
 %files clients

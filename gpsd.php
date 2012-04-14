@@ -88,8 +88,9 @@ if (isset($_GET['imgdata']) && $op == 'view'){
 	if ($testmode){
 		$sock = @fsockopen($server, $port, $errno, $errstr, 2);
 		@fwrite($sock, "?WATCH={\"enable\":true}\n");
-		usleep(100);
+		usleep(1000);
 		@fwrite($sock, "?POLL;\n");
+		usleep(1000);
 		for($tries = 0; $tries < 10; $tries++){
 			$resp = @fread($sock, 2000); # SKY can be pretty big
 			if (preg_match('/{"class":"POLL".+}/i', $resp, $m)){
@@ -590,40 +591,28 @@ function gen_osm_head() {
 global $GPS;
 return <<<EOT
 <script src="http://openlayers.org/api/OpenLayers.js" type="text/javascript"></script>
-<script src="http://www.openstreetmap.org/openlayers/OpenStreetMap.js" type="text/javascript"></script>
 <script type="text/javascript">
     <!--
-    // Create a base icon for all of our markers that specifies the shadow, icon
-    // dimensions, etc.
 function Load() {
 	document.getElementById("map").firstChild.data = "";
-	map = new OpenLayers.Map("map", {
+	var map = new OpenLayers.Map("map", {
 		controls: [
 			new OpenLayers.Control.Navigation(),
 			new OpenLayers.Control.PanZoomBar(),
 			new OpenLayers.Control.ScaleLine(),
 			new OpenLayers.Control.LayerSwitcher()
-		],
-		maxResolution: 156543.0339,
-		numZoomLevels: 20,
-		units: 'm',
-		projection: new OpenLayers.Projection("EPSG:900913"),
-		displayProjection: new OpenLayers.Projection("EPSG:4326")
+		]
 	});
-	var layerMapnik = new OpenLayers.Layer.OSM.Mapnik("Mapnik");
-	map.addLayer(layerMapnik);
+	var layer = new OpenLayers.Layer.OSM("Open Street Map");
+	map.addLayer(layer);
 
-	var layerTilesAtHome = new OpenLayers.Layer.OSM.Osmarender("Osmarender");
-	map.addLayer(layerTilesAtHome);
+	var center = new OpenLayers.LonLat({$GLOBALS['lon']}, {$GLOBALS['lat']})
+		.transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject());
+	map.setCenter(center, 12);
 
-	center = new OpenLayers.LonLat({$GLOBALS['lon']}, {$GLOBALS['lat']}).transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject());
-
-	markers = new OpenLayers.Layer.Markers( "Markers" );
-	centermarker = new OpenLayers.Marker(center);
-	markers.addMarker(centermarker);
+	var markers = new OpenLayers.Layer.Markers("Markers");
+	markers.addMarker(new OpenLayers.Marker(center));
 	map.addLayer(markers);
-
-	map.setCenter(center, 17);
 }
     -->
     </script>

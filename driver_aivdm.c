@@ -485,7 +485,7 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	case 13: /* Safety Related Acknowledge */
 	{
 	    unsigned int mmsi[4];
-	    if (ais_context->bitlen < 72 || ais_context->bitlen > 168) {
+	    if (ais_context->bitlen < 72 || ais_context->bitlen > 158) {
 		gpsd_report(LOG_WARN, "AIVDM message type %d size is out of range (%zd).\n",
 			    ais->type,
 			    ais_context->bitlen);
@@ -979,15 +979,19 @@ bool aivdm_decode(const char *buf, size_t buflen,
 				ais_context->bitlen);
 		    return false;
 		}
-		if (ais_context->mmsi24) {
-		    gpsd_report(LOG_WARN,
-		                "AIVDM message type 24 collision on channel %c : Discarding previous sentence 24A from %09u.\n",
-		                field[4][0],
-		                ais_context->mmsi24);
-		    /* no return false */
+		/* save incoming 24A shipname/MMSI pairs in a circular queue */
+		{
+		    struct aivdm_type24a_t *saveptr = ais_context->type24names + ais_context->type24_index;
+
+		    gpsd_report(LOG_PROG,
+				"AIVDM channel %c: 24A from %09u stashed.\n",
+				field[4][0],
+				ais->mmsi);
+		    saveptr->mmsi = ais->mmsi;
+		    UCHARS(40, saveptr->shipname);
+		    ++ais_context->type24_index;
+		    ais_context->type24_index %= MAX_TYPE24_INTERLEAVE;
 		}
-		ais_context->mmsi24 = ais->mmsi;
-		UCHARS(40, ais_context->shipname24);
 		//ais->type24.a.spare	= UBITS(160, 8);
 		return false;	/* data only partially decoded */
 	    case 1:
@@ -996,41 +1000,43 @@ bool aivdm_decode(const char *buf, size_t buflen,
 				ais_context->bitlen);
 		    return false;
 		}
-		if (ais_context->mmsi24 != ais->mmsi) {
-		    if (ais_context->mmsi24)
-			gpsd_report(LOG_WARN,
-			            "AIVDM message type 24 collision on channel %c: MMSI mismatch: %09u vs %09u.\n",
-			            field[4][0],
-			            ais_context->mmsi24, ais->mmsi);
-		    else
-			gpsd_report(LOG_WARN,
-			            "AIVDM message type 24 collision on channel %c: 24B sentence from %09u without 24A.\n",
-			            field[4][0],
-			            ais->mmsi);
-		    return false;
+		/* search the 24A queue for a matching MMSI */
+		for (i = 0; i < MAX_TYPE24_INTERLEAVE; i++) {
+		    if (ais_context->type24names[i].mmsi == ais->mmsi) {
+			(void)strlcpy(ais->type24.shipname,
+				      ais_context->type24names[i].shipname,
+				      sizeof(ais_context->type24names[i].shipname));
+			ais->type24.shiptype = UBITS(40, 8);
+			UCHARS(48, ais->type24.vendorid);
+			UCHARS(90, ais->type24.callsign);
+			if (AIS_AUXILIARY_MMSI(ais->mmsi)) {
+			    ais->type24.mothership_mmsi   = UBITS(132, 30);
+			} else {
+			    ais->type24.dim.to_bow        = UBITS(132, 9);
+			    ais->type24.dim.to_stern      = UBITS(141, 9);
+			    ais->type24.dim.to_port       = UBITS(150, 6);
+			    ais->type24.dim.to_starboard  = UBITS(156, 6);
+			}
+			//ais->type24.b.spare	    = UBITS(162, 8);
+			gpsd_report(LOG_PROG,
+				    "AIVDM 24B channel %c: 24B from %09u matches a 24A.\n",
+				    field[4][0],
+				    ais->mmsi);
+			/* prevent false match if a 24B is repeated */
+			ais_context->type24names[i].mmsi = 0;
+			return true;
+		    }
 		}
-		(void)strlcpy(ais->type24.shipname,
-			      ais_context->shipname24,
-			      sizeof(ais_context->shipname24));
-		ais->type24.shiptype = UBITS(40, 8);
-		UCHARS(48, ais->type24.vendorid);
-		UCHARS(90, ais->type24.callsign);
-		if (AIS_AUXILIARY_MMSI(ais->mmsi)) {
-		    ais->type24.mothership_mmsi   = UBITS(132, 30);
-		} else {
-		    ais->type24.dim.to_bow        = UBITS(132, 9);
-		    ais->type24.dim.to_stern      = UBITS(141, 9);
-		    ais->type24.dim.to_port       = UBITS(150, 6);
-		    ais->type24.dim.to_starboard  = UBITS(156, 6);
-		}
-		//ais->type24.b.spare	    = UBITS(162, 8);
-		ais_context->mmsi24 = 0; /* reset last know 24A for collision detection */
-		break;
+		gpsd_report(LOG_WARN,
+			    "AIVDM 24B channel %c: 24B from %09u can't be matched to a 24A.\n",
+			    field[4][0],
+			    ais->mmsi);
+		return false;
 	    default:
 		gpsd_report(LOG_WARN, "AIVDM message type 24 of subtype unknown.\n");
 		return false;
 	    }
-	    break;
+	    // break;
 	case 25:	/* Binary Message, Single Slot */
 	    /* this check and the following one reject line noise */
 	    if (ais_context->bitlen < 40 || ais_context->bitlen > 168) {
@@ -1051,10 +1057,10 @@ bool aivdm_decode(const char *buf, size_t buflen,
 	    /*
 	     * Not possible to do this right without machinery we
 	     * don't yet have.  The problem is that if the addressed
-	     * bit is on the bitfield start won't be on a byte
+	     * bit is on, the bitfield start won't be on a byte
 	     * boundary. Thus the formulas below (and in message type 26)
-	     * will work perfectly for brodacst messages, but for addressed
-	     * messages the retrieved data will be led by thr 30 bits of
+	     * will work perfectly for broadcast messages, but for addressed
+	     * messages the retrieved data will be led by the 30 bits of
 	     * the destination MMSI
 	     */
 	    ais->type25.bitcount       = ais_context->bitlen - 40 - 16*ais->type25.structured;

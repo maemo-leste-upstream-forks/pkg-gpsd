@@ -101,9 +101,6 @@ void gps_context_init(struct gps_context_t *context)
 	.debug	        = 0,
 	.readonly	= false,
 	.fixcnt	        = 0,
-	.rtcmbytes	= 0,
-	.rtcmbuf	= {'\0'},
-	.rtcmtime	= 0,
 	.start_time     = 0,
 	.leap_seconds   = 0,
 	.gps_week	= 0,
@@ -115,7 +112,8 @@ void gps_context_init(struct gps_context_t *context)
 	.shmTime	= {0},
 	.shmTimeInuse   = {0},
 # ifdef PPS_ENABLE
-	.shmTimePPS	    = false,
+	.shmTimePPS	= false,
+	.pps_hook       = NULL,
 # endif /* PPS_ENABLE */
 #endif /* NTPSHM_ENABLE */
 #ifdef SHM_EXPORT_ENABLE
@@ -139,7 +137,6 @@ void gpsd_init(struct gps_device_t *session, struct gps_context_t *context,
     /*@ -mustfreeonly @*/
     session->device_type = NULL;	/* start by hunting packets */
     session->observed = 0;
-    session->rtcmtime = (timestamp_t)0;
     session->sourcetype = source_unknown;	/* gpsd_open() sets this */
     session->servicetype = service_unknown;	/* gpsd_open() sets this */
     /*@ -temptrans @*/
