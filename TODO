@@ -32,6 +32,11 @@ packet aggregation issue.
 
 *** Driver issues
 
+**** There are architecture issues in the binary drivers.
+
+Some fail regression tests on non-x86 architectures (not SiRF or
+NMEA, thankfully).  Bernd Zeimetz has the check logs.
+
 **** gpsctl -b should work on UBX, but does not.
 
 Presently this means there's no way to kick a UBX into returning
@@ -49,6 +54,10 @@ different types in them, and a copy of the RTCM3 standard at latest revision
 This one is mine and Kurt Schwehr's. Support is currently nearly
 complete; the only missing cases are a handful of IMO 236 and IMO 289
 message 6 and 8 subtypes.
+
+**** Addressed case of AIS Types 25 and 26 is not handled.
+
+We'd need machinery to shift a byte array 30 bits left...
 
 ** Ports
 

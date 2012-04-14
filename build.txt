@@ -5,6 +5,15 @@ guidance on how to cross-build the package.
 
 (This file is marked up in asciidoc.)
 
+== Quick start ==
+
+Under Linux, assuming you have all your build prerequisites in place,
+this line will do:
+
+   scons && scons testregress && sudo scons udev-install 
+
+If you get any errors, you need to read the detailed instructions that follow.
+
 == Check your build prerequisites ==
 
 Necessary components for any build:
@@ -45,6 +54,12 @@ some code generators in Python), it is not required to run the service
 daemon.  In particular, you can cross-compile onto an embedded system
 without having to take Python with you.  
 
+You will need both basic Python and (if your package system makes the
+distinction) the Python development package used for building C
+extensions.  Usually these are called "python" and "python-dev". You
+will know you are missing the latter if your compilation fails 
+because of a missing Python.h.
+
 === Scons ===
 
 You will need scons version 2.0.1 or later to build the code. The
@@ -74,6 +89,7 @@ various additional capabilities and extensions:
 |============================================================================
 |C++ compiler	  | allows building libgpsmm C++ wrapper for client library
 |Qt 4.53+         | allows building libQgpsmm C++ wrapper for client library
+|libcap           | Capabilities library, allows 1PPS support under Linux
 |============================================================================
 
 If you have libusb-1.0.0 or later, the GPSD build will autodetect
@@ -195,7 +211,7 @@ footprint. "scons --help" will tell the story; look under "Local Options"
 and consult the source code if in doubt.
 
 Here are a few of the more important feature switches.  Each description
-begins with the default for the xwitch.
+begins with the default for the switch.
 
 pps=yes: for small embedded systems and those without threading,
 it is possible to build gpsd without thread support if you build
@@ -211,6 +227,14 @@ pair. Thanks to the multi-platform approach of Qt, it allows the gpsd
 client library to be available on all the Qt supported platforms.
 Please see http://qt.nokia.com/doc/4.6/supported-platforms.html for a
 status of Qt supported platforms as of version 4.6.
+
+== Port and toolchain testing ==
+
+'scons testregress' will run a comprehensive regression-test suite.
+You should do this, at minimum, every time you build from source
+on a new machine type.  GPSD does enough bit-twiddling and floating
+point that it is very sensitive to toolchain problems; you'll want to
+be sure those aren't going to bite you in production.
 
 == Reverting to a clean state ==
 

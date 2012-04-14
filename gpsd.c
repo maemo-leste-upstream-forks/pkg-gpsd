@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>		/* for select() */
+#include <sys/select.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -24,6 +25,7 @@
 #include <syslog.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <pthread.h>
 #ifndef S_SPLINT_S
 #include <netdb.h>
@@ -41,6 +43,11 @@
 #endif /* S_SPLINT_S */
 
 #include "gpsd_config.h"
+
+#if defined(HAVE_LIBCAP) && !defined(S_SPLINT_S)
+#include <sys/capability.h>
+#include <sys/prctl.h>
+#endif /* HAVE_LIBCAP */
 
 #include "gpsd.h"
 #include "sockaddr.h"
@@ -583,7 +590,17 @@ static ssize_t throttled_write(struct subscriber_t *sub, char *buf,
 	}
     }
 
+#if defined(PPS_ENABLE)
+    /*@ -unrecog  (splint has no pthread declarations as yet) @*/
+    (void)pthread_mutex_lock(&report_mutex);
+    /* +unrecog */
+#endif /* PPS_ENABLE */
     status = send(sub->fd, buf, len, 0);
+#if defined(PPS_ENABLE)
+    /*@ -unrecog (splint has no pthread declarations as yet) @*/
+    (void)pthread_mutex_unlock(&report_mutex);
+    /* +unrecog */
+#endif /* PPS_ENABLE */
     if (status == (ssize_t) len)
 	return status;
     else if (status > -1) {
@@ -633,6 +650,8 @@ static void deactivate_device(struct gps_device_t *device)
     if (device->gpsdata.gps_fd != -1) {
 	FD_CLR(device->gpsdata.gps_fd, &all_fds);
 	adjust_max_fd(device->gpsdata.gps_fd, false);
+#if defined(PPS_ENABLE) && defined(TIOCMIWAIT)
+#endif /* defined(PPS_ENABLE) && defined(TIOCMIWAIT) */
 #ifdef NTPSHM_ENABLE
 	ntpd_link_deactivate(device);
 #endif /* NTPSHM_ENABLE */
@@ -1481,8 +1500,9 @@ static void consume_packets(struct gps_device_t *device)
 		    && sub->policy.watcher
 		    && subscribed(sub, device))
 		    listeners = true;
-	    if (listeners)
+	    if (listeners) {
 		(void)awaken(device);
+	    }
 	}
 
 	/* handle laggy response to a firmware version query */
@@ -1497,8 +1517,7 @@ static void consume_packets(struct gps_device_t *device)
 #endif /* SOCKET_EXPORT_ENABLE */
 
 	/*
-	 * If the device provided an RTCM packet, stash it
-	 * in the context structure for use as a future correction.
+	 * If the device provided an RTCM packet, repeat it to all devices.
 	 */
 	if ((changed & RTCM2_SET) != 0 || (changed & RTCM3_SET) != 0) {
 	    if (device->packet.outbuflen > RTCM_MAX) {
@@ -1506,11 +1525,23 @@ static void consume_packets(struct gps_device_t *device)
 			    "overlong RTCM packet (%zd bytes)\n",
 			    device->packet.outbuflen);
 	    } else {
-		context.rtcmbytes = device->packet.outbuflen;
-		memcpy(context.rtcmbuf,
-		       device->packet.outbuffer,
-		       context.rtcmbytes);
-		context.rtcmtime = timestamp();
+		struct gps_device_t *dp;
+		for (dp = devices; dp < devices+MAXDEVICES; dp++) {
+		    if (allocated_device(dp)) {
+/* *INDENT-OFF* */
+			if (dp->device_type->rtcm_writer != NULL) {
+			    if (dp->device_type->rtcm_writer(dp,
+								 (const char *)device->packet.outbuffer,
+								 device->packet.outbuflen) == 0)
+				gpsd_report(LOG_ERROR, "Write to RTCM sink failed\n");
+			    else {
+				gpsd_report(LOG_IO, "<= DGPS: %zd bytes of RTCM relayed.\n",
+					    device->packet.outbuflen);
+			    }
+			}
+/* *INDENT-ON* */
+		    }
+		}
 	    }
 	}
 
@@ -1664,6 +1695,22 @@ static int handle_gpsd_request(struct subscriber_t *sub, const char *buf)
 }
 #endif /* SOCKET_EXPORT_ENABLE */
 
+#ifdef PPS_ENABLE
+static void ship_pps_drift_message(struct gps_device_t *session, 
+				   struct timeval *tv)
+/* on PPS interrupt, ship a drift message to all clients */
+{
+    struct timeval clocktime;
+
+    if (gettimeofday(&clocktime, NULL) == 0)
+	notify_watchers(session, "{\"class\":\"PPS\",\"device\":\"%s\",\"real_sec\":%ld, \"real_musec\":%ld,\"clock_sec\":%ld,\"clock_musec\":%ld}\r\n",
+			session->gpsdata.dev.path,
+			tv->tv_sec, tv->tv_usec,
+			clocktime.tv_sec, clocktime.tv_usec);
+}
+#endif /* PPS_ENABLE */
+
+
 #ifdef __UNUSED_AUTOCONNECT__
 #define DGPS_THRESHOLD	1600000	/* max. useful dist. from DGPS server (m) */
 #define SERVER_SAMPLE	12	/* # of servers within threshold to check */
@@ -1765,18 +1812,24 @@ int main(int argc, char *argv[])
     int i, option, dfd;
     int msocks[2] = {-1, -1};
     bool go_background = true;
+#ifdef COMPAT_SELECT
     struct timeval tv;
+#else
+    sigset_t oldset, blockset;
+#endif /* COMPAT_SELECT */
     const struct gps_type_t **dp;
     bool in_restart;
+
+    context.debug = 0;
+    gps_context_init(&context);
 
 #ifdef PPS_ENABLE
     /*@-nullpass@*/
     (void)pthread_mutex_init(&report_mutex, NULL);
     /*@+nullpass@*/
+    context.pps_hook = ship_pps_drift_message;
 #endif /* PPS_ENABLE */
 
-    context.debug = 0;
-    gps_context_init(&context);
     while ((option = getopt(argc, argv, "F:D:S:bGhlNnP:V")) != -1) {
 	switch (option) {
 	case 'D':
@@ -1997,6 +2050,12 @@ int main(int argc, char *argv[])
 	struct passwd *pw;
 	struct stat stb;
 
+#if defined(HAVE_LIBCAP) && !defined(S_SPLINT_S)
+ 	/* set flag: keep privileges across setuid() call */
+	if (prctl(PR_SET_KEEPCAPS, 1L, 0L, 0L, 0L) == -1)
+	    gpsd_report(LOG_ERR, "prctl(PR_SET_KEEPCAPS, 1L ) failed\n");
+#endif /* HAVE_LIBCAP */
+
 	/* make default devices accessible even after we drop privileges */
 	for (i = optind; i < argc; i++)
 	    if (stat(argv[i], &stb) == 0)
@@ -2029,6 +2088,20 @@ int main(int argc, char *argv[])
 	if (pw)
 	    (void)setuid(pw->pw_uid);
 	/*@+type@*/
+
+ #if defined(HAVE_LIBCAP) && !defined(S_SPLINT_S)
+	/* drop root capabilities, except CAP_SYS_TIME for 1PPS support */
+	{
+	    cap_t caps = cap_from_text("cap_sys_time=pe");
+
+	    if (!caps)
+		gpsd_report(LOG_ERR, "cap_from_text() failed.\n");
+	    else if (cap_set_proc(caps) == -1) {
+		gpsd_report(LOG_ERR, "cap_set_proc() failed to drop root privs\n");
+		cap_free(caps);
+	    }
+	}
+#endif /* HAVE_LIBCAP */
     }
     gpsd_report(LOG_INF, "running with effective group ID %d\n", getegid());
     gpsd_report(LOG_INF, "running with effective user ID %d\n", geteuid());
@@ -2037,6 +2110,31 @@ int main(int argc, char *argv[])
     for (i = 0; i < NITEMS(subscribers); i++)
 	subscribers[i].fd = UNALLOCATED_FD;
 #endif /* SOCKET_EXPORT_ENABLE*/
+
+    /* Handle some signals */
+#ifndef COMPAT_SELECT
+    (void)sigemptyset(&blockset);
+    (void)sigaddset(&blockset, SIGHUP);
+    (void)sigaddset(&blockset, SIGINT);
+    (void)sigaddset(&blockset, SIGTERM);
+    (void)sigaddset(&blockset, SIGQUIT);
+    (void)sigprocmask(SIG_BLOCK, &blockset, &oldset);
+#endif /* COMPAT_SELECT */
+
+    /*@-compdef -compdestroy@*/
+    {
+	struct sigaction sa;
+
+	sa.sa_flags = 0;
+	sa.sa_handler = onsig;
+	(void)sigfillset(&sa.sa_mask);
+	(void)sigaction(SIGHUP, &sa, NULL);
+	(void)sigaction(SIGINT, &sa, NULL);
+	(void)sigaction(SIGTERM, &sa, NULL);
+	(void)sigaction(SIGQUIT, &sa, NULL);
+	(void)signal(SIGPIPE, SIG_IGN);
+    }
+    /*@+compdef +compdestroy@*/
 
     /* daemon got termination or interrupt signal */
     if (setjmp(restartbuf) > 0) {
@@ -2049,13 +2147,7 @@ int main(int argc, char *argv[])
 	gpsd_report(LOG_WARN, "gpsd restarted by SIGHUP\n");
     }
 
-    /* Handle some signals */
     signalled = 0;
-    (void)signal(SIGHUP, onsig);
-    (void)signal(SIGINT, onsig);
-    (void)signal(SIGTERM, onsig);
-    (void)signal(SIGQUIT, onsig);
-    (void)signal(SIGPIPE, SIG_IGN);
 
     for (i = 0; i < AFCOUNT; i++)
 	if (msocks[i] >= 0) {
@@ -2094,18 +2186,27 @@ int main(int argc, char *argv[])
 	 * of tracking maxfd is to keep the set of descriptors that
 	 * select(2) has to poll here as small as possible (for
 	 * low-clock-rate SBCs and the like).
+	 *
+	 * pselect() is preferable, when we can have it, to eliminate
+	 * the once-per-second wakeup when no sensors are attached.
+	 * This cuts power consumption.
 	 */
-	/*@ -usedef @*/
+	/*@ -usedef -nullpass @*/
+	errno = 0;
+
+#ifdef COMPAT_SELECT
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
-	errno = 0;
 	if (select(maxfd + 1, &rfds, NULL, NULL, &tv) == -1) {
+#else
+	if (pselect(maxfd + 1, &rfds, NULL, NULL, NULL, &oldset) == -1) {
+#endif
 	    if (errno == EINTR)
 		continue;
 	    gpsd_report(LOG_ERROR, "select: %s\n", strerror(errno));
 	    exit(2);
 	}
-	/*@ +usedef @*/
+	/*@ +usedef +nullpass @*/
 
 	if (context.debug >= LOG_SPIN) {
 	    char dbuf[BUFSIZ];
@@ -2203,8 +2304,10 @@ int main(int argc, char *argv[])
 	for (cfd = 0; cfd < FD_SETSIZE; cfd++)
 	    if (FD_ISSET(cfd, &control_fds)) {
 		char buf[BUFSIZ];
+		ssize_t rd;
 
-		while (read(cfd, buf, sizeof(buf) - 1) > 0) {
+		while ((rd = read(cfd, buf, sizeof(buf) - 1)) > 0) {
+		    buf[rd] = '\0';
 		    gpsd_report(LOG_IO, "<= control(%d): %s\n", cfd, buf);
 		    handle_control(cfd, buf);
 		}
@@ -2220,27 +2323,6 @@ int main(int argc, char *argv[])
 	for (device = devices; device < devices + MAXDEVICES; device++) {
 	    if (!allocated_device(device))
 		continue;
-
-/* *INDENT-OFF* */
-	    /* pass the current RTCM correction to the GPS if new */
-	    if (device->device_type != NULL) {
-		if (device->gpsdata.gps_fd != -1
-		    && device->context->rtcmbytes > 0
-		    && device->rtcmtime < device->context->rtcmtime
-		    && device->device_type->rtcm_writer != NULL) {
-		    if (device->device_type->rtcm_writer(device,
-							  device->context->rtcmbuf,
-							  device->context->rtcmbytes) ==
-			0)
-			gpsd_report(LOG_ERROR, "Write to RTCM sink failed\n");
-		    else {
-			device->rtcmtime = timestamp();
-			gpsd_report(LOG_IO, "<= DGPS: %zd bytes of RTCM relayed.\n",
-				    device->context->rtcmbytes);
-		    }
-		}
-	    }
-/* *INDENT-ON* */
 
 	    if (device->gpsdata.gps_fd >= 0) {
 		if (FD_ISSET(device->gpsdata.gps_fd, &rfds))

@@ -44,14 +44,12 @@ C++:
 .BI "struct gps_data_t *open(char\ *" "host" ", char\ *" "port" ");"
 .HP \w'struct\ gps_data_t\ *open('u
 .BI "struct gps_data_t *open(void);"
-.HP \w'struct\ gps_data_t\ *query('u
-.BI "struct gps_data_t *query(char\ *" "request" ");"
-.HP \w'struct\ gps_data_t\ *poll('u
-.BI "struct gps_data_t *poll(void);"
-.HP \w'int\ set_callback('u
-.BI "int set_callback(void\ (*" "hook" ")(struct\ gps_data_t\ *sentence,\ char\ *buf));"
-.HP \w'int\ del_callback('u
-.BI "int del_callback(void);"
+.HP \w'struct\ gps_data_t\ *send('u
+.BI "struct gps_data_t *send(char\ *" "request" ");"
+.HP \w'struct\ gps_data_t\ *read('u
+.BI "struct gps_data_t *read(void);"
+.HP \w'struct\ gps_data_t\ *waiting('u
+.BI "struct gps_data_t *waiting(int);"
 .HP \w'struct\ gps_data_t\ *stream('u
 .BI "struct gps_data_t *stream(unsigned\ int" "flags" ");"
 .SH "DESCRIPTION"

@@ -19,7 +19,7 @@
 # * Out-of-directory builds: see http://www.scons.org/wiki/UsingBuildDir
 
 # Release identification begins here
-gpsd_version = "3.4"
+gpsd_version = "3.5"
 
 # library version
 libgps_version_current  = 20
@@ -167,7 +167,6 @@ nonboolopts = (
     ("limited_max_devices", 0,             "maximum allowed devices"),
     ("fixed_port_speed",    0,             "fixed serial port speed"),
     ("fixed_stop_bits",     0,             "fixed serial port stop bits"),
-    ("pps_pin",             "DCD",         "pin to expect PPS pulses on"),
     ("target",              "",            "cross-development target"),
     ("sysroot",             "",            "cross-development system root"),
     )
@@ -459,6 +458,14 @@ else:
     confdefs.append("/* #undef HAVE_LIBRT */\n")
     rtlibs = []
 
+if config.CheckLib('libcap'):
+    confdefs.append("#define HAVE_LIBCAP 1\n")
+    # System library - no special flags
+    rtlibs = ["-lcap"]
+else:
+    confdefs.append("/* #undef HAVE_LIBCAP */\n")
+    rtlibs = []
+
 if env['dbus_export'] and config.CheckPKG('dbus-1'):
     confdefs.append("#define HAVE_DBUS 1\n")
     dbus_libs = pkg_config('dbus-1')
@@ -519,6 +526,10 @@ for (key,help) in keys:
         else:
             confdefs.append("#define %s \"%s\"\n" % (key.upper(), value))
 
+if config.CheckFunc("pselect"):
+    confdefs.append("/* #undef COMPAT_SELECT */\n")
+else:
+    confdefs.append("#define COMPAT_SELECT\n")
 
 confdefs.append('''
 /* will not handle pre-Intel Apples that can run big-endian */
@@ -761,7 +772,7 @@ compiled_gpslib = Library(env=env,
                           target="gps",
                           sources=libgps_sources,
                           version=libgps_version,
-                          parse_flags= ["-lm"] + dbus_libs)
+                          parse_flags=dbus_libs)
 env.Clean(compiled_gpslib, "gps_maskdump.c")
 
 compiled_gpsdlib = Library(env=env,
@@ -783,7 +794,7 @@ if qt_env:
     # infamous "Two environments with different actions were specified
     # for the same target" error.
     for src in libgps_sources:
-        if src in ("gpsutils.c", "libgps_sock.c"):
+        if src not in ('ais_json.c','json.c','libgps_json.c','rtcm2_json.c','shared_json.c'):
             compile_with = qt_env['CXX']
             compile_flags = qt_flags
         else:
@@ -798,7 +809,7 @@ if qt_env:
 
 # The libraries have dependencies on system libraries
 
-gpslibs = ["-lgps"]
+gpslibs = ["-lgps", "-lm"]
 gpsdlibs = ["-lgpsd"] + usblibs + bluezlibs + gpslibs
 
 # Source groups
@@ -850,7 +861,7 @@ gpsdctl = env.Program('gpsdctl', ['gpsdctl.c'], parse_flags=gpslibs)
 env.Depends(gpsdctl, compiled_gpslib)
 
 gpsmon = env.Program('gpsmon', gpsmon_sources,
-                     parse_flags=gpsdlibs + ncurseslibs)
+                     parse_flags=gpsdlibs + ncurseslibs + ['-lm'])
 env.Depends(gpsmon, [compiled_gpsdlib, compiled_gpslib])
 
 gpspipe = env.Program('gpspipe', ['gpspipe.c'], parse_flags=gpslibs)
@@ -912,11 +923,11 @@ else:
     }
 
     python_env = env.Clone()
-    vars = sysconfig.get_config_vars('CC', 'CXX', 'OPT', 'BASECFLAGS', 'CCSHARED', 'LDSHARED', 'SO', 'INCLUDEPY')
+    vars = sysconfig.get_config_vars('CC', 'CXX', 'OPT', 'BASECFLAGS', 'CCSHARED', 'LDSHARED', 'SO', 'INCLUDEPY', 'LDFLAGS')
     for i in range(len(vars)):
         if vars[i] is None:
-            vars[i] = ""
-    (cc, cxx, opt, basecflags, ccshared, ldshared, so_ext, includepy) = vars
+            vars[i] = []
+    (cc, cxx, opt, basecflags, ccshared, ldshared, so_ext, includepy, ldflags) = vars
     # in case CC/CXX was set to the scan-build wrapper,
     # ensure that we build the python modules with scan-build, too
     if env['CC'] is None or env['CC'].find('scan-build') < 0:
@@ -928,12 +939,18 @@ else:
     else:
         python_env['CXX'] = ' '.join([env['CXX']] + cxx.split()[1:])
 
-    python_env['SHLINKFLAGS'] = []
-    python_env['SHLINK'] = ldshared
-    python_env['SHLIBPREFIX']=""
-    python_env['SHLIBSUFFIX']=so_ext
-    python_env['CPPPATH'] =[includepy]
-    python_env['CPPFLAGS']=basecflags + " " + opt
+    ldshared=ldshared.replace('-fPIE', '')
+    ldshared=ldshared.replace('-pie', '')
+    python_env.Replace(SHLINKFLAGS=[],
+                       LDFLAGS=ldflags,
+                       LINK = ldshared,
+                       SHLIBPREFIX="",
+                       SHLIBSUFFIX=so_ext,
+                       CPPPATH=[includepy],
+                       CPPFLAGS=opt,
+                       CFLAGS=basecflags,
+                       CXXFLAGS=basecflags)
+
     python_objects={}
     python_compiled_libs = {}
     for ext, sources in python_extensions.iteritems():
@@ -948,7 +965,6 @@ else:
             )
         python_compiled_libs[ext] = python_env.SharedLibrary(ext, python_objects[ext])
     python_built_extensions = python_compiled_libs.values()
-
     python_egg_info_source = """Metadata-Version: 1.0
 Name: gps
 Version: %s
@@ -999,17 +1015,8 @@ else:
 revision='#define REVISION "%s"\n' %(rev.strip(),)
 env.Textfile(target="revision.h", source=[revision])
 
-# generate pps_pin.h
-pps_pin = env['pps_pin']
-ppsh = '/* generated by scons from the pps_pin option - do not hand-hack */\n'
-ppsh += '#define PPS_LINE_NAME "%s"\n' % pps_pin
-tioc_map = {"DCD": "CAR"}
-ppsh += '#define PPS_LINE_TIOC TIOCM_%s\n' % tioc_map.get(pps_pin, pps_pin)
-ppsh += "/* end */\n"
-env.NoClean(env.Textfile(target="pps_pin.h", source=[ppsh]))
-
 generated_sources = ['packet_names.h', 'timebase.h', 'gpsd.h', "ais_json.i",
-                     'gps_maskdump.c', 'revision.h', 'gpsd.php', 'pps_pin.h']
+                     'gps_maskdump.c', 'revision.h', 'gpsd.php']
 
 # leapseconds.cache is a local cache for information on leapseconds issued
 # by the U.S. Naval observatory. It gets kept in the repository so we can
@@ -1154,7 +1161,7 @@ else:
     python_module_dir = python_lib_dir + os.sep + 'gps'
     python_extensions_install = python_env.Install( DESTDIR + python_module_dir,
                                                     python_built_extensions)
-    if not env['debug'] or env['profiling']:
+    if not env['debug'] and not env['profiling'] and env['strip']:
         python_env.AddPostAction(python_extensions_install, '$STRIP $TARGET')
 
     python_modules_install = python_env.Install( DESTDIR + python_module_dir,
@@ -1320,7 +1327,7 @@ rtcm_regress = Utility('rtcm-regress', [gpsdecode], [
 # Rebuild the RTCM regression tests.
 Utility('rtcm-makeregress', [gpsdecode], [
     'for f in $SRCDIR/test/*.rtcm2; do '
-        '$SRCDIR/gpsdecode -j < ${f} > ${f}.chk; '
+        '$SRCDIR/gpsdecode -j <$${f} >$${f}.chk; '
     'done'
         ])
 
@@ -1517,7 +1524,7 @@ if env['python']:
 # GPS ad libitum.  All is well when you get fix reports each time a GPS
 # is plugged in.
 
-Utility('udev-install', '', [
+Utility('udev-install', 'install', [
     'mkdir -p ' + DESTDIR + '/lib/udev/rules.d',
     'cp $SRCDIR/gpsd.rules ' + DESTDIR + '/lib/udev/rules.d/25-gpsd.rules',
     'cp $SRCDIR/gpsd.hotplug ' + DESTDIR + '/lib/udev/',
@@ -1556,7 +1563,7 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
     env.Clean(tarball, ["gpsd-${VERSION}.tar.gz", "packaging/rpm/gpsd.spec"])
 
     # Make RPM from the specfile in packaging
-    Utility('dist-rpm', tarball, 'rpmbuild -ta $SOURCE')
+    Utility('dist-rpm', tarball, 'rpmbuild -ta gpsd-${VERSION}.tar.gz')
 
     # Make sure build-from-tarball works.
     testbuild = Utility('testbuild', [tarball], [
@@ -1605,6 +1612,16 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
                           upload_release,
                           upload_tags,
                           upload_web])
+
+    # Experimental release mechanics using shipper
+    # This will ship a freecode metadata update 
+    ship_release = Utility("ship_release",
+                           [tarball],
+                           ['shipper -u -m --exclude "login.ibiblio.org:/public/html/catb/esr/"'])
+    env.Alias("ship", [releaseprep,
+                          ship_release,
+                          upload_tags])
+
 
 # The following sets edit modes for GNU EMACS
 # Local Variables:

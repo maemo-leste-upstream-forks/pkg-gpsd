@@ -142,8 +142,6 @@ speed_t gpsd_get_speed(const struct termios *ttyctl)
 {
     speed_t code = cfgetospeed(ttyctl);
     switch (code) {
-    case B0:
-	return (0);
     case B300:
 	return (300);
     case B1200:
@@ -160,8 +158,12 @@ speed_t gpsd_get_speed(const struct termios *ttyctl)
 	return (38400);
     case B57600:
 	return (57600);
-    default:
+    case B115200:
 	return (115200);
+    case B230400:
+	return (230400);
+    default: /* B0 */ 
+	return 0;
     }
 }
 
@@ -205,8 +207,10 @@ void gpsd_set_speed(struct gps_device_t *session,
 	rate = B38400;
     else if (speed < 115200)
 	rate = B57600;
-    else
+    else if (speed < 230400)
 	rate = B115200;
+    else
+	rate = B230400;
 
     if (rate != cfgetispeed(&session->ttyset)
 	|| parity != session->gpsdata.dev.parity
@@ -363,6 +367,7 @@ int gpsd_serial_open(struct gps_device_t *session)
         str2ba(session->gpsdata.dev.path, &addr.rc_bdaddr);
         if (connect(session->gpsdata.gps_fd, (struct sockaddr *) &addr, sizeof (addr)) == -1) {
 	    if (errno != EINPROGRESS && errno != EAGAIN) {
+		(void)close(session->gpsdata.gps_fd);
 		gpsd_report(LOG_ERROR, "bluetooth socket connect failed: %s\n",
 			    strerror(errno));
 		return -1;
@@ -518,7 +523,7 @@ bool gpsd_next_hunt_setting(struct gps_device_t * session)
 #ifndef FIXED_PORT_SPEED
     /* every rate we're likely to see on a GPS */
     static unsigned int rates[] =
-	{ 0, 4800, 9600, 19200, 38400, 57600, 115200 };
+	{ 0, 4800, 9600, 19200, 38400, 57600, 115200, 230400};
 #endif /* FIXED_PORT_SPEED defined */
 
     /* don't waste time in the hunt loop if this is not actually a tty */
@@ -594,13 +599,8 @@ void gpsd_close(struct gps_device_t *session)
 	 * them the first time.  Economical, and avoids tripping over an
 	 * obscure Linux 2.6 kernel bug that disables threaded
 	 * ioctl(TIOCMWAIT) on a device after tcsetattr() is called.
-         *
-         * Unfortunately the termios struct doesn't have c_ispeed/c_ospeed
-         * on all architectures. Its missing on sparc, mips/mispel and hurd-i386 at least.
 	 */
-#if defined(_HAVE_STRUCT_TERMIOS_C_ISPEED)
-	if (session->ttyset_old.c_ispeed != session->ttyset.c_ispeed || (session->ttyset_old.c_cflag & CSTOPB) != (session->ttyset.c_cflag & CSTOPB)) {
-#endif
+	if (cfgetispeed(&session->ttyset_old) != cfgetispeed(&session->ttyset) || (session->ttyset_old.c_cflag & CSTOPB) != (session->ttyset.c_cflag & CSTOPB)) {
 	    /*@ ignore @*/
 	    (void)cfsetispeed(&session->ttyset_old,
 			      (speed_t) session->gpsdata.dev.baudrate);
@@ -609,9 +609,7 @@ void gpsd_close(struct gps_device_t *session)
 	    /*@ end @*/
 	    (void)tcsetattr(session->gpsdata.gps_fd, TCSANOW,
 			    &session->ttyset_old);
-#if defined(_HAVE_STRUCT_TERMIOS_C_ISPEED)
 	}
-#endif
 	gpsd_report(LOG_SPIN, "close(%d) in gpsd_close(%s)\n",
 		    session->gpsdata.gps_fd, session->gpsdata.dev.path);
 	(void)close(session->gpsdata.gps_fd);

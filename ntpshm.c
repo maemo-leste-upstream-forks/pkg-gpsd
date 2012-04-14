@@ -284,7 +284,6 @@ int ntpshm_put(struct gps_device_t *session, double fixtime, double fudge)
  *  9    22    RI   <-- Ring Indicator
  *  5     7    SG       Signal ground 
  */
-#include "pps_pin.h"
 
 /*@unused@*//* splint is confused here */
 /* put NTP shared memory info based on received PPS pulse
@@ -446,7 +445,6 @@ static int ntpshm_pps(struct gps_device_t *session, struct timeval *tv)
 #if defined(HAVE_SYS_TIMEPPS_H)
 /* return handle for kernel pps, or -1 */
 static int init_kernel_pps(struct gps_device_t *session) {
-    int kernelpps_handle = -1;
     int ldisc = 18;   /* the PPS line discipline */
     pps_params_t pp;
     glob_t globbuf;
@@ -454,6 +452,7 @@ static int init_kernel_pps(struct gps_device_t *session) {
     char pps_num = 0;     /* /dev/pps[pps_num] is our device */
     char path[GPS_PATH_MAX] = "";
 
+    session->kernelpps_handle = -1;
     if ( !isatty(session->gpsdata.gps_fd) ) {
 	gpsd_report(LOG_INF, "KPPS gps_fd not a tty\n");
     	return -1;
@@ -462,8 +461,8 @@ static int init_kernel_pps(struct gps_device_t *session) {
     /* This activates the magic /dev/pps0 device */
     /* Note: this ioctl() requires root */
     if ( 0 > ioctl(session->gpsdata.gps_fd, TIOCSETD, &ldisc)) {
-	gpsd_report(LOG_INF, "KPPS cannot set PPS line discipline: %d\n"
-	    , errno);
+	gpsd_report(LOG_INF, "KPPS cannot set PPS line discipline: %s\n"
+	    , strerror(errno));
     	return -1;
     }
 
@@ -511,21 +510,21 @@ static int init_kernel_pps(struct gps_device_t *session) {
     /* root privs are required for this device open */
     int ret = open(path, O_RDWR);
     if ( 0 > ret ) {
-	gpsd_report(LOG_INF, "KPPS cannot open %s: %d\n"
-	    , path, errno);
+	gpsd_report(LOG_INF, "KPPS cannot open %s: %s\n"
+	    , path, strerror(errno));
     	return -1;
     }
     /* root privs are not required past this point */ 
 
-    if ( 0 > time_pps_create(ret, &kernelpps_handle )) {
-	gpsd_report(LOG_INF, "KPPS time_pps_create(%d,) failed: %d\n"
-	    , ret, errno);
+    if ( 0 > time_pps_create(ret, &session->kernelpps_handle )) {
+	gpsd_report(LOG_INF, "KPPS time_pps_create(%d) failed: %s\n"
+	    , ret, strerror(errno));
     	return -1;
     } else {
     	/* have kernel PPS handle */
         int caps;
 	/* get features  supported */
-        if ( 0 > time_pps_getcap(kernelpps_handle, &caps)) {
+        if ( 0 > time_pps_getcap(session->kernelpps_handle, &caps)) {
 	    gpsd_report(LOG_ERROR, "KPPS time_pps_getcap() failed\n");
         } else {
 	    gpsd_report(LOG_INF, "KPPS caps %0x\n", caps);
@@ -535,13 +534,14 @@ static int init_kernel_pps(struct gps_device_t *session) {
         memset( (void *)&pp, 0, sizeof(pps_params_t));
         pp.mode = PPS_CAPTUREBOTH;
 
-        if ( 0 > time_pps_setparams(kernelpps_handle, &pp)) {
+        if ( 0 > time_pps_setparams(session->kernelpps_handle, &pp)) {
 	    gpsd_report(LOG_ERROR, 
-	    	"KPPS time_pps_setparams() failed, errno:%d\n", errno);
+		"KPPS time_pps_setparams() failed: %s\n", strerror(errno));
+	    time_pps_destroy(session->kernelpps_handle);
 	    return -1;
         }
     }
-    return kernelpps_handle;
+    return 0;
 }
 #endif /* defined(HAVE_SYS_TIMEPPS_H) */
 
@@ -611,8 +611,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 
 #if defined(HAVE_SYS_TIMEPPS_H)
     /* some operations in init_kernel_pps() require root privs */
-    int kernelpps_handle = init_kernel_pps( session );
-    if ( 0 <= kernelpps_handle ) {
+    (void)init_kernel_pps( session );
+    if ( 0 <= session->kernelpps_handle ) {
 	gpsd_report(LOG_WARN, "KPPS kernel PPS will be used\n");
     }
     memset( (void *)&pi, 0, sizeof(pps_info_t));
@@ -620,10 +620,22 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 
     /* root privileges are not required after this point */
 
-    /* wait for status change on the device's carrier-detect line */
-    while (ioctl(session->gpsdata.gps_fd, TIOCMIWAIT, PPS_LINE_TIOC) == 0) {
+#define PPS_LINE_TIOC (TIOCM_CD|TIOCM_CAR|TIOCM_RI)
+
+    /* 
+     * Wait for status change on any handshake line. The only assumption here 
+     * is that no GPS lights up more than one of these pins.  By waiting on
+     * all of them we remove a configuration switch.
+     */
+    while (1) {
 	int ok = 0;
 	char *log = NULL;
+
+        if (ioctl(session->gpsdata.gps_fd, TIOCMIWAIT, PPS_LINE_TIOC) != 0) {
+	    gpsd_report(LOG_ERROR, "PPS ioctl(TIOCMIWAIT) failed: %d %.40s\n"
+	    	, errno, strerror(errno));
+	    break;
+	}
 
 /*@-noeffect@*/
 #ifdef HAVE_CLOCK_GETTIME
@@ -646,12 +658,12 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 /*@+noeffect@*/
 
 #if defined(HAVE_SYS_TIMEPPS_H)
-        if ( 0 <= kernelpps_handle ) {
+        if ( 0 <= session->kernelpps_handle ) {
 	    struct timespec kernelpps_tv;
 	    /* on a quad core 2.4GHz Xeon this removes about 20uS of 
 	     * latency, and about +/-5uS of jitter over the other method */
             memset( (void *)&kernelpps_tv, 0, sizeof(kernelpps_tv));
-	    if ( 0 > time_pps_fetch(kernelpps_handle, PPS_TSFMT_TSPEC
+	    if ( 0 > time_pps_fetch(session->kernelpps_handle, PPS_TSFMT_TSPEC
 	        , &pi, &kernelpps_tv)) {
 		gpsd_report(LOG_ERROR, "KPPS kernel PPS failed\n");
 	    } else {
@@ -702,8 +714,10 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	log = NULL;
 
 	/*@ +ignoresigns */
-	if (ioctl(session->gpsdata.gps_fd, TIOCMGET, &state) != 0)
+	if (ioctl(session->gpsdata.gps_fd, TIOCMGET, &state) != 0) {
+	    gpsd_report(LOG_ERROR, "PPS ioctl(TIOCMGET) failed\n");
 	    break;
+	}
 	/*@ -ignoresigns */
 
 	state = (int)((state & PPS_LINE_TIOC) != 0);
@@ -720,8 +734,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		duration = 0;
 		unchanged = 0;
 		gpsd_report(LOG_RAW,
-			    "PPS pps-detect (%s) on %s invisible pulse\n",
-			    PPS_LINE_NAME, session->gpsdata.dev.path);
+			    "PPS pps-detect on %s invisible pulse\n",
+			    session->gpsdata.dev.path);
 	    } else if (++unchanged == 10) {
 		unchanged = 1;
 		gpsd_report(LOG_WARN,
@@ -729,8 +743,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		(void)sleep(10);
 	    }
 	} else {
-	    gpsd_report(LOG_RAW, "PPS pps-detect (%s) on %s changed to %d\n",
-			PPS_LINE_NAME, session->gpsdata.dev.path, state);
+	    gpsd_report(LOG_RAW, "PPS pps-detect on %s changed to %d\n",
+			session->gpsdata.dev.path, state);
 	    laststate = state;
 	    unchanged = 0;
 	}
@@ -744,7 +758,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		    (unsigned long)tv.tv_sec, (unsigned long)tv.tv_usec);
 
 	/*@ +boolint @*/
-	if (session->ship_to_ntpd) {
+	if (session->ship_to_ntpd || session->context->pps_hook != NULL) {
 	    /*
 	     * The PPS pulse is normally a short pulse with a frequency of
 	     * 1 Hz, and the UTC second is defined by the front edge. But we
@@ -835,7 +849,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	    sample.leap = 0;
 	    sample.magic = SOCK_MAGIC;
 #if defined(HAVE_SYS_TIMEPPS_H)
-            if ( 0 <= kernelpps_handle ) {
+            if ( 0 <= session->kernelpps_handle) {
 		/* pick the right edge */
 		if ( kpps_edge ) {
 		    ts = pi.assert_timestamp; /* structure copy */
@@ -849,7 +863,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		sample.tv = tv; 	/* structure copy */
 	    } 
 	    /* FIXME!! this is wrong if signal is 5Hz or 10Hz instead of PPS */
-	    /* carefull, unix time to nSec is more precision that a double */
+	    /* careful, Unix time to nSec is more precision than a double */
 	    sample.offset = 1 + session->last_fixtime - ts.tv_sec;
 	    sample.offset -= ts.tv_nsec / 1e9;
 /* was: defined(ONCORE_ENABLE) && defined(BINARY_ENABLE) */
@@ -864,7 +878,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	    /*@+noeffect@*/
 #endif
 
-	    if ( 0 <= chronyfd ) {
+	    if ( 0 <= chronyfd && session->ship_to_ntpd) {
 		(void)send(chronyfd, &sample, sizeof (sample), 0);
 		gpsd_report(LOG_RAW, "PPS edge accepted chrony sock %lu.%06lu offset %.9f\n",
 			    (unsigned long)sample.tv.tv_sec,
@@ -872,7 +886,10 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 			    sample.offset);
 	    }
 	    TSTOTV( &tv, &ts );
-	    (void)ntpshm_pps(session, &tv);
+	    if (session->ship_to_ntpd)
+		(void)ntpshm_pps(session, &tv);
+	    if (session->context->pps_hook != NULL)
+		session->context->pps_hook(session, &tv);
 	} else {
 	    gpsd_report(LOG_RAW, "PPS edge rejected %.100s", log);
 	}
@@ -892,16 +909,15 @@ void ntpd_link_deactivate(struct gps_device_t *session)
 # ifdef PPS_ENABLE
     (void)ntpshm_free(session->context, session->shmTimeP);
     session->shmTimeP = -1;
+#ifdef TIOCMIWAIT
+    pps_thread_deactivate(session);
+#endif /* TIOCMIWAIT */
 # endif	/* PPS_ENABLE */
 }
 
 void ntpd_link_activate(struct gps_device_t *session)
 /* set up ntpshm storage for a session - may fail if not called as root */
 {
-#if defined(PPS_ENABLE) && defined(TIOCMIWAIT)
-    pthread_t pt;
-#endif /* defined(PPS_ENABLE) && defined(TIOCMIWAIT) */
-
     /* If we are talking to ntpd, allocate a shared-memory segment for "NMEA" time data */
     if (session->context->enable_ntpshm)
 	session->shmindex = ntpshm_alloc(session->context);
@@ -914,16 +930,47 @@ void ntpd_link_activate(struct gps_device_t *session)
 	 * for the 1pps time data and launch a thread to capture the 1pps
 	 * transitions
 	 */
-	if ((session->shmTimeP = ntpshm_alloc(session->context)) >= 0) {
-	    /*@-compdef -nullpass@*/
-	    (void)pthread_create(&pt, NULL, gpsd_ppsmonitor, (void *)session);
-	    /*@+compdef +nullpass@*/
-	} else {
+	if ((session->shmTimeP = ntpshm_alloc(session->context)) < 0) {
 	    gpsd_report(LOG_INF, "NTPD ntpshm_alloc(1) failed\n");
-	}
-
+	} else
+	    pps_thread_activate(session);
 #endif /* defined(PPS_ENABLE) && defined(TIOCMIWAIT) */
     }
 }
 
-#endif /* NTPSHM_ENABLE */
+#if defined(PPS_ENABLE) && defined(TIOCMIWAIT)
+void pps_thread_activate(struct gps_device_t *session)
+/* activate a thread to watch the device's PPS transitions */
+{
+    pthread_t pt;
+    if (session->shmTimeP >= 0) {
+	gpsd_report(LOG_PROG, "PPS thread launched\n");
+	/*@-compdef -nullpass@*/
+	(void)pthread_create(&pt, NULL, gpsd_ppsmonitor, (void *)session);
+        /*@+compdef +nullpass@*/
+    }
+}
+#else
+void pps_thread_activate(struct gps_device_t *session UNUSED)
+{
+    /* nothing to call */
+}
+#endif /* defined(PPS_ENABLE) && defined(TIOCMIWAIT) */
+
+#if defined(PPS_ENABLE) && defined(HAVE_SYS_TIMEPPS_H)
+void pps_thread_deactivate(struct gps_device_t *session)
+/* cleanly terminate device's PPS thread */
+{
+    if (session->kernelpps_handle > 0) {
+	gpsd_report(LOG_PROG, "PPS descriptor cleaned up\n");
+	time_pps_destroy(session->kernelpps_handle);
+    }
+}
+#else
+void pps_thread_deactivate(struct gps_device_t *session UNUSED)
+{
+    /* nothing to call */
+}
+#endif
+
+#endif /* defined(PPS_ENABLE) && defined(HAVE_SYS_TIMEPPS_H) */
