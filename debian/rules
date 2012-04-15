@@ -103,7 +103,7 @@ build-static-stamp: $(QUILT_STAMPFN)
 	    -prune \
 	    -o -name debian -prune \
 	    -o -exec cp -pr {} static_lib \;
-	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) -c . ;\
+	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) -c ;\
 	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) $(SCONSSTATICOPTS) libgps.a
 	touch $@
 
@@ -113,8 +113,8 @@ clean-patched:
 	dh_testroot
 	set -e; \
 	    for py in $(PYTHONS); do \
-	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) -c .; \
-	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) -c .; \
+	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) -c ; \
+	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) -c ; \
 	    done
 	rm -rf \
 	    .sconf_temp \
