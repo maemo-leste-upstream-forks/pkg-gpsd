@@ -1,3 +1,10 @@
+gpsd (3.5-3) unstable; urgency=low
+
+  * [bfb00dff] More symbol file fixes.
+    Hope nothing missing again.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 16 Apr 2012 22:11:14 +0200
+
 gpsd (3.5-2) unstable; urgency=low
 
   * [ce2ef186] Fix libqgpsmm20.symbols for !amd64
