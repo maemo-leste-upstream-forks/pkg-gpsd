@@ -33,11 +33,11 @@ libgps.so.20 libgps20 #MINVER#
  gps_open@Base 3.3
  gps_read@Base 3.3
  gps_send@Base 3.3
- (arch=amd64)gps_shm_close@Base 3.3
- (arch=amd64)gps_shm_mainloop@Base 3.3
- (arch=amd64)gps_shm_open@Base 3.3
- (arch=amd64)gps_shm_read@Base 3.3
- (arch=amd64)gps_shm_waiting@Base 3.3
+ (arch=amd64 kfreebsd-amd64)gps_shm_close@Base 3.3
+ (arch=amd64 kfreebsd-amd64)gps_shm_mainloop@Base 3.3
+ (arch=amd64 kfreebsd-amd64)gps_shm_open@Base 3.3
+ (arch=amd64 kfreebsd-amd64)gps_shm_read@Base 3.3
+ (arch=amd64 kfreebsd-amd64)gps_shm_waiting@Base 3.3
  gps_sock_close@Base 3.3
  gps_sock_data@Base 3.3
  gps_sock_mainloop@Base 3.3
