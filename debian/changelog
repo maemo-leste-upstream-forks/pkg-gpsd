@@ -1,3 +1,9 @@
+gpsd (3.5-2) unstable; urgency=low
+
+  * [ce2ef186] Fix libqgpsmm20.symbols for !amd64
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 16 Apr 2012 21:27:39 +0200
+
 gpsd (3.5-1) unstable; urgency=low
 
   * [89fd651b] Imported Upstream version 3.5
