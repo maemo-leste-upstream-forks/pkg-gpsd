@@ -34,14 +34,15 @@ libQgpsmm.so.20 libqgpsmm20 #MINVER#
  (c++)"export_lookup(char const*)@Base" 3.5
  (c++)"gps_dbus_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
  (c++)"gps_dbus_open(gps_data_t*)@Base" 3.5
- (c++)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
+ (c++|arch=amd64 kfreebsd-amd64)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
+ (c++|arch=!amd64 !kfreebsd-amd64)"gpsd_hexdump(char*, unsigned int)@Base" 3.5
  (c++)"gpsd_source_spec(char const*, fixsource_t*)@Base" 3.5
  (c++)"gpsd_units()@Base" 3.5
- (c++|arch=amd64)"gps_shm_close(gps_data_t*)@Base" 3.5
- (c++|arch=amd64)"gps_shm_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
- (c++|arch=amd64)"gps_shm_open(gps_data_t*)@Base" 3.5
- (c++|arch=amd64)"gps_shm_read(gps_data_t*)@Base" 3.5
- (c++|arch=amd64)"gps_shm_waiting(gps_data_t const*, int)@Base" 3.5
+ (c++|arch=amd64 kfreebsd-amd64)"gps_shm_close(gps_data_t*)@Base" 3.5
+ (c++|arch=amd64 kfreebsd-amd64)"gps_shm_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
+ (c++|arch=amd64 kfreebsd-amd64)"gps_shm_open(gps_data_t*)@Base" 3.5
+ (c++|arch=amd64 kfreebsd-amd64)"gps_shm_read(gps_data_t*)@Base" 3.5
+ (c++|arch=amd64 kfreebsd-amd64)"gps_shm_waiting(gps_data_t const*, int)@Base" 3.5
  (c++)"hex_escapes(char*, char const*)@Base" 3.5
  (c++)"libgps_dump_state(gps_data_t*)@Base" 3.5
  (c++)"maidenhead(double, double)@Base" 3.5
