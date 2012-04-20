@@ -1,3 +1,13 @@
+gpsd (3.5-4) unstable; urgency=low
+
+  * [bc30a21b] Removing makedev from build-dependencies.
+    Not needed anymore.
+  * [44599785] Pull a lot of patches from upstream.
+    They fix at least some of the regressions on our unusual architectures.
+  * [13f118ff] Add new ubits/sbits symbols to symbol files.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 20 Apr 2012 19:06:41 +0200
+
 gpsd (3.5-3) unstable; urgency=low
 
   * [bfb00dff] More symbol file fixes.
