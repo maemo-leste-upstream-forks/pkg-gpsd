@@ -1,0 +1,50 @@
+From 4f39917c18d6682bc02d39c4af8fd78cdee3ccd6 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Sun, 15 Apr 2012 02:19:44 -0400
+Subject: [PATCH] Minor fix for the lerap-second notification patch
+
+Without this pps=false builds fail.
+---
+ gpsd.h-tail    |    2 +-
+ libgpsd_core.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gpsd.h-tail b/gpsd.h-tail
+index 1c51846..82385e6 100644
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -217,12 +217,12 @@ struct gps_context_t {
+     /* timekeeping */
+     time_t start_time;			/* local time of daemon startup */
+     int leap_seconds;			/* Unix seconds to UTC (GPS-UTC offset) */
+-    int leap_notify;			/* notification state from subframe */
+     unsigned short gps_week;            /* GPS week, actually 10 bits */
+     double gps_tow;                     /* GPS time of week, actually 19 bits */
+     int century;			/* for NMEA-only devices without ZDA */
+     int rollovers;			/* rollovers since start of run */
+ #ifdef NTPSHM_ENABLE
++    int leap_notify;			/* notification state from subframe */
+     bool enable_ntpshm;
+     /* we need the volatile here to tell the C compiler not to
+      * 'optimize' as 'dead code' the writes to SHM */
+diff --git a/libgpsd_core.c b/libgpsd_core.c
+index 93cb330..efe83b9 100644
+--- a/libgpsd_core.c
++++ b/libgpsd_core.c
+@@ -103,12 +103,12 @@ void gps_context_init(struct gps_context_t *context)
+ 	.fixcnt	        = 0,
+ 	.start_time     = 0,
+ 	.leap_seconds   = 0,
+-	.leap_notify    = LEAP_NOWARNING,
+ 	.gps_week	= 0,
+ 	.gps_tow        = 0,
+ 	.century	= 0,
+ 	.rollovers      = 0,
+ #ifdef NTPSHM_ENABLE
++	.leap_notify    = LEAP_NOWARNING,
+ 	.enable_ntpshm  = false,
+ 	.shmTime	= {0},
+ 	.shmTimeInuse   = {0},
+-- 
+1.7.10
+

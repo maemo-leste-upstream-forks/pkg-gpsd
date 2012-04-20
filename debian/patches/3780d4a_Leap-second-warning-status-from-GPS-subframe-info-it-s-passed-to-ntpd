@@ -1,0 +1,151 @@
+From 3780d4aa916d911cf28a087cb7ad0c9d245c03e2 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Sat, 14 Apr 2012 11:29:04 -0400
+Subject: [PATCH] Leap-second warning status from GPS subframe info it's
+ passed to ntpd.
+
+Patch concept from Michael Tatarinov. Modified to use a session context
+member rather than a global.
+---
+ NEWS           |    6 +++++-
+ gpsd.h-tail    |   10 ++++++++++
+ libgpsd_core.c |    1 +
+ ntpshm.c       |    5 ++++-
+ subframe.c     |   23 +++++++++++++++--------
+ 5 files changed, 35 insertions(+), 10 deletions(-)
+
+diff --git a/NEWS b/NEWS
+index 2d80640..8adcc84 100644
+--- a/NEWS
++++ b/NEWS
+@@ -1,4 +1,8 @@
+-* Fri 13 Apr 2012 Eric S. Raymond <esr@snark.thyrsus.com> - 3.5
++* Sat 14 Apr 2012 Eric S. Raymond <esr@snark.thyrsus.com>
++  If a leap-second warning is available from GPS subframe information
++  it is passed to ntpd.
++
++* Sat 14 Apr 2012 Eric S. Raymond <esr@snark.thyrsus.com> - 3.5
+   Use pselect when it's available to cut down on wakeups and improve
+   signal handling.  New {PPS} message exporting clock drift. The AIVDM
+   driver now handles up to 16 interleaved 24A and 24B pair-halves.
+diff --git a/gpsd.h-tail b/gpsd.h-tail
+index e2d6da3..1c51846 100644
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -217,6 +217,7 @@ struct gps_context_t {
+     /* timekeeping */
+     time_t start_time;			/* local time of daemon startup */
+     int leap_seconds;			/* Unix seconds to UTC (GPS-UTC offset) */
++    int leap_notify;			/* notification state from subframe */
+     unsigned short gps_week;            /* GPS week, actually 10 bits */
+     double gps_tow;                     /* GPS time of week, actually 19 bits */
+     int century;			/* for NMEA-only devices without ZDA */
+@@ -838,6 +839,15 @@ static /*@unused@*/ inline void barrier(void) {
+ #endif /* defined(__GNUC__) && defined(__x86_64__) */
+ }
+ 
++/* ntpshm.c */
++#ifdef NTPSHM_ENABLE
++#define LEAP_NOWARNING  0x0     /* normal, no leap second warning */
++#define LEAP_ADDSECOND  0x1     /* last minute of day has 60 seconds */
++#define LEAP_DELSECOND  0x2     /* last minute of day has 59 seconds */
++#define LEAP_NOTINSYNC  0x3     /* overload, clock is free running */
++extern int leap_notify;
++#endif /* NTPSHM_ENABLE */
++
+ #endif /* _GPSD_H_ */
+ // Local variables:
+ // mode: c
+diff --git a/libgpsd_core.c b/libgpsd_core.c
+index 2f9e521..93cb330 100644
+--- a/libgpsd_core.c
++++ b/libgpsd_core.c
+@@ -103,6 +103,7 @@ void gps_context_init(struct gps_context_t *context)
+ 	.fixcnt	        = 0,
+ 	.start_time     = 0,
+ 	.leap_seconds   = 0,
++	.leap_notify    = LEAP_NOWARNING,
+ 	.gps_week	= 0,
+ 	.gps_tow        = 0,
+ 	.century	= 0,
+diff --git a/ntpshm.c b/ntpshm.c
+index 896a4b7..e6f93c2 100644
+--- a/ntpshm.c
++++ b/ntpshm.c
+@@ -184,6 +184,7 @@ static int ntpshm_alloc(struct gps_context_t *context)
+ 
+ 	    memset((void *)context->shmTime[i], 0, sizeof(struct shmTime));
+ 	    context->shmTime[i]->mode = 1;
++	    context->shmTime[i]->leap = LEAP_NOTINSYNC;
+ 	    context->shmTime[i]->precision = -1;	/* initially 0.5 sec */
+ 	    context->shmTime[i]->nsamples = 3;	/* stages of median filter */
+ 
+@@ -250,6 +251,7 @@ int ntpshm_put(struct gps_device_t *session, double fixtime, double fudge)
+     shmTime->clockTimeStampUSec = (int)microseconds;
+     shmTime->receiveTimeStampSec = (time_t) tv.tv_sec;
+     shmTime->receiveTimeStampUSec = (int)tv.tv_usec;
++    shmTime->leap = session->context->leap_notify;
+     /* setting the precision here does not seem to help anything, too
+      * hard to calculate properly anyway.  Let ntpd figure it out.
+      * Any NMEA will be about -1 or -2. 
+@@ -353,6 +355,7 @@ static int ntpshm_pps(struct gps_device_t *session, struct timeval *tv)
+     shmTimeP->clockTimeStampUSec = (int)microseconds;
+     shmTimeP->receiveTimeStampSec = (time_t) tv->tv_sec;
+     shmTimeP->receiveTimeStampUSec = (int)tv->tv_usec;
++    shmTimeP->leap = session->context->leap_notify;
+     /* precision is a placebo, ntpd does not really use it
+      * real world accuracy is around 16uS, thus -16 precision */
+     shmTimeP->precision = -16;
+@@ -846,7 +849,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+ 	    /* chrony expects tv-sec since Jan 1970 */
+ 	    /* FIXME!! offset is double of the error from local time */
+ 	    sample.pulse = 0;
+-	    sample.leap = 0;
++	    sample.leap = session->context->leap_notify;
+ 	    sample.magic = SOCK_MAGIC;
+ #if defined(HAVE_SYS_TIMEPPS_H)
+             if ( 0 <= session->kernelpps_handle) {
+diff --git a/subframe.c b/subframe.c
+index e79eb0c..feb734c 100644
+--- a/subframe.c
++++ b/subframe.c
+@@ -706,10 +706,7 @@ gps_mask_t gpsd_interpret_subframe(struct gps_device_t *session,
+ 		subp->sub4_18.DN = (words[8] & 0x0000FF);
+ 		/* leap second future */
+ 		subp->sub4_18.lsf = (int8_t)((words[9] >> 16) & 0x0000FF);
+-		gpsd_report(LOG_INF,
+-		    "50B: SF:4-18 leap-seconds:%d lsf:%d WNlsf:%u "
+-		    "DN:%d\n",
+-			    subp->sub4_18.leap, subp->sub4_18.lsf, subp->sub4_18.WNlsf, subp->sub4_18.DN);
++
+ 		gpsd_report(LOG_PROG,
+ 		    "50B: SF:4-18 a0:%.5g a1:%.5g a2:%.5g a3:%.5g "
+ 		    "b0:%.5g b1:%.5g b2:%.5g b3:%.5g "
+@@ -723,10 +720,20 @@ gps_mask_t gpsd_interpret_subframe(struct gps_device_t *session,
+ 			subp->sub4_18.d_tot, subp->sub4_18.WNt,
+ 			subp->sub4_18.leap, subp->sub4_18.WNlsf,
+ 			subp->sub4_18.DN, subp->sub4_18.lsf);
+-		if (subp->sub4_18.leap != subp->sub4_18.lsf) {
+-		    gpsd_report(LOG_PROG,
+-			"50B: SF:4-18 leap-second change coming\n");
+-		}
++
++#ifdef NTPSHM_ENABLE
++		if ((subp->sub4_18.WNt == subp->sub4_18.WNlsf) &&
++		    (subp->sub4_18.DN == 1 )) {
++		   if ( subp->sub4_18.leap < subp->sub4_18.lsf )
++			session->context->leap_notify = LEAP_ADDSECOND;
++		   else if ( subp->sub4_18.leap > subp->sub4_18.lsf )
++			session->context->leap_notify = LEAP_DELSECOND;
++		   else
++			session->context->leap_notify = LEAP_NOWARNING;
++		} else
++		   session->context->leap_notify = LEAP_NOWARNING;
++#endif /* NTPSHM_ENABLE */
++
+ 		session->context->leap_seconds = (int)subp->sub4_18.leap;
+ 		session->context->valid |= LEAP_SECOND_VALID;
+ 		break;
+-- 
+1.7.10
+

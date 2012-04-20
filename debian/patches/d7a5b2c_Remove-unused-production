@@ -1,0 +1,26 @@
+From d7a5b2cf0dc06ff2b16022306b28eeb3279c065d Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Mon, 16 Apr 2012 09:13:26 -0400
+Subject: [PATCH] Remove unused production.
+
+---
+ SConstruct |    3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index 793d3f1..32e6b98 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -882,9 +882,6 @@ binaries = [gpsd, gpsdecode, gpsctl, gpsdctl, gpspipe, gpxlogger, lcdgps]
+ if ncurseslibs:
+     binaries += [cgps, gpsmon]
+ 
+-clockwatcher = env.Program('clockwatcher', ['clockwatcher.c'], parse_flags=gpslibs)
+-env.Depends(clockwatcher, compiled_gpslib)
+-
+ # Test programs
+ test_float = env.Program('test_float', ['test_float.c'])
+ test_geoid = env.Program('test_geoid', ['test_geoid.c'], parse_flags=gpsdlibs)
+-- 
+1.7.10
+

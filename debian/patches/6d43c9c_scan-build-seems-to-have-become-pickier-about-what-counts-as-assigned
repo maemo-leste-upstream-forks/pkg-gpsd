@@ -1,0 +1,28 @@
+From 6d43c9cf13b2dd6f36d01794dded85918334062c Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Tue, 17 Apr 2012 18:34:54 -0400
+Subject: [PATCH] scan-build seems to have become pickier about what counts as
+ assigned.
+
+This may head off a warning.
+---
+ driver_evermore.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/driver_evermore.c b/driver_evermore.c
+index ee54a8a..d1118c4 100644
+--- a/driver_evermore.c
++++ b/driver_evermore.c
+@@ -160,7 +160,8 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
+     datalen -= 2;
+ 
+     /*@ -usedef @*/
+-    buf2[0] = '\0';	/* prevent 'Assigned value is garbage or undefined' from scan-build */
++    /* prevent 'Assigned value is garbage or undefined' from scan-build */
++    memset(buf2, '\0', sizeof(buf2));
+     tp = buf2;
+     for (i = 0; i < (size_t) datalen; i++) {
+ 	*tp = *cp++;
+-- 
+1.7.10
+

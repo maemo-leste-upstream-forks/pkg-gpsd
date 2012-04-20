@@ -1,0 +1,108 @@
+From 38e09bb74ccdd927768389b007a5f98872115849 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 19 Apr 2012 17:32:48 -0400
+Subject: [PATCH] More steps towards little-endiuan extraction.
+
+All normal regressions tests and the test_bits unit test pass.
+---
+ bits.h            |    4 ++--
+ driver_aivdm.c    |    6 +++---
+ driver_evermore.c |    4 ++--
+ driver_rtcm3.c    |    4 ++--
+ test_bits.c       |    5 +++--
+ 5 files changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/bits.h b/bits.h
+index 28e8a0b..519d5a0 100644
+--- a/bits.h
++++ b/bits.h
+@@ -81,7 +81,7 @@ union long_double {
+     (void)memcpy(to, from+2*(s)-2, 2*((e)-(s)+1))
+ 
+ /* bitfield extraction */
+-extern uint64_t ubebits(char buf[], unsigned int, unsigned int);
+-extern int64_t sbebits(char buf[], unsigned int, unsigned int);
++extern uint64_t ubits(char buf[], unsigned int, unsigned int, bool);
++extern int64_t sbits(char buf[], unsigned int, unsigned int, bool);
+ 
+ #endif /* _GPSD_BITS_H_ */
+diff --git a/driver_aivdm.c b/driver_aivdm.c
+index e5d80b2..86fca6c 100644
+--- a/driver_aivdm.c
++++ b/driver_aivdm.c
+@@ -44,7 +44,7 @@ static void from_sixbit(char *bitvec, uint start, int count, char *to)
+ 
+     /* six-bit to ASCII */
+     for (i = 0; i < count - 1; i++) {
+-	newchar = sixchr[ubebits(bitvec, start + 6 * i, 6U)];
++	newchar = sixchr[ubits(bitvec, start + 6 * i, 6U, false)];
+ 	if (newchar == '@')
+ 	    break;
+ 	else
+@@ -215,8 +215,8 @@ bool aivdm_decode(const char *buf, size_t buflen,
+         ais_context->decoded_frags = 0;
+ 
+ #define BITS_PER_BYTE	8
+-#define UBITS(s, l)	ubebits((char *)ais_context->bits, s, l)
+-#define SBITS(s, l)	sbebits((char *)ais_context->bits, s, l)
++#define UBITS(s, l)	ubits((char *)ais_context->bits, s, l, false)
++#define SBITS(s, l)	sbits((char *)ais_context->bits, s, l, false)
+ #define UCHARS(s, to)	from_sixbit((char *)ais_context->bits, s, sizeof(to), to)
+ 	ais->type = UBITS(0, 6);
+ 	ais->repeat = UBITS(6, 2);
+diff --git a/driver_evermore.c b/driver_evermore.c
+index 10d58cc..d3d437c 100644
+--- a/driver_evermore.c
++++ b/driver_evermore.c
+@@ -333,8 +333,8 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
+ 	 * and status for each channel from the chip.  We cannot get
+ 	 * codephase or carrierphase.
+ 	 */
+-#define SBITS(sat, s, l)	sbebits((char *)buf, 10 + (sat*14) + s, l)
+-#define UBITS(sat, s, l)	ubebits((char *)buf, 10 + (sat*14) + s, l)
++#define SBITS(sat, s, l)	sbits((char *)buf, 10 + (sat*14) + s, l, false)
++#define UBITS(sat, s, l)	ubits((char *)buf, 10 + (sat*14) + s, l, false)
+ 	for (k = 0; k < visible; k++) {
+ 	    int prn = (int)UBITS(k, 4, 5);
+ 	    /* this is so we can tell which never got set */
+diff --git a/driver_rtcm3.c b/driver_rtcm3.c
+index d1ce850..ae47bc2 100644
+--- a/driver_rtcm3.c
++++ b/driver_rtcm3.c
+@@ -74,8 +74,8 @@ void rtcm3_unpack( /*@out@*/ struct rtcm3_t *rtcm, char *buf)
+     signed long temp;
+ 
+     /*@ -evalorder -sefparams -mayaliasunique @*/
+-#define ugrab(width)	(bitcount += width, ubebits(buf, bitcount-width, width))
+-#define sgrab(width)	(bitcount += width, sbebits(buf, bitcount-width, width))
++#define ugrab(width)	(bitcount += width, ubits(buf, bitcount-width, width, false))
++#define sgrab(width)	(bitcount += width, sbits(buf, bitcount-width, width, false))
+ #define GPS_PSEUDORANGE(fld, len) \
+     {temp = (unsigned long)ugrab(len);		\
+     if (temp == GPS_INVALID_PSEUDORANGE)	\
+diff --git a/test_bits.c b/test_bits.c
+index 3be27cc..6caf531 100644
+--- a/test_bits.c
++++ b/test_bits.c
+@@ -9,6 +9,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdint.h>
++#include <stdbool.h>
+ #include "bits.h"
+ 
+ /*@ -duplicatequals -formattype */
+@@ -195,8 +196,8 @@ int main(void)
+ 	 up <
+ 	 unsigned_tests + sizeof(unsigned_tests) / sizeof(unsigned_tests[0]);
+ 	 up++) {
+-	uint64_t res = ubebits((char *)buf, up->start, up->width);
+-	(void)printf("ubebits(%s, %d, %d) %s should be %" PRIx64 ", is %" PRIx64 ": %s\n",
++	uint64_t res = ubits((char *)buf, up->start, up->width, false);
++	(void)printf("ubits(%s, %d, %d, false) %s should be %" PRIx64 ", is %" PRIx64 ": %s\n",
+ 		     hexdump(buf, strlen((char *)buf)),
+ 		     up->start, up->width, up->description, up->expected, res,
+ 		     res == up->expected ? "succeeded" : "FAILED");
+-- 
+1.7.10
+

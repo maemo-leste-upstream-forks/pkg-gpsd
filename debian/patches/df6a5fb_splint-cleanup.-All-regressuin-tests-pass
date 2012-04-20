@@ -1,0 +1,24 @@
+From df6a5fb51dd4dc37f0bf79bbcd5637e61ff43bf9 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 19 Apr 2012 23:31:48 -0400
+Subject: [PATCH] splint cleanup.  All regressuin tests pass.
+
+---
+ bits.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/bits.c b/bits.c
+index 0c846a1..f2fc1ff 100644
+--- a/bits.c
++++ b/bits.c
+@@ -44,7 +44,6 @@ uint64_t ubits(char buf[], unsigned int start, unsigned int width, bool le)
+     /* was extraction as a little-endian requested? */
+     if (le)
+     {
+-	unsigned int i;
+ 	uint64_t reversed = 0;
+ 
+ 	for (i = width; i; --i)
+-- 
+1.7.10
+

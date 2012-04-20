@@ -1,0 +1,29 @@
+From 9e7289c268f7c4643225005cab27a6cd6bb83202 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 19 Apr 2012 18:12:51 -0400
+Subject: [PATCH] First regressions for little-endian extraction pass.
+
+---
+ test_bits.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/test_bits.c b/test_bits.c
+index 87b8af1..d3fb94a 100644
+--- a/test_bits.c
++++ b/test_bits.c
+@@ -122,9 +122,11 @@ int main(void)
+ 	/* tests using the big buffer */
+ 	{buf, 0,  1,  0,    false, "first bit of first byte"},
+ 	{buf, 0,  8,  0x01, false, "first 8 bits"},
+-	{buf, 32, 7,  0x02, false, "first seven bits of fifth byte"},
++	{buf, 32, 7,  0x02, false, "first seven bits of fifth byte (0x05)"},
+ 	{buf, 56, 12, 0x8f, false, "12 bits crossing 7th to 8th bytes (0x08ff)"},
+ 	{buf, 78, 4, 11,    false, "2 bits crossing 8th to 9th byte (0xfefd)"},
++	{buf, 0,  1,  0,    true,  "first bit of first byte"},
++	{buf, 0,  8,  0x80, true,  "first 8 bits"},
+ 	/* sporadic tests based on found bugs */
+ 	{(unsigned char *)"\x19\x23\f6",
+ 	 7, 2, 2, false, "2 bits crossing 1st to 2nd byte (0x1923)"},
+-- 
+1.7.10
+
