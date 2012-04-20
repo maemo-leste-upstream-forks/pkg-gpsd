@@ -74,8 +74,10 @@ libgps.so.20 libgps20 #MINVER#
  netlib_localsocket@Base 3.3
  netlib_sock2ip@Base 3.3
  safe_atof@Base 3.3
+ sbits@Base 3.5-4~
  strlcat@Base 3.3
  strlcpy@Base 3.3
  timestamp@Base 3.3
  true2magnetic@Base 3.3
+ ubits@Base 3.5-4~
  unix_to_iso8601@Base 3.3
