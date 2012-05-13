@@ -1,0 +1,25 @@
+From 66fcccdff9de2b9a6ff5a869d709037877222ec4 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Wed, 2 May 2012 11:51:11 -0400
+Subject: [PATCH] Typo fix.
+
+---
+ gps.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gps.h b/gps.h
+index 6baf232..fc28fa9 100644
+--- a/gps.h
++++ b/gps.h
+@@ -1686,7 +1686,7 @@ struct gps_data_t {
+ 
+     struct policy_t policy;	/* our listening policy */
+ 
+-    /* should be moved to privdata sometday */
++    /* should be moved to privdata someday */
+     char tag[MAXTAGLEN+1];	/* tag of last sentence processed */
+ 
+     /* pack things never reported together to reduce structure size */ 
+-- 
+1.7.10
+

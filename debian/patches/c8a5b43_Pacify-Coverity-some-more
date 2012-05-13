@@ -1,0 +1,80 @@
+From c8a5b43df68e0f8abbad02f07fda76085a5370f0 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Fri, 11 May 2012 05:37:47 -0400
+Subject: [PATCH] Pacify Coverity some more.
+
+---
+ driver_ubx.c |    2 +-
+ gpsd.c       |    2 ++
+ net_ntrip.c  |    2 +-
+ packet.c     |    1 +
+ 4 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/driver_ubx.c b/driver_ubx.c
+index 8c9bf89..40721c7 100644
+--- a/driver_ubx.c
++++ b/driver_ubx.c
+@@ -550,7 +550,7 @@ bool ubx_write(struct gps_device_t * session,
+     /*@ +type @*/
+ 
+ 
+-    /* coverity[printf_arg_mismatch] */
++    /* coverity[pwprintf_arg_mismatch] */
+     gpsd_report(LOG_IO,
+ 		"=> GPS: UBX class: %02x, id: %02x, len: %d, crc: %02x%02x\n",
+ 		msg_class, msg_id, data_len,
+diff --git a/gpsd.c b/gpsd.c
+index f1d3e14..3a7f0bd 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -292,6 +292,7 @@ static int filesock(char *filename)
+     (void)bind(sock, (struct sockaddr *)&addr, (int)sizeof(addr));
+     if (listen(sock, QLEN) == -1) {
+ 	gpsd_report(LOG_ERROR, "can't listen on local socket %s\n", filename);
++	(void)close(sock);
+ 	return -1;
+     }
+     /*@ +mayaliasunique +usedef @*/
+@@ -2320,6 +2321,7 @@ int main(int argc, char *argv[])
+ 		char buf[BUFSIZ];
+ 		ssize_t rd;
+ 
++		/* coverity[tainted_scalar] Safe, it's never handed to exec */
+ 		while ((rd = read(cfd, buf, sizeof(buf) - 1)) > 0) {
+ 		    buf[rd] = '\0';
+ 		    gpsd_report(LOG_IO, "<= control(%d): %s\n", cfd, buf);
+diff --git a/net_ntrip.c b/net_ntrip.c
+index 5ef8ab0..bf01848 100644
+--- a/net_ntrip.c
++++ b/net_ntrip.c
+@@ -389,7 +389,6 @@ static int ntrip_stream_get_parse(const struct ntrip_stream_t *stream, int dsock
+     char buf[BUFSIZ];
+     int opts;
+     memset(buf, 0, sizeof(buf));
+-    /* coverity[string_null] - guaranteed terminated by previous memset */
+     while (read(dsock, buf, sizeof(buf) - 1) == -1) {
+ 	if (errno == EINTR)
+ 	    continue;
+@@ -399,6 +398,7 @@ static int ntrip_stream_get_parse(const struct ntrip_stream_t *stream, int dsock
+     }
+ 
+     /* parse 401 Unauthorized */
++    /* coverity[string_null] - guaranteed terminated by the memset above */
+     if (strstr(buf, NTRIP_UNAUTH)!=NULL) {
+ 	gpsd_report(LOG_ERROR,
+ 		"not authorized for Ntrip stream %s/%s\n", stream->url,
+diff --git a/packet.c b/packet.c
+index b025cc8..d579206 100644
+--- a/packet.c
++++ b/packet.c
+@@ -1984,6 +1984,7 @@ ssize_t packet_get(int fd, struct gps_packet_t *lexer)
+ 
+     /*@ -modobserver @*/
+     errno = 0;
++    /* coverity[tainted_scalar] Safe, as it's never handed to exec */
+     recvd = read(fd, lexer->inbuffer + lexer->inbuflen,
+ 		 sizeof(lexer->inbuffer) - (lexer->inbuflen));
+     /*@ +modobserver @*/
+-- 
+1.7.10
+

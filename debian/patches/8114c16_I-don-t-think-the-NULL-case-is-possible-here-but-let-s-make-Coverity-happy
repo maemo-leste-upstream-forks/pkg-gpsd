@@ -1,0 +1,26 @@
+From 8114c165fd8740067ef56577618297e1eccd8007 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Fri, 11 May 2012 05:42:57 -0400
+Subject: [PATCH] I don't think the NULL case is possible here, but let's make
+ Coverity happy.
+
+---
+ gpsd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gpsd.c b/gpsd.c
+index 3a7f0bd..09cdd63 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -1144,7 +1144,7 @@ static void handle_request(struct subscriber_t *sub,
+ 		    /* user specified a path, try to assign it */
+ 		    device = find_device(devconf.path);
+ 		    /* do not optimize away, we need 'device' later on! */
+-		    if (!awaken(device)) {
++		    if (device == NULL || !awaken(device)) {
+ 			(void)snprintf(reply, replylen,
+ 				       "{\"class\":\"ERROR\",\"message\":\"Can't open %s.\"}\r\n",
+ 				       devconf.path);
+-- 
+1.7.10
+

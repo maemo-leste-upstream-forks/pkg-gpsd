@@ -1,0 +1,74 @@
+From 1b2ae0a79fb7ece3824336e28b072ba96f32ea01 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 10 May 2012 21:35:32 -0400
+Subject: [PATCH] Suppress Coverity false positives.
+
+---
+ gpsd.c      |    9 +++++++++
+ gpsdctl.c   |    1 +
+ net_ntrip.c |    3 ++-
+ 3 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/gpsd.c b/gpsd.c
+index bb8bfde..ef73014 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -2063,6 +2063,7 @@ int main(int argc, char *argv[])
+ 
+ 	/* make default devices accessible even after we drop privileges */
+ 	for (i = optind; i < argc; i++)
++	    /* coverity[toctou] */
+ 	    if (stat(argv[i], &stb) == 0)
+ 		(void)chmod(argv[i], stb.st_mode | S_IRGRP | S_IWGRP);
+ 	/*
+@@ -2131,6 +2132,14 @@ int main(int argc, char *argv[])
+ 	struct sigaction sa;
+ 
+ 	sa.sa_flags = 0;
++#ifdef __linux__
++	/* 
++	 * Obsolete and unused.  We're really only doing this to pacify Coverity
++	 * which otherwise throws an UNINIT event here. Don't swap with the
++	 * handler initialization, they're unioned on some architectures.
++	 */
++	sa.sa_restorer = NULL;
++#endif /* __linux__ */
+ 	sa.sa_handler = onsig;
+ 	(void)sigfillset(&sa.sa_mask);
+ 	(void)sigaction(SIGHUP, &sa, NULL);
+diff --git a/gpsdctl.c b/gpsdctl.c
+index 59214bf..a3346d4 100644
+--- a/gpsdctl.c
++++ b/gpsdctl.c
+@@ -67,6 +67,7 @@ static int gpsd_control(char *action, char *argument)
+ 	 */
+ 	struct stat sb;
+ 
++	/* coverity[toctou] */
+ 	if (stat(argument, &sb) != 1)
+ 	    (void)chmod(argument, sb.st_mode | S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+ 	(void)snprintf(buf, sizeof(buf), "+%s\r\n", argument);
+diff --git a/net_ntrip.c b/net_ntrip.c
+index 98a9ebd..5ef8ab0 100644
+--- a/net_ntrip.c
++++ b/net_ntrip.c
+@@ -170,7 +170,7 @@ static int ntrip_sourcetable_parse(struct gps_device_t *device)
+ 	ssize_t rlen;
+ 
+ 	memset(&buf[len], 0, (size_t) (blen - len));
+-
++	/* coverity[string_null] - guaranteed terminated by previous memset */
+ 	rlen = read(fd, &buf[len], (size_t) (blen - 1 - len));
+ 	if (rlen == -1) {
+ 	    if (errno == EINTR) {
+@@ -389,6 +389,7 @@ static int ntrip_stream_get_parse(const struct ntrip_stream_t *stream, int dsock
+     char buf[BUFSIZ];
+     int opts;
+     memset(buf, 0, sizeof(buf));
++    /* coverity[string_null] - guaranteed terminated by previous memset */
+     while (read(dsock, buf, sizeof(buf) - 1) == -1) {
+ 	if (errno == EINTR)
+ 	    continue;
+-- 
+1.7.10
+

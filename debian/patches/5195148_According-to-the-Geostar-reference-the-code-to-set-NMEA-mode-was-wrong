@@ -1,0 +1,28 @@
+From 519514829142af194a73db22e63b48db98bc54d9 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Sat, 12 May 2012 17:56:58 -0400
+Subject: [PATCH] According to the Geostar reference, the code to set NMEA
+ mode was wrong.
+
+Coverity didn't like it.  I'm not sure why. But in theory fixing this
+should get us to zero reported Coverity defects.
+---
+ driver_geostar.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/driver_geostar.c b/driver_geostar.c
+index d0ac4b5..c15a5c0 100644
+--- a/driver_geostar.c
++++ b/driver_geostar.c
+@@ -545,7 +545,7 @@ static void geostar_mode(struct gps_device_t *session, int mode)
+     /*@-shiftimplementation@*/
+     if (mode == MODE_NMEA) {
+ 	/* Switch to NMEA mode */
+-	putbe32(buf, 0, (session->driver.geostar.physical_port == 0) ? 1 : 0);
++	putbe32(buf, 0, 1);
+ 	(void)geostar_write(session, 0x46, buf, 1);
+     } else if (mode == MODE_BINARY) {
+ 	/* Switch to binary mode */
+-- 
+1.7.10
+

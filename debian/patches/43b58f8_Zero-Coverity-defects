@@ -1,0 +1,49 @@
+From 43b58f845a952ee3510e22d81bbe1e8e95f833a0 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Sun, 13 May 2012 11:05:32 -0400
+Subject: [PATCH] Zero Coverity defects!
+
+---
+ gpsd.c   |    2 +-
+ packet.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gpsd.c b/gpsd.c
+index e92e333..b7520f4 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -2324,7 +2324,7 @@ int main(int argc, char *argv[])
+ 		while ((rd = read(cfd, buf, sizeof(buf) - 1)) > 0) {
+ 		    buf[rd] = '\0';
+ 		    gpsd_report(LOG_IO, "<= control(%d): %s\n", cfd, buf);
+-		    /* coverity[tainted_data_argument] Safe, never handed to exec */
++		    /* coverity[tainted_data] Safe, never handed to exec */
+ 		    handle_control(cfd, buf);
+ 		}
+ 		gpsd_report(LOG_SPIN, "close(%d) of control socket\n", cfd);
+diff --git a/packet.c b/packet.c
+index 886e7a1..fec34b9 100644
+--- a/packet.c
++++ b/packet.c
+@@ -2012,16 +2012,16 @@ ssize_t packet_get(int fd, struct gps_packet_t *lexer)
+      * nothing from the device and there is nothing waiting in the
+      * packet input buffer.
+      */
+-    /* coverity[tainted_scalar] */
+     if (recvd <= 0 && packet_buffered_input(lexer) <= 0)
+ 	return recvd;
+ 
+     /* Otherwise, consume from the packet input buffer */
++    /* coverity[tainted_data] */
+     packet_parse(lexer);
+ 
+     /* if input buffer is full, discard */
+     if (sizeof(lexer->inbuffer) == (lexer->inbuflen)) {
+-	/* coverity[tainted_scalar] */
++	/* coverity[tainted_data] */
+ 	packet_discard(lexer);
+ 	lexer->state = GROUND_STATE;
+     }
+-- 
+1.7.10
+

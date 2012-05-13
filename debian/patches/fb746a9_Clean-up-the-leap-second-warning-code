@@ -8,11 +8,9 @@ Signed-off-by: Eric S. Raymond <esr@thyrsus.com>
  gpsd.h-tail |   13 ++++---------
  1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/gpsd.h-tail b/gpsd.h-tail
-index 1887036..0613386 100644
 --- a/gpsd.h-tail
 +++ b/gpsd.h-tail
-@@ -224,6 +224,10 @@ struct gps_context_t {
+@@ -223,6 +223,10 @@ struct gps_context_t {
      int rollovers;			/* rollovers since start of run */
  #ifdef NTPSHM_ENABLE
      int leap_notify;			/* notification state from subframe */
@@ -23,7 +21,7 @@ index 1887036..0613386 100644
      bool enable_ntpshm;
      /* we need the volatile here to tell the C compiler not to
       * 'optimize' as 'dead code' the writes to SHM */
-@@ -840,15 +844,6 @@ static /*@unused@*/ inline void barrier(void) {
+@@ -839,15 +843,6 @@ static /*@unused@*/ inline void barrier(
  #endif /* defined(__GNUC__) && defined(__x86_64__) */
  }
  
@@ -39,6 +37,3 @@ index 1887036..0613386 100644
  #endif /* _GPSD_H_ */
  // Local variables:
  // mode: c
--- 
-1.7.10
-

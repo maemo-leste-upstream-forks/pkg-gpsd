@@ -1,0 +1,25 @@
+From 327e04c51b618d6950b60aa617cd4c4b1f7607e6 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Fri, 11 May 2012 00:56:23 -0400
+Subject: [PATCH] Typo fix.
+
+---
+ gpsdctl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gpsdctl.c b/gpsdctl.c
+index bc2daa9..6b32cb6 100644
+--- a/gpsdctl.c
++++ b/gpsdctl.c
+@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
+ 	if (optenv != NULL)
+ 	    gpsd_options = optenv;
+ 
+-	/* coverity[string_size] */]
++	/* coverity[string_size] */
+ 	if (gpsd_control(argv[1], argv[2]) < 0)
+ 	    exit(1);
+ 	else
+-- 
+1.7.10
+

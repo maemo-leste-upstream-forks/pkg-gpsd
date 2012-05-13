@@ -1,0 +1,38 @@
+From 629bac4e7a0a9f7ef2a48ba515dabeee313f38d2 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 10 May 2012 23:18:35 -0400
+Subject: [PATCH] Suppress more non-defects.
+
+---
+ driver_ubx.c |    2 ++
+ gpsdctl.c    |    1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/driver_ubx.c b/driver_ubx.c
+index b7d102d..8c9bf89 100644
+--- a/driver_ubx.c
++++ b/driver_ubx.c
+@@ -549,6 +549,8 @@ bool ubx_write(struct gps_device_t * session,
+     session->msgbuflen = data_len + 8;
+     /*@ +type @*/
+ 
++
++    /* coverity[printf_arg_mismatch] */
+     gpsd_report(LOG_IO,
+ 		"=> GPS: UBX class: %02x, id: %02x, len: %d, crc: %02x%02x\n",
+ 		msg_class, msg_id, data_len,
+diff --git a/gpsdctl.c b/gpsdctl.c
+index a3346d4..bc2daa9 100644
+--- a/gpsdctl.c
++++ b/gpsdctl.c
+@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
+ 	if (optenv != NULL)
+ 	    gpsd_options = optenv;
+ 
++	/* coverity[string_size] */]
+ 	if (gpsd_control(argv[1], argv[2]) < 0)
+ 	    exit(1);
+ 	else
+-- 
+1.7.10
+

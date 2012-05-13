@@ -1,0 +1,28 @@
+From 801f77a86301e16a822da29f7a327a355e376409 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Sat, 21 Apr 2012 00:42:16 -0400
+Subject: [PATCH] Attempt to head off a compiler warning.
+
+---
+ gpsdclient.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/gpsdclient.c b/gpsdclient.c
+index 1e3a96a..561e8bd 100644
+--- a/gpsdclient.c
++++ b/gpsdclient.c
+@@ -137,8 +137,9 @@ enum unit gpsd_units(void)
+ void gpsd_source_spec(const char *arg, struct fixsource_t *source)
+ /* standard parsing of a GPS data source spec */
+ {
+-    source->server = "localhost";
+-    source->port = DEFAULT_GPSD_PORT;
++    /* the casts attempt to head off a -Wwrite-strings warning */
++    source->server = (char *)"localhost";
++    source->port = (char *)DEFAULT_GPSD_PORT;
+     source->device = NULL;
+ 
+     /*@-usedef@ Sigh, splint is buggy */
+-- 
+1.7.10
+

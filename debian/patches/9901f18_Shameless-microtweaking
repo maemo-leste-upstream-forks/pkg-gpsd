@@ -1,0 +1,43 @@
+From 9901f181b6ee0aea52f0f36c4a635ec56e487102 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 10 May 2012 09:58:02 -0400
+Subject: [PATCH] Shameless microtweaking.
+
+for (;;) generates tighter code than while (1). No practical difference but it
+bugs me anyway.
+
+All regression tests pass.
+---
+ net_ntrip.c |    2 +-
+ ntpshm.c    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net_ntrip.c b/net_ntrip.c
+index 048c4e0..cb056ad 100644
+--- a/net_ntrip.c
++++ b/net_ntrip.c
+@@ -165,7 +165,7 @@ static int ntrip_sourcetable_parse(struct gps_device_t *device)
+     size_t blen = BUFSIZ;
+     int fd = device->gpsdata.gps_fd;
+ 
+-    while (1) {
++    for (;;) {
+ 	char *eol;
+ 	ssize_t rlen;
+ 
+diff --git a/ntpshm.c b/ntpshm.c
+index d52c18f..d505ba1 100644
+--- a/ntpshm.c
++++ b/ntpshm.c
+@@ -630,7 +630,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+      * is that no GPS lights up more than one of these pins.  By waiting on
+      * all of them we remove a configuration switch.
+      */
+-    while (1) {
++    for (;;) {
+ 	int ok = 0;
+ 	char *log = NULL;
+ 	char *log1 = NULL;
+-- 
+1.7.10
+

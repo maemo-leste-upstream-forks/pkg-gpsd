@@ -7,11 +7,9 @@ Subject: [PATCH] Fix up the build for the bits tester.
  SConstruct |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/SConstruct b/SConstruct
-index 14aaa98..2bed46c 100644
 --- a/SConstruct
 +++ b/SConstruct
-@@ -893,7 +893,7 @@ env.Depends(test_mkgmtime, compiled_gpslib)
+@@ -891,7 +891,7 @@ env.Depends(test_mkgmtime, compiled_gpsl
  test_trig = env.Program('test_trig', ['test_trig.c'], parse_flags=["-lm"])
  test_packet = env.Program('test_packet', ['test_packet.c'], parse_flags=gpsdlibs)
  env.Depends(test_packet, [compiled_gpsdlib, compiled_gpslib])
@@ -20,6 +18,3 @@ index 14aaa98..2bed46c 100644
  env.Depends(test_bits, [compiled_gpsdlib, compiled_gpslib])
  test_gpsmm = env.Program('test_gpsmm', ['test_gpsmm.cpp'], parse_flags=gpslibs)
  env.Depends(test_gpsmm, compiled_gpslib)
--- 
-1.7.10
-

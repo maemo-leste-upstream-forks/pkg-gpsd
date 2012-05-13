@@ -1,0 +1,31 @@
+From dea46f178ca83d1bb4cc68062160f9beef50a7b4 Mon Sep 17 00:00:00 2001
+From: Beat Bolli <bbolli@ewanet.ch>
+Date: Thu, 10 May 2012 09:42:33 +0200
+Subject: [PATCH] Fix a block nesting error in the Garmin driver.
+
+Introduced in commit 470b53e846f13ab1c660cd05fe901d1e801df4e3.
+
+Signed-off-by: Eric S. Raymond <esr@thyrsus.com>
+---
+ driver_garmin.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/driver_garmin.c b/driver_garmin.c
+index 1bddabb..b41b3fe 100644
+--- a/driver_garmin.c
++++ b/driver_garmin.c
+@@ -932,10 +932,10 @@ static bool garmin_usb_detect(struct gps_device_t *session UNUSED)
+ 	// expect no return packet !?
+ 
+ 	return true;
+-    }
+ #else
+ 	return false;
+ #endif /* HAVE_LIBUSB */
++    }
+ #else
+     return false;
+ #endif /* __linux__ || S_SPLINT_S */
+-- 
+1.7.10
+

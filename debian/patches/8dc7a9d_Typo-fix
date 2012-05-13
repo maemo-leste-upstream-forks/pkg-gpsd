@@ -1,0 +1,25 @@
+From 8dc7a9dec9b2a8f93cc2bae304f1911954fecbb0 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Tue, 8 May 2012 01:20:29 -0400
+Subject: [PATCH] Typo fix.
+
+---
+ driver_proto.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/driver_proto.c b/driver_proto.c
+index ab6abe8..6a64e4c 100644
+--- a/driver_proto.c
++++ b/driver_proto.c
+@@ -365,7 +365,7 @@ static void _proto__event_hook(struct gps_device_t *session, event_t event)
+        /*
+ 	* Code to make the device ready to communicate.  Only needed if the
+ 	* device is in some kind of sleeping state, and only shipped to
+-	* RS232C (so that gpsd won't send strings to unidentified USB devices)
++	* RS232C, so that gpsd won't send strings to unidentified USB devices
+ 	* that might not be GPSes at all.
+ 	*/
+     }
+-- 
+1.7.10
+

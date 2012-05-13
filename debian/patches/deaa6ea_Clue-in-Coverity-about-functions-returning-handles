@@ -1,0 +1,51 @@
+From deaa6ea77605d4248ad4b3533fb2d93923125adc Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 10 May 2012 17:00:25 -0400
+Subject: [PATCH] Clue in Coverity about functions returning handles.
+
+---
+ daemon.c    |    1 +
+ gpsd.c      |    2 ++
+ net_ntrip.c |    1 +
+ 3 files changed, 4 insertions(+)
+
+diff --git a/daemon.c b/daemon.c
+index 3071162..e701fef 100644
+--- a/daemon.c
++++ b/daemon.c
+@@ -45,6 +45,7 @@ int daemon(int nochdir, int noclose)
+ 	    (void)close(fd);
+     }
+     /*@ +nullpass @*/
++    /* coverity[leaked_handle] Intentional handle duplication */
+     return 0;
+ }
+ 
+diff --git a/gpsd.c b/gpsd.c
+index 142b5ff..bb8bfde 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -295,6 +295,8 @@ static int filesock(char *filename)
+ 	return -1;
+     }
+     /*@ +mayaliasunique +usedef @*/
++
++    /* coverity[leaked_handle] This is an intentional allocation */
+     return sock;
+ }
+ #endif /* CONTROL_SOCKET_ENABLE */
+diff --git a/net_ntrip.c b/net_ntrip.c
+index cb056ad..98a9ebd 100644
+--- a/net_ntrip.c
++++ b/net_ntrip.c
+@@ -322,6 +322,7 @@ static int ntrip_stream_req_probe(const struct ntrip_stream_t *stream)
+ 		errno, dsock, r);
+ 	return -1;
+     }
++    /* coverity[leaked_handle] This is an intentional allocation */
+     return dsock;
+ }
+ 
+-- 
+1.7.10
+

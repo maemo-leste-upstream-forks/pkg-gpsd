@@ -1,0 +1,26 @@
+From 43066eebf8d01d06d3fe38eccf96be917cdc1fc8 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Fri, 11 May 2012 04:55:33 -0400
+Subject: [PATCH] Coverity may be being overly fussy, but this guard is
+ probably a good idea.
+
+---
+ gpsd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gpsd.c b/gpsd.c
+index 00a67fe..f1d3e14 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -434,7 +434,7 @@ static int passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
+ 	 * this, trying to listen on in6addr_any will fail with the
+ 	 * address-in-use error condition.
+ 	 */
+-	{
++	if (s > -1) {
+ 	    int on = 1;
+ 	    (void)setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+ 	}
+-- 
+1.7.10
+

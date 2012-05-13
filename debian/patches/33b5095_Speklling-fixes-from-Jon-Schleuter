@@ -1,0 +1,117 @@
+From 33b509515f64d2a2ee5bf25e6aa38be36b0ca193 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Thu, 10 May 2012 10:30:54 -0400
+Subject: [PATCH] Speklling fixes from Jon Schleuter.
+
+---
+ gps.xml       |    4 ++--
+ gpsd.xml      |    4 ++--
+ gpsd_json.xml |   14 +++++++-------
+ gpsprof.xml   |    2 +-
+ 4 files changed, 12 insertions(+), 12 deletions(-)
+
+--- a/gps.xml
++++ b/gps.xml
+@@ -254,7 +254,7 @@ formulas used are those found in the Avi
+ 
+ <para><application>cgps</application> terminates when you send it a
+ SIGHUP or SIGINT; given default terminal settings this will happen
+-when you type Ctl-C at it.  It will also terminate on 'q'</para>
++when you type Ctrl-C at it.  It will also terminate on 'q'</para>
+ 
+ </refsect2>
+ <refsect2><title>lcdgps</title>
+@@ -289,7 +289,7 @@ than this will not be logged.</para>
+ export methods that <application>gpsd</application> supports.
+ For a list of these methods, use the <option>-l</option>.
+ To force the method, give the <option>-e</option> one of
+-the colon-teminated method names from the <option>-l</option>
++the colon-terminated method names from the <option>-l</option>
+ table.</para>
+ 
+ <para>If D-Bus support is available on the host, GPSD is configured to
+--- a/gpsd.xml
++++ b/gpsd.xml
+@@ -354,7 +354,7 @@ with the read-only nature of this interf
+ shared-memory interface is intended primarily for embedded deployments
+ in which <application>gpsd</application> monitors a single device, and
+ its principal advantage is that a daemon instance configured with
+-shared memory but without the soickets interface loses a significant
++shared memory but without the sockets interface loses a significant
+ amount of runtime weight.</para>
+ 
+ <para>The daemon may be configured to emit a D-Bus signal each time an
+@@ -815,7 +815,7 @@ in GCC 3.x at -O2, into generating bad c
+ <para>Devices meant to to use PPS for high-precision timekeeping may
+ fail if they are specified after startup by a control-socket command,
+ as opposed to on the daemon's original command line. Root privileges
+-are dropped early, and some Unix varients require them in order to set
++are dropped early, and some Unix variants require them in order to set
+ the PPS line discipline. Under Linux the POSIX capability to set the
+ line discipline is retained, but other platforms cannot use this
+ code.</para>
+--- a/gpsd_json.xml
++++ b/gpsd_json.xml
+@@ -207,19 +207,19 @@ Others may be reported or not depending
+ 	<entry>epd</entry>
+ 	<entry>No</entry>
+ 	<entry>numeric</entry>
+-        <entry>Direction error estimate in degrees, 95% confifdence.</entry>
++        <entry>Direction error estimate in degrees, 95% confidence.</entry>
+ </row>
+ <row>
+ 	<entry>eps</entry>
+ 	<entry>No</entry>
+ 	<entry>numeric</entry>
+-        <entry>Speed error estinmate in meters/sec, 95% confifdence.</entry>
++        <entry>Speed error estinmate in meters/sec, 95% confidence.</entry>
+ </row>
+ <row>
+ 	<entry>epc</entry>
+ 	<entry>No</entry>
+ 	<entry>numeric</entry>
+-        <entry>Climb/sink error estinmate in meters/sec, 95% confifdence.</entry>
++        <entry>Climb/sink error estimate in meters/sec, 95% confidence.</entry>
+ </row>
+ 
+ </tbody>
+@@ -1149,8 +1149,8 @@ into this response.</para>
+ <term>PPS</term>
+ <listitem>
+ 
+-<para>This message is emitted each time the daeon sees a PPS (Pulse Per Second)
+-strobe from a device.</para>
++<para>This message is emitted each time the daemon sees a PPS (Pulse
++Per Second) strobe from a device.</para>
+ 
+ <para>A PPS object has the following elements:</para>
+ 
+@@ -1939,7 +1939,7 @@ for each satellite.</para>
+ <row>
+ 	<entry>health_en</entry>
+ 	<entry>bool</entry>
+-        <entry><para>If set to Teue it indicates that the satellite is
++        <entry><para>If set to True it indicates that the satellite is
+         healthy even if the satellite navigation data says it is
+         unhealthy.</para></entry>
+ </row>
+@@ -2069,7 +2069,7 @@ but this cannot be true unless the field
+         <entry><para>The id of the transmitter. This is not the same
+         as the reference id in the header, the latter being the id of
+         the reference receiver. <!-- John Sager noted: "However I know
+-	of at least one stationthat gets it wrong." --></para></entry>
++	of at least one station that gets it wrong." --></para></entry>
+ </row>
+ <row>
+ 	<entry>bitrate</entry>
+--- a/gpsprof.xml
++++ b/gpsprof.xml
+@@ -39,7 +39,7 @@ BSD terms apply: see the file COPYING in
+ <refsect1 id='description'><title>DESCRIPTION</title>
+ 
+ <para><application>gpsprof</application> performs accuracy and latency
+-profiling onm a GPS. It emits to standard output a GNUPLOT program
++profiling on a GPS. It emits to standard output a GNUPLOT program
+ that draws an illustrative graph. It can also be told to emit the raw
+ profile data.  The information it provides can be useful for
+ establishing an upper bound on latency, and thus on position accuracy

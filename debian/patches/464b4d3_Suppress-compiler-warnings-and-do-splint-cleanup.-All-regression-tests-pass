@@ -1,0 +1,95 @@
+From 464b4d3e4a4ec77cecf0e6f8fa818b76fb949146 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Fri, 20 Apr 2012 13:15:43 -0400
+Subject: [PATCH] Suppress compiler warnings and do splint cleanup.  All
+ regression tests pass.
+
+---
+ bits.c      |    4 ++--
+ gpsd.c      |    6 +++---
+ gpsd.h-tail |    4 ++--
+ hex.c       |    2 +-
+ netlib.c    |    2 +-
+ 5 files changed, 9 insertions(+), 9 deletions(-)
+
+--- a/bits.c
++++ b/bits.c
+@@ -27,13 +27,13 @@ uint64_t ubits(char buf[], unsigned int
+     /*@i1@*/ assert(width <= sizeof(uint64_t) * CHAR_BIT);
+     for (i = start / CHAR_BIT;
+ 	 i < (start + width + CHAR_BIT - 1) / CHAR_BIT; i++) {
+-	fld <<= CHAR_BIT;
++	/*@i1@*/fld <<= CHAR_BIT;
+ 	fld |= (unsigned char)buf[i];
+     }
+ 
+     end = (start + width) % CHAR_BIT;
+     if (end != 0) {
+-	fld >>= (CHAR_BIT - end);
++	/*@i1@*/fld >>= (CHAR_BIT - end);
+     }
+ 
+     /*@ -shiftimplementation @*/
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -1339,15 +1339,15 @@ static void raw_report(struct subscriber
+      * Maybe the user wants a binary packet hexdumped.
+      */
+     if (sub->policy.raw == 1) {
+-	char *hd =
++	const char *hd =
+ 	    gpsd_hexdump((char *)device->packet.outbuffer,
+ 			 device->packet.outbuflen);
+ 	/*
+ 	 * Ugh...depends on knowing the length of gpsd_hexdump's
+ 	 * buffer.
+ 	 */
+-	(void)strlcat(hd, "\r\n", MAX_PACKET_LENGTH * 2 + 1);
+-	(void)throttled_write(sub, hd, strlen(hd));
++	(void)strlcat((char *)hd, "\r\n", MAX_PACKET_LENGTH * 2 + 1);
++	(void)throttled_write(sub, (char *)hd, strlen(hd));
+     }
+ #endif /* BINARY_ENABLE */
+ }
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -701,7 +701,7 @@ extern gps_mask_t gpsd_interpret_subfram
+ 				uint32_t[]);
+ extern gps_mask_t gpsd_interpret_subframe_raw(struct gps_device_t *,
+ 				unsigned int, uint32_t[]);
+-extern /*@ observer @*/ char *gpsd_hexdump(/*@null@*/char *, size_t);
++extern /*@ observer @*/ const char *gpsd_hexdump(/*@null@*/char *, size_t);
+ # ifdef __cplusplus
+ extern "C" {
+ # endif
+@@ -715,7 +715,7 @@ extern void gpsd_position_fix_dump(struc
+ extern void gpsd_clear_data(struct gps_device_t *);
+ extern socket_t netlib_connectsock(int, const char *, const char *, const char *);
+ extern socket_t netlib_localsocket(const char *, int);
+-extern char /*@observer@*/ *netlib_errstr(const int);
++extern const char /*@observer@*/ *netlib_errstr(const int);
+ extern char /*@observer@*/ *netlib_sock2ip(int);
+ 
+ extern void nmea_tpv_dump(struct gps_device_t *, /*@out@*/char[], size_t);
+--- a/hex.c
++++ b/hex.c
+@@ -8,7 +8,7 @@
+ 
+ #include "gpsd.h"
+ 
+-char /*@ observer @*/ *gpsd_hexdump(char *binbuf, size_t binbuflen)
++const char /*@ observer @*/ *gpsd_hexdump(char *binbuf, size_t binbuflen)
+ {
+     char *cp;
+     bool printable = true;
+--- a/netlib.c
++++ b/netlib.c
+@@ -127,7 +127,7 @@ socket_t netlib_connectsock(int af, cons
+ 
+ /*@+mustfreefresh +usedef@*/
+ 
+-char /*@observer@*/ *netlib_errstr(const int err)
++const char /*@observer@*/ *netlib_errstr(const int err)
+ {
+     switch (err) {
+     case NL_NOSERVICE:

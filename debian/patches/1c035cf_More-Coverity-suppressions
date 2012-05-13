@@ -1,0 +1,36 @@
+From 1c035cfa54bb65929642f70260dc23c8fee847e3 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Sat, 12 May 2012 14:37:00 -0400
+Subject: [PATCH] More Coverity suppressions.
+
+Also, remove our custom scan script, I'm going to publish a more
+polished version.
+---
+ devtools/README   |    4 ----
+ devtools/cov-scan |   57 -----------------------------------------------------
+ libgpsd_core.c    |    1 +
+ ntpshm.c          |    2 +-
+ 4 files changed, 2 insertions(+), 62 deletions(-)
+ delete mode 100755 devtools/cov-scan
+
+--- a/libgpsd_core.c
++++ b/libgpsd_core.c
+@@ -895,6 +895,7 @@ gps_mask_t gpsd_poll(struct gps_device_t
+     /* can we get a full packet from the device? */
+     if (session->device_type != NULL) {
+ 	newlen = session->device_type->get_packet(session);
++	/* coverity[deref_ptr] */
+ 	gpsd_report(LOG_RAW,
+ 		    "%s is known to be %s\n",
+ 		    session->gpsdata.dev.path,
+--- a/ntpshm.c
++++ b/ntpshm.c
+@@ -912,7 +912,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(
+     }
+     gpsd_report(LOG_PROG, "PPS gpsd_ppsmonitor exited???\n");
+     /* pacify Coverity - falling through here is theoretically a handle leak */
+-    if (chronyfd)
++    if (chronyfd != -1)
+ 	(void)close(chronyfd);
+     return NULL;
+ }

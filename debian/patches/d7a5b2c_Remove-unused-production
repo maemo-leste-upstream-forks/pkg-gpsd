@@ -7,11 +7,9 @@ Subject: [PATCH] Remove unused production.
  SConstruct |    3 ---
  1 file changed, 3 deletions(-)
 
-diff --git a/SConstruct b/SConstruct
-index 793d3f1..32e6b98 100644
 --- a/SConstruct
 +++ b/SConstruct
-@@ -882,9 +882,6 @@ binaries = [gpsd, gpsdecode, gpsctl, gpsdctl, gpspipe, gpxlogger, lcdgps]
+@@ -880,9 +880,6 @@ binaries = [gpsd, gpsdecode, gpsctl, gps
  if ncurseslibs:
      binaries += [cgps, gpsmon]
  
@@ -21,6 +19,3 @@ index 793d3f1..32e6b98 100644
  # Test programs
  test_float = env.Program('test_float', ['test_float.c'])
  test_geoid = env.Program('test_geoid', ['test_geoid.c'], parse_flags=gpsdlibs)
--- 
-1.7.10
-

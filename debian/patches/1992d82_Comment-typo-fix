@@ -1,0 +1,25 @@
+From 1992d827fbd3aefc124ea46c0f7e87571508d408 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Sat, 12 May 2012 06:56:03 -0400
+Subject: [PATCH] Comment typo fix.
+
+---
+ driver_ubx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/driver_ubx.c b/driver_ubx.c
+index 577b5fc..426d6ac 100644
+--- a/driver_ubx.c
++++ b/driver_ubx.c
+@@ -767,7 +767,7 @@ const struct gps_type_t ubx_binary = {
+     .get_packet       = generic_get,    /* Packet getter (using default routine) */
+     .parse_packet     = parse_input,    /* Parse message packets */
+     .rtcm_writer      = gpsd_write,      /* RTCM handler (using default routine) */
+-    .event_hook       = ubx_event_hook,	/* Fiew in variious lifetime events */
++    .event_hook       = ubx_event_hook,	/* Fire on various lifetime events */
+ #ifdef RECONFIGURE_ENABLE
+     .speed_switcher   = ubx_speed,      /* Speed (baudrate) switch */
+     .mode_switcher    = ubx_nmea_mode,  /* Switch to NMEA mode */
+-- 
+1.7.10
+

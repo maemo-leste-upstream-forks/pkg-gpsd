@@ -1,0 +1,25 @@
+From c7605a1676cc9f7a73b978f38637b3510a96e9af Mon Sep 17 00:00:00 2001
+From: "Gary E. Miller" <gem@rellim.com>
+Date: Thu, 3 May 2012 14:27:50 -0700
+Subject: [PATCH] Fix a bad cast. Thanks to: Beat Bolli <bbolli@ewanet.ch>
+
+---
+ gpxlogger.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gpxlogger.c b/gpxlogger.c
+index 6f4ae4c..eff63ef 100644
+--- a/gpxlogger.c
++++ b/gpxlogger.c
+@@ -335,7 +335,7 @@ int main(int argc, char **argv)
+     (void)gps_stream(&gpsdata, flags, source.device);
+ 
+     print_gpx_header();
+-    (int)gps_mainloop(&gpsdata, 5000000, conditionally_log_fix);
++    (void)gps_mainloop(&gpsdata, 5000000, conditionally_log_fix);
+     print_gpx_footer();
+     (void)gps_close(&gpsdata);
+ 
+-- 
+1.7.10
+
