@@ -1,3 +1,18 @@
+gpsd (3.5-5) unstable; urgency=low
+
+  * [a6efe8a2] Revert "Removing makedev from build-dependencies."
+    This reverts commit bc30a21b6046bb7153ce7a4e8606017231717803.
+    makedev seems to be required on mips.
+  * [d7d04c9b] libgps20: demote gpsd from Recommends to Suggests.
+    There is still no nice-ish way to tell gpsd to ignore some devices from
+    being detcted automatically. Not installing gpsd might be the better
+    option here - please note that I'm still not convinced to keep it as
+    'Suggsts' - but for now it will stay there. (Closes: #662587)
+  * [edc9db9c] Refreshing patchs and pulling more fixs from git.
+  * [8305d5cc] Update symbols file.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 13 May 2012 21:06:51 +0200
+
 gpsd (3.5-4) unstable; urgency=low
 
   * [bc30a21b] Removing makedev from build-dependencies.
