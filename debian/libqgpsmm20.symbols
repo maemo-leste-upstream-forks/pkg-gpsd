@@ -23,6 +23,8 @@ libQgpsmm.so.20 libqgpsmm20 #MINVER#
  (c++|optional)"QDebug::~QDebug()@Base" 3.3
  (c++|optional)"QString::~QString()@Base" 3.3
  (c++|optional)"QString::~QString()@Base" 3.3
+ (c++|optional)"QList<QString>::~QList()@Base" 3.5
+ (c++|optional)"QList<QString>::~QList()@Base" 3.5
  (c++)"typeinfo for gpsmm@Base" 3.3
  (c++)"typeinfo name for gpsmm@Base" 3.3
  (c++)"vtable for gpsmm@Base" 3.3
