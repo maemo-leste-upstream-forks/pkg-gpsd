@@ -60,19 +60,14 @@ PACKAGE_PY := python-gps
 PACKAGE_GPSDDBG := gpsd-dbg
 
 
-#cflags := $(shell dpkg-buildflags --get CFLAGS)
-#cppflags := $(shell dpkg-buildflags --get CPPFLAGS)
-#cxxflags := $(shell dpkg-buildflags --get CXXFLAGS)
-#ldflags := $(shell dpkg-buildflags --get LDFLAGS)
-#include /usr/share/hardening-includes/hardening.make
-#cflags += $(HARDENING_CFLAGS)
-#ldflags += $(HARDENING_LDFLAGS)
-#cxxflags += $(HARDENING_CFLAGS)
-
-cflags := -g -O2
-cppflags := 
-cxxflags := $(cflags)
-ldflags := 
+cflags := $(shell dpkg-buildflags --get CFLAGS)
+cppflags := $(shell dpkg-buildflags --get CPPFLAGS)
+cxxflags := $(shell dpkg-buildflags --get CXXFLAGS)
+ldflags := $(shell dpkg-buildflags --get LDFLAGS)
+include /usr/share/hardening-includes/hardening.make
+cflags += $(HARDENING_CFLAGS)
+ldflags += $(HARDENING_LDFLAGS)
+cxxflags += $(HARDENING_CFLAGS)
 
 SCONS_ENV := set -e ;\
 		export LDFLAGS="$(ldflags)" ;\
