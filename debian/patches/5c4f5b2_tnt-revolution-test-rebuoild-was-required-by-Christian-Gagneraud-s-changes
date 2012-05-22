@@ -9,8 +9,6 @@ All regression tests pass.
  test/daemon/tnt-revolution.log.chk |  110 ++++++++++++++++++++----------------
  1 file changed, 60 insertions(+), 50 deletions(-)
 
-diff --git a/test/daemon/tnt-revolution.log.chk b/test/daemon/tnt-revolution.log.chk
-index 5f0c15f..dcdf294 100644
 --- a/test/daemon/tnt-revolution.log.chk
 +++ b/test/daemon/tnt-revolution.log.chk
 @@ -1,100 +1,110 @@
@@ -174,6 +172,3 @@ index 5f0c15f..dcdf294 100644
 -{"class":"ATT","tag":"PTNTHTM","heading":14302.00,"mag_st":"N","pitch":177.00,"pitch_st":"N","roll":-40.00,"roll_st":"N","dip":13608.000,"mag_x":2448.000,"temp":0.000,"depth":0.000}
 +{"class":"ATT","tag":"PTNTHTM","heading":14302.00,"mag_st":"N","pitch":177.00,"pitch_st":"N","roll":-40.00,"roll_st":"N","dip":13608.000,"mag_x":2448.000}
 +$HCXDR,A,176,D,PITCH,A,-40,D,ROLL,G,388,,MAGX,G,2468,,MAGY,G,-9006,,MAGZ*49
--- 
-1.7.10
-

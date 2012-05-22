@@ -8,8 +8,6 @@ Subject: [PATCH] Try to get Coverity suppressions to the right place.
  net_ntrip.c |    2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/gpsd.c b/gpsd.c
-index 09cdd63..b072e5b 100644
 --- a/gpsd.c
 +++ b/gpsd.c
 @@ -2321,10 +2321,10 @@ int main(int argc, char *argv[])
@@ -24,11 +22,9 @@ index 09cdd63..b072e5b 100644
  		    handle_control(cfd, buf);
  		}
  		gpsd_report(LOG_SPIN, "close(%d) of control socket\n", cfd);
-diff --git a/net_ntrip.c b/net_ntrip.c
-index bf01848..969d8fe 100644
 --- a/net_ntrip.c
 +++ b/net_ntrip.c
-@@ -170,7 +170,6 @@ static int ntrip_sourcetable_parse(struct gps_device_t *device)
+@@ -170,7 +170,6 @@ static int ntrip_sourcetable_parse(struc
  	ssize_t rlen;
  
  	memset(&buf[len], 0, (size_t) (blen - len));
@@ -36,7 +32,7 @@ index bf01848..969d8fe 100644
  	rlen = read(fd, &buf[len], (size_t) (blen - 1 - len));
  	if (rlen == -1) {
  	    if (errno == EINTR) {
-@@ -220,6 +219,7 @@ static int ntrip_sourcetable_parse(struct gps_device_t *device)
+@@ -220,6 +219,7 @@ static int ntrip_sourcetable_parse(struc
  		     strlen(NTRIP_ENDSOURCETABLE)) == 0)
  		goto done;
  
@@ -44,6 +40,3 @@ index bf01848..969d8fe 100644
  	    if (!(eol = strstr(line, NTRIP_BR)))
  		break;
  
--- 
-1.7.10
-

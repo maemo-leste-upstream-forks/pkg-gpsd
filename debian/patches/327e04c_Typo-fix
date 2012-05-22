@@ -7,8 +7,6 @@ Subject: [PATCH] Typo fix.
  gpsdctl.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/gpsdctl.c b/gpsdctl.c
-index bc2daa9..6b32cb6 100644
 --- a/gpsdctl.c
 +++ b/gpsdctl.c
 @@ -100,7 +100,7 @@ int main(int argc, char *argv[])
@@ -20,6 +18,3 @@ index bc2daa9..6b32cb6 100644
  	if (gpsd_control(argv[1], argv[2]) < 0)
  	    exit(1);
  	else
--- 
-1.7.10
-

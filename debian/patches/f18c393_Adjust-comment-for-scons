@@ -7,8 +7,6 @@ Subject: [PATCH] Adjust comment for scons.
  driver_proto.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/driver_proto.c b/driver_proto.c
-index 6a64e4c..316c67e 100644
 --- a/driver_proto.c
 +++ b/driver_proto.c
 @@ -25,7 +25,7 @@
@@ -20,6 +18,3 @@ index 6a64e4c..316c67e 100644
   * drivers.c
   * gpsd.h-tail
   * libgpsd_core.c
--- 
-1.7.10
-

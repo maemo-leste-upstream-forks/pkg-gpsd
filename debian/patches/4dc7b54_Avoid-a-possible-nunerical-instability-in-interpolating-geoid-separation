@@ -9,11 +9,9 @@ All regression tesrs pass.
  geoid.c |   12 +++++++-----
  1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/geoid.c b/geoid.c
-index 7801345..cb7cec3 100644
 --- a/geoid.c
 +++ b/geoid.c
-@@ -19,12 +19,14 @@ static double bilinear(double x1, double y1, double x2, double y2, double x,
+@@ -19,12 +19,14 @@ static double bilinear(double x1, double
  {
      double delta;
  
@@ -31,7 +29,7 @@ index 7801345..cb7cec3 100644
  
      delta = (y2 - y1) * (x2 - x1);
  
-@@ -82,8 +84,8 @@ double wgs84_separation(double lat, double lon)
+@@ -82,8 +84,8 @@ double wgs84_separation(double lat, doub
      ilat2 = (ilat < GEOID_ROW - 1) ? ilat + 1 : ilat;
      ilon2 = (ilon < GEOID_COL - 1) ? ilon + 1 : ilon;
  
@@ -42,6 +40,3 @@ index 7801345..cb7cec3 100644
  		    lon, lat,
  		    (double)geoid_delta[ilon1 + ilat1 * GEOID_COL],
  		    (double)geoid_delta[ilon2 + ilat1 * GEOID_COL],
--- 
-1.7.10
-

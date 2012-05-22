@@ -7,11 +7,9 @@ Subject: [PATCH] Coverity scanning found two bad-sizeof defects.
  gpsd_json.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/gpsd_json.c b/gpsd_json.c
-index 0c5e39c..08ba8f4 100644
 --- a/gpsd_json.c
 +++ b/gpsd_json.c
-@@ -227,7 +227,7 @@ void json_tpv_dump(const struct gps_device_t *session,
+@@ -227,7 +227,7 @@ void json_tpv_dump(const struct gps_devi
      }
      if (reply[strlen(reply) - 1] == ',')
  	reply[strlen(reply) - 1] = '\0';	/* trim trailing comma */
@@ -20,7 +18,7 @@ index 0c5e39c..08ba8f4 100644
  }
  
  void json_noise_dump(const struct gps_data_t *gpsdata,
-@@ -268,7 +268,7 @@ void json_noise_dump(const struct gps_data_t *gpsdata,
+@@ -268,7 +268,7 @@ void json_noise_dump(const struct gps_da
  
      if (reply[strlen(reply) - 1] == ',')
  	reply[strlen(reply) - 1] = '\0';	/* trim trailing comma */
@@ -29,6 +27,3 @@ index 0c5e39c..08ba8f4 100644
  }
  
  void json_sky_dump(const struct gps_data_t *datap,
--- 
-1.7.10
-

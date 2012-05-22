@@ -1,0 +1,22 @@
+From 83936273c9b0ee2971076f16ce3825c8db8d2843 Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Mon, 14 May 2012 11:27:36 -0400
+Subject: [PATCH] Safer strncat(3) usage.
+
+---
+ gpsd.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -224,8 +224,8 @@ void gpsd_report(int errlevel, const cha
+ 		err_str = "UNK: ";
+ 	}
+ 
+-	(void)strlcpy(buf, "gpsd:", BUFSIZ);
+-	(void)strncat(buf, err_str, BUFSIZ - strlen(buf) );
++	(void)strlcpy(buf, "gpsd:", sizeof(buf));
++	(void)strncat(buf, err_str, sizeof(buf) - 1 - strlen(buf));
+ 	va_start(ap, fmt);
+ 	(void)vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt,
+ 			ap);

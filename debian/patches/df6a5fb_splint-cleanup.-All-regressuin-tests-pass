@@ -7,11 +7,9 @@ Subject: [PATCH] splint cleanup.  All regressuin tests pass.
  bits.c |    1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/bits.c b/bits.c
-index 0c846a1..f2fc1ff 100644
 --- a/bits.c
 +++ b/bits.c
-@@ -44,7 +44,6 @@ uint64_t ubits(char buf[], unsigned int start, unsigned int width, bool le)
+@@ -44,7 +44,6 @@ uint64_t ubits(char buf[], unsigned int
      /* was extraction as a little-endian requested? */
      if (le)
      {
@@ -19,6 +17,3 @@ index 0c846a1..f2fc1ff 100644
  	uint64_t reversed = 0;
  
  	for (i = width; i; --i)
--- 
-1.7.10
-

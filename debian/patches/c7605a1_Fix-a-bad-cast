@@ -7,8 +7,6 @@ Subject: [PATCH] Fix a bad cast. Thanks to: Beat Bolli <bbolli@ewanet.ch>
  gpxlogger.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/gpxlogger.c b/gpxlogger.c
-index 6f4ae4c..eff63ef 100644
 --- a/gpxlogger.c
 +++ b/gpxlogger.c
 @@ -335,7 +335,7 @@ int main(int argc, char **argv)
@@ -20,6 +18,3 @@ index 6f4ae4c..eff63ef 100644
      print_gpx_footer();
      (void)gps_close(&gpsdata);
  
--- 
-1.7.10
-

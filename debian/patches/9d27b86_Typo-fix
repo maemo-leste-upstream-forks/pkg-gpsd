@@ -7,11 +7,9 @@ Subject: [PATCH] Typo fix.
  serial.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/serial.c b/serial.c
-index 6ef01d9..cd0c193 100644
 --- a/serial.c
 +++ b/serial.c
-@@ -402,7 +402,7 @@ int gpsd_serial_open(struct gps_device_t *session)
+@@ -402,7 +402,7 @@ int gpsd_serial_open(struct gps_device_t
      /*
       * Ideally we want to exclusion-lock the device before doing any reads.
       * It would have been best to do this at open(2) time, but O_EXCL
@@ -20,6 +18,3 @@ index 6ef01d9..cd0c193 100644
       *
       * We have to make an exception for ptys, which are intentionally
       * opened by another process on the master side, otherwise we'll
--- 
-1.7.10
-

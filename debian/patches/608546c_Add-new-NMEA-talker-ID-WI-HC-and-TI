@@ -16,8 +16,6 @@ Signed-off-by: Eric S. Raymond <esr@thyrsus.com>
  packet_states.h |    3 +++
  2 files changed, 30 insertions(+)
 
-diff --git a/packet.c b/packet.c
-index 938549d..b025cc8 100644
 --- a/packet.c
 +++ b/packet.c
 @@ -95,6 +95,9 @@ PERMISSIONS
@@ -30,7 +28,7 @@ index 938549d..b025cc8 100644
   *      EC -- Electronic Chart Display & Information System (ECDIS)
   *      SD -- Depth Sounder
   *      P  -- Vendor-specific sentence
-@@ -324,6 +327,12 @@ static void nextstate(struct gps_packet_t *lexer, unsigned char c)
+@@ -324,6 +327,12 @@ static void nextstate(struct gps_packet_
  	    lexer->state = NMEA_VENDOR_LEAD;
  	else if (c == 'I')	/* Seatalk */
  	    lexer->state = SEATALK_LEAD_1;
@@ -43,10 +41,11 @@ index 938549d..b025cc8 100644
  	else if (c == 'A')	/* SiRF Ack */
  	    lexer->state = SIRF_ACK_LEAD_1;
  	else if (c == 'E')	/* ECDIS */
-@@ -500,6 +509,24 @@ static void nextstate(struct gps_packet_t *lexer, unsigned char c)
+@@ -499,6 +508,24 @@ static void nextstate(struct gps_packet_
+ 	    lexer->state = NMEA_LEADER_END;
  	else
  	    lexer->state = GROUND_STATE;
- 	break;
++	break;
 +    case WEATHER_LEAD_1:
 +	if (c == 'I')		/* Weather instrument leader accepted */
 +	    lexer->state = NMEA_LEADER_END;
@@ -64,12 +63,9 @@ index 938549d..b025cc8 100644
 +	    lexer->state = NMEA_LEADER_END;
 +	else
 +	    lexer->state = GROUND_STATE;
-+	break;
+ 	break;
      case ECDIS_LEAD_1:
  	if (c == 'C')		/* ECDIS leader accepted */
- 	    lexer->state = NMEA_LEADER_END;
-diff --git a/packet_states.h b/packet_states.h
-index 79a134e..454f815 100644
 --- a/packet_states.h
 +++ b/packet_states.h
 @@ -25,6 +25,9 @@
@@ -82,6 +78,3 @@ index 79a134e..454f815 100644
     ECDIS_LEAD_1,	/* ECDIS packet leader 'E' */
     SOUNDER_LEAD_1,	/* Depth sounder packet leader 'S' */
  #endif /* NMEA_ENABLE */
--- 
-1.7.10
-

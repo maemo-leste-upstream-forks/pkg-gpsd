@@ -7,8 +7,6 @@ Subject: [PATCH] Attempt to head off a compiler warning.
  gpsdclient.c |    5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/gpsdclient.c b/gpsdclient.c
-index 1e3a96a..561e8bd 100644
 --- a/gpsdclient.c
 +++ b/gpsdclient.c
 @@ -137,8 +137,9 @@ enum unit gpsd_units(void)
@@ -23,6 +21,3 @@ index 1e3a96a..561e8bd 100644
      source->device = NULL;
  
      /*@-usedef@ Sigh, splint is buggy */
--- 
-1.7.10
-

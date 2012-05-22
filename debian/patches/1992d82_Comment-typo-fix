@@ -7,8 +7,6 @@ Subject: [PATCH] Comment typo fix.
  driver_ubx.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/driver_ubx.c b/driver_ubx.c
-index 577b5fc..426d6ac 100644
 --- a/driver_ubx.c
 +++ b/driver_ubx.c
 @@ -767,7 +767,7 @@ const struct gps_type_t ubx_binary = {
@@ -20,6 +18,3 @@ index 577b5fc..426d6ac 100644
  #ifdef RECONFIGURE_ENABLE
      .speed_switcher   = ubx_speed,      /* Speed (baudrate) switch */
      .mode_switcher    = ubx_nmea_mode,  /* Switch to NMEA mode */
--- 
-1.7.10
-

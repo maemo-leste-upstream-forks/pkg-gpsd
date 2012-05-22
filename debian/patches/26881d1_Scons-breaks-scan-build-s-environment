@@ -1,0 +1,24 @@
+From 26881d1bc8a7433cdf1b848fdd1e8f092cc73649 Mon Sep 17 00:00:00 2001
+From: Bernd Zeimetz <bernd@bzed.de>
+Date: Tue, 15 May 2012 23:58:59 +0200
+Subject: [PATCH] Scons breaks scan-build's environment.
+
+Keep CCC_* in the environment to make scan-build work again.
+---
+ SConstruct |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/SConstruct
++++ b/SConstruct
+@@ -235,6 +235,11 @@ for flags in ["LDFLAGS", "LINKFLAGS", "S
+         env.MergeFlags({flags : [os.getenv(flags)]})
+ 
+ 
++# Keep scan-build options in the environment
++for key, value in os.environ.iteritems():
++    if key.startswith('CCC_'):
++        env.Append(ENV={key:value})
++
+ # Placeholder so we can kluge together something like VPATH builds.
+ # $SRCDIR replaces occurrences for $(srcdir) in the autotools build.
+ env['SRCDIR'] = '.'

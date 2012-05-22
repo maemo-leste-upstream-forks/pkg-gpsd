@@ -10,11 +10,9 @@ Signed-off-by: Eric S. Raymond <esr@thyrsus.com>
  driver_garmin.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/driver_garmin.c b/driver_garmin.c
-index 1bddabb..b41b3fe 100644
 --- a/driver_garmin.c
 +++ b/driver_garmin.c
-@@ -932,10 +932,10 @@ static bool garmin_usb_detect(struct gps_device_t *session UNUSED)
+@@ -932,10 +932,10 @@ static bool garmin_usb_detect(struct gps
  	// expect no return packet !?
  
  	return true;
@@ -26,6 +24,3 @@ index 1bddabb..b41b3fe 100644
  #else
      return false;
  #endif /* __linux__ || S_SPLINT_S */
--- 
-1.7.10
-

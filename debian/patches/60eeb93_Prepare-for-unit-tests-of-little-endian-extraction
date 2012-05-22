@@ -8,8 +8,6 @@ All normal regression tests and the test_bits unit test pass.
  test_bits.c |   20 +++++++++++---------
  1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/test_bits.c b/test_bits.c
-index 6caf531..87b8af1 100644
 --- a/test_bits.c
 +++ b/test_bits.c
 @@ -110,6 +110,7 @@ struct unsigned_test
@@ -56,6 +54,3 @@ index 6caf531..87b8af1 100644
  		     res == up->expected ? "succeeded" : "FAILED");
      }
  
--- 
-1.7.10
-

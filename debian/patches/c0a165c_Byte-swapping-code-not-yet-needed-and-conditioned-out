@@ -7,11 +7,9 @@ Subject: [PATCH] Byte-swapping code, not yet needed and conditioned out.
  bits.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 50 insertions(+)
 
-diff --git a/bits.c b/bits.c
-index 96f051d..7a86ef5 100644
 --- a/bits.c
 +++ b/bits.c
-@@ -88,3 +88,53 @@ int64_t sbits(char buf[], unsigned int start, unsigned int width)
+@@ -88,3 +88,53 @@ int64_t sbits(char buf[], unsigned int s
      return (int64_t)fld;
      /*@ -relaxtypes */
  }
@@ -65,6 +63,3 @@ index 96f051d..7a86ef5 100644
 +            c8;
 +}
 +#endif /* __UNUSED__ */
--- 
-1.7.10
-

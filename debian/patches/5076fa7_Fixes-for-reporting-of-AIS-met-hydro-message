@@ -8,11 +8,9 @@ Signed-off-by: Eric S. Raymond <esr@thyrsus.com>
  gpsd_json.c |   14 +++++++-------
  1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/gpsd_json.c b/gpsd_json.c
-index 6d97ff6..8647934 100644
 --- a/gpsd_json.c
 +++ b/gpsd_json.c
-@@ -2063,12 +2063,12 @@ void json_aivdm_dump(const struct ais_t *ais,
+@@ -2063,12 +2063,12 @@ void json_aivdm_dump(const struct ais_t
  		/* layout is almost identical to FID=31 from IMO289 */
  		if (scaled)
  		    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
@@ -27,7 +25,7 @@ index 6d97ff6..8647934 100644
  				   ais->type8.dac1fid31.lat,
  				   ais->type8.dac1fid31.lon);
  		if (ais->type8.fid == 31)
-@@ -2078,7 +2078,7 @@ void json_aivdm_dump(const struct ais_t *ais,
+@@ -2078,7 +2078,7 @@ void json_aivdm_dump(const struct ais_t
  		(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
  			       "\"timestamp\":\"%02uT%02u:%02uZ\","
  			       "\"wapeed\":%u,\"wgust\":%u,\"wdir\":%u,"
@@ -36,7 +34,7 @@ index 6d97ff6..8647934 100644
  			       ais->type8.dac1fid31.day,
  			       ais->type8.dac1fid31.hour,
  			       ais->type8.dac1fid31.minute,
-@@ -2112,7 +2112,7 @@ void json_aivdm_dump(const struct ais_t *ais,
+@@ -2112,7 +2112,7 @@ void json_aivdm_dump(const struct ais_t
  				   ais->type8.dac1fid31.visibility * 0.1);
  		else
  		    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
@@ -45,7 +43,7 @@ index 6d97ff6..8647934 100644
  				   ais->type8.dac1fid31.visibility);
  		if (!scaled)
  		    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-@@ -2120,11 +2120,11 @@ void json_aivdm_dump(const struct ais_t *ais,
+@@ -2120,11 +2120,11 @@ void json_aivdm_dump(const struct ais_t
  				   ais->type8.dac1fid31.waterlevel);
  		else if (ais->type8.fid == 31)
  		    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
@@ -59,7 +57,7 @@ index 6d97ff6..8647934 100644
  				   ais->type8.dac1fid31.waterlevel * 0.1);
  
  		if (scaled) {
-@@ -2140,7 +2140,7 @@ void json_aivdm_dump(const struct ais_t *ais,
+@@ -2140,7 +2140,7 @@ void json_aivdm_dump(const struct ais_t
  		    };
  		    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
  				   "\"leveltrend\":\"%s\","
@@ -68,6 +66,3 @@ index 6d97ff6..8647934 100644
  				   "\"cspeed2\":%.1f,\"cdir2\":%u,\"cdepth2\":%u,"
  				   "\"cspeed3\":%.1f,\"cdir3\":%u,\"cdepth3\":%u,"
  				   "\"waveheight\":%.1f,\"waveperiod\":%u,\"wavedir\":%u,"
--- 
-1.7.10
-

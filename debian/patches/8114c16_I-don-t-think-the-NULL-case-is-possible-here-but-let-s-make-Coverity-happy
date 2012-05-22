@@ -8,11 +8,9 @@ Subject: [PATCH] I don't think the NULL case is possible here, but let's make
  gpsd.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/gpsd.c b/gpsd.c
-index 3a7f0bd..09cdd63 100644
 --- a/gpsd.c
 +++ b/gpsd.c
-@@ -1144,7 +1144,7 @@ static void handle_request(struct subscriber_t *sub,
+@@ -1144,7 +1144,7 @@ static void handle_request(struct subscr
  		    /* user specified a path, try to assign it */
  		    device = find_device(devconf.path);
  		    /* do not optimize away, we need 'device' later on! */
@@ -21,6 +19,3 @@ index 3a7f0bd..09cdd63 100644
  			(void)snprintf(reply, replylen,
  				       "{\"class\":\"ERROR\",\"message\":\"Can't open %s.\"}\r\n",
  				       devconf.path);
--- 
-1.7.10
-

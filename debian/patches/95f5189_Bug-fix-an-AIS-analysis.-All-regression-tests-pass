@@ -1,0 +1,20 @@
+From 95f5189a6c479f09e04b1e79844064b48675fcae Mon Sep 17 00:00:00 2001
+From: "Eric S. Raymond" <esr@thyrsus.com>
+Date: Tue, 15 May 2012 00:59:07 -0400
+Subject: [PATCH] Bug-fix an AIS analysis.  All regression tests pass.
+
+---
+ driver_aivdm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/driver_aivdm.c
++++ b/driver_aivdm.c
+@@ -351,7 +351,7 @@ bool aivdm_decode(const char *buf, size_
+ 			tp->cdir	= UBITS(a + 77, 9);
+ 			tp->cspeed	= UBITS(a + 86, 7);
+ 		    }
+-		    ais->type6.dac1fid32.ntidals = i;
++		    ais->type6.dac1fid32.ntidals = u;
+ #undef ARRAY_BASE
+ #undef ELEMENT_SIZE
+ 		    break;

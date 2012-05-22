@@ -8,11 +8,9 @@ Subject: [PATCH] Minor improvements to RTCM2 doc comments.
  isgps.c        |    4 ++--
  2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/driver_rtcm2.c b/driver_rtcm2.c
-index a9cb0b1..6a796a6 100644
 --- a/driver_rtcm2.c
 +++ b/driver_rtcm2.c
-@@ -23,7 +23,7 @@ Specification.  This code relies on the lower-level packet-assembly
+@@ -23,7 +23,7 @@ Specification.  This code relies on the
  code for that protocol in isgps.c.
  
  The lower layer's job is done when it has assembled a message of up to
@@ -21,11 +19,9 @@ index a9cb0b1..6a796a6 100644
  takes over.  struct rtcm2_msg_t is overlaid on the buffer and the bitfields
  are used to extract pieces of it.  Those pieces are copied and (where
  necessary) reassembled into a struct rtcm2_t.
-diff --git a/isgps.c b/isgps.c
-index 3c71f17..27cf92e 100644
 --- a/isgps.c
 +++ b/isgps.c
-@@ -6,8 +6,8 @@ for both GPS satellite downlink transmissions and the RTCM104 version 2
+@@ -6,8 +6,8 @@ for both GPS satellite downlink transmis
  format for broadcasting differential-GPS corrections.
  
  The purpose of this protocol is to support analyzing a serial bit
@@ -36,6 +32,3 @@ index 3c71f17..27cf92e 100644
  RTCM104 version 3 does *not* use this code; it assumes a byte-oriented
  underlayer.
  
--- 
-1.7.10
-

@@ -9,11 +9,9 @@ Subject: [PATCH] More Coverity-spawned fixes. All regression tests pass.
  net_ntrip.c  |   18 ++++++++++++------
  3 files changed, 16 insertions(+), 9 deletions(-)
 
-diff --git a/driver_ubx.c b/driver_ubx.c
-index b8004f4..b7d102d 100644
 --- a/driver_ubx.c
 +++ b/driver_ubx.c
-@@ -714,7 +714,7 @@ static bool ubx_speed(struct gps_device_t *session,
+@@ -714,7 +714,7 @@ static bool ubx_speed(struct gps_device_
  	usart_mode |= 0x2000;	/* zero value means 1 stop bit */
      putle32(buf, 4, usart_mode);
      putle32(buf, 8, speed);
@@ -22,11 +20,9 @@ index b8004f4..b7d102d 100644
      /*@ -charint +usedef +compdef */
      return true;
  }
-diff --git a/gpsdecode.c b/gpsdecode.c
-index 87506b6..4588649 100644
 --- a/gpsdecode.c
 +++ b/gpsdecode.c
-@@ -428,12 +428,13 @@ static void decode(FILE *fpin, FILE*fpout)
+@@ -428,12 +428,13 @@ static void decode(FILE *fpin, FILE*fpou
  		(void)fputs("\n", fpout);
  	    } 
  #ifdef SOCKET_EXPORT_ENABLE
@@ -42,11 +38,9 @@ index 87506b6..4588649 100644
  #ifdef AIVDM_ENABLE
  	} else if (session.packet.type == AIVDM_PACKET) {
  	    if ((changed & AIS_SET)!=0) {
-diff --git a/net_ntrip.c b/net_ntrip.c
-index a107de7..048c4e0 100644
 --- a/net_ntrip.c
 +++ b/net_ntrip.c
-@@ -494,12 +494,18 @@ int ntrip_open(struct gps_device_t *device, char *caster)
+@@ -494,12 +494,18 @@ int ntrip_open(struct gps_device_t *devi
  		(void)strlcpy(device->ntrip.stream.credentials, 
  			      auth, 
  			      sizeof(device->ntrip.stream.credentials));
@@ -71,6 +65,3 @@ index a107de7..048c4e0 100644
  
  	    ret = ntrip_stream_req_probe(&device->ntrip.stream);
  	    if (ret == -1) {
--- 
-1.7.10
-

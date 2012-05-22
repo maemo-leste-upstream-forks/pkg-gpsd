@@ -7,11 +7,9 @@ Subject: [PATCH] Typo fix.
  driver_proto.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/driver_proto.c b/driver_proto.c
-index ab6abe8..6a64e4c 100644
 --- a/driver_proto.c
 +++ b/driver_proto.c
-@@ -365,7 +365,7 @@ static void _proto__event_hook(struct gps_device_t *session, event_t event)
+@@ -365,7 +365,7 @@ static void _proto__event_hook(struct gp
         /*
  	* Code to make the device ready to communicate.  Only needed if the
  	* device is in some kind of sleeping state, and only shipped to
@@ -20,6 +18,3 @@ index ab6abe8..6a64e4c 100644
  	* that might not be GPSes at all.
  	*/
      }
--- 
-1.7.10
-

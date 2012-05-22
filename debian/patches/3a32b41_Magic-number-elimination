@@ -7,8 +7,6 @@ Subject: [PATCH] Magic-number elimination.
  driver_ubx.c |   29 +++++++++++++++++------------
  1 file changed, 17 insertions(+), 12 deletions(-)
 
-diff --git a/driver_ubx.c b/driver_ubx.c
-index 32a0559..acf5c86 100644
 --- a/driver_ubx.c
 +++ b/driver_ubx.c
 @@ -38,7 +38,9 @@
@@ -22,7 +20,7 @@ index 32a0559..acf5c86 100644
  
  static gps_mask_t ubx_parse(struct gps_device_t *session, unsigned char *buf,
  			    size_t len);
-@@ -291,7 +293,7 @@ static void ubx_msg_inf(unsigned char *buf, size_t data_len)
+@@ -291,7 +293,7 @@ static void ubx_msg_inf(unsigned char *b
      if (data_len > MAX_PACKET_LENGTH - 1)
  	data_len = MAX_PACKET_LENGTH - 1;
  
@@ -31,7 +29,7 @@ index 32a0559..acf5c86 100644
      txtbuf[data_len] = '\0';
      switch (msgid) {
      case UBX_INF_DEBUG:
-@@ -324,7 +326,8 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -324,7 +326,8 @@ gps_mask_t ubx_parse(struct gps_device_t
      gps_mask_t mask = 0;
      int i;
  
@@ -41,7 +39,7 @@ index 32a0559..acf5c86 100644
  	return 0;
  
      session->cycle_end_reliable = true;
-@@ -344,12 +347,12 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -344,12 +347,12 @@ gps_mask_t ubx_parse(struct gps_device_t
  	break;
      case UBX_NAV_DOP:
  	gpsd_report(LOG_PROG, "UBX_NAV_DOP\n");
@@ -56,7 +54,7 @@ index 32a0559..acf5c86 100644
  			    data_len) | (CLEAR_IS | REPORT_IS);
  	break;
      case UBX_NAV_POSUTM:
-@@ -363,7 +366,7 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -363,7 +366,7 @@ gps_mask_t ubx_parse(struct gps_device_t
  	break;
      case UBX_NAV_TIMEGPS:
  	gpsd_report(LOG_PROG, "UBX_NAV_TIMEGPS\n");
@@ -65,7 +63,7 @@ index 32a0559..acf5c86 100644
  	break;
      case UBX_NAV_TIMEUTC:
  	gpsd_report(LOG_IO, "UBX_NAV_TIMEUTC\n");
-@@ -373,7 +376,7 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -373,7 +376,7 @@ gps_mask_t ubx_parse(struct gps_device_t
  	break;
      case UBX_NAV_SVINFO:
  	gpsd_report(LOG_PROG, "UBX_NAV_SVINFO\n");
@@ -74,7 +72,7 @@ index 32a0559..acf5c86 100644
  	break;
      case UBX_NAV_DGPS:
  	gpsd_report(LOG_IO, "UBX_NAV_DGPS\n");
-@@ -390,7 +393,7 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -390,7 +393,7 @@ gps_mask_t ubx_parse(struct gps_device_t
  	gpsd_report(LOG_IO, "UBX_RXM_RAW\n");
  	break;
      case UBX_RXM_SFRB:
@@ -83,7 +81,7 @@ index 32a0559..acf5c86 100644
  	break;
      case UBX_RXM_SVSI:
  	gpsd_report(LOG_PROG, "UBX_RXM_SVSI\n");
-@@ -474,12 +477,14 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -474,12 +477,14 @@ gps_mask_t ubx_parse(struct gps_device_t
  	break;
  
      case UBX_ACK_NAK:
@@ -102,6 +100,3 @@ index 32a0559..acf5c86 100644
  	break;
  
      default:
--- 
-1.7.10
-

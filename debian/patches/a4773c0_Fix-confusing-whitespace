@@ -7,8 +7,6 @@ Subject: [PATCH] Fix confusing whitespace.
  bits.h |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/bits.h b/bits.h
-index 519d5a0..95c849c 100644
 --- a/bits.h
 +++ b/bits.h
 @@ -63,8 +63,8 @@ union long_double {
@@ -22,6 +20,3 @@ index 519d5a0..95c849c 100644
  
  #define getbef(buf, off)	(i_f.i = getbes32(buf, off), i_f.f)
  #define getbed(buf, off)	(l_d.l = getbes64(buf, off), l_d.d)
--- 
-1.7.10
-

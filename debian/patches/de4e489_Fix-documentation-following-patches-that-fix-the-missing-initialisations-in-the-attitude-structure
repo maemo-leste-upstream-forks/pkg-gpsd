@@ -15,8 +15,6 @@ Signed-off-by: Eric S. Raymond <esr@thyrsus.com>
  gpsd_json.xml |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/gpsd_json.xml b/gpsd_json.xml
-index 35a9df2..25c6bde 100644
 --- a/gpsd_json.xml
 +++ b/gpsd_json.xml
 @@ -793,7 +793,7 @@ will assert ATT_IS.</para>
@@ -28,6 +26,3 @@ index 35a9df2..25c6bde 100644
  </programlisting>
  </listitem>
  </varlistentry>
--- 
-1.7.10
-

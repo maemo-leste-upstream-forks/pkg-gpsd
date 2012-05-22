@@ -11,11 +11,9 @@ Signed-off-by: Eric S. Raymond <esr@thyrsus.com>
  driver_nmea0183.c |    2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/driver_nmea0183.c b/driver_nmea0183.c
-index e66c4c3..c269180 100644
 --- a/driver_nmea.c
 +++ b/driver_nmea.c
-@@ -915,6 +915,8 @@ static gps_mask_t processTNTHTM(int c UNUSED, char *field[],
+@@ -915,6 +915,8 @@ static gps_mask_t processTNTHTM(int c UN
      session->gpsdata.attitude.acc_z = NAN;
      session->gpsdata.attitude.gyro_x = NAN;
      session->gpsdata.attitude.gyro_y = NAN;
@@ -24,6 +22,3 @@ index e66c4c3..c269180 100644
      mask |= (ATTITUDE_SET);
  
      gpsd_report(LOG_RAW, "time %.3f, heading %lf (%c).\n",
--- 
-1.7.10
-

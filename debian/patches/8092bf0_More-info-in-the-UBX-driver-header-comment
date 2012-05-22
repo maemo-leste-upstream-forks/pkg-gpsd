@@ -7,8 +7,6 @@ Subject: [PATCH] More info in the UBX driver header comment.
  driver_ubx.c |    7 ++++++-
  1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/driver_ubx.c b/driver_ubx.c
-index acf5c86..577b5fc 100644
 --- a/driver_ubx.c
 +++ b/driver_ubx.c
 @@ -1,11 +1,16 @@
@@ -29,6 +27,3 @@ index acf5c86..577b5fc 100644
   * This file is Copyright (c) 2010 by the GPSD project
   * BSD terms apply: see the file COPYING in the distribution root for details.
   *
--- 
-1.7.10
-

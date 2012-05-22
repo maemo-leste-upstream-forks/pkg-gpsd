@@ -8,8 +8,6 @@ Subject: [PATCH] Prepare to support little-endian field extraction.  Not yet
  bits.c |   28 ++++++++++++++++++++++------
  1 file changed, 22 insertions(+), 6 deletions(-)
 
-diff --git a/bits.c b/bits.c
-index 7aba42f..0c846a1 100644
 --- a/bits.c
 +++ b/bits.c
 @@ -7,18 +7,18 @@
@@ -35,7 +33,7 @@ index 7aba42f..0c846a1 100644
  /* extract a (zero-origin) bitfield from the buffer as an unsigned big-endian uint64_t */
  {
      uint64_t fld = 0;
-@@ -41,13 +41,29 @@ uint64_t ubebits(char buf[], unsigned int start, unsigned int width)
+@@ -41,13 +41,29 @@ uint64_t ubebits(char buf[], unsigned in
      fld &= ~(-1LL << width);
      /*@ +shiftimplementation @*/
  
@@ -67,6 +65,3 @@ index 7aba42f..0c846a1 100644
  
      /*@ +relaxtypes */
      if (fld & (1LL << (width - 1))) {
--- 
-1.7.10
-

@@ -9,11 +9,9 @@ This may head off a warning.
  driver_evermore.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/driver_evermore.c b/driver_evermore.c
-index ee54a8a..d1118c4 100644
 --- a/driver_evermore.c
 +++ b/driver_evermore.c
-@@ -160,7 +160,8 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -160,7 +160,8 @@ gps_mask_t evermore_parse(struct gps_dev
      datalen -= 2;
  
      /*@ -usedef @*/
@@ -23,6 +21,3 @@ index ee54a8a..d1118c4 100644
      tp = buf2;
      for (i = 0; i < (size_t) datalen; i++) {
  	*tp = *cp++;
--- 
-1.7.10
-

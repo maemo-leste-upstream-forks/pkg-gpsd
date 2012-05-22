@@ -9,11 +9,9 @@ Subject: [PATCH] Fix a segfault in geoid computation. Problem found by:
  geoid.c |    9 +++------
  1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/geoid.c b/geoid.c
-index a0feaf4..f055b37 100644
 --- a/geoid.c
 +++ b/geoid.c
-@@ -72,12 +72,9 @@ double wgs84_separation(double lat, double lon)
+@@ -72,12 +72,9 @@ double wgs84_separation(double lat, doub
      ilon = (int)floor((180. + lon) / 10);
  
      /* sanity checks to prevent segfault on bad data */
@@ -29,6 +27,3 @@ index a0feaf4..f055b37 100644
  
      ilat1 = ilat;
      ilon1 = ilon;
--- 
-1.7.10
-

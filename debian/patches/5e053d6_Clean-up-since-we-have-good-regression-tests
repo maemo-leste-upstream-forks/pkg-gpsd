@@ -7,8 +7,6 @@ Subject: [PATCH] Clean up, since we have good regression tests.
  bits.c |   36 +++---------------------------------
  1 file changed, 3 insertions(+), 33 deletions(-)
 
-diff --git a/bits.c b/bits.c
-index 0b969de..7aba42f 100644
 --- a/bits.c
 +++ b/bits.c
 @@ -7,16 +7,14 @@
@@ -31,17 +29,18 @@ index 0b969de..7aba42f 100644
  
  #define BITS_PER_BYTE	8
  
-@@ -33,33 +31,15 @@ uint64_t ubebits(char buf[], unsigned int start, unsigned int width)
+@@ -33,33 +31,15 @@ uint64_t ubebits(char buf[], unsigned in
  	fld <<= BITS_PER_BYTE;
  	fld |= (unsigned char)buf[i];
      }
 -#ifdef DEBUG
 -    (void)printf("ubebits: %d:%d from %s:\n", start, width, gpsd_hexdump(buf, 32));
 -#endif
- 
+-
 -#ifdef DEBUG
 -    (void)printf("    segment=0x%llx,", fld);
 -#endif /* DEBUG */
++
      end = (start + width) % BITS_PER_BYTE;
      if (end != 0) {
  	fld >>= (BITS_PER_BYTE - end);
@@ -65,7 +64,7 @@ index 0b969de..7aba42f 100644
  
      return fld;
  }
-@@ -69,22 +49,12 @@ int64_t sbebits(char buf[], unsigned int start, unsigned int width)
+@@ -69,22 +49,12 @@ int64_t sbebits(char buf[], unsigned int
  {
      uint64_t fld = ubebits(buf, start, width);
  
@@ -88,6 +87,3 @@ index 0b969de..7aba42f 100644
      return (int64_t)fld;
      /*@ -relaxtypes */
  }
--- 
-1.7.10
-

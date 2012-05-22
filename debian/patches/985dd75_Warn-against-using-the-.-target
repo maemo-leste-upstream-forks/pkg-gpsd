@@ -7,11 +7,9 @@ Subject: [PATCH] Warn against using the . target.
  build.txt |    8 ++++++++
  1 file changed, 8 insertions(+)
 
-diff --git a/build.txt b/build.txt
-index 0a90885..003de03 100644
 --- a/build.txt
 +++ b/build.txt
-@@ -181,6 +181,10 @@ by specifying CC=gcc4 before the build command.  The rtcm2.c file
+@@ -181,6 +181,10 @@ by specifying CC=gcc4 before the build c
  confuses the gcc-3.4.[23] optimizer at -O2 level, making it generate
  incorrect code.
  
@@ -22,7 +20,7 @@ index 0a90885..003de03 100644
  After building, please run 'scons testregress' to test the correctness
  of the build.  It is not necessary to install first, but you do need
  to have "." in your $PATH to run regressions uninstalled.  Python is
-@@ -242,6 +246,10 @@ The scons equivalent of 'make clean' is 'scons -c'. This will revert
+@@ -242,6 +246,10 @@ The scons equivalent of 'make clean' is
  your source tree to a clean state as though you had just cloned or
  downloaded it.
  
@@ -33,6 +31,3 @@ index 0a90885..003de03 100644
  == Cross-building ==
  
  The scons recipe is intended to support cross-building, in particular
--- 
-1.7.10
-

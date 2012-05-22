@@ -7,8 +7,6 @@ Subject: [PATCH] Typo fix.
  gps.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/gps.h b/gps.h
-index 6baf232..fc28fa9 100644
 --- a/gps.h
 +++ b/gps.h
 @@ -1686,7 +1686,7 @@ struct gps_data_t {
@@ -20,6 +18,3 @@ index 6baf232..fc28fa9 100644
      char tag[MAXTAGLEN+1];	/* tag of last sentence processed */
  
      /* pack things never reported together to reduce structure size */ 
--- 
-1.7.10
-

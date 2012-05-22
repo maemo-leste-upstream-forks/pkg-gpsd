@@ -7,8 +7,6 @@ Subject: [PATCH] Be more explicit about a Coverity workaround.
  gpsd.c |    6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/gpsd.c b/gpsd.c
-index ef73014..00a67fe 100644
 --- a/gpsd.c
 +++ b/gpsd.c
 @@ -2132,14 +2132,14 @@ int main(int argc, char *argv[])
@@ -29,6 +27,3 @@ index ef73014..00a67fe 100644
  	sa.sa_handler = onsig;
  	(void)sigfillset(&sa.sa_mask);
  	(void)sigaction(SIGHUP, &sa, NULL);
--- 
-1.7.10
-

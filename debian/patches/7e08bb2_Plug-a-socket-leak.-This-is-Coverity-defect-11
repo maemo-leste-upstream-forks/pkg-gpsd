@@ -7,11 +7,9 @@ Subject: [PATCH] Plug a socket leak. This is Coverity defect #11.
  gpsd.c |    3 +++
  1 file changed, 3 insertions(+)
 
-diff --git a/gpsd.c b/gpsd.c
-index 7f977dd..142b5ff 100644
 --- a/gpsd.c
 +++ b/gpsd.c
-@@ -451,6 +451,7 @@ static int passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
+@@ -451,6 +451,7 @@ static int passivesock_af(int af, char *
      if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one,
  		   (int)sizeof(one)) == -1) {
  	gpsd_report(LOG_ERROR, "Error: SETSOCKOPT SO_REUSEADDR\n");
@@ -19,7 +17,7 @@ index 7f977dd..142b5ff 100644
  	return -1;
      }
      if (bind(s, &sat.sa, sin_len) < 0) {
-@@ -459,10 +460,12 @@ static int passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
+@@ -459,10 +460,12 @@ static int passivesock_af(int af, char *
  	if (errno == EADDRINUSE) {
  	    gpsd_report(LOG_ERROR, "maybe gpsd is already running!\n");
  	}
@@ -32,6 +30,3 @@ index 7f977dd..142b5ff 100644
  	return -1;
      }
  
--- 
-1.7.10
-

@@ -7,11 +7,9 @@ Subject: [PATCH] Typo fix.
  subframe.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/subframe.c b/subframe.c
-index feb734c..87eda3c 100644
 --- a/subframe.c
 +++ b/subframe.c
-@@ -755,7 +755,7 @@ gps_mask_t gpsd_interpret_subframe(struct gps_device_t *session,
+@@ -755,7 +755,7 @@ gps_mask_t gpsd_interpret_subframe(struc
  	}
  	break;
      case 5:
@@ -20,6 +18,3 @@ index feb734c..87eda3c 100644
  	 * Pages 1 through 24: almanac data for SV 1 through 24
  	 * Page 25: SV health data for SV 1 through 24, the almanac
  	 * reference time, the almanac reference week number.
--- 
-1.7.10
-

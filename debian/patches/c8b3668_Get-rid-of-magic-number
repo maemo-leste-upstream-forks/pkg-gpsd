@@ -7,8 +7,6 @@ Subject: [PATCH] Get rid of magic number.
  bits.c |   15 +++++++--------
  1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/bits.c b/bits.c
-index f2fc1ff..34fd406 100644
 --- a/bits.c
 +++ b/bits.c
 @@ -13,11 +13,10 @@
@@ -24,7 +22,7 @@ index f2fc1ff..34fd406 100644
  uint64_t ubits(char buf[], unsigned int start, unsigned int width, bool le)
  /* extract a (zero-origin) bitfield from the buffer as an unsigned big-endian uint64_t */
  {
-@@ -25,16 +24,16 @@ uint64_t ubits(char buf[], unsigned int start, unsigned int width, bool le)
+@@ -25,16 +24,16 @@ uint64_t ubits(char buf[], unsigned int
      unsigned int i;
      unsigned end;
  
@@ -47,6 +45,3 @@ index f2fc1ff..34fd406 100644
      }
  
      /*@ -shiftimplementation @*/
--- 
-1.7.10
-

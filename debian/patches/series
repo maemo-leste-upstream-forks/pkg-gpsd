@@ -85,3 +85,16 @@ e649c25_Simplify-and-improve-the-UBX-mode-setting-code
 5195148_According-to-the-Geostar-reference-the-code-to-set-NMEA-mode-was-wrong
 43b58f8_Zero-Coverity-defects
 d72b629_Eliminated-a-bug-Rick-Bywater-tripped-over
+8393627_Safer-strncat-3-usage
+5b6ac64_Eliminate-a-potential-buffer-overrun
+95f5189_Bug-fix-an-AIS-analysis.-All-regression-tests-pass
+0745018_Check-for-W-flags-supported-by-the-compiler
+26881d1_Scons-breaks-scan-build-s-environment
+cfe1291_dvancing-the-twirly-baton-only-each-11th-line-the-whole
+37f9a43_Magic-number-elimination.-Document-Beat-Bolli-s-assumptions
+247a263_Fix-computation-of-buffer-length-arguments-in-strlcat-3-calls
+9b96ab4_Fix-a-few-remnant-strlcat-calls-that-still-weren-t-right
+afbc7a6_Magic-number-elimination
+77c2094_Explicitly-mention-in-gpsd-h-if-NTPSHM-and-PPS-are-compiled-in
+d5fc020_Explicitly-initialize-AIS-queue-pointer
+592e27c_fix-building-with-clock_gettime-and-newer-glibc

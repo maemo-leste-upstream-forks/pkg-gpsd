@@ -7,11 +7,9 @@ Subject: [PATCH] Shutup Coverity and Splint about a hackish #ifdef
  driver_garmin.c |    8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/driver_garmin.c b/driver_garmin.c
-index ba39d59..1bddabb 100644
 --- a/driver_garmin.c
 +++ b/driver_garmin.c
-@@ -908,10 +908,7 @@ static bool garmin_usb_detect(struct gps_device_t *session UNUSED)
+@@ -908,10 +908,7 @@ static bool garmin_usb_detect(struct gps
  #ifdef HAVE_LIBUSB
  	if (!is_usb_device(session->gpsdata.dev.path, 0x091e, 0x0003))
  	    return false;
@@ -23,7 +21,7 @@ index ba39d59..1bddabb 100644
  	if (!gpsd_set_raw(session)) {
  	    gpsd_report(LOG_ERROR,
  			"Garmin: garmin_usb_detect: error changing port attributes: %s\n",
-@@ -937,6 +934,9 @@ static bool garmin_usb_detect(struct gps_device_t *session UNUSED)
+@@ -937,6 +934,9 @@ static bool garmin_usb_detect(struct gps
  	return true;
      }
  #else
@@ -33,6 +31,3 @@ index ba39d59..1bddabb 100644
      return false;
  #endif /* __linux__ || S_SPLINT_S */
  }
--- 
-1.7.10
-

@@ -8,11 +8,9 @@ Subject: [PATCH] Coverity may be being overly fussy, but this guard is
  gpsd.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/gpsd.c b/gpsd.c
-index 00a67fe..f1d3e14 100644
 --- a/gpsd.c
 +++ b/gpsd.c
-@@ -434,7 +434,7 @@ static int passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
+@@ -434,7 +434,7 @@ static int passivesock_af(int af, char *
  	 * this, trying to listen on in6addr_any will fail with the
  	 * address-in-use error condition.
  	 */
@@ -21,6 +19,3 @@ index 00a67fe..f1d3e14 100644
  	    int on = 1;
  	    (void)setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
  	}
--- 
-1.7.10
-

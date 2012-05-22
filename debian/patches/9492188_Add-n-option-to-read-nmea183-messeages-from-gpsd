@@ -8,8 +8,6 @@ Subject: [PATCH] Add -n option to read nmea183 messeages from gpsd
  gpsmon.xml |    4 ++++
  2 files changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/gpsmon.c b/gpsmon.c
-index df134cc..f442834 100644
 --- a/gpsmon.c
 +++ b/gpsmon.c
 @@ -436,6 +436,8 @@ static void onsig(int sig UNUSED)
@@ -82,11 +80,9 @@ index df134cc..f442834 100644
  	}
  	serial = false;
      } else {
-diff --git a/gpsmon.xml b/gpsmon.xml
-index a33fe34..9e5cf07 100644
 --- a/gpsmon.xml
 +++ b/gpsmon.xml
-@@ -25,6 +25,7 @@ BSD terms apply: see the file COPYING in the distribution root for details.
+@@ -25,6 +25,7 @@ BSD terms apply: see the file COPYING in
        <arg choice='opt'>-L </arg>
        <arg choice='opt'>-V </arg>
        <arg choice='opt'>-h </arg>
@@ -94,7 +90,7 @@ index a33fe34..9e5cf07 100644
        <arg choice='opt'>-l <replaceable>logfile</replaceable></arg>
        <arg choice='opt'>-t <replaceable>driver-prefix</replaceable></arg>
        <arg choice='opt'>
-@@ -103,6 +104,9 @@ immediately on device open.  This may be useful is, for example,
+@@ -103,6 +104,9 @@ immediately on device open.  This may be
  you want to capture the startup message from a device that displays
  firmware version information there.</para>
  
@@ -104,6 +100,3 @@ index a33fe34..9e5cf07 100644
  <para>The -t option sets up a fallback type. Give it a string that
  is a distinguishing prefix of exactly one driver type name; this will
  be used for mode, speed, and rate switching if the driver selected
--- 
-1.7.10
-

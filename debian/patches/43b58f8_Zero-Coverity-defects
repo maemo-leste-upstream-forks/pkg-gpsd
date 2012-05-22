@@ -8,8 +8,6 @@ Subject: [PATCH] Zero Coverity defects!
  packet.c |    4 ++--
  2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/gpsd.c b/gpsd.c
-index e92e333..b7520f4 100644
 --- a/gpsd.c
 +++ b/gpsd.c
 @@ -2324,7 +2324,7 @@ int main(int argc, char *argv[])
@@ -21,11 +19,9 @@ index e92e333..b7520f4 100644
  		    handle_control(cfd, buf);
  		}
  		gpsd_report(LOG_SPIN, "close(%d) of control socket\n", cfd);
-diff --git a/packet.c b/packet.c
-index 886e7a1..fec34b9 100644
 --- a/packet.c
 +++ b/packet.c
-@@ -2012,16 +2012,16 @@ ssize_t packet_get(int fd, struct gps_packet_t *lexer)
+@@ -2012,16 +2012,16 @@ ssize_t packet_get(int fd, struct gps_pa
       * nothing from the device and there is nothing waiting in the
       * packet input buffer.
       */
@@ -44,6 +40,3 @@ index 886e7a1..fec34b9 100644
  	packet_discard(lexer);
  	lexer->state = GROUND_STATE;
      }
--- 
-1.7.10
-

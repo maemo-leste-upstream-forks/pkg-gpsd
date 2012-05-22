@@ -12,8 +12,6 @@ Subject: [PATCH] Rename some bit extractors.
  test_bits.c       |    4 ++--
  6 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/bits.c b/bits.c
-index 7a86ef5..0b969de 100644
 --- a/bits.c
 +++ b/bits.c
 @@ -20,7 +20,7 @@
@@ -25,7 +23,7 @@ index 7a86ef5..0b969de 100644
  /* extract a (zero-origin) bitfield from the buffer as an unsigned big-endian uint64_t */
  {
      uint64_t fld = 0;
-@@ -34,7 +34,7 @@ uint64_t ubits(char buf[], unsigned int start, unsigned int width)
+@@ -34,7 +34,7 @@ uint64_t ubits(char buf[], unsigned int
  	fld |= (unsigned char)buf[i];
      }
  #ifdef DEBUG
@@ -34,7 +32,7 @@ index 7a86ef5..0b969de 100644
  #endif
  
  #ifdef DEBUG
-@@ -64,13 +64,13 @@ uint64_t ubits(char buf[], unsigned int start, unsigned int width)
+@@ -64,13 +64,13 @@ uint64_t ubits(char buf[], unsigned int
      return fld;
  }
  
@@ -51,7 +49,7 @@ index 7a86ef5..0b969de 100644
  #endif /* __UNUSED_DEBUG__ */
      /*@ +relaxtypes */
      if (fld & (1LL << (width - 1))) {
-@@ -82,7 +82,7 @@ int64_t sbits(char buf[], unsigned int start, unsigned int width)
+@@ -82,7 +82,7 @@ int64_t sbits(char buf[], unsigned int s
  	/*@ +shiftimplementation @*/
      }
  #ifdef __UNUSED_DEBUG__
@@ -60,8 +58,6 @@ index 7a86ef5..0b969de 100644
  		  (int64_t)fld);
  #endif /* __UNUSED_DEBUG__ */
      return (int64_t)fld;
-diff --git a/bits.h b/bits.h
-index 886ee54..28e8a0b 100644
 --- a/bits.h
 +++ b/bits.h
 @@ -81,7 +81,7 @@ union long_double {
@@ -74,11 +70,9 @@ index 886ee54..28e8a0b 100644
 +extern int64_t sbebits(char buf[], unsigned int, unsigned int);
  
  #endif /* _GPSD_BITS_H_ */
-diff --git a/driver_aivdm.c b/driver_aivdm.c
-index 00aace0..e5d80b2 100644
 --- a/driver_aivdm.c
 +++ b/driver_aivdm.c
-@@ -44,7 +44,7 @@ static void from_sixbit(char *bitvec, uint start, int count, char *to)
+@@ -44,7 +44,7 @@ static void from_sixbit(char *bitvec, ui
  
      /* six-bit to ASCII */
      for (i = 0; i < count - 1; i++) {
@@ -87,7 +81,7 @@ index 00aace0..e5d80b2 100644
  	if (newchar == '@')
  	    break;
  	else
-@@ -215,8 +215,8 @@ bool aivdm_decode(const char *buf, size_t buflen,
+@@ -215,8 +215,8 @@ bool aivdm_decode(const char *buf, size_
          ais_context->decoded_frags = 0;
  
  #define BITS_PER_BYTE	8
@@ -98,11 +92,9 @@ index 00aace0..e5d80b2 100644
  #define UCHARS(s, to)	from_sixbit((char *)ais_context->bits, s, sizeof(to), to)
  	ais->type = UBITS(0, 6);
  	ais->repeat = UBITS(6, 2);
-diff --git a/driver_evermore.c b/driver_evermore.c
-index d1118c4..10d58cc 100644
 --- a/driver_evermore.c
 +++ b/driver_evermore.c
-@@ -333,8 +333,8 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
+@@ -333,8 +333,8 @@ gps_mask_t evermore_parse(struct gps_dev
  	 * and status for each channel from the chip.  We cannot get
  	 * codephase or carrierphase.
  	 */
@@ -113,11 +105,9 @@ index d1118c4..10d58cc 100644
  	for (k = 0; k < visible; k++) {
  	    int prn = (int)UBITS(k, 4, 5);
  	    /* this is so we can tell which never got set */
-diff --git a/driver_rtcm3.c b/driver_rtcm3.c
-index c39d345..d1ce850 100644
 --- a/driver_rtcm3.c
 +++ b/driver_rtcm3.c
-@@ -74,8 +74,8 @@ void rtcm3_unpack( /*@out@*/ struct rtcm3_t *rtcm, char *buf)
+@@ -74,8 +74,8 @@ void rtcm3_unpack( /*@out@*/ struct rtcm
      signed long temp;
  
      /*@ -evalorder -sefparams -mayaliasunique @*/
@@ -128,8 +118,6 @@ index c39d345..d1ce850 100644
  #define GPS_PSEUDORANGE(fld, len) \
      {temp = (unsigned long)ugrab(len);		\
      if (temp == GPS_INVALID_PSEUDORANGE)	\
-diff --git a/test_bits.c b/test_bits.c
-index e30b95a..3be27cc 100644
 --- a/test_bits.c
 +++ b/test_bits.c
 @@ -195,8 +195,8 @@ int main(void)
@@ -143,6 +131,3 @@ index e30b95a..3be27cc 100644
  		     hexdump(buf, strlen((char *)buf)),
  		     up->start, up->width, up->description, up->expected, res,
  		     res == up->expected ? "succeeded" : "FAILED");
--- 
-1.7.10
-

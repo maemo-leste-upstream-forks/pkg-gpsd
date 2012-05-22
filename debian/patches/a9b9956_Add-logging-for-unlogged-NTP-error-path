@@ -7,11 +7,9 @@ Subject: [PATCH] Add logging for unlogged NTP error path.
  ntpshm.c |   24 ++++++++++++++++--------
  1 file changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/ntpshm.c b/ntpshm.c
-index 48a15ec..ec1c95b 100644
 --- a/ntpshm.c
 +++ b/ntpshm.c
-@@ -633,6 +633,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+@@ -633,6 +633,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(
      while (1) {
  	int ok = 0;
  	char *log = NULL;
@@ -19,7 +17,7 @@ index 48a15ec..ec1c95b 100644
  
          if (ioctl(session->gpsdata.gps_fd, TIOCMIWAIT, PPS_LINE_TIOC) != 0) {
  	    gpsd_report(LOG_ERROR, "PPS ioctl(TIOCMIWAIT) failed: %d %.40s\n"
-@@ -881,16 +882,23 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+@@ -881,16 +882,23 @@ static /*@null@*/ void *gpsd_ppsmonitor(
  	    /*@+noeffect@*/
  #endif
  
@@ -51,6 +49,3 @@ index 48a15ec..ec1c95b 100644
  	    if (session->context->pps_hook != NULL)
  		session->context->pps_hook(session, &tv);
  	} else {
--- 
-1.7.10
-
