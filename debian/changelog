@@ -1,3 +1,13 @@
+gpsd (3.5-7) unstable; urgency=low
+
+  * [694d9866] Refreshing patches and picking more bugfixes from git HEAD.
+    Including a fix for a segfaults happening in the aivdm driver after
+    compiling it with stack-protector and gcc 4.7.
+  * [4336fd02] Revert "Disable hardening flags."
+    This reverts commit 8c722b60761fe405e658ba5e4f3acd040694b215.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 22 May 2012 18:54:45 +0200
+
 gpsd (3.5-6) unstable; urgency=low
 
   * [4ee5b139] Add patches which went missing.
