@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "bits.h"
 
 /*@ -duplicatequals -formattype */
@@ -25,7 +26,6 @@ static long long sL1, sL2;
 static uint64_t uL1, uL2;
 static float f1;
 static double d1;
-
 
 static char /*@ observer @*/ *hexdump(const void *binbuf, size_t len)
 {
@@ -109,23 +109,32 @@ struct unsigned_test
     unsigned char *buf;
     unsigned int start, width;
     uint64_t expected;
+    bool le;
     char *description;
 };
 
 /*@ -duplicatequals +ignorequals @*/
-int main(void)
+int main(int argc, char *argv[])
 {
+    bool failures = false;
+    bool quiet = (argc > 1) && (strcmp(argv[1], "--quiet") == 0);
+
     /*@ -observertrans -usereleased @*/
     struct unsigned_test *up, unsigned_tests[] = {
 	/* tests using the big buffer */
-	{buf, 0, 1, 0, "first bit of first byte"},
-	{buf, 0, 8, 0x01, "first 8 bits"},
-	{buf, 32, 7, 2, "first seven bits of fifth byte"},
-	{buf, 56, 12, 0x8f, "12 bits crossing 7th to 8th bytes (0x08ff)"},
-	{buf, 78, 4, 11, "2 bits crossing 8th to 9th byte (0xfefd)"},
+	{buf, 0,  1,  0,    false, "first bit of first byte"},
+	{buf, 0,  8,  0x01, false, "first 8 bits"},
+	{buf, 32, 7,  0x02, false, "first seven bits of fifth byte (0x05)"},
+	{buf, 56, 12, 0x8f, false, "12 bits crossing 7th to 8th bytes (0x08ff)"},
+	{buf, 78, 4,  0xb, false, "4 bits crossing 8th to 9th byte (0xfefd)"},
+	{buf, 0,  1,  0,    true,  "first bit of first byte"},
+	{buf, 0,  8,  0x80, true,  "first 8 bits"},
+	{buf, 32, 7,  0x20, true, "first seven bits of fifth byte (0x05)"},
+	{buf, 56, 12, 0xf10,true, "12 bits crossing 7th to 8th bytes (0x08ff)"},
+	{buf, 78, 4,  0xd,  true, "4 bits crossing 8th to 9th byte (0xfefd)"},
 	/* sporadic tests based on found bugs */
 	{(unsigned char *)"\x19\x23\f6",
-	 7, 2, 2, "2 bits crossing 1st to 2nd byte (0x1923)"},
+	 7, 2, 2, false, "2 bits crossing 1st to 2nd byte (0x1923)"},
     };
 
     unsigned char *sp;
@@ -136,71 +145,77 @@ int main(void)
     memcpy(buf + 24, "\x40\x49\x0f\xdb", 4);
     /*@ +observertrans +usereleased @*/
 
-    (void)fputs("Test data:", stdout);
-    for (sp = buf; sp < buf + 28; sp++)
-	(void)printf(" %02x", *sp);
-    (void)putc('\n', stdout);
+    if (!quiet) {
+	(void)fputs("Test data:", stdout);
+	for (sp = buf; sp < buf + 28; sp++)
+	    (void)printf(" %02x", *sp);
+	(void)putc('\n', stdout);
 
-    /* big-endian test */
-    /*@-type@*/
-    printf("Big-endian:\n");
-    sb1 = getsb(buf, 0);
-    sb2 = getsb(buf, 8);
-    ub1 = getub(buf, 0);
-    ub2 = getub(buf, 8);
-    sw1 = getbes16(buf, 0);
-    sw2 = getbes16(buf, 8);
-    uw1 = getbeu16(buf, 0);
-    uw2 = getbeu16(buf, 8);
-    sl1 = getbes32(buf, 0);
-    sl2 = getbes32(buf, 8);
-    ul1 = getbeu32(buf, 0);
-    ul2 = getbeu32(buf, 8);
-    sL1 = getbes64(buf, 0);
-    sL2 = getbes64(buf, 8);
-    uL1 = getbeu64(buf, 0);
-    uL2 = getbeu64(buf, 8);
-    f1 = getbef(buf, 24);
-    d1 = getbed(buf, 16);
-    /*@+type@*/
-    bedumpall();
+	/* big-endian test */
+	/*@-type@*/
+	printf("Big-endian:\n");
+	sb1 = getsb(buf, 0);
+	sb2 = getsb(buf, 8);
+	ub1 = getub(buf, 0);
+	ub2 = getub(buf, 8);
+	sw1 = getbes16(buf, 0);
+	sw2 = getbes16(buf, 8);
+	uw1 = getbeu16(buf, 0);
+	uw2 = getbeu16(buf, 8);
+	sl1 = getbes32(buf, 0);
+	sl2 = getbes32(buf, 8);
+	ul1 = getbeu32(buf, 0);
+	ul2 = getbeu32(buf, 8);
+	sL1 = getbes64(buf, 0);
+	sL2 = getbes64(buf, 8);
+	uL1 = getbeu64(buf, 0);
+	uL2 = getbeu64(buf, 8);
+	f1 = getbef(buf, 24);
+	d1 = getbed(buf, 16);
+	/*@+type@*/
+	bedumpall();
 
-    /* little-endian test */
-    printf("Little-endian:\n");
-    /*@-type@*/
-    sb1 = getsb(buf, 0);
-    sb2 = getsb(buf, 8);
-    ub1 = getub(buf, 0);
-    ub2 = getub(buf, 8);
-    sw1 = getles16(buf, 0);
-    sw2 = getles16(buf, 8);
-    uw1 = getleu16(buf, 0);
-    uw2 = getleu16(buf, 8);
-    sl1 = getles32(buf, 0);
-    sl2 = getles32(buf, 8);
-    ul1 = getleu32(buf, 0);
-    ul2 = getleu32(buf, 8);
-    sL1 = getles64(buf, 0);
-    sL2 = getles64(buf, 8);
-    uL1 = getleu64(buf, 0);
-    uL2 = getleu64(buf, 8);
-    f1 = getlef(buf, 24);
-    d1 = getled(buf, 16);
-    /*@+type@*/
-    ledumpall();
+	/* little-endian test */
+	printf("Little-endian:\n");
+	/*@-type@*/
+	sb1 = getsb(buf, 0);
+	sb2 = getsb(buf, 8);
+	ub1 = getub(buf, 0);
+	ub2 = getub(buf, 8);
+	sw1 = getles16(buf, 0);
+	sw2 = getles16(buf, 8);
+	uw1 = getleu16(buf, 0);
+	uw2 = getleu16(buf, 8);
+	sl1 = getles32(buf, 0);
+	sl2 = getles32(buf, 8);
+	ul1 = getleu32(buf, 0);
+	ul2 = getleu32(buf, 8);
+	sL1 = getles64(buf, 0);
+	sL2 = getles64(buf, 8);
+	uL1 = getleu64(buf, 0);
+	uL2 = getleu64(buf, 8);
+	f1 = getlef(buf, 24);
+	d1 = getled(buf, 16);
+	/*@+type@*/
+	ledumpall();
+    }
 
-
-    (void)printf("Testing bitfield extraction:\n");
+    (void)printf("Testing bitfield extraction\n");
     for (up = unsigned_tests;
 	 up <
 	 unsigned_tests + sizeof(unsigned_tests) / sizeof(unsigned_tests[0]);
 	 up++) {
-	uint64_t res = ubits((char *)buf, up->start, up->width);
-	(void)printf("ubits(%s, %d, %d) %s should be %" PRIx64 ", is %" PRIx64 ": %s\n",
-		     hexdump(buf, strlen((char *)buf)),
-		     up->start, up->width, up->description, up->expected, res,
-		     res == up->expected ? "succeeded" : "FAILED");
+	uint64_t res = ubits((char *)buf, up->start, up->width, up->le);
+	bool success = (res == up->expected);
+	if (!success)
+	    failures = true;
+	if (!success || !quiet)
+	    (void)printf("ubits(%s, %d, %d, %s) %s should be %" PRIx64 ", is %" PRIx64 ": %s\n",
+			 hexdump(buf, strlen((char *)buf)),
+			 up->start, up->width, up->le ? "true" : "false",
+			 up->description, up->expected, res,
+			 success ? "succeeded" : "FAILED");
     }
 
-    exit(0);
+    exit(failures ? 1 : 0);
 }

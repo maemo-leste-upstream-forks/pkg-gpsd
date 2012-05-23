@@ -101,7 +101,7 @@ static void ntrip_str_parse(char *str, size_t len,
     s = ntrip_field_iterate(NULL, s, eol);
     /* <carrier> */
     if ((s = ntrip_field_iterate(NULL, s, eol)))
-	(void)sscanf(s, "%d", &hold->carrier);
+	hold->carrier = atoi(s);
     /* <nav-system> */
     s = ntrip_field_iterate(NULL, s, eol);
     /* <network> */
@@ -111,14 +111,14 @@ static void ntrip_str_parse(char *str, size_t len,
     /* <latitude> */
     hold->latitude = NAN;
     if ((s = ntrip_field_iterate(NULL, s, eol)))
-	(void)sscanf(s, "%lf", &hold->latitude);
+	hold->latitude = atof(s);
     /* <longitude> */
     hold->longitude = NAN;
     if ((s = ntrip_field_iterate(NULL, s, eol)))
-	(void)sscanf(s, "%lf", &hold->longitude);
+	hold->longitude = atof(s);
     /* <nmea> */
     if ((s = ntrip_field_iterate(NULL, s, eol))) {
-	(void)sscanf(s, "%d", &hold->nmea);
+	hold->nmea = atoi(s);
     }
     /* <solution> */
     s = ntrip_field_iterate(NULL, s, eol);
@@ -144,11 +144,11 @@ static void ntrip_str_parse(char *str, size_t len,
     }
     /* <fee> */
     if ((s = ntrip_field_iterate(NULL, s, eol))) {
-	(void)sscanf(s, "%d", &hold->fee);
+	hold->fee = atoi(s);
     }
     /* <bitrate> */
     if ((s = ntrip_field_iterate(NULL, s, eol))) {
-	(void)sscanf(s, "%d", &hold->bitrate);
+	hold->bitrate = atoi(s);
     }
     /* ...<misc> */
     while ((s = ntrip_field_iterate(NULL, s, eol)));
@@ -165,12 +165,11 @@ static int ntrip_sourcetable_parse(struct gps_device_t *device)
     size_t blen = BUFSIZ;
     int fd = device->gpsdata.gps_fd;
 
-    while (1) {
+    for (;;) {
 	char *eol;
 	ssize_t rlen;
 
 	memset(&buf[len], 0, (size_t) (blen - len));
-
 	rlen = read(fd, &buf[len], (size_t) (blen - 1 - len));
 	if (rlen == -1) {
 	    if (errno == EINTR) {
@@ -220,6 +219,7 @@ static int ntrip_sourcetable_parse(struct gps_device_t *device)
 		     strlen(NTRIP_ENDSOURCETABLE)) == 0)
 		goto done;
 
+	    /* coverity[string_null] - nul-terminated by previous memset */
 	    if (!(eol = strstr(line, NTRIP_BR)))
 		break;
 
@@ -320,8 +320,10 @@ static int ntrip_stream_req_probe(const struct ntrip_stream_t *stream)
     if (r != (ssize_t)strlen(buf)) {
 	gpsd_report(LOG_ERROR, "ntrip stream write error %d on fd %d during probe request %zd\n",
 		errno, dsock, r);
+	(int)close(dsock);
 	return -1;
     }
+    /* coverity[leaked_handle] This is an intentional allocation */
     return dsock;
 }
 
@@ -397,6 +399,7 @@ static int ntrip_stream_get_parse(const struct ntrip_stream_t *stream, int dsock
     }
 
     /* parse 401 Unauthorized */
+    /* coverity[string_null] - guaranteed terminated by the memset above */
     if (strstr(buf, NTRIP_UNAUTH)!=NULL) {
 	gpsd_report(LOG_ERROR,
 		"not authorized for Ntrip stream %s/%s\n", stream->url,
@@ -439,7 +442,7 @@ int ntrip_open(struct gps_device_t *device, char *caster)
     char *stream = NULL;
     char *url = NULL;
     int ret = -1;
-    char t[strlen(caster + 1)];
+    char t[strlen(caster) + 1];
     char *tmp = t;
 
     switch (device->ntrip.conn_state) {
@@ -494,12 +497,18 @@ int ntrip_open(struct gps_device_t *device, char *caster)
 		(void)strlcpy(device->ntrip.stream.credentials, 
 			      auth, 
 			      sizeof(device->ntrip.stream.credentials));
-	    (void)strlcpy(device->ntrip.stream.url, 
-		    url, 
-		    sizeof(device->ntrip.stream.url));
-	    (void)strlcpy(device->ntrip.stream.port, 
-		    port, 
-		    sizeof(device->ntrip.stream.port));
+	    /* 
+	     * Semantically url and port ought to be non-NULL by now,
+	     * but just in case...this code appeases Coverity.
+	     */
+	    if (url != NULL)
+		(void)strlcpy(device->ntrip.stream.url, 
+			      url, 
+			      sizeof(device->ntrip.stream.url));
+	    if (port != NULL)
+		(void)strlcpy(device->ntrip.stream.port, 
+			      port, 
+			      sizeof(device->ntrip.stream.port));
 
 	    ret = ntrip_stream_req_probe(&device->ntrip.stream);
 	    if (ret == -1) {

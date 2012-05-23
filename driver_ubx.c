@@ -1,10 +1,15 @@
 /*
- * UBX driver
+ * UBX driver.  All capabilities are common to Antaris4 and uBlox6.
+ * Reference manuals are at 
+ * http://www.u-blox.com/en/download/documents-a-resources/u-blox-6-gps-modules-resources.html
  *
  * Week counters are not limited to 10 bits. It's unknown what
  * the firmware is doing to disambiguate them, if anything; it might just
  * be adding a fixed offset based on a hidden epoch value, in which case 
  * unhappy things will occur on the next rollover.
+ *
+ * For the Antaris 4, the default leap-secoond offset (before getting one from
+ * the sats, one presumes) is 0sec; for the uBlox6 it's 15sec.
  *
  * This file is Copyright (c) 2010 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
@@ -38,6 +43,9 @@
  *
  * see also the FV25 and UBX documents on reference.html
  */
+#define UBX_PREFIX_LEN		6
+#define UBX_CLASS_OFFSET	2
+#define UBX_TYPE_OFFSET		3
 
 static gps_mask_t ubx_parse(struct gps_device_t *session, unsigned char *buf,
 			    size_t len);
@@ -290,7 +298,7 @@ static void ubx_msg_inf(unsigned char *buf, size_t data_len)
     if (data_len > MAX_PACKET_LENGTH - 1)
 	data_len = MAX_PACKET_LENGTH - 1;
 
-    (void)strlcpy(txtbuf, (char *)buf + 6, MAX_PACKET_LENGTH);
+    (void)strlcpy(txtbuf, (char *)buf + UBX_PREFIX_LEN, MAX_PACKET_LENGTH);
     txtbuf[data_len] = '\0';
     switch (msgid) {
     case UBX_INF_DEBUG:
@@ -323,7 +331,8 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
     gps_mask_t mask = 0;
     int i;
 
-    if (len < 6)		/* the packet at least contains a head of six bytes */
+    /* the packet at least contains a head long enough for an empty message */
+    if (len < UBX_PREFIX_LEN)
 	return 0;
 
     session->cycle_end_reliable = true;
@@ -343,12 +352,12 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
 	break;
     case UBX_NAV_DOP:
 	gpsd_report(LOG_PROG, "UBX_NAV_DOP\n");
-	mask = ubx_msg_nav_dop(session, &buf[6], data_len);
+	mask = ubx_msg_nav_dop(session, &buf[UBX_PREFIX_LEN], data_len);
 	break;
     case UBX_NAV_SOL:
 	gpsd_report(LOG_PROG, "UBX_NAV_SOL\n");
 	mask =
-	    ubx_msg_nav_sol(session, &buf[6],
+	    ubx_msg_nav_sol(session, &buf[UBX_PREFIX_LEN],
 			    data_len) | (CLEAR_IS | REPORT_IS);
 	break;
     case UBX_NAV_POSUTM:
@@ -362,7 +371,7 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
 	break;
     case UBX_NAV_TIMEGPS:
 	gpsd_report(LOG_PROG, "UBX_NAV_TIMEGPS\n");
-	mask = ubx_msg_nav_timegps(session, &buf[6], data_len);
+	mask = ubx_msg_nav_timegps(session, &buf[UBX_PREFIX_LEN], data_len);
 	break;
     case UBX_NAV_TIMEUTC:
 	gpsd_report(LOG_IO, "UBX_NAV_TIMEUTC\n");
@@ -372,7 +381,7 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
 	break;
     case UBX_NAV_SVINFO:
 	gpsd_report(LOG_PROG, "UBX_NAV_SVINFO\n");
-	mask = ubx_msg_nav_svinfo(session, &buf[6], data_len);
+	mask = ubx_msg_nav_svinfo(session, &buf[UBX_PREFIX_LEN], data_len);
 	break;
     case UBX_NAV_DGPS:
 	gpsd_report(LOG_IO, "UBX_NAV_DGPS\n");
@@ -389,7 +398,7 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
 	gpsd_report(LOG_IO, "UBX_RXM_RAW\n");
 	break;
     case UBX_RXM_SFRB:
-	mask = ubx_msg_sfrb(session, &buf[6]);
+	mask = ubx_msg_sfrb(session, &buf[UBX_PREFIX_LEN]);
 	break;
     case UBX_RXM_SVSI:
 	gpsd_report(LOG_PROG, "UBX_RXM_SVSI\n");
@@ -462,20 +471,25 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
 
     case UBX_CFG_PRT:
 	gpsd_report(LOG_IO, "UBX_CFG_PRT\n");
-	for (i = 6; i < 26; i++)
-	    session->driver.ubx.original_port_settings[i - 6] = buf[i];	/* copy the original port settings */
-	buf[14 + 6] &= ~0x02;	/* turn off NMEA output on this port */
-	(void)ubx_write(session, 0x06, 0x00, &buf[6], 20);	/* send back with all other settings intact */
+	for (i = 0; i < (int)sizeof(session->driver.ubx.port_settings); i++)
+	    session->driver.ubx.port_settings[i] = buf[UBX_PREFIX_LEN+i];
+	/* turn off NMEA output on this port */
+	session->driver.ubx.port_settings[14] &= ~0x02;
+	(void)ubx_write(session, 0x06, 0x00, 
+			session->driver.ubx.port_settings, 
+			sizeof(session->driver.ubx.port_settings));
 	session->driver.ubx.have_port_configuration = true;
 	break;
 
     case UBX_ACK_NAK:
-	gpsd_report(LOG_IO, "UBX_ACK_NAK, class: %02x, id: %02x\n", buf[6],
-		    buf[7]);
+	gpsd_report(LOG_IO, "UBX_ACK_NAK, class: %02x, id: %02x\n", 
+		    buf[UBX_CLASS_OFFSET],
+		    buf[UBX_TYPE_OFFSET]);
 	break;
     case UBX_ACK_ACK:
-	gpsd_report(LOG_IO, "UBX_ACK_ACK, class: %02x, id: %02x\n", buf[6],
-		    buf[7]);
+	gpsd_report(LOG_IO, "UBX_ACK_ACK, class: %02x, id: %02x\n",
+		    buf[UBX_CLASS_OFFSET],
+		    buf[UBX_TYPE_OFFSET]);
 	break;
 
     default:
@@ -512,10 +526,11 @@ static gps_mask_t parse_input(struct gps_device_t *session)
 
 bool ubx_write(struct gps_device_t * session,
 	       unsigned int msg_class, unsigned int msg_id,
-	       unsigned char *msg, unsigned short data_len)
+	       unsigned char *msg, size_t data_len)
 {
     unsigned char CK_A, CK_B;
-    ssize_t i, count;
+    ssize_t count;
+    size_t i;
     bool ok;
 
     /*@ -type @*/
@@ -549,8 +564,9 @@ bool ubx_write(struct gps_device_t * session,
     session->msgbuflen = data_len + 8;
     /*@ +type @*/
 
+
     gpsd_report(LOG_IO,
-		"=> GPS: UBX class: %02x, id: %02x, len: %d, crc: %02x%02x\n",
+		"=> GPS: UBX class: %02x, id: %02x, len: %zd, crc: %02x%02x\n",
 		msg_class, msg_id, data_len,
 		CK_A, CK_B);
     count = gpsd_write(session, session->msgbuf, session->msgbuflen);
@@ -566,8 +582,7 @@ static ssize_t ubx_control_send(struct gps_device_t *session, char *msg,
 {
     return ubx_write(session, (unsigned int)msg[0], (unsigned int)msg[1],
 		     (unsigned char *)msg + 2,
-		     (unsigned short)(data_len - 2)) ? ((ssize_t) (data_len +
-								   7)) : -1;
+		     (size_t)(data_len - 2)) ? ((ssize_t) (data_len + 7)) : -1;
 }
 #endif /* CONTROLSEND_ENABLE */
 
@@ -655,45 +670,36 @@ static void ubx_event_hook(struct gps_device_t *session, event_t event)
 #ifdef RECONFIGURE_ENABLE
 static void ubx_nmea_mode(struct gps_device_t *session, int mode)
 {
-    int i;
-    unsigned char buf[sizeof(session->driver.ubx.original_port_settings)];
-
     if (!session->driver.ubx.have_port_configuration)
 	return;
 
-    /*@ +charint -usedef @*/
-    for (i = 0; i < (int)sizeof(session->driver.ubx.original_port_settings);
-	 i++)
-	buf[i] = session->driver.ubx.original_port_settings[i];	/* copy the original port settings */
-    if (buf[0] == 0x01)		/* set baudrate on serial port only */
-	putle32(buf, 8, session->gpsdata.dev.baudrate);
+    /*@+charint@*/
+    if (session->driver.ubx.port_settings[0] == 0x01)		/* set baudrate on serial port only */
+	putle32(session->driver.ubx.port_settings, 8, session->gpsdata.dev.baudrate);
 
     if (mode == MODE_NMEA) {
-	buf[14] &= ~0x01;	/* turn off UBX output on this port */
-	buf[14] |= 0x02;	/* turn on NMEA output on this port */
+	session->driver.ubx.port_settings[14] &= ~0x01;	/* turn off UBX output on this port */
+	session->driver.ubx.port_settings[14] |= 0x02;	/* turn on NMEA output on this port */
     } else {			/* MODE_BINARY */
-	buf[14] &= ~0x02;	/* turn off NMEA output on this port */
-	buf[14] |= 0x01;	/* turn on UBX output on this port */
+	session->driver.ubx.port_settings[14] &= ~0x02;	/* turn off NMEA output on this port */
+	session->driver.ubx.port_settings[14] |= 0x01;	/* turn on UBX output on this port */
     }
-    /*@ -charint +usedef @*/
-    (void)ubx_write(session, 0x06u, 0x00, &buf[6], 20);	/* send back with all other settings intact */
+    /*@ -charint @*/
+    (void)ubx_write(session, 0x06u, 0x00,
+		    session->driver.ubx.port_settings,
+		    sizeof(session->driver.ubx.port_settings));
 }
 
 static bool ubx_speed(struct gps_device_t *session,
 		      speed_t speed, char parity, int stopbits)
 {
-    int i;
-    unsigned char buf[sizeof(session->driver.ubx.original_port_settings)];
     unsigned long usart_mode;
 
-    /*@ +charint -usedef -compdef */
-    for (i = 0; i < (int)sizeof(session->driver.ubx.original_port_settings);
-	 i++)
-	buf[i] = session->driver.ubx.original_port_settings[i];	/* copy the original port settings */
-    if ((!session->driver.ubx.have_port_configuration) || (buf[0] != 0x01))	/* set baudrate on serial port only */
+    /*@+charint@*/
+    if ((!session->driver.ubx.have_port_configuration) || (session->driver.ubx.port_settings[0] != 0x01))	/* set baudrate on serial port only */
 	return false;
 
-    usart_mode = (unsigned long)getleu32(buf, 4);
+    usart_mode = (unsigned long)getleu32(session->driver.ubx.port_settings, 4);
     usart_mode &= ~0xE00;	/* zero bits 11:9 */
     switch (parity) {
     case (int)'E':
@@ -710,13 +716,15 @@ static bool ubx_speed(struct gps_device_t *session,
 	usart_mode |= 0x4;	/* 0x5 would work too */
 	break;
     }
+    /*@-charint@*/
     usart_mode &= ~0x03000;	/* zero bits 13:12 */
     if (stopbits == 2)
 	usart_mode |= 0x2000;	/* zero value means 1 stop bit */
-    putle32(buf, 4, usart_mode);
-    putle32(buf, 8, speed);
-    (void)ubx_write(session, 0x06, 0x00, &buf[6], 20);	/* send back with all other settings intact */
-    /*@ -charint +usedef +compdef */
+    putle32(session->driver.ubx.port_settings, 4, usart_mode);
+    putle32(session->driver.ubx.port_settings, 8, speed);
+    (void)ubx_write(session, 0x06, 0x00, 
+		    session->driver.ubx.port_settings,
+		    sizeof(session->driver.ubx.port_settings));
     return true;
 }
 
@@ -759,7 +767,7 @@ const struct gps_type_t ubx_binary = {
     .get_packet       = generic_get,    /* Packet getter (using default routine) */
     .parse_packet     = parse_input,    /* Parse message packets */
     .rtcm_writer      = gpsd_write,      /* RTCM handler (using default routine) */
-    .event_hook       = ubx_event_hook,	/* Fiew in variious lifetime events */
+    .event_hook       = ubx_event_hook,	/* Fire on various lifetime events */
 #ifdef RECONFIGURE_ENABLE
     .speed_switcher   = ubx_speed,      /* Speed (baudrate) switch */
     .mode_switcher    = ubx_nmea_mode,  /* Switch to NMEA mode */

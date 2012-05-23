@@ -23,7 +23,7 @@ Specification.  This code relies on the lower-level packet-assembly
 code for that protocol in isgps.c.
 
 The lower layer's job is done when it has assembled a message of up to
-33 words of clean parity-checked data.  At this point this upper layer
+33 30-bit words of clean parity-checked data.  At this point this upper layer
 takes over.  struct rtcm2_msg_t is overlaid on the buffer and the bitfields
 are used to extract pieces of it.  Those pieces are copied and (where
 necessary) reassembled into a struct rtcm2_t.
@@ -65,13 +65,16 @@ BSD terms apply: see the file COPYING in the distribution root for details.
  * Structures for interpreting words in an RTCM-104 2.x message (after
  * parity checking and removing inversion).  Note, these structures
  * are overlayed on the raw data in order to decode them into
- * bitfields; this will fail horribly if your C compiler ever
- * introduces padding between or before bit fields, or between
- * 8-bit-aligned bitfields and character arrays.
+ * bitfields; this will fail horribly if your C compiler introduces
+ * padding between or before bit fields, or between 8-bit-aligned
+ * bitfields and character arrays despite #pragma pack(1).  The right
+ * things happen under gcc 4.x on amd64, i386, ia64, all arm and mips
+ * variants, m68k, and powerpc)
  *
  * (In practice, the only class of machines on which this is likely
  * to fail are word-aligned architectures without barrel shifters.
- * Very few of these are left in 2008.)
+ * Very few of these are left in 2012. By test, we know of s390, s390x,
+ * and sparc.)
  *
  * The RTCM 2.1 standard is less explicit than it should be about signed-integer
  * representations.  Two's complement is specified for some but not all.
