@@ -184,6 +184,7 @@ static int ntpshm_alloc(struct gps_context_t *context)
 
 	    memset((void *)context->shmTime[i], 0, sizeof(struct shmTime));
 	    context->shmTime[i]->mode = 1;
+	    context->shmTime[i]->leap = LEAP_NOTINSYNC;
 	    context->shmTime[i]->precision = -1;	/* initially 0.5 sec */
 	    context->shmTime[i]->nsamples = 3;	/* stages of median filter */
 
@@ -250,6 +251,7 @@ int ntpshm_put(struct gps_device_t *session, double fixtime, double fudge)
     shmTime->clockTimeStampUSec = (int)microseconds;
     shmTime->receiveTimeStampSec = (time_t) tv.tv_sec;
     shmTime->receiveTimeStampUSec = (int)tv.tv_usec;
+    shmTime->leap = session->context->leap_notify;
     /* setting the precision here does not seem to help anything, too
      * hard to calculate properly anyway.  Let ntpd figure it out.
      * Any NMEA will be about -1 or -2. 
@@ -353,6 +355,7 @@ static int ntpshm_pps(struct gps_device_t *session, struct timeval *tv)
     shmTimeP->clockTimeStampUSec = (int)microseconds;
     shmTimeP->receiveTimeStampSec = (time_t) tv->tv_sec;
     shmTimeP->receiveTimeStampUSec = (int)tv->tv_usec;
+    shmTimeP->leap = session->context->leap_notify;
     /* precision is a placebo, ntpd does not really use it
      * real world accuracy is around 16uS, thus -16 precision */
     shmTimeP->precision = -16;
@@ -448,7 +451,7 @@ static int init_kernel_pps(struct gps_device_t *session) {
     int ldisc = 18;   /* the PPS line discipline */
     pps_params_t pp;
     glob_t globbuf;
-    int i;
+    size_t i;             /* to match type of globbuf.gl_pathc */
     char pps_num = 0;     /* /dev/pps[pps_num] is our device */
     char path[GPS_PATH_MAX] = "";
 
@@ -620,16 +623,17 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 
     /* root privileges are not required after this point */
 
-#define PPS_LINE_TIOC (TIOCM_CD|TIOCM_CAR|TIOCM_RI)
+#define PPS_LINE_TIOC (TIOCM_CD|TIOCM_CAR|TIOCM_RI|TIOCM_CTS)
 
     /* 
      * Wait for status change on any handshake line. The only assumption here 
      * is that no GPS lights up more than one of these pins.  By waiting on
      * all of them we remove a configuration switch.
      */
-    while (1) {
+    for (;;) {
 	int ok = 0;
 	char *log = NULL;
+	char *log1 = NULL;
 
         if (ioctl(session->gpsdata.gps_fd, TIOCMIWAIT, PPS_LINE_TIOC) != 0) {
 	    gpsd_report(LOG_ERROR, "PPS ioctl(TIOCMIWAIT) failed: %d %.40s\n"
@@ -757,8 +761,12 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		    cycle, duration,
 		    (unsigned long)tv.tv_sec, (unsigned long)tv.tv_usec);
 
-	/*@ +boolint @*/
-	if (session->ship_to_ntpd || session->context->pps_hook != NULL) {
+	/*  only listen to PPS after 4 consecutive fixes, otherwise time
+	 *  will be inaccurate.
+	 *  Not sure yet how to handle uBlox UBX_MODE_TMONLY
+	 *  Do not use ship_to_ntp here since it is synced to packets
+	 *  and this thread is asynchonous to packets */
+	if ( 3 < session->fixcnt ) {
 	    /*
 	     * The PPS pulse is normally a short pulse with a frequency of
 	     * 1 Hz, and the UTC second is defined by the front edge. But we
@@ -769,14 +777,14 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	     * been changing for at least 800ms, i.e. it assumes the duty
 	     * cycle is at most 20%.
 	     *
-	     * Some GPS instead output a square wave that is 0.5 Hz and each
+	     * Some GPSes instead output a square wave that is 0.5 Hz and each
 	     * edge denotes the start of a second.
 	     *
-	     * Some GPS, like the Globalsat MR-350P, output a 1uS pulse.
+	     * Some GPSes, like the Globalsat MR-350P, output a 1uS pulse.
 	     * The pulse is so short that TIOCMIWAIT sees a state change
 	     * but by the time TIOCMGET is called the pulse is gone.
 	     *
-	     * A few stupid GPS, like the Furuno GPSClock, output a 1.0 Hz
+	     * A few stupid GPSes, like the Furuno GPSClock, output a 1.0 Hz
 	     * square wave where the leading edge is the start of a second
 	     *
 	     * 5Hz GPS (Garmin 18-5Hz) pulses at 5Hz. Set the pulse length to
@@ -846,7 +854,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	    /* chrony expects tv-sec since Jan 1970 */
 	    /* FIXME!! offset is double of the error from local time */
 	    sample.pulse = 0;
-	    sample.leap = 0;
+	    sample.leap = session->context->leap_notify;
 	    sample.magic = SOCK_MAGIC;
 #if defined(HAVE_SYS_TIMEPPS_H)
             if ( 0 <= session->kernelpps_handle) {
@@ -878,16 +886,23 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	    /*@+noeffect@*/
 #endif
 
-	    if ( 0 <= chronyfd && session->ship_to_ntpd) {
-		(void)send(chronyfd, &sample, sizeof (sample), 0);
-		gpsd_report(LOG_RAW, "PPS edge accepted chrony sock %lu.%06lu offset %.9f\n",
-			    (unsigned long)sample.tv.tv_sec,
-			    (unsigned long)sample.tv.tv_usec,
-			    sample.offset);
-	    }
 	    TSTOTV( &tv, &ts );
-	    if (session->ship_to_ntpd)
+	    if (session->ship_to_ntpd) {
+	        log1 = "accepted";
+		if ( 0 <= chronyfd ) {
+		    log1 = "accepted chrony sock";
+		    (void)send(chronyfd, &sample, sizeof (sample), 0);
+                }
 		(void)ntpshm_pps(session, &tv);
+	    } else {
+	    	log1 = "skipped ship_to_ntp=0";
+	    }
+	    gpsd_report(LOG_RAW, 
+		    "PPS edge %.20s %lu.%06lu offset %.9f\n",
+		    log1,
+		    (unsigned long)sample.tv.tv_sec,
+		    (unsigned long)sample.tv.tv_usec,
+		    sample.offset);
 	    if (session->context->pps_hook != NULL)
 		session->context->pps_hook(session, &tv);
 	} else {
@@ -896,6 +911,9 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 
     }
     gpsd_report(LOG_PROG, "PPS gpsd_ppsmonitor exited???\n");
+    /* pacify Coverity - falling through here is theoretically a handle leak */
+    if (chronyfd != -1)
+	(void)close(chronyfd);
     return NULL;
 }
 /*@+mustfreefresh +type +unrecog@*/

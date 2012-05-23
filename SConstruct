@@ -19,7 +19,7 @@
 # * Out-of-directory builds: see http://www.scons.org/wiki/UsingBuildDir
 
 # Release identification begins here
-gpsd_version = "3.5"
+gpsd_version = "3.6"
 
 # library version
 libgps_version_current  = 20
@@ -113,6 +113,7 @@ boolopts = (
     ("tsip",          True,  "Trimble TSIP support"),
     ("ubx",           True,  "UBX Protocol support"),
     ("fury",          True,  "Jackson Labs Fury and Firefly support"),
+    ("nmea2000",      True,  "NMEA2000/CAN support"),
     # Non-GPS protocols
     ("aivdm",         True,  "AIVDM support"),
     ("gpsclock",      True,  "GPSClock support"),
@@ -155,6 +156,7 @@ boolopts = (
     ("debug",         False, "include debug information in build"),
     ("profiling",     False, "build with profiling enabled"),
     ("strip",         True,  "build with stripping of binaries enabled"),
+    ("chrpath",       True,  "use chrpath to edit library load paths"),
     )
 for (name, default, help) in boolopts:
     opts.Add(BoolVariable(name, help, default))
@@ -197,7 +199,7 @@ import_env = (
     "LOGNAME",         # LOGNAME is required for the flocktest production.
     'PATH',            # Required for ccache and Coverity scan-build
     'PKG_CONFIG_PATH', # Set .pc file directory in a crossbuild
-    'STAGING_PREFIX',  # Required by the OpenWRT build.
+    'STAGING_DIR',     # Required by the OpenWRT build.
     )
 envs = {}
 for var in import_env:
@@ -235,6 +237,11 @@ for flags in ["LDFLAGS", "LINKFLAGS", "SHLINKFLAGS", "CPPFLAGS"]:
         env.MergeFlags({flags : [os.getenv(flags)]})
 
 
+# Keep scan-build options in the environment
+for key, value in os.environ.iteritems():
+    if key.startswith('CCC_'):
+        env.Append(ENV={key:value})
+
 # Placeholder so we can kluge together something like VPATH builds.
 # $SRCDIR replaces occurrences for $(srcdir) in the autotools build.
 env['SRCDIR'] = '.'
@@ -243,18 +250,10 @@ def announce(msg):
     if not env.GetOption("silent"):
         print msg
 
-# GCC isn't always named gcc, alas.
-if env['CC'] == 'gcc' or (sys.platform.startswith('freebsd') and env['CC'] == 'cc'):
-    # Enable all GCC warnings except uninitialized and
-    # missing-field-initializers, which we can't help triggering because
-    # of the way some of the JSON-parsing code is generated.
-    # Also not including -Wcast-qual and -Wimplicit-function-declaration,
-    # because we can't seem to keep scons from passing it to g++.
-    env.Append(CFLAGS=Split('''-Wextra -Wall -Wno-uninitialized
-                            -Wno-missing-field-initializers -Wcast-align
-                            -Wmissing-declarations -Wmissing-prototypes
-                            -Wstrict-prototypes -Wpointer-arith -Wreturn-type
-                            -D_GNU_SOURCE'''))
+# We need to define -D_GNU_SOURCE
+env.Append(CFLAGS='-D_GNU_SOURCE')
+
+
 
 # DESTDIR environment variable means user wants to prefix the installation root.
 DESTDIR = os.environ.get('DESTDIR', '')
@@ -384,22 +383,48 @@ def CheckXsltproc(context):
     context.Result( ret )
     return ret
 
+def CheckCompilerOption(context, option):
+    context.Message( 'Checking if compiler accepts %s ...' %(option,) )
+    old_CFLAGS=context.env['CFLAGS']
+    context.env.Append(CFLAGS=option)
+    ret = context.TryLink("""
+        int main(int argc, char **argv) {
+            return 0;
+        }
+    """,'.c')
+    if not ret:
+        context.env.Replace(CFLAGS=old_CFLAGS)
+    context.Result(ret)
+    return ret
+
 config = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG,
                                          'CheckExecutable' : CheckExecutable,
-                                         'CheckXsltproc' : CheckXsltproc})
+                                         'CheckXsltproc' : CheckXsltproc,
+                                         'CheckCompilerOption' : CheckCompilerOption})
+
+
+# If supported by the compiler, enable all warnings except uninitialized and
+# missing-field-initializers, which we can't help triggering because
+# of the way some of the JSON-parsing code is generated.
+# Also not including -Wcast-qual and -Wimplicit-function-declaration,
+# because we can't seem to keep scons from passing it to g++.
+for option in ('-Wextra','-Wall', '-Wno-uninitialized','-Wno-missing-field-initializers',
+               '-Wcast-align','-Wmissing-declarations', '-Wmissing-prototypes',
+               '-Wstrict-prototypes', '-Wpointer-arith', '-Wreturn-type'):
+    config.CheckCompilerOption(option)
+
 
 env.Prepend(LIBPATH=[os.path.realpath(os.curdir)])
-if config.CheckExecutable('$CHRPATH -v', 'chrpath'):
-    # Tell generated binaries to look in the current directory for
-    # shared libraries so we can run tests without hassle. Should be
-    # handled sanely by scons on all systems.  Not good to use '.' or
-    # a relative path here; it's a security risk.  At install time we
-    # use chrpath to edit this out of RPATH.
-    if env["shared"]:
+if env["shared"]:
+    if env["chrpath"] and config.CheckExecutable('$CHRPATH -v', 'chrpath'):
+        # Tell generated binaries to look in the current directory for
+        # shared libraries so we can run regression tests without
+        # hassle. Should be handled sanely by scons on all systems.  Not
+        # good to use '.' or a relative path here; it's a security risk.
+        # At install time we use chrpath to edit this out of RPATH.
         env.Prepend(RPATH=[os.path.realpath(os.curdir)])
-else:
-    print "chrpath is not available, forcing static linking."
-    env["shared"] = False
+    else:
+        print "chrpath is not available or use of it has been disabled."
 
 confdefs = ["/* gpsd_config.h.  Generated by scons, do not hand-hack.  */\n"]
 
@@ -449,6 +474,7 @@ if env['usb']:
 else:
     confdefs.append("/* #undef HAVE_LIBUSB */\n")
     usblibs = []
+    env["usb"] = False
 
 if config.CheckLib('librt'):
     confdefs.append("#define HAVE_LIBRT 1\n")
@@ -461,10 +487,10 @@ else:
 if config.CheckLib('libcap'):
     confdefs.append("#define HAVE_LIBCAP 1\n")
     # System library - no special flags
-    rtlibs = ["-lcap"]
+    caplibs = ["-lcap"]
 else:
     confdefs.append("/* #undef HAVE_LIBCAP */\n")
-    rtlibs = []
+    caplibs = []
 
 if env['dbus_export'] and config.CheckPKG('dbus-1'):
     confdefs.append("#define HAVE_DBUS 1\n")
@@ -472,6 +498,7 @@ if env['dbus_export'] and config.CheckPKG('dbus-1'):
 else:
     confdefs.append("/* #undef HAVE_DBUS */\n")
     dbus_libs = []
+    env["dbus_export"] = False
 
 if env['bluez'] and config.CheckPKG('bluez'):
     confdefs.append("#define HAVE_BLUEZ 1\n")
@@ -479,6 +506,7 @@ if env['bluez'] and config.CheckPKG('bluez'):
 else:
     confdefs.append("/* #undef HAVE_BLUEZ */\n")
     bluezlibs = []
+    env["bluez"] = False
 
 if config.CheckHeader("sys/timepps.h"):
     confdefs.append("#define HAVE_SYS_TIMEPPS_H 1\n")
@@ -486,6 +514,15 @@ if config.CheckHeader("sys/timepps.h"):
 else:
     confdefs.append("/* #undef HAVE_SYS_TIMEPPS_H */\n")
     announce("You do not have kernel PPS available.")
+    # Don't turn off PPS here, we might be using the non-kernel version
+
+if config.CheckHeader(["bits/sockaddr.h", "linux/can.h"]):
+    confdefs.append("#define HAVE_LINUX_CAN_H 1\n")
+    announce("You have kernel CANbus available.")
+else:
+    confdefs.append("/* #undef HAVE_LINUX_CAN_H */\n")
+    announce("You do not have kernel CANbus available.")
+    env["nmea2000"] = False
 
 # check function after libraries, because some function require library
 # for example clock_gettime() require librt on Linux
@@ -620,6 +657,7 @@ libgps_version = "%d.%d.%d" %(libgps_version_soname, libgps_version_age, libgps_
 
 libgps_sources = [
     "ais_json.c",
+    "bits.c",
     "daemon.c",
     "gpsutils.c",
     "gpsdclient.c",
@@ -641,7 +679,6 @@ if cxx and env['libgpsmm']:
     libgps_sources.append("libgpsmm.cpp")
 
 libgpsd_sources = [
-    "bits.c",
     "bsd_base64.c",
     "crc24q.c",
     "gpsd_json.c",
@@ -654,18 +691,18 @@ libgpsd_sources = [
     "packet.c",
     "pseudonmea.c",
     "serial.c",
-    #"srecord.c",
     "subframe.c",
     "timebase.c",
     "drivers.c",
-    "driver_aivdm.c",
+    "driver_ais.c",
     "driver_evermore.c",
     "driver_garmin.c",
     "driver_garmin_txt.c",
     "driver_geostar.c",
     "driver_italk.c",
     "driver_navcom.c",
-    "driver_nmea.c",
+    "driver_nmea0183.c",
+    "driver_nmea2000.c",
     "driver_oncore.c",
     "driver_rtcm2.c",
     "driver_rtcm3.c",
@@ -772,7 +809,7 @@ compiled_gpslib = Library(env=env,
                           target="gps",
                           sources=libgps_sources,
                           version=libgps_version,
-                          parse_flags=dbus_libs)
+                          parse_flags=dbus_libs + rtlibs)
 env.Clean(compiled_gpslib, "gps_maskdump.c")
 
 compiled_gpsdlib = Library(env=env,
@@ -810,7 +847,7 @@ if qt_env:
 # The libraries have dependencies on system libraries
 
 gpslibs = ["-lgps", "-lm"]
-gpsdlibs = ["-lgpsd"] + usblibs + bluezlibs + gpslibs
+gpsdlibs = ["-lgpsd"] + usblibs + bluezlibs + gpslibs + caplibs
 
 # Source groups
 
@@ -880,9 +917,6 @@ binaries = [gpsd, gpsdecode, gpsctl, gpsdctl, gpspipe, gpxlogger, lcdgps]
 if ncurseslibs:
     binaries += [cgps, gpsmon]
 
-clockwatcher = env.Program('clockwatcher', ['clockwatcher.c'], parse_flags=gpslibs)
-env.Depends(clockwatcher, compiled_gpslib)
-
 # Test programs
 test_float = env.Program('test_float', ['test_float.c'])
 test_geoid = env.Program('test_geoid', ['test_geoid.c'], parse_flags=gpsdlibs)
@@ -894,7 +928,7 @@ env.Depends(test_mkgmtime, compiled_gpslib)
 test_trig = env.Program('test_trig', ['test_trig.c'], parse_flags=["-lm"])
 test_packet = env.Program('test_packet', ['test_packet.c'], parse_flags=gpsdlibs)
 env.Depends(test_packet, [compiled_gpsdlib, compiled_gpslib])
-test_bits = env.Program('test_bits', ['test_bits.c'], parse_flags=gpsdlibs)
+test_bits = env.Program('test_bits', ['test_bits.c'], parse_flags=gpslibs)
 env.Depends(test_bits, [compiled_gpsdlib, compiled_gpslib])
 test_gpsmm = env.Program('test_gpsmm', ['test_gpsmm.cpp'], parse_flags=gpslibs)
 env.Depends(test_gpsmm, compiled_gpslib)
@@ -1147,7 +1181,7 @@ if qt_env:
     binaryinstall.append(LibraryInstall(qt_env, installdir('libdir'), compiled_qgpsmmlib))
 
 # We don't use installdir here in order to avoid having DESTDIR affect the rpath
-if env["shared"]:
+if env["shared"] and env["chrpath"]:
     env.AddPostAction(binaryinstall, '$CHRPATH -r "%s" "$TARGET"' \
                       % (installdir('libdir', False), ))
 
@@ -1202,6 +1236,14 @@ uninstall = env.Command('uninstall', '', Flatten(Uninstall(Alias("install"))) or
 env.AlwaysBuild(uninstall)
 env.Precious(uninstall)
 
+# Target selection for '.' is badly broken. This is a general scons problem,
+# not a glitch in this particular recipe. Avoid triggering the bug.
+
+def error_action(target, source, env):
+    from SCons.Errors import UserError
+    raise UserError, "Target selection for '.' is broken."
+AlwaysBuild(Alias(".", [], error_action))
+
 # Utility productions
 
 def Utility(target, source, action):
@@ -1243,7 +1285,7 @@ for (target,sources,description,params) in splint_table:
     env.Alias('splint',Splint(target,sources,description,params))
 
 Utility("cppcheck", ["gpsd.h", "packet_names.h"],
-        "cppcheck --template gcc --all --force $SRCDIR")
+        "cppcheck --template gcc --enable=all --inline-suppr --suppress='*:driver_proto.c' --force $SRCDIR")
 
 # Sanity-check Python code. TODO: add xgps for the complete set.
 Utility("pychecker", ["jsongen.py", "maskaudit.py"],
@@ -1276,6 +1318,11 @@ audit = env.Alias('audit',
 #
 # Note that the *-makeregress targets re-create the *.log.chk source
 # files from the *.log source files.
+
+# Unit-test the bitfield extractor
+bits_regress = Utility('bits-regress', [test_bits], [
+    '$SRCDIR/test_bits --quiet'
+    ])
 
 # Check that all Python modules compile properly 
 if env['python']:
@@ -1404,11 +1451,6 @@ json_regress = Utility('json-regress', [test_json], [
     '$SRCDIR/test_json'
     ])
 
-# Unit-test the bitfield extractor - not in normal tests
-bits_regress = Utility('bits-regress', [test_bits], [
-    '$SRCDIR/test_bits'
-    ])
-
 # Run a valgrind audit on the daemon  - not in normal tests
 valgrind_audit = Utility('valgrind-audit', ['valgrind-audit.py'], 'valgrind-audit.py')
 
@@ -1418,6 +1460,7 @@ flocktest = Utility("flocktest", [], "cd devtools; flocktest " + gitrepo)
 # Run all normal regression tests
 check = env.Alias('check', [
     python_compilation_regress,
+    bits_regress,
     gps_regress,
     rtcm_regress,
     aivdm_regress,
@@ -1448,6 +1491,7 @@ webpages = Split('''www/installation.html
     www/hardware.html
     www/performance/performance.html
     www/internals.html
+    www/cycle.png
     ''') + map(lambda f: f[:-3], glob.glob("www/*.in"))
 
 www = env.Alias('www', webpages)
@@ -1464,7 +1508,8 @@ Utility("validation-list", [www], validation_list)
 
 # How to update the website
 upload_web = Utility("upload_web", [www],
-                     ['rsync --exclude="*.in" -avz www/ ' + webupload])
+                     ['rsync --exclude="*.in" -avz www/ ' + webupload,
+                      'scp README TODO NEWS ' + webupload])
 
 # When the URL declarations change, so must the generated web pages
 for fn in glob.glob("www/*.in"):
@@ -1621,7 +1666,6 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
     env.Alias("ship", [releaseprep,
                           ship_release,
                           upload_tags])
-
 
 # The following sets edit modes for GNU EMACS
 # Local Variables:

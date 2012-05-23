@@ -6,8 +6,8 @@ for both GPS satellite downlink transmissions and the RTCM104 version 2
 format for broadcasting differential-GPS corrections.
 
 The purpose of this protocol is to support analyzing a serial bit
-stream without byte framing into parity-checked packets.
-Interpretation of the packets is left to an upper layer. Note that
+stream without byte framing into parity-checked 30-bit words.
+Interpretation of the words is left to an upper layer. Note that
 RTCM104 version 3 does *not* use this code; it assumes a byte-oriented
 underlayer.
 
@@ -180,8 +180,6 @@ enum isgpsstat_t isgps_decode(struct gps_packet_t *session,
 			      bool(*length_check) (struct gps_packet_t *),
 			      size_t maxlen, unsigned int c)
 {
-    enum isgpsstat_t res;
-
     /* ASCII characters 64-127, @ through DEL */
     if ((c & MAG_TAG_MASK) != MAG_TAG_DATA) {
 	gpsd_report(ISGPS_ERRLEVEL_BASE + 1,
@@ -222,6 +220,8 @@ enum isgpsstat_t isgps_decode(struct gps_packet_t *session,
 	}			/* end while */
     }
     if (session->isgps.locked) {
+	enum isgpsstat_t res;
+
 	res = ISGPS_SYNC;
 
 	if (session->isgps.curr_offset > 0) {

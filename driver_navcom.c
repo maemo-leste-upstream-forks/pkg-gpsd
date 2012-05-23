@@ -110,8 +110,9 @@ static void navcom_cmd_0x20(struct gps_device_t *session, uint8_t block_id,
 }
 
 /*@ unused @*/
-/* Changes the LED settings in the receiver */
+// cppcheck-suppress unusedFunction
 static void UNUSED navcom_cmd_0x3f(struct gps_device_t *session)
+/* Changes the LED settings in the receiver */
 {
     unsigned char msg[12];
     putbyte(msg, 0, 0x02);
@@ -897,9 +898,9 @@ static gps_mask_t handle_0xb5(struct gps_device_t *session)
 	 * with those obtained from the PVT report (handle_0xb1).
 	 * The figures from 0xb1 do agree with the values reported
 	 * by Navcom's PC utility */
-	double ellips_maj = getled(buf, 17);
-	double ellips_min = getled(buf, 25);
-	double ellips_azm = getled(buf, 33);
+	//double ellips_maj = getled(buf, 17);
+	//double ellips_min = getled(buf, 25);
+	//double ellips_azm = getled(buf, 33);
 	double lat_sd = getled(buf, 41);
 	double lon_sd = getled(buf, 49);
 	double alt_sd = getled(buf, 57);

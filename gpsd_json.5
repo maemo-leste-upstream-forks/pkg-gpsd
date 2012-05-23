@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsd_json
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
 .\"      Date: 28 Aug 2011
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -254,7 +254,7 @@ No
 T}:T{
 numeric
 T}:T{
-Direction error estimate in degrees, 95% confifdence\&.
+Direction error estimate in degrees, 95% confidence\&.
 T}
 T{
 eps
@@ -263,7 +263,7 @@ No
 T}:T{
 numeric
 T}:T{
-Speed error estinmate in meters/sec, 95% confifdence\&.
+Speed error estinmate in meters/sec, 95% confidence\&.
 T}
 T{
 epc
@@ -272,7 +272,7 @@ No
 T}:T{
 numeric
 T}:T{
-Climb/sink error estinmate in meters/sec, 95% confifdence\&.
+Climb/sink error estimate in meters/sec, 95% confidence\&.
 T}
 .TE
 .sp 1
@@ -894,7 +894,8 @@ No
 T}:T{
 numeric
 T}:T{
-Roll in degrees\&.
+Local magnedic inclination, degrees, positive when the magnetic
+field points downward (into the Earth)\&.
 T}
 T{
 mag_len
@@ -933,7 +934,7 @@ T}:T{
 Z component of magnetic field strength\&.
 T}
 T{
-mag_len
+acc_len
 T}:T{
 No
 T}:T{
@@ -1077,7 +1078,7 @@ Here\*(Aqs an example:
 {"class":"ATT","tag":"PTNTHTM","time":1270938096\&.843,
     "heading":14223\&.00,"mag_st":"N",
     "pitch":169\&.00,"pitch_st":"N", "roll":\-43\&.00,"roll_st":"N",
-    "dip":13641\&.000,"mag_x":2454\&.000,"temperature":0\&.000,"depth":0\&.000}
+    "dip":13641\&.000,"mag_x":2454\&.000}
 .fi
 .if n \{\
 .RE
@@ -1531,7 +1532,7 @@ collects and caches more data from more sensor types, those data are likely to f
 .PP
 PPS
 .RS 4
-This message is emitted each time the daeon sees a PPS (Pulse Per Second) strobe from a device\&.
+This message is emitted each time the daemon sees a PPS (Pulse Per Second) strobe from a device\&.
 .sp
 A PPS object has the following elements:
 .sp
@@ -2488,7 +2489,7 @@ T}:T{
 bool
 T}:T{
 .PP
-If set to Teue it indicates that the satellite is healthy even if the satellite navigation data says it is unhealthy\&.
+If set to True it indicates that the satellite is healthy even if the satellite navigation data says it is unhealthy\&.
 T}
 T{
 new_data

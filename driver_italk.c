@@ -121,13 +121,14 @@ static gps_mask_t decode_itk_navfix(struct gps_device_t *session,
 static gps_mask_t decode_itk_prnstatus(struct gps_device_t *session,
 				       unsigned char *buf, size_t len)
 {
-    unsigned int i, nsv, nchan, st;
     gps_mask_t mask;
 
     if (len < 62) {
 	gpsd_report(LOG_PROG, "ITALK: runt PRN_STATUS (len=%zu)\n", len);
 	mask = 0;
     } else {
+	unsigned int i, nsv, nchan, st;
+
 	session->gpsdata.skyview_time = gpsd_gpstime_resolve(session,
 	    (unsigned short)getleu16(buf, 7 + 4),
 	    (unsigned int)getleu32(buf, 7 + 6) / 1000.0),
@@ -391,6 +392,7 @@ static gps_mask_t italk_parse_input(struct gps_device_t *session)
 }
 
 #ifdef __future__
+// cppcheck-suppress unusedFunction
 static void italk_ping(struct gps_device_t *session)
 /* send a "ping". it may help us detect an itrax more quickly */
 {

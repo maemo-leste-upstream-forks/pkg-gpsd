@@ -224,8 +224,8 @@ void gpsd_report(int errlevel, const char *fmt, ...)
 		err_str = "UNK: ";
 	}
 
-	(void)strlcpy(buf, "gpsd:", BUFSIZ);
-	(void)strncat(buf, err_str, BUFSIZ - strlen(buf) );
+	(void)strlcpy(buf, "gpsd:", sizeof(buf));
+	(void)strncat(buf, err_str, sizeof(buf) - 1 - strlen(buf));
 	va_start(ap, fmt);
 	(void)vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt,
 			ap);
@@ -274,6 +274,12 @@ The following driver types are compiled into this gpsd instance:\n",
     for (dp = gpsd_drivers; *dp; dp++) {
 	(void)printf("    %s\n", (*dp)->type_name);
     }
+#ifdef NTPSHM_ENABLE
+	(void)printf("    NTPSHM\n");
+#endif
+#if defined(PPS_ENABLE)
+	(void)printf("    PPS\n");
+#endif
 }
 
 #ifdef CONTROL_SOCKET_ENABLE
@@ -292,9 +298,12 @@ static int filesock(char *filename)
     (void)bind(sock, (struct sockaddr *)&addr, (int)sizeof(addr));
     if (listen(sock, QLEN) == -1) {
 	gpsd_report(LOG_ERROR, "can't listen on local socket %s\n", filename);
+	(void)close(sock);
 	return -1;
     }
     /*@ +mayaliasunique +usedef @*/
+
+    /* coverity[leaked_handle] This is an intentional allocation */
     return sock;
 }
 #endif /* CONTROL_SOCKET_ENABLE */
@@ -432,7 +441,7 @@ static int passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
 	 * this, trying to listen on in6addr_any will fail with the
 	 * address-in-use error condition.
 	 */
-	{
+	if (s > -1) {
 	    int on = 1;
 	    (void)setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
 	}
@@ -451,6 +460,7 @@ static int passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one,
 		   (int)sizeof(one)) == -1) {
 	gpsd_report(LOG_ERROR, "Error: SETSOCKOPT SO_REUSEADDR\n");
+	(void)close(s);
 	return -1;
     }
     if (bind(s, &sat.sa, sin_len) < 0) {
@@ -459,10 +469,12 @@ static int passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
 	if (errno == EADDRINUSE) {
 	    gpsd_report(LOG_ERROR, "maybe gpsd is already running!\n");
 	}
+	(void)close(s);
 	return -1;
     }
     if (type == SOCK_STREAM && listen(s, qlen) == -1) {
 	gpsd_report(LOG_ERROR, "can't listen on port %s\n", service);
+	(void)close(s);
 	return -1;
     }
 
@@ -832,7 +844,6 @@ static void handle_control(int sfd, char *buf)
 	    ignore_return(write(sfd, "ERROR\n", 6));
 	} else {
 	    size_t len;
-	    int st;
 	    *eq++ = '\0';
 	    len = strlen(eq) + 5;
 	    if ((devp = find_device(stash)) != NULL) {
@@ -841,6 +852,7 @@ static void handle_control(int sfd, char *buf)
 				sfd);
 		    ignore_return(write(sfd, "ERROR\n", 6));
                 } else {
+		    int st;
                     /* NOTE: this destroys the original buffer contents */
                     st = gpsd_hexpack(eq, eq, len);
                     if (st <= 0) {
@@ -1138,7 +1150,7 @@ static void handle_request(struct subscriber_t *sub,
 		    /* user specified a path, try to assign it */
 		    device = find_device(devconf.path);
 		    /* do not optimize away, we need 'device' later on! */
-		    if (!awaken(device)) {
+		    if (device == NULL || !awaken(device)) {
 			(void)snprintf(reply, replylen,
 				       "{\"class\":\"ERROR\",\"message\":\"Can't open %s.\"}\r\n",
 				       devconf.path);
@@ -1339,15 +1351,15 @@ static void raw_report(struct subscriber_t *sub, struct gps_device_t *device)
      * Maybe the user wants a binary packet hexdumped.
      */
     if (sub->policy.raw == 1) {
-	char *hd =
+	const char *hd =
 	    gpsd_hexdump((char *)device->packet.outbuffer,
 			 device->packet.outbuflen);
 	/*
 	 * Ugh...depends on knowing the length of gpsd_hexdump's
 	 * buffer.
 	 */
-	(void)strlcat(hd, "\r\n", MAX_PACKET_LENGTH * 2 + 1);
-	(void)throttled_write(sub, hd, strlen(hd));
+	(void)strlcat((char *)hd, "\r\n", MAX_PACKET_LENGTH * 2 + 1);
+	(void)throttled_write(sub, (char *)hd, strlen(hd));
     }
 #endif /* BINARY_ENABLE */
 }
@@ -1749,7 +1761,7 @@ static void netgnss_autoconnect(struct gps_context_t *context,
 	char *cp = strchr(buf, '#');
 	if (cp != NULL)
 	    *cp = '\0';
-	if (sscanf(buf, "%lf %lf %256s", &hold.lat, &hold.lon, hold.server) ==
+	if (sscanf(buf, "%32lf %32lf %256s", &hold.lat, &hold.lon, hold.server) ==
 	    3) {
 	    hold.dist = earth_distance(lat, lon, hold.lat, hold.lon);
 	    tp = NULL;
@@ -2058,6 +2070,7 @@ int main(int argc, char *argv[])
 
 	/* make default devices accessible even after we drop privileges */
 	for (i = optind; i < argc; i++)
+	    /* coverity[toctou] */
 	    if (stat(argv[i], &stb) == 0)
 		(void)chmod(argv[i], stb.st_mode | S_IRGRP | S_IWGRP);
 	/*
@@ -2126,6 +2139,14 @@ int main(int argc, char *argv[])
 	struct sigaction sa;
 
 	sa.sa_flags = 0;
+#ifdef __COVERITY__
+	/* 
+	 * Obsolete and unused.  We're only doing this to pacify Coverity
+	 * which otherwise throws an UNINIT event here. Don't swap with the
+	 * handler initialization, they're unioned on some architectures.
+	 */
+	sa.sa_restorer = NULL;
+#endif /* __COVERITY__ */
 	sa.sa_handler = onsig;
 	(void)sigfillset(&sa.sa_mask);
 	(void)sigaction(SIGHUP, &sa, NULL);
@@ -2309,6 +2330,7 @@ int main(int argc, char *argv[])
 		while ((rd = read(cfd, buf, sizeof(buf) - 1)) > 0) {
 		    buf[rd] = '\0';
 		    gpsd_report(LOG_IO, "<= control(%d): %s\n", cfd, buf);
+		    /* coverity[tainted_data] Safe, never handed to exec */
 		    handle_control(cfd, buf);
 		}
 		gpsd_report(LOG_SPIN, "close(%d) of control socket\n", cfd);

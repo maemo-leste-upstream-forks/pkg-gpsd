@@ -207,19 +207,19 @@ Others may be reported or not depending on the fix quality.</para>
 	<entry>epd</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Direction error estimate in degrees, 95% confifdence.</entry>
+        <entry>Direction error estimate in degrees, 95% confidence.</entry>
 </row>
 <row>
 	<entry>eps</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Speed error estinmate in meters/sec, 95% confifdence.</entry>
+        <entry>Speed error estinmate in meters/sec, 95% confidence.</entry>
 </row>
 <row>
 	<entry>epc</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Climb/sink error estinmate in meters/sec, 95% confifdence.</entry>
+        <entry>Climb/sink error estimate in meters/sec, 95% confidence.</entry>
 </row>
 
 </tbody>
@@ -659,7 +659,8 @@ may be reported or not depending on the specific device type.</para>
 	<entry>dip</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Roll in degrees.</entry>
+        <entry>Local magnedic inclination, degrees, positive when the magnetic
+field points downward (into the Earth).</entry>
 </row>
 <row>
 	<entry>mag_len</entry>
@@ -686,7 +687,7 @@ may be reported or not depending on the specific device type.</para>
         <entry>Z component of magnetic field strength.</entry>
 </row>
 <row>
-	<entry>mag_len</entry>
+	<entry>acc_len</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
         <entry>Scalar acceleration.</entry>
@@ -793,7 +794,7 @@ will assert ATT_IS.</para>
 {"class":"ATT","tag":"PTNTHTM","time":1270938096.843,
     "heading":14223.00,"mag_st":"N",
     "pitch":169.00,"pitch_st":"N", "roll":-43.00,"roll_st":"N",
-    "dip":13641.000,"mag_x":2454.000,"temperature":0.000,"depth":0.000}
+    "dip":13641.000,"mag_x":2454.000}
 </programlisting>
 </listitem>
 </varlistentry>
@@ -1149,8 +1150,8 @@ into this response.</para>
 <term>PPS</term>
 <listitem>
 
-<para>This message is emitted each time the daeon sees a PPS (Pulse Per Second)
-strobe from a device.</para>
+<para>This message is emitted each time the daemon sees a PPS (Pulse
+Per Second) strobe from a device.</para>
 
 <para>A PPS object has the following elements:</para>
 
@@ -1939,7 +1940,7 @@ for each satellite.</para>
 <row>
 	<entry>health_en</entry>
 	<entry>bool</entry>
-        <entry><para>If set to Teue it indicates that the satellite is
+        <entry><para>If set to True it indicates that the satellite is
         healthy even if the satellite navigation data says it is
         unhealthy.</para></entry>
 </row>
@@ -2069,7 +2070,7 @@ but this cannot be true unless the field is 3 bits wide.
         <entry><para>The id of the transmitter. This is not the same
         as the reference id in the header, the latter being the id of
         the reference receiver. <!-- John Sager noted: "However I know
-	of at least one stationthat gets it wrong." --></para></entry>
+	of at least one station that gets it wrong." --></para></entry>
 </row>
 <row>
 	<entry>bitrate</entry>

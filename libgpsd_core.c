@@ -25,6 +25,12 @@
 #endif /* S_SPLINT_S */
 
 #include "gpsd.h"
+#if defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S)
+#include <linux/can.h>
+#include <linux/can/raw.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
+#endif /* defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S) */
 
 static void gpsd_run_device_hook(char *device_name, char *hook)
 {
@@ -108,6 +114,7 @@ void gps_context_init(struct gps_context_t *context)
 	.century	= 0,
 	.rollovers      = 0,
 #ifdef NTPSHM_ENABLE
+	.leap_notify    = LEAP_NOWARNING,
 	.enable_ntpshm  = false,
 	.shmTime	= {0},
 	.shmTimeInuse   = {0},
@@ -297,7 +304,59 @@ int gpsd_open(struct gps_device_t *session)
 	return session->gpsdata.gps_fd;
     }
 #endif /* PASSTHROUGH_ENABLE */
+#if defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S)
+    if (strncmp(session->gpsdata.dev.path, "nmea2000://", 11) == 0) {
+	char interface_name[GPS_PATH_MAX];
+	socket_t sock;
+	int status;
+	struct ifreq ifr;
+	struct sockaddr_can addr;
 
+	session->gpsdata.gps_fd = -1;
+	/* Create the socket */
+	sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+ 
+	if (sock == -1) {
+	    gpsd_report(LOG_ERROR, "NMEA2000 open: can not get socket.\n");
+	    return -1;
+	}
+
+	status = fcntl(sock, F_SETFL, O_NONBLOCK);
+	if (status != 0) {
+	    gpsd_report(LOG_ERROR, "NMEA2000 open: can not set socket to O_NONBLOCK.\n");
+	    close(sock);
+	    return -1;
+	}
+
+	(void)strlcpy(interface_name, session->gpsdata.dev.path + 11, sizeof(interface_name));
+	/* Locate the interface you wish to use */
+	strlcpy(ifr.ifr_name, interface_name, sizeof(ifr.ifr_name));
+	status = ioctl(sock, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled 
+						   * with that device's index */
+
+	if (status != 0) {
+	    gpsd_report(LOG_ERROR, "NMEA2000 open: can not find CAN device.\n");
+	    close(sock);
+	    return -1;
+	}
+
+	/* Select that CAN interface, and bind the socket to it. */
+	addr.can_family = AF_CAN;
+	addr.can_ifindex = ifr.ifr_ifindex;
+	status = bind(sock, (struct sockaddr*)&addr, sizeof(addr) );
+	if (status != 0) {
+	    gpsd_report(LOG_ERROR, "NMEA2000 open: bind failed.\n");
+	    close(sock);
+	    return -1;
+	}
+
+	gpsd_switch_driver(session, "NMEA2000");
+	session->gpsdata.gps_fd = sock;
+	session->sourcetype = source_nmea2000;
+	session->servicetype = service_nmea2000;
+	return session->gpsdata.gps_fd;
+    }
+#endif /* defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S) */
     /* fall through to plain serial open */
     return gpsd_serial_open(session);
 }
@@ -830,11 +889,8 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 
 #ifdef TIMING_ENABLE
     /*
-     * Input just gecame available from a sensor, but no read from the
+     * Input just became available from a sensor, but no read from the
      * device has yet been done.
-     *
-     * If we ever want a start-of-packet timestamp again, take it here
-     * with a test that session->packet.outbuflen is zero.
      *
      * What we actually do here is trickier.  For latency-timing
      * purposes, we want to know the time at the start of the current
@@ -863,7 +919,7 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
      * in the cycle.
      *
      * In practice, it seems that edge detection succeeds at 9600bps but
-     * fails at 4800bps.  This is not surprsing, as previous profiling has 
+     * fails at 4800bps.  This is not surprising, as previous profiling has 
      * indicated that at 4800bps some devices overrun a 1-second cycle time 
      * with the data they transmit.
      */
@@ -895,8 +951,9 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
     }
 
     /* can we get a full packet from the device? */
-    if (session->device_type) {
+    if (session->device_type != NULL) {
 	newlen = session->device_type->get_packet(session);
+	/* coverity[deref_ptr] */
 	gpsd_report(LOG_RAW,
 		    "%s is known to be %s\n",
 		    session->gpsdata.dev.path,
@@ -1068,10 +1125,14 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 	 * devices output fix packets on a regular basis, even when unable
 	 * to derive a good fix. Such packets should set STATUS_NO_FIX.
 	 */
-	if ((session->gpsdata.set & LATLON_SET) != 0
-	    && session->gpsdata.status > STATUS_NO_FIX) {
-	    session->context->fixcnt++;
-	    session->fixcnt++;
+	if ( 0 != (session->gpsdata.set & LATLON_SET)) {
+	    if ( session->gpsdata.status > STATUS_NO_FIX) {
+		session->context->fixcnt++;
+		session->fixcnt++;
+            } else {
+		session->context->fixcnt = 0;
+		session->fixcnt = 0;
+            }
 	}
 
 	/*

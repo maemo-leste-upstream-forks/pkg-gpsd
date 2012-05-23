@@ -1,1 +1,1 @@
-#define REVISION "3.5"
+#define REVISION "3.6"

@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsmon
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
 .\"      Date: 17 Feb 2009
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -31,7 +31,7 @@
 gpsmon \- real\-time GPS packet monitor and control utility
 .SH "SYNOPSIS"
 .HP \w'\fBgpsmon\fR\ 'u
-\fBgpsmon\fR [\-L] [\-V] [\-h] [\-l\ \fIlogfile\fR] [\-t\ \fIdriver\-prefix\fR] [[\ \fIserver\fR\ [\fI:port\fR\ [\fI:device\fR]]\ |\ \fIdevice\fR]] [\-D\ \fIdebuglevel\fR]
+\fBgpsmon\fR [\-L] [\-V] [\-h] [\-n] [\-l\ \fIlogfile\fR] [\-t\ \fIdriver\-prefix\fR] [[\ \fIserver\fR\ [\fI:port\fR\ [\fI:device\fR]]\ |\ \fIdevice\fR]] [\-D\ \fIdebuglevel\fR]
 .SH "DESCRIPTION"
 .PP
 gpsmon
@@ -61,6 +61,8 @@ gpsmon
 has built\-in support for, and which generic commands can be applied to which GPS types, and then exits\&. Note that this does not list type\-specific commands associated with individual GPS types\&.
 .PP
 The \-l option sets up logging to a specified file to start immediately on device open\&. This may be useful is, for example, you want to capture the startup message from a device that displays firmware version information there\&.
+.PP
+The \-n option forces gpsmon to request nmea183 packets instead of the raw datastream from gpsd\&.
 .PP
 The \-t option sets up a fallback type\&. Give it a string that is a distinguishing prefix of exactly one driver type name; this will be used for mode, speed, and rate switching if the driver selected by the packet type lacks those capabilities\&. Most useful when the packet type is NMEA but the device is known to have a binary mode, such as SiRF binary\&.
 .PP

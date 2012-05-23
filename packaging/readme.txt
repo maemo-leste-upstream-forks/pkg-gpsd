@@ -13,4 +13,4 @@ Bluetooth has a requirement to be able to write to the gpsd control
 socket from a userland device manager.  Accordingly, you probably 
 want to set up a gpsd privilege group and make sure the Bluetooth
 device manager is in it.
- 
+

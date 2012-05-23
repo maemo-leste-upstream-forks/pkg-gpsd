@@ -25,7 +25,7 @@
  * If using vi, ":%s/_PROTO_/MYDRIVER/g" and ":%s/_proto_/mydriver/g"
  * should produce a source file that comes very close to being useful.
  * You will also need to add hooks for your new driver to:
- * Makefile.am
+ * SConstruct
  * drivers.c
  * gpsd.h-tail
  * libgpsd_core.c
@@ -365,7 +365,7 @@ static void _proto__event_hook(struct gps_device_t *session, event_t event)
        /*
 	* Code to make the device ready to communicate.  Only needed if the
 	* device is in some kind of sleeping state, and only shipped to
-	* RS232C (so that gpsd won't send strings to unidentified USB devices)
+	* RS232C, so that gpsd won't send strings to unidentified USB devices
 	* that might not be GPSes at all.
 	*/
     }
