@@ -1,3 +1,11 @@
+gpsd (3.6-1) unstable; urgency=low
+
+  * [13931410] Imported Upstream version 3.6
+  * [e3ed1468] Drop old patches, add a new bugfix from upstream git.
+  * [936babaf] Add pps-tools as build-dependency.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 23 May 2012 20:38:16 +0200
+
 gpsd (3.5-7) unstable; urgency=low
 
   * [694d9866] Refreshing patches and picking more bugfixes from git HEAD.
