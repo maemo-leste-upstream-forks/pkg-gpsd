@@ -1,1 +1,3 @@
 a0981cd_nmea2000-fix-build-failures-when-debugging-is-disabled
+32c2c9c_GPS_PATH_MAX-needs-to-be-longer-to-handle-Linux-persistent-device-names
+a3f6c60_Do-not-assume-little_endian-just-because-__BIG_ENDIAN__-is-not-defined
