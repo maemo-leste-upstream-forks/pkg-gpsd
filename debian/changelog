@@ -1,3 +1,12 @@
+gpsd (3.6-3) unstable; urgency=low
+
+  * [97970af1] Adding two bugfix patches from upstream:
+    * handle long persistent device names
+    * better check for endianness, this fixes rtcm2 regressions
+      at least on s390.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 27 May 2012 17:28:24 +0200
+
 gpsd (3.6-2) unstable; urgency=low
 
   * [4b625138] pps-tools is available on linux-any only.
