@@ -1,3 +1,22 @@
+gpsd (3.6-4) unstable; urgency=low
+
+  * [8607cd96] Add some bugfixes from upstream.
+    - Avoid adding devices with path names longer than
+      GPS_PATH_MAX
+    - Accept Freescale i.MX processor UARTs as serial port
+    - Fix the notification of ntpd about leap seconds.
+  * [528213ef] Update regression tests according to the leap second change.
+    Whenever the default leap second changes in timebase.h the
+    GPS tests will break (times one second off) and the testloads will
+    have to be rebuilt.  The problem is in the SiRF tests; that driver
+    relies on the default until it gets the current offset from subframe
+    data.
+    timebase.h is being created from the leapseconds.cache file at build
+    time. As leapseconds happen rarely, there is no support to read them
+    from a config file included yet.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 03 Jul 2012 21:46:21 +0200
+
 gpsd (3.6-3) unstable; urgency=low
 
   * [97970af1] Adding two bugfix patches from upstream:
