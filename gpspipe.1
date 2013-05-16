@@ -31,7 +31,7 @@
 gpspipe \- tool to connect to gpsd and retrieve sentences
 .SH "SYNOPSIS"
 .HP \w'\fBgpspipe\fR\ 'u
-\fBgpspipe\fR [\-h] [\-d] [\-l] [\-o\ \fIfilename\fR] [\-n\ \fIcount\fR] [\-r] [\-R] [\-s\ \fIserial\-device\fR] [\-t] [\-T\ \fItimestamp\-format\fR] [\-p] [\-w] [\-v] [\-D\ \fIdebug\-level\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBgpspipe\fR [\-h] [\-d] [\-l] [\-o\ \fIfilename\fR] [\-n\ \fIcount\fR] [\-r] [\-R] [\-s\ \fIserial\-device\fR] [\-t] [\-T\ \fItimestamp\-format\fR] [\-u] [\-p] [\-w] [\-S] [\-v] [\-D\ \fIdebug\-level\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .SH "DESCRIPTION"
 .PP
 gpspipe
@@ -88,11 +88,15 @@ is run as a daemon\&.
 \-w causes native
 gpsdsentences to be output\&.
 .PP
+\-S sets the scaled flag\&.
+.PP
 \-t adds a timestamp to each sentence output\&.
 .PP
 \-T sets the format of the timestamp\&. See
 \fBstrftime\fR(3)
-for the available placeholders\&. Setting this option implies \-t\&.
+for the available placeholders\&. Setting this option implies \-t\&. Default setting is "%F %T"
+.PP
+\-u usec resolution time stamp, implies \-t\&. Use \-uu to output sec\&.usec\&.
 .PP
 \-p enables dumping of profiling information in JSON\&.
 .PP

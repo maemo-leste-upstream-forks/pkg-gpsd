@@ -58,19 +58,19 @@ static int debug;
 static void open_serial(char *device)
 /* open the serial port and set it up */
 {
-    /* 
+    /*
      * Open modem device for reading and writing and not as controlling
      * tty.
      */
     if ((fd_out = open(device, O_RDWR | O_NOCTTY)) == -1) {
 	fprintf(stderr, "gpspipe: error opening serial port\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     /* Save current serial port settings for later */
     if (tcgetattr(fd_out, &oldtio) != 0) {
 	fprintf(stderr, "gpspipe: error reading serial port settings\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     /* Clear struct for new port settings. */
@@ -85,7 +85,7 @@ static void open_serial(char *device)
     (void)tcflush(fd_out, TCIFLUSH);
     if (tcsetattr(fd_out, TCSANOW, &newtio) != 0) {
 	(void)fprintf(stderr, "gpspipe: error configuring serial port\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 }
 
@@ -93,15 +93,17 @@ static void usage(void)
 {
     (void)fprintf(stderr,
 		  "Usage: gpspipe [OPTIONS] [server[:port[:device]]]\n\n"
-		  "-d Run as a daemon.\n" 
+		  "-d Run as a daemon.\n"
 		  "-o [file] Write output to file.\n"
-		  "-h Show this help.\n" 
+		  "-h Show this help.\n"
 		  "-r Dump raw NMEA.\n"
 		  "-R Dump super-raw mode (GPS binary).\n"
 		  "-w Dump gpsd native data.\n"
+		  "-S Set scaled flag.\n"
 		  "-l Sleep for ten seconds before connecting to gpsd.\n"
 		  "-t Time stamp the data.\n"
 		  "-T [format] set the timestamp format (strftime(3)-like; implies '-t')\n"
+		  "-u usec time stamp, implies -t. Use -uu to output sec.usec\n"
 		  "-s [serial dev] emulate a 4800bps NMEA GPS on serial port (use with '-r').\n"
 		  "-n [count] exit after count packets.\n"
 		  "-v Print a little spinner.\n"
@@ -116,7 +118,7 @@ int main(int argc, char **argv)
 {
     char buf[4096];
     bool timestamp = false;
-    char *format = "%c";
+    char *format = "%F %T";
     char tmstr[200];
     bool daemonize = false;
     bool binary = false;
@@ -125,6 +127,7 @@ int main(int argc, char **argv)
     bool raw = false;
     bool watch = false;
     bool profile = false;
+    int option_u = 0;                   // option to show uSeconds
     long count = -1;
     int option;
     unsigned int vflag = 0, l = 0;
@@ -138,7 +141,7 @@ int main(int argc, char **argv)
 
     /*@-branchstate@*/
     flags = WATCH_ENABLE;
-    while ((option = getopt(argc, argv, "?dD:lhrRwtT:vVn:s:o:p")) != -1) {
+    while ((option = getopt(argc, argv, "?dD:lhrRwStT:vVn:s:o:pu")) != -1) {
 	switch (option) {
 	case 'D':
 	    debug = atoi(optarg);
@@ -151,7 +154,7 @@ int main(int argc, char **argv)
 	    break;
 	case 'r':
 	    raw = true;
-	    /* 
+	    /*
 	     * Yes, -r invokes NMEA mode rather than proper raw mode.
 	     * This emulates the behavior under the old protocol.
 	     */
@@ -174,6 +177,10 @@ int main(int argc, char **argv)
 	    timestamp = true;
 	    format = optarg;
 	    break;
+	case 'u':
+	    timestamp = true;
+	    option_u++;
+	    break;
 	case 'v':
 	    vflag++;
 	    break;
@@ -181,13 +188,16 @@ int main(int argc, char **argv)
 	    flags |= WATCH_JSON;
 	    watch = true;
 	    break;
+	case 'S':
+	    flags |= WATCH_SCALED;
+	    break;
 	case 'p':
 	    profile = true;
 	    break;
 	case 'V':
 	    (void)fprintf(stderr, "%s: %s (revision %s)\n",
 			  argv[0], VERSION, REVISION);
-	    exit(0);
+	    exit(EXIT_SUCCESS);
 	case 's':
 	    serialport = optarg;
 	    break;
@@ -198,7 +208,7 @@ int main(int argc, char **argv)
 	case 'h':
 	default:
 	    usage();
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	}
     }
     /*@+branchstate@*/
@@ -211,18 +221,18 @@ int main(int argc, char **argv)
 
     if (serialport != NULL && !raw) {
 	(void)fprintf(stderr, "gpspipe: use of '-s' requires '-r'.\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     if (outfile == NULL && daemonize) {
-	(void)fprintf(stderr, "gpspipe: use of '-d' requires '-f'.\n");
-	exit(1);
+	(void)fprintf(stderr, "gpspipe: use of '-d' requires '-o'.\n");
+	exit(EXIT_FAILURE);
     }
 
     if (!raw && !watch && !binary) {
 	(void)fprintf(stderr,
 		      "gpspipe: one of '-R', '-r', or '-w' is required.\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     /* Daemonize if the user requested it. */
@@ -253,7 +263,7 @@ int main(int argc, char **argv)
 	    (void)fprintf(stderr,
 			  "gpspipe: unable to open output file:  %s\n",
 			  outfile);
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	}
     }
 
@@ -266,7 +276,7 @@ int main(int argc, char **argv)
 	(void)fprintf(stderr,
 		      "gpspipe: could not connect to gpsd %s:%s, %s(%d)\n",
 		      source.server, source.port, strerror(errno), errno);
-	exit(1);
+	exit(EXIT_FAILURE);
     }
     /*@ +nullpass +onlytrans @*/
 
@@ -292,7 +302,7 @@ int main(int argc, char **argv)
 	if (r == -1 && errno != EINTR) {
 	    (void)fprintf(stderr, "gpspipe: select error %s(%d)\n",
 			  strerror(errno), errno);
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	} else if (r == 0)
 		continue;
 
@@ -311,22 +321,40 @@ int main(int argc, char **argv)
 		    serbuf[j++] = buf[i];
 		}
 		if (new_line && timestamp) {
-		    time_t now = time(NULL);
+		    char tmstr_u[20];            // time with "usec" resolution
+		    struct timeval now;
+		    struct tm *tmp_now;
 
-		    struct tm *tmp_now = localtime(&now);
+		    (void)gettimeofday( &now, NULL );
+		    tmp_now = localtime((time_t *)&(now.tv_sec));
 		    (void)strftime(tmstr, sizeof(tmstr), format, tmp_now);
 		    new_line = 0;
-		    if (fprintf(fp, "%.24s :", tmstr) <= 0) {
+
+		    switch( option_u ) {
+		    case 2:
+			(void)snprintf(tmstr_u, sizeof(tmstr_u), 
+				       " %ld.%06ld", now.tv_sec, now.tv_usec);
+			break;
+		    case 1:
+			(void)snprintf(tmstr_u, sizeof(tmstr_u), 
+				       ".%06ld", now.tv_usec);
+			break;
+		    default:
+			*tmstr_u = '\0';
+			break;
+		    }
+
+		    if (fprintf(fp, "%.24s%s: ", tmstr, tmstr_u) <= 0) {
 			(void)fprintf(stderr,
 				      "gpspipe: write error, %s(%d)\n",
 				      strerror(errno), errno);
-			exit(1);
+			exit(EXIT_FAILURE);
 		    }
 		}
 		if (fputc(c, fp) == EOF) {
 		    fprintf(stderr, "gpspipe: Write Error, %s(%d)\n",
 			    strerror(errno), errno);
-		    exit(1);
+		    exit(EXIT_FAILURE);
 		}
 
 		if (c == '\n') {
@@ -335,7 +363,7 @@ int main(int argc, char **argv)
 			    fprintf(stderr,
 				    "gpspipe: Serial port write Error, %s(%d)\n",
 				    strerror(errno), errno);
-			    exit(1);
+			    exit(EXIT_FAILURE);
 			}
 			j = 0;
 		    }
@@ -346,12 +374,12 @@ int main(int argc, char **argv)
 			(void)fprintf(stderr,
 				      "gpspipe: fflush Error, %s(%d)\n",
 				      strerror(errno), errno);
-			exit(1);
+			exit(EXIT_FAILURE);
 		    }
 		    if (count > 0) {
 			if (0 >= --count) {
 			    /* completed count */
-			    exit(0);
+			    exit(EXIT_SUCCESS);
 			}
 		    }
 		}
@@ -363,9 +391,9 @@ int main(int argc, char **argv)
 		else
 		    (void)fprintf(stderr, "gpspipe: read error %s(%d)\n",
 			      strerror(errno), errno);
-		exit(1);
+		exit(EXIT_FAILURE);
 	    } else {
-		exit(0);
+		exit(EXIT_SUCCESS);
 	    }
 	}
     }
@@ -375,12 +403,12 @@ int main(int argc, char **argv)
 	/* Restore the old serial port settings. */
 	if (tcsetattr(fd_out, TCSANOW, &oldtio) != 0) {
 	    (void)fprintf(stderr, "Error restoring serial port settings\n");
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	}
     }
 #endif /* __UNUSED__ */
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 /*@ +compdestroy @*/

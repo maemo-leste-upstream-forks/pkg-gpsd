@@ -57,7 +57,7 @@ void libgps_trace(int errlevel, const char *fmt, ...)
 #define CONDITIONALLY_UNUSED UNUSED
 #endif /* SOCKET_EXPORT_ENABLE */
 
-int gps_open(/*@null@*/const char *host, 
+int gps_open(/*@null@*/const char *host,
 	     /*@null@*/const char *port CONDITIONALLY_UNUSED,
 	     /*@out@*/ struct gps_data_t *gpsdata)
 {
@@ -110,7 +110,7 @@ int gps_close(struct gps_data_t *gpsdata)
     libgps_debug_trace((DEBUG_CALLS, "gps_close()\n"));
 
 #ifdef SHM_EXPORT_ENABLE
-    if ((intptr_t)(gpsdata->gps_fd) == -1) {
+    if (BAD_SOCKET((intptr_t)(gpsdata->gps_fd))) {
 	gps_shm_close(gpsdata);
 	status = 0;
     }
@@ -134,19 +134,19 @@ int gps_read(struct gps_data_t *gpsdata)
 
     /*@ -usedef -compdef -uniondef @*/
 #ifdef SHM_EXPORT_ENABLE
-    if ((intptr_t)(gpsdata->gps_fd) == -1) {
+    if (BAD_SOCKET((intptr_t)(gpsdata->gps_fd))) {
 	status = gps_shm_read(gpsdata);
     }
 #endif /* SHM_EXPORT_ENABLE */
 
 #ifdef SOCKET_EXPORT_ENABLE
-    if (status == -1 && (intptr_t)(gpsdata->gps_fd) != -1) {
+    if (status == -1 && !BAD_SOCKET((intptr_t)(gpsdata->gps_fd))) {
         status = gps_sock_read(gpsdata);
     }
 #endif /* SOCKET_EXPORT_ENABLE */
     /*@ +usedef +compdef +uniondef @*/
 
-    libgps_debug_trace((DEBUG_CALLS, "gps_read() -> %d (%s)\n", 
+    libgps_debug_trace((DEBUG_CALLS, "gps_read() -> %d (%s)\n",
 			status, gps_maskdump(gpsdata->set)));
 
     return status;
@@ -172,7 +172,7 @@ int gps_send(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED, const char *fmt CO
     return status;
 }
 
-int gps_stream(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED, 
+int gps_stream(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED,
 	unsigned int flags CONDITIONALLY_UNUSED,
 	/*@null@*/ void *d CONDITIONALLY_UNUSED)
 {
@@ -218,7 +218,7 @@ bool gps_waiting(const struct gps_data_t *gpsdata CONDITIONALLY_UNUSED, int time
     return waiting;
 }
 
-int gps_mainloop(struct gps_data_t *gpsdata, int timeout, 
+int gps_mainloop(struct gps_data_t *gpsdata, int timeout,
 		 void (*hook)(struct gps_data_t *gpsdata))
 {
     int status = -1;
@@ -240,7 +240,7 @@ int gps_mainloop(struct gps_data_t *gpsdata, int timeout,
 #endif /* SOCKET_EXPORT_ENABLE */
     /*@ +usedef +compdef +uniondef @*/
 
-    libgps_debug_trace((DEBUG_CALLS, "gps_mainloop() -> %d (%s)\n", 
+    libgps_debug_trace((DEBUG_CALLS, "gps_mainloop() -> %d (%s)\n",
 			status, gps_maskdump(gpsdata->set)));
 
     return status;
@@ -248,7 +248,7 @@ int gps_mainloop(struct gps_data_t *gpsdata, int timeout,
 
 extern const char /*@observer@*/ *gps_errstr(const int err)
 {
-    /* 
+    /*
      * We might add our own error codes in the future, e.g for
      * protocol compatibility checks
      */
@@ -274,9 +274,6 @@ extern const char /*@observer@*/ *gps_errstr(const int err)
 #ifdef LIBGPS_DEBUG
 void libgps_dump_state(struct gps_data_t *collect)
 {
-    const char *status_values[] = { "NO_FIX", "FIX", "DGPS_FIX" };
-    const char *mode_values[] = { "", "NO_FIX", "MODE_2D", "MODE_3D" };
-
     /* no need to dump the entire state, this is a sanity check */
 #ifndef USE_QT
     /* will fail on a 32-bit machine */
@@ -299,12 +296,16 @@ void libgps_dump_state(struct gps_data_t *collect)
 	(void)fprintf(debugfp, "TRACK: track: %lf\n", collect->fix.track);
     if (collect->set & CLIMB_SET)
 	(void)fprintf(debugfp, "CLIMB: climb: %lf\n", collect->fix.climb);
-    if (collect->set & STATUS_SET)
+    if (collect->set & STATUS_SET) {
+	const char *status_values[] = { "NO_FIX", "FIX", "DGPS_FIX" };
 	(void)fprintf(debugfp, "STATUS: status: %d (%s)\n",
 		      collect->status, status_values[collect->status]);
-    if (collect->set & MODE_SET)
+    }
+    if (collect->set & MODE_SET) {
+	const char *mode_values[] = { "", "NO_FIX", "MODE_2D", "MODE_3D" };
 	(void)fprintf(debugfp, "MODE: mode: %d (%s)\n",
 		      collect->fix.mode, mode_values[collect->fix.mode]);
+    }
     if (collect->set & DOP_SET)
 	(void)fprintf(debugfp,
 		      "DOP: satellites %d, pdop=%lf, hdop=%lf, vdop=%lf\n",

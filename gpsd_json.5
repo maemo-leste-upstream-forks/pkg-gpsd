@@ -328,7 +328,6 @@ l l l l
 l l l l
 l l l l
 l l l l
-l l l l
 l l l l.
 T{
 class
@@ -442,17 +441,6 @@ T}:T{
 numeric
 T}:T{
 Hyperspherical dilution of precision, a dimensionless
-	factor which should be multiplied by a base UERE to get an
-	error estimate\&.
-T}
-T{
-xdop
-T}:T{
-No
-T}:T{
-numeric
-T}:T{
-Longitudinal dilution of precision, a dimensionless
 	factor which should be multiplied by a base UERE to get an
 	error estimate\&.
 T}
@@ -894,7 +882,7 @@ No
 T}:T{
 numeric
 T}:T{
-Local magnedic inclination, degrees, positive when the magnetic
+Local magnetic inclination, degrees, positive when the magnetic
 field points downward (into the Earth)\&.
 T}
 T{
@@ -1182,7 +1170,10 @@ Here\*(Aqs an example:
 .RS 4
 .\}
 .nf
-{"class":"VERSION","version":"2\&.40dev","rev":"06f62e14eae9886cde907dae61c124c53eb1101f","proto_major":3,"proto_minor":1}
+{"class":"VERSION","version":"2\&.40dev",
+    "rev":"06f62e14eae9886cde907dae61c124c53eb1101f",
+    "proto_major":3,"proto_minor":1
+}
 .fi
 .if n \{\
 .RE
@@ -2318,7 +2309,10 @@ Here\*(Aqs an example:
 .RS 4
 .\}
 .nf
-{"class":"RTCM2","type":3,"station_id":652,"zcount":1657\&.2,"seqnum":2,"length":4,"station_health":6,"x":3878620\&.92,"y":670281\&.40,"z":5002093\&.59}
+{"class":"RTCM2","type":3,
+    "station_id":652,"zcount":1657\&.2,"seqnum":2,"length":4,"station_health":6,
+    "x":3878620\&.92,"y":670281\&.40,"z":5002093\&.59
+}
 .fi
 .if n \{\
 .RE

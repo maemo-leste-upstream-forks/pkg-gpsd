@@ -27,12 +27,12 @@ class LIBQGPSMMSHARED_EXPORT gpsmm {
 #endif
 	public:
 		// cppcheck-suppress uninitVar
-		gpsmm(const char *host, const char *port) : to_user(0) {
+		gpsmm(const char *host, const char *port) : to_user(0), _gps_state() {
 			gps_inner_open(host, port);
 		}
 #ifdef __UNUSED__
 		// cppcheck-suppress uninitVar
-		gpsmm(void) : to_user(0) 
+		gpsmm(void) : to_user(0)
 		{
 		        gps_inner_open("localhost", DEFAULT_GPSD_PORT);
 		}

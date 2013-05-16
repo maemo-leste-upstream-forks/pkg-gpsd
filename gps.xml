@@ -20,6 +20,7 @@ BSD terms apply: see the file COPYING in the distribution root for details.
 <refname>xgpsspeed</refname>
 <refname>cgps</refname>
 <refname>lcdgps</refname>
+<refname>gegps</refname>
 <refpurpose>test clients for gpsd</refpurpose>
 </refnamediv>
 <refsynopsisdiv id='synopsis'>
@@ -227,10 +228,17 @@ position information from the GPS. It accepts an -h option and
 optional argument as for <application>gps</application>, or a -V
 option to dump the package version and exit.</para>
 
+<para>The default display mode resembles a car speedometer.  With the
+option --nautical you get a more elaborate speed and track presentation
+modeled after a marine navigation display.</para>
+
 <para>The -speedunits option can be used to set the speed units for
 display; follow the keyword with knots for nautical miles per hour,
 kph for kilometres per hour, or mph for miles per hour.  The default
 is miles per hour. </para>
+
+<para>In the nautical mode only, --maxspeed sets the maximum on the
+speedometer.</para>
 
 </refsect2>
 <refsect2><title>cgps</title>
@@ -342,7 +350,8 @@ Remco Treffcorn, Derrick Brashear, Russ Nelson &amp; Eric S. Raymond,
 Jeff Francis (cgps). Amaury Jacquot <email>sxpert@sxpert.org</email>
 &amp; Petter Reinholdtsen <email>pere@hungry.com</email> (gpxlogger).
 Chris Kuethe <email>chris.kuethe@gmail.com</email> (gpxlogger), Chen
-Wei <email>weichen302@aol.com</email> (gegps).
+Wei <email>weichen302@aol.com</email> (gegps &amp; xgpsspeed), Robin Wittler
+<email>real@the-real.org</email> (xgpsspeed).
 </para>
 
 <para>This manual page by Eric S. Raymond <email>esr@thyrsus.com</email></para>

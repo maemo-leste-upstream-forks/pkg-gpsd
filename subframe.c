@@ -18,8 +18,8 @@ gps_mask_t gpsd_interpret_subframe_raw(struct gps_device_t *session,
     uint8_t preamble;
     uint32_t parity;
 
-    if (session->subframe_count++ == 0) { 
-	speed_t speed = gpsd_get_speed(&session->ttyset);
+    if (session->subframe_count++ == 0) {
+	speed_t speed = gpsd_get_speed(session);
 
 	if (speed < 38400)
 	    gpsd_report(LOG_WARN, "speed less than 38,400 may cause data lag and loss of functionality\n");
@@ -722,8 +722,11 @@ gps_mask_t gpsd_interpret_subframe(struct gps_device_t *session,
 			subp->sub4_18.DN, subp->sub4_18.lsf);
 
 #ifdef NTPSHM_ENABLE
-		if ((subp->sub4_18.WNt == subp->sub4_18.WNlsf) &&
-		    (subp->sub4_18.DN == 1 )) {
+		/* IS-GPS-200 Revision E, paragraph 20.3.3.5.2.4 */
+		if (((session->context->gps_week % 256) == (unsigned short)subp->sub4_18.WNlsf) &&
+		    /* notify the leap seconds correction in the end of current day */
+		    ((double)((subp->sub4_18.DN - 1) * SECS_PER_DAY) < session->context->gps_tow) &&
+		    ((double)(subp->sub4_18.DN * SECS_PER_DAY) > session->context->gps_tow)) {
 		   if ( subp->sub4_18.leap < subp->sub4_18.lsf )
 			session->context->leap_notify = LEAP_ADDSECOND;
 		   else if ( subp->sub4_18.leap > subp->sub4_18.lsf )

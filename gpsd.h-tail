@@ -9,7 +9,16 @@
 #include <stdint.h>
 #include "gps.h"
 
+/* use RFC 2782 PPS API */
+/* this needs linux >= 2.6.34 and
+ * CONFIG_PPS=y
+ * CONFIG_PPS_DEBUG=y  [optional to kernel log pulses]
+ * CONFIG_PPS_CLIENT_LDISC=y
+ */
 #if defined(HAVE_SYS_TIMEPPS_H)
+// include unistd.h here as it is missing on older pps-tools releases.
+// 'close' is not defined otherwise.
+#include <unistd.h>
 #include <sys/timepps.h>
 #endif
 
@@ -28,9 +37,10 @@ typedef unsigned int speed_t;
  * 3.6  VERSION, WATCH, and DEVICES from slave gpsds get "remote" attribute.
  * 3.7  PPS message added to repertoire. SDDBT water depth reported as
  *      negative altitude with Mode 3 set.
+ * 3.8  AIS course nember becomes float in scaled mode (bug fix).
  */
 #define GPSD_PROTO_MAJOR_VERSION	3	/* bump on incompatible changes */
-#define GPSD_PROTO_MINOR_VERSION	7	/* bump on compatible changes */
+#define GPSD_PROTO_MINOR_VERSION	8	/* bump on compatible changes */
 
 #define JSON_DATE_MAX	24	/* ISO8601 timestamp with 2 decimal places */
 
@@ -94,6 +104,11 @@ enum isgpsstat_t {
  * that are actually valid.
  */
 #define GPS_EPOCH	315964800	/* 6 Jan 1981 00:00:00 UTC */
+
+/* time constant */
+#define SECS_PER_DAY	(60*60*24)		/* seconds per day */
+#define SECS_PER_WEEK	(7*SECS_PER_DAY)	/* seconds per week */
+#define GPS_ROLLOVER	(1024*SECS_PER_WEEK)	/* rollover period */
 
 struct gps_packet_t {
     /* packet-getter internals */
@@ -349,11 +364,11 @@ typedef enum {source_unknown,
 	      source_rs232,	/* potential GPS source, not discoverable */
 	      source_usb,	/* potential GPS source, discoverable */
 	      source_bluetooth,	/* potential GPS source, discoverable */
+	      source_can,	/* potential GPS source, fixed CAN format */
 	      source_pty,	/* PTY: we don't require exclusive access */
 	      source_tcp,	/* TCP/IP stream: case detected but not used */
 	      source_udp,	/* UDP stream: case detected but not used */
 	      source_gpsd,	/* Remote gpsd instance over TCP/IP */
-	      source_nmea2000,	/* potential GPS source, fixed CAN format */
 } sourcetype_t;
 
 /*
@@ -363,7 +378,6 @@ typedef enum {service_unknown,
 	      service_sensor,
 	      service_dgpsip,
 	      service_ntrip,
-	      service_nmea2000
 } servicetype_t;
 
 /*
@@ -585,12 +599,13 @@ struct gps_device_t {
 #ifdef NMEA2000_ENABLE
 	struct {
 	    unsigned int can_msgcnt;
+	    unsigned int can_net;
 	    unsigned int unit;
 	    unsigned int unit_valid;
 	    int mode;
 	    unsigned int mode_valid;
 	    unsigned int idx;
-	    size_t ptr;
+//	    size_t ptr;
 	    size_t fast_packet_len;
 	    int type;
 	    void *workpgn;
@@ -708,7 +723,8 @@ extern ssize_t gpsd_write(struct gps_device_t *, const char *, size_t);
 extern bool gpsd_next_hunt_setting(struct gps_device_t *);
 extern int gpsd_switch_driver(struct gps_device_t *, char *);
 extern void gpsd_set_speed(struct gps_device_t *, speed_t, char, unsigned int);
-extern speed_t gpsd_get_speed(const struct termios *);
+extern speed_t gpsd_get_speed(const struct gps_device_t *);
+extern speed_t gpsd_get_speed_old(const struct gps_device_t *);
 extern void gpsd_assert_sync(struct gps_device_t *);
 extern void gpsd_close(struct gps_device_t *);
 
@@ -724,6 +740,7 @@ extern gps_mask_t gpsd_interpret_subframe(struct gps_device_t *, unsigned int,
 extern gps_mask_t gpsd_interpret_subframe_raw(struct gps_device_t *,
 				unsigned int, uint32_t[]);
 extern /*@ observer @*/ const char *gpsd_hexdump(/*@null@*/char *, size_t);
+extern /*@ observer @*/ const char *gpsd_packetdump(/*@null@*/char *, size_t);
 # ifdef __cplusplus
 extern "C" {
 # endif
@@ -738,7 +755,7 @@ extern void gpsd_clear_data(struct gps_device_t *);
 extern socket_t netlib_connectsock(int, const char *, const char *, const char *);
 extern socket_t netlib_localsocket(const char *, int);
 extern const char /*@observer@*/ *netlib_errstr(const int);
-extern char /*@observer@*/ *netlib_sock2ip(int);
+extern char /*@observer@*/ *netlib_sock2ip(socket_t);
 
 extern void nmea_tpv_dump(struct gps_device_t *, /*@out@*/char[], size_t);
 extern void nmea_sky_dump(struct gps_device_t *, /*@out@*/char[], size_t);
@@ -748,8 +765,6 @@ extern void ntpshm_init(struct gps_context_t *, bool);
 extern int ntpshm_put(struct gps_device_t *, double, double);
 extern void ntpd_link_deactivate(struct gps_device_t *);
 extern void ntpd_link_activate(struct gps_device_t *);
-extern void pps_thread_activate(struct gps_device_t *);
-extern void pps_thread_deactivate(struct gps_device_t *);
 
 extern void ecef_to_wgs84fix(/*@out@*/struct gps_fix_t *,
 			     /*@out@*/double *,
@@ -795,6 +810,7 @@ extern int gpsd_activate(struct gps_device_t *);
 extern void gpsd_deactivate(struct gps_device_t *);
 extern gps_mask_t gpsd_poll(struct gps_device_t *);
 extern void gpsd_wrap(struct gps_device_t *);
+extern bool gpsd_add_device(const char *device_name, bool flag_nowait);
 extern /*@observer@*/const char *gpsd_maskdump(gps_mask_t);
 
 /* exceptional driver methods */
@@ -851,7 +867,7 @@ extern struct tm *localtime_r(const time_t *,/*@out@*/struct tm *tp)/*@modifies 
 void cfmakeraw(struct termios *);
 #endif /* defined(__CYGWIN__) */
 
-#define DEVICEHOOKPATH SYSCONFDIR"/gpsd/device-hook"
+#define DEVICEHOOKPATH "/"SYSCONFDIR"/gpsd/device-hook"
 
 /* Needed because 4.x versions of GCC are really annoying */
 #define ignore_return(funcall)	assert(funcall != -23)

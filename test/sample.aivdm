@@ -159,6 +159,33 @@
 #       FID               11
 #	Data:             48:eb2f118f7ff1
 #
+# Type 6, DAC 235, FID 10 (GLA, Rep. Ireland)
+# From Christian Gagneraud:
+# Decoding with Kanaton software.
+# !AIVDM,1,1,4,B,6>jR0600V:C0>da4P106P00,2*02
+#   AIS channel:1
+#    Message ID=6
+#    Repeat Indicator=0
+#    Source ID (MMSI)=992509976
+#    Sequence number=0
+#    Destination ID (MMSI)=2500912
+#    Retransmit flag =0
+#    Spare =0
+#    Binary Data
+#       Application identifier=0x3ACA(15050)
+#          DAC=235(Specific)
+#          Function identifier =10(GLA)
+#       Application data:
+#          Analogue internal=0x112->13.700V
+#          Analogue input1=0x1->0.050V
+#          Analogue input2=0x1->0.050V
+#          AtoN status=0x14:Racon status=2(RACON operational), Ligth
+#    status=2(light OFF), Good health=0(good health)
+#          Digital status=0x00:In7=0,In6=0,In5=0,In4=0,In3=0,In2=0,In1=0,In0=0
+#          Off position=0x00
+#          Spare=0x00
+!AIVDM,1,1,4,B,6>jR0600V:C0>da4P106P00,2*02
+#
 # From AISHub.  This type 6 has no data.  It's paired with the
 # following type 7; both are verified by the match in the MMSI fields 
 !AIVDM,1,1,,A,63u?;TP0`QJ<06P000,4*43
@@ -174,6 +201,14 @@
 #
 # FIX-ME: We need a type 6 test case that requires more than one AIVDM fragment.
 #
+# Type 6:
+# Advertised as DAC 1, FID 12, but full of garbage.
+!AIVDM,1,1,,A,63LBA4;WBevJ04k0=@E=B0td,0*17
+# Advertised as DAC 1, FID 14, but full of garbage
+!AIVDM,1,1,,A,6h2E:81>NmKC04p0J<000?vv20Ru,0*31
+# Advertised as DAC 1, FID 18, but full of 0
+!AIVDM,1,1,,B,6h2E3MDrDRiB0580@00000000000,0*04
+
 # Type 7:
 # From AISHub - reported immediately after the preceding type 6, 
 # which matches it.  One destination MMSI.  noaadata-0.43 fails
@@ -239,7 +274,7 @@
 # scaled parameter value, and CS the checksum).  The resulting AIVDO
 # sentence has been decoded using the Kanaton software.  Sent data,
 # kanaton decoder output and gpsd JSON output all match each other.
-#
+!AIVDO,1,1,4,B,8>jR06@0Bk3:wOli;<`WPhh<1rqVBQf2V@Pdt0J82avIM2b<<Rv1t<ot=@1,2*54
 # "18/05/2012 18:15:37" !AIVDO,1,1,4,B,8>jR06@0Bk3:wOli;<`WPhh<1rqVBQf2V@Pdt0J82avIM2b<<Rv1t<ot=@1,2*54
 #    AIS channel:1
 #    Message ID=8
@@ -285,12 +320,13 @@
 #    Precipitation=0x6(6 according to WMO)
 #    Salinity=0x35(5.3 permil)
 #    Ice=0x0(0)
-!AIVDO,1,1,4,B,8>jR06@0Bk3:wOli;<`WPhh<1rqVBQf2V@Pdt0J82avIM2b<<Rv1t<ot=@1,2*54
+#
 # Type 8, DAC 1, FID 11 (IMO 236 Met/Hydro message)
 # From Christian Gagneraud:
-# Same set-up as above, but the NMEA strem to the Kanaton has been stopped,
+# Same set-up as above, but the NMEA stream to the Kanaton has been stopped,
 # causing the Kanaton to send a message with all bits set to 1, meaning "no
 # data available"
+!AIVDO,1,1,4,B,8>jR06@0Bk3:vOli;L`nwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwt1,2*0E
 # "18/05/2012 18:45:37" !AIVDO,1,1,4,B,8>jR06@0Bk3:vOli;L`nwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwt1,2*0E
 #    AIS channel:1
 #    Message ID=8
@@ -336,7 +372,57 @@
 #    Precipitation=0x7(7 according to WMO)
 #    Salinity=0x1FF(51.1 permil)
 #    Ice=0x3(3)
-!AIVDO,1,1,4,B,8>jR06@0Bk3:vOli;L`nwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwt1,2*0E
+#
+# Type 8, DAC 1, FID 31 (IMO 289 Met/Hydro message)
+# From Christian Gagneraud:
+# Kanaton3 with all data marked as not available, checked with KanAton3_configV2.0.4.exe
+!AIVDO,1,1,5,A,8>jR06@0Gwli:QQUP3en?wvlFR06EuOwgwl?wnSwe7wvlOwwsAwwnSGmwvh0,0*51   
+# AIS channel:1
+# Message ID=8
+# Repeat Indicator=0
+# Source ID (MMSI)=992509977
+# Spare=0
+# Binary Data
+#    Application identifier=0x005F(95)
+#       DAC=1(International)
+#       Function identifier =31(Reserved for international operational applications)
+#    Application data:
+# Longitude=0x59DAC(006°008.044 W)
+# Latitude=0x30CB00(53°017.696 N)
+# Pos. acc.=0
+# Date and time=0xEDD8(29 23h24m)
+# Average wind speed=0x7F(127 kts)
+# Wind gust=0x7F(127 kt(s))
+# Wind direction=0x168(360 degree(s))
+# Wind gust direction=0x168(360 degree(s))
+# Air temperature=0xFFFFFC00(-102.4 degree(s) Celcius)
+# Relative humidity=0x65(101percent)
+# Dew point=0x1F5(50.1 degree(s) Celcius)
+# Air pressure=0x1FF(1310 hPa)
+# Air pressure tendency=0x3(3(Not available))
+# Horizontal visibility=0x7F(12.7 NM)
+# Water level=0xFA1(30.01 m)
+# Water level trend=0x3(3)
+# Surface current speed=0xFF(25.5 kts)
+# Surface current direction=0x168(360 degree(s))
+# Current speed #2=0xFF(25.5 kts)
+# Current direction #2=0x168(360 degree(s))
+# Current measuring level #2=0x1F(31 m)
+# Current speed #3=0xFF(25.5 kts)
+# Current direction #3=0x168(360 degree(s))
+# Current measuring level #3=0x1F(31 m)
+# Significant wave height=0xFF(25.5 m)
+# Wave period=0x3F(63 Sec)
+# Wave direction=168(360 degree(s))
+# Swell height=0xFF(25.5) m
+# Swell period=0x3F(63 Sec)
+# Swell direction=0x168(360 degree(s))
+# Sea state=0xD(13 Beaufort)
+# Water temperature=0x1F5(50.1 degree(s) Celcius)
+# Precipitation=0x7(7 according to WMO)
+# Salinity=0x1FE(51.0 permil)
+# Ice=0x3(3)
+#
 # Type 9:
 # From AISHub. Checked with the noaadata tools.
 !AIVDM,1,1,,A,91b77=h3h00nHt0Q3r@@07000<0b,0*69
@@ -513,7 +599,10 @@
 #	Message type             : 0
 #	Slot offset              : 0
 #
-# FIX-ME: Need an example of the 160-bit variant of type 15 with two MMSIs.
+# Type 15:
+# From Christian Gagneraud via aishub
+# This is the 160-bit variant of type 15 with two MMSIs.
+!AIVDM,1,1,,A,?39a?2PjKFFPD01o:Gq1igvp2<3w,0*0B
 #
 # Type 16:
 # From AISHub. These are only a regression test to check that the C and Python
@@ -714,6 +803,11 @@ DGNSS data               : 376:7c0556c07031febbf52924fe33fa2933ffa0fd2932fdb7062
 #        Channel A Band           : 0
 #        Zone size                : 4
 #
+# Type 22:
+# From Christian Gagneraud via aishub
+# Addressed case.
+!AIVDM,1,1,,A,F@@W>gOP00PH=JrN9l000?wB2HH;,0*44
+#
 # Type 23:
 # From AISHub. Only a regression test to check that the C and Python decoders
 # do the same thing, not yet checked against other decoders.
@@ -752,6 +846,51 @@ DGNSS data               : 376:7c0556c07031febbf52924fe33fa2933ffa0fd2932fdb7062
 #       dimB:              15
 #       dimC:              0
 #       dimD:              5
+#
+# Type 25:
+# From Christian Gagneraud via aishub
+# Addressed and structured
+!AIVDM,1,1,,A,JB3R0GO7p>vQL8tjw0b5hqpd0706kh9d3lR2vbl0400,2*40
+#
+# Type 25:
+# From Christian Gagneraud via aishub
+# Addressed and not structured
+!AIVDM,1,1,,A,I6SWo?8P00a3PKpEKEVj0?vNP<65,0*73
+#
+# Type 25:
+# From Christian Gagneraud via aishub
+# Broadcast and structured
+!AIVDM,1,1,,A,I8IRGB40QPPa0:<HP::V=gwv0l48,0*0E
+#
+# Type 25:
+# From Christian Gagneraud via aishub
+# Broadcast and not structured
+!AIVDM,1,1,,A,I6SWVNP001a3P8FEKNf=Qb0@00S8,0*6B
+#
+# Type 26:
+# From Christian Gagneraud via aishub
+# Addressed and structured
+!AIVDM,1,1,,A,JB3R0GO7p>vQL8tjw0b5hqpd0706kh9d3lR2vbl0400,2*40
+#
+# Type 26:
+# From Christian Gagneraud via aishub
+# Addressed and not structured
+!AIVDM,1,1,,A,J1@@0IK70PGgT740000000000@000?D0ih1e00006JlPC9C3,0*6B
+#
+# Type 26
+# From Christian Gagneraud via aishub
+# Broadcast and structured
+!AIVDM,1,1,,B,JaL0mr5P000DtRDMddr@0?vF06iD,0*75
+#
+# Type 26
+# From Christian Gagneraud via aishub
+# Broadcast and not structured
+!AIVDM,1,1,,A,J0@00@370>t0Lh3P0000200H:2rN92,4*14
+#
+# Type 27:
+# From Christian Gagneraud via aishub
+# The only message 27 in more than 25 millions messages that is 96 bits long!
+!AIVDM,1,1,,A,KCQ9r=hrFUnH7P00,0*41
 #
 #
 ##############################################################################
@@ -796,3 +935,26 @@ AIVDM,2,2,1,B,00000000000,2*26
 !AIVDM,2,1,2,A,542M92h00001@<7;?G0PD4i@R0<tqA8tj37>220o0h:2240Ht500000000000000,0*3C
 !AIVDM,2,2,2,A,0000002,2*24
 !AIVDM,2,2,6,B,00000000000,2*21
+##############################################################################
+# Error and corner case tests:
+##############################################################################
+# Non printable and control character in data or string fields
+!AIVDM,1,1,,A,647sBv00b=E006P9>0,4*1B
+# Type 4 with date/time set to N/A
+!AIVDM,1,1,,A,402Fha0000Htt<tSF0l4Q@000d20,0*65
+# Type 4 with YYYY/MM/DD OK, but HHmmSS N/A
+!AIVDM,1,1,,B,4028n@iuiPpttwIWI<Hl>8700PS:,0*60
+# Type 4 with year set to 10196 (0x27D4), idempotency use to fail on this one
+# It has a bad epfd as well.
+!AIVDM,1,1,,B,4>O7m7Iu@<9qUfbtm`vSnwvH20S8,0*46
+# Type 22 with MMSI1=4059193694, use to fail due to UBITS() instead of SBITS()
+!AIVDM,1,1,,B,Fe3>>MOD@GDF?ThcoCk02?ioQie4,0*03
+# A type 6, DAC 1, FID 18 with plenty of N/A fields, idempotency use to fail
+!AIVDM,1,1,,B,602E:s0tw@9B0580@00000000000,0*68
+# A type 6, DAC 1, FID 30. use to fail idempotency
+!AIVDM,1,1,,B,6h2E3MPr<buN05p0J00000000000,0*0A
+# A type 6, DAC 1, FID 18, use to fail idempotency
+!AIVDM,1,1,,B,602E:s0tw@9B0580@00000000000,0*68
+# Array of struct. use to crash "gpsdecode -j -e -u"
+!AIVDM,1,1,,A,6h2E3MHrg19P0600@00000000000,0*02
+!AIVDM,1,1,,A,6h2E3N0rThqP0600J00000000000,0*51

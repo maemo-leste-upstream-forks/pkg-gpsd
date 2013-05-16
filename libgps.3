@@ -128,7 +128,7 @@ as a possible alternative\&.
 accepts a response, or sequence of responses, from the daemon and interprets\&. This function does either a nonblocking read for data from the daemon or a fetch from shared memory; it returns a count of bytes read for success, \-1 with errno set on a Unix\-level read error, \-1 with errno not set if the socket to the daemon has closed or if the shared\-memory segment was unavailable, and 0 if no data is available\&.
 .PP
 \fBgps_waiting()\fR
-can be used to check whether there is new data from the daemon\&. The second argument is the maximum amount of time to wait (in microseconds) on input before returning\&. It returns true if there is input waiting, false on timeout (no data waiting) or error condition\&. This function is a convenience wrapper around a
+can be used to check whether there is new data from the daemon\&. The second argument is the maximum amount of time to wait (in microseconds) on input before returning\&. It returns true if there is input waiting, false on timeout (no data waiting) or error condition\&. When using the socket export, this function is a convenience wrapper around a
 \fBselect\fR(2)
 call, and zeros
 \fIerrno\fR

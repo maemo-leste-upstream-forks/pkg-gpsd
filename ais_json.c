@@ -22,7 +22,7 @@ representations to libgps structures.
 
 /* FIXME: kluges because we don't want to include gpsd.h here */
 extern int gpsd_hexpack(/*@in@*/const char *, /*@out@*/char *, size_t);
-int json_ais_read(const char *, char *, size_t, struct ais_t *, 
+int json_ais_read(const char *, char *, size_t, struct ais_t *,
 		  /*@null@*/const char **);
 
 /*@ -mustdefine @*/
@@ -97,13 +97,14 @@ int json_ais_read(const char *buf,
 	    ais->type4.hour = AIS_HOUR_NOT_AVAILABLE;
 	    ais->type4.minute = AIS_MINUTE_NOT_AVAILABLE;
 	    ais->type4.second = AIS_SECOND_NOT_AVAILABLE;
+	    // We use %09u for the date to allow for dodgy years (>9999) to go through
 	    // cppcheck-suppress uninitvar
-	    (void)sscanf(timestamp, "%4u-%02u-%02uT%02u:%02u:%02uZ",
+	    (void)sscanf(timestamp, "%09u-%02u-%02uT%02u:%02u:%02uZ",
 			 &ais->type4.year,
 			 &ais->type4.month,
 			 &ais->type4.day,
 			 &ais->type4.hour,
-			 &ais->type4.minute, 
+			 &ais->type4.minute,
 			 &ais->type4.second);
 	}
     } else if (strstr(buf, "\"type\":5,") != NULL) {
@@ -117,7 +118,7 @@ int json_ais_read(const char *buf,
 	    (void)sscanf(eta, "%02u-%02uT%02u:%02uZ",
 			 &ais->type5.month,
 			 &ais->type5.day,
-			 &ais->type5.hour, 
+			 &ais->type5.hour,
 			 &ais->type5.minute);
 	}
     } else if (strstr(buf, "\"type\":6,") != NULL) {
@@ -134,7 +135,7 @@ int json_ais_read(const char *buf,
 		    (void)sscanf(departure, "%02u-%02uT%02u:%02uZ",
 				 &ais->type6.dac1fid12.lmonth,
 				 &ais->type6.dac1fid12.lday,
-				 &ais->type6.dac1fid12.lhour, 
+				 &ais->type6.dac1fid12.lhour,
 				 &ais->type6.dac1fid12.lminute);
 		    ais->type6.dac1fid12.nmonth = AIS_MONTH_NOT_AVAILABLE;
 		    ais->type6.dac1fid12.nday = AIS_DAY_NOT_AVAILABLE;
@@ -144,7 +145,7 @@ int json_ais_read(const char *buf,
 		    (void)sscanf(eta, "%02u-%02uT%02u:%02uZ",
 				 &ais->type6.dac1fid12.nmonth,
 				 &ais->type6.dac1fid12.nday,
-				 &ais->type6.dac1fid12.nhour, 
+				 &ais->type6.dac1fid12.nhour,
 				 &ais->type6.dac1fid12.nminute);
 		}
 		imo = true;
@@ -157,16 +158,17 @@ int json_ais_read(const char *buf,
 		status = json_read_object(buf, json_ais6_fid16, endptr);
 		imo = true;
 	    }
-	    else if (strstr(buf, "\"fid\":18,") != NULL || strstr(buf, "\"fid\":11,") != NULL) {
+	    else if (strstr(buf, "\"fid\":18,") != NULL) {
 		status = json_read_object(buf, json_ais6_fid18, endptr);
 		if (status == 0) {
 		    ais->type6.dac1fid18.day = AIS_DAY_NOT_AVAILABLE;
 		    ais->type6.dac1fid18.hour = AIS_HOUR_NOT_AVAILABLE;
 		    ais->type6.dac1fid18.minute = AIS_MINUTE_NOT_AVAILABLE;
 		    // cppcheck-suppress uninitvar
-		    (void)sscanf(arrival, "%02uT%02u:%02uZ",
+		    (void)sscanf(arrival, "%02u-%02uT%02u:%02uZ",
+				 &ais->type6.dac1fid18.month,
 				 &ais->type6.dac1fid18.day,
-				 &ais->type6.dac1fid18.hour, 
+				 &ais->type6.dac1fid18.hour,
 				 &ais->type6.dac1fid18.minute);
 		}
 		imo = true;
@@ -182,7 +184,7 @@ int json_ais_read(const char *buf,
 		    (void)sscanf(arrival, "%02u-%02uT%02u:%02uZ",
 				 &ais->type6.dac1fid20.month,
 				 &ais->type6.dac1fid20.day,
-				 &ais->type6.dac1fid20.hour, 
+				 &ais->type6.dac1fid20.hour,
 				 &ais->type6.dac1fid20.minute);
 		}
 		imo = true;
@@ -202,7 +204,7 @@ int json_ais_read(const char *buf,
 		    (void)sscanf(start, "%02u-%02uT%02u:%02uZ",
 				 &ais->type6.dac1fid28.month,
 				 &ais->type6.dac1fid28.day,
-				 &ais->type6.dac1fid28.hour, 
+				 &ais->type6.dac1fid28.hour,
 				 &ais->type6.dac1fid28.minute);
 		}
 		imo = true;
@@ -213,6 +215,12 @@ int json_ais_read(const char *buf,
 	    }
 	    else if (strstr(buf, "\"fid\":32,") != NULL || strstr(buf, "\"fid\":14,") != NULL) {
 		status = json_read_object(buf, json_ais6_fid32, endptr);
+		imo = true;
+	    }
+	}
+	else if (strstr(buf, "\"dac\":235,") != NULL || strstr(buf, "\"dac\":250,") != NULL) {
+	    if (strstr(buf, "\"fid\":10,") != NULL) {
+		status = json_read_object(buf, json_ais6_fid10, endptr);
 		imo = true;
 	    }
 	}
@@ -237,7 +245,7 @@ int json_ais_read(const char *buf,
 		    // cppcheck-suppress uninitvar
 		    (void)sscanf(timestamp, "%02uT%02u:%02uZ",
 				 &ais->type8.dac1fid11.day,
-				 &ais->type8.dac1fid11.hour, 
+				 &ais->type8.dac1fid11.hour,
 				 &ais->type8.dac1fid11.minute);
 		}
 		imo = true;
@@ -253,7 +261,7 @@ int json_ais_read(const char *buf,
 		    (void)sscanf(departure, "%02u-%02uT%02u:%02uZ",
 				 &ais->type8.dac1fid13.fmonth,
 				 &ais->type8.dac1fid13.fday,
-				 &ais->type8.dac1fid13.fhour, 
+				 &ais->type8.dac1fid13.fhour,
 				 &ais->type8.dac1fid13.fminute);
 		    ais->type8.dac1fid13.tmonth = AIS_MONTH_NOT_AVAILABLE;
 		    ais->type8.dac1fid13.tday = AIS_DAY_NOT_AVAILABLE;
@@ -263,7 +271,7 @@ int json_ais_read(const char *buf,
 		    (void)sscanf(eta, "%02u-%02uT%02u:%02uZ",
 				 &ais->type8.dac1fid13.tmonth,
 				 &ais->type8.dac1fid13.tday,
-				 &ais->type8.dac1fid13.thour, 
+				 &ais->type8.dac1fid13.thour,
 				 &ais->type8.dac1fid13.tminute);
 		}
 		imo = true;
@@ -291,7 +299,7 @@ int json_ais_read(const char *buf,
 		    (void)sscanf(start, "%02u-%02uT%02u:%02uZ",
 				 &ais->type8.dac1fid27.month,
 				 &ais->type8.dac1fid27.day,
-				 &ais->type8.dac1fid27.hour, 
+				 &ais->type8.dac1fid27.hour,
 				 &ais->type8.dac1fid27.minute);
 		}
 		imo = true;
@@ -307,9 +315,9 @@ int json_ais_read(const char *buf,
 		    ais->type8.dac1fid31.hour = AIS_HOUR_NOT_AVAILABLE;
 		    ais->type8.dac1fid31.minute = AIS_MINUTE_NOT_AVAILABLE;
 		    // cppcheck-suppress uninitvar
-		    (void)sscanf(eta, "%02uT%02u:%02uZ",
+		    (void)sscanf(timestamp, "%02uT%02u:%02uZ",
 				 &ais->type8.dac1fid31.day,
-				 &ais->type8.dac1fid31.hour, 
+				 &ais->type8.dac1fid31.hour,
 				 &ais->type8.dac1fid31.minute);
 		}
 		imo = true;
@@ -354,8 +362,14 @@ int json_ais_read(const char *buf,
 	status = json_read_object(buf, json_ais24, endptr);
     } else if (strstr(buf, "\"type\":25,") != NULL) {
 	status = json_read_object(buf, json_ais25, endptr);
+	if (status == 0)
+	    lenhex_unpack(data, &ais->type25.bitcount,
+			  ais->type25.bitdata, sizeof(ais->type25.bitdata));
     } else if (strstr(buf, "\"type\":26,") != NULL) {
 	status = json_read_object(buf, json_ais26, endptr);
+	if (status == 0)
+	    lenhex_unpack(data, &ais->type26.bitcount,
+			  ais->type26.bitdata, sizeof(ais->type26.bitdata));
     } else if (strstr(buf, "\"type\":27,") != NULL) {
 	status = json_read_object(buf, json_ais27, endptr);
     } else {

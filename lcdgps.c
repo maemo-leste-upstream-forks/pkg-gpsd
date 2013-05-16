@@ -85,19 +85,19 @@ ssize_t sockreadline(int sockd,void *vptr,size_t maxlen) {
 
   for (n = 1; n < (ssize_t)maxlen; n++) {
 
-    if((rc=read(sockd,&c,1))==1) {
+    if ((rc=read(sockd,&c,1))==1) {
       *buffer++=c;
-      if(c=='\n')
+      if (c=='\n')
         break;
     }
-    else if(rc==0) {
-      if(n==1)
+    else if (rc==0) {
+      if (n==1)
         return(0);
       else
         break;
     }
     else {
-      if(errno==EINTR)
+      if (errno==EINTR)
         continue;
       return(-1);
     }
@@ -116,9 +116,9 @@ ssize_t sockwriteline(int sockd,const void *vptr,size_t n) {
   buffer=vptr;
   nleft=n;
 
-  while(nleft>0) {
-    if((nwritten= write(sockd,buffer,nleft))<=0) {
-      if(errno==EINTR)
+  while (nleft>0) {
+    if ((nwritten= write(sockd,buffer,nleft))<=0) {
+      if (errno==EINTR)
         nwritten=0;
       else
         return(-1);
@@ -139,7 +139,7 @@ int send_lcd(char *buf) {
 
   /* Limit the size of outgoing strings. */
   outlen = strlen(buf);
-  if(outlen > 255) {
+  if (outlen > 255) {
     outlen = 256;
   }
 
@@ -180,7 +180,7 @@ static enum deg_str_type deg_type = deg_dd;
 static void update_lcd(struct gps_data_t *gpsdata)
 {
   char tmpbuf[255];
-  char *s, *gridsquare;
+  char *gridsquare;
 
   /* Get our location in Maidenhead. */
   gridsquare = maidenhead(gpsdata->fix.latitude,gpsdata->fix.longitude);
@@ -188,6 +188,7 @@ static void update_lcd(struct gps_data_t *gpsdata)
   /* Fill in the latitude and longitude. */
   if (gpsdata->fix.mode >= MODE_2D) {
     int track;
+    char *s;
 
     s = deg_to_str(deg_type,  fabs(gpsdata->fix.latitude));
     snprintf(tmpbuf, 254, "widget_set gpsd one 1 1 {Lat: %s %c}\n", s, (gpsdata->fix.latitude < 0) ? 'S' : 'N');
@@ -200,7 +201,7 @@ static void update_lcd(struct gps_data_t *gpsdata)
     /* As a pilot, a heading of "0" gives me the heebie-jeebies (ie, 0
        == "invalid heading data", 360 == "North"). */
     track=(int)(gpsdata->fix.track);
-    if(track == 0) track = 360;
+    if (track == 0) track = 360;
 
     snprintf(tmpbuf, 254, "widget_set gpsd three 1 3 {%.1f %s %d deg}\n",
              gpsdata->fix.speed*speedfactor, speedunits,
@@ -248,10 +249,10 @@ static void usage( char *prog)
                 "                n = Nautical\"\n"
                 , prog);
 
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
     int option, rc;
     struct sockaddr_in localAddr, servAddr;
@@ -292,7 +293,7 @@ int main(int argc, char *argv[])
 	switch (option) {
 	case 'V':
 	    (void)fprintf(stderr, "lcdgs revision " REVISION "\n");
-	    exit(0);
+	    exit(EXIT_SUCCESS);
 	case 'h':
 	default:
 	    usage(argv[0]);
@@ -359,14 +360,14 @@ int main(int argc, char *argv[])
 	(void)fprintf( stderr,
 		       "lcdgps: no gpsd running or network error: %d, %s\n",
 		       errno, gps_errstr(errno));
-	exit(2);
+	exit(EXIT_FAILURE);
     }
 
     /* Connect to LCDd */
     h = gethostbyname(LCDDHOST);
-    if(h==NULL) {
+    if (h==NULL) {
 	printf("%s: unknown host '%s'\n",argv[0],LCDDHOST);
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     servAddr.sin_family = h->h_addrtype;
@@ -375,9 +376,9 @@ int main(int argc, char *argv[])
 
     /* create socket */
     sd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sd == -1) {
+    if (BAD_SOCKET(sd)) {
 	perror("cannot open socket ");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     /* bind any port number */
@@ -386,17 +387,17 @@ int main(int argc, char *argv[])
     localAddr.sin_port = htons(0);
 
     rc = bind(sd, (struct sockaddr *) &localAddr, sizeof(localAddr));
-    if(rc == -1) {
+    if (rc == -1) {
 	printf("%s: cannot bind port TCP %u\n",argv[0],LCDDPORT);
 	perror("error ");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     /* connect to server */
     rc = connect(sd, (struct sockaddr *) &servAddr, sizeof(servAddr));
-    if(rc == -1) {
+    if (rc == -1) {
 	perror("cannot connect ");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     /* Do the initial field label setup. */
@@ -411,7 +412,7 @@ int main(int argc, char *argv[])
     for (;;) { /* heart of the client */
 	if (!gps_waiting(&gpsdata, 50000000)) {
 	    fprintf( stderr, "lcdgps: error while waiting\n");
-	    exit(2);
+	    exit(EXIT_FAILURE);
 	} else {
 	    (void)gps_read(&gpsdata);
 	    update_lcd(&gpsdata);

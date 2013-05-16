@@ -412,6 +412,8 @@ static void nextstate(struct gps_packet_t *lexer, unsigned char c)
     case NMEA_BANG:
 	if (c == 'A')
 	    lexer->state = AIS_LEAD_1;
+	else if (c == 'B')
+	    lexer->state = AIS_LEAD_ALT1;
 	else
 	    lexer->state = GROUND_STATE;
 	break;
@@ -422,6 +424,18 @@ static void nextstate(struct gps_packet_t *lexer, unsigned char c)
 	    lexer->state = GROUND_STATE;
 	break;
     case AIS_LEAD_2:
+	if (isalpha(c))
+	    lexer->state = NMEA_LEADER_END;
+	else
+	    lexer->state = GROUND_STATE;
+	break;
+    case AIS_LEAD_ALT1:
+	if (c == 'S')
+	    lexer->state = AIS_LEAD_ALT2;
+	else
+	    lexer->state = GROUND_STATE;
+	break;
+    case AIS_LEAD_ALT2:
 	if (isalpha(c))
 	    lexer->state = NMEA_LEADER_END;
 	else
@@ -471,9 +485,8 @@ static void nextstate(struct gps_packet_t *lexer, unsigned char c)
 	    /* not strictly correct, but helps for interpreting logfiles */
 	    lexer->state = NMEA_RECOGNIZED;
 	else if (c == '$'){
-	    /* faster recovery from missing sentence trailers */
-	    lexer->state = NMEA_DOLLAR;
-	    lexer->inbufptr += (n-1);
+	    lexer->state = GROUND_STATE;
+	    character_pushback(lexer);
 	} else if (!isprint(c))
 	    lexer->state = GROUND_STATE;
 	break;
@@ -1253,7 +1266,7 @@ static void nextstate(struct gps_packet_t *lexer, unsigned char c)
 	    lexer->state = JSON_STRINGLITERAL;
 	    lexer->json_after = JSON_END_ATTRIBUTE;
 	} else {
-	    gpsd_report(LOG_RAW + 2, 
+	    gpsd_report(LOG_RAW + 2,
 			"%08ld: missing attribute start after header\n",
 			lexer->char_counter);
 	    lexer->state = GROUND_STATE;
@@ -1348,7 +1361,7 @@ static void packet_accept(struct gps_packet_t *lexer, int packet_type)
 	if (lexer->debug >= LOG_RAW+1)
 	    gpsd_report(LOG_RAW+1, "Packet type %d accepted %zu = %s\n",
 		    packet_type, packetlen,
-			gpsd_hexdump((char *)lexer->outbuffer, lexer->outbuflen));
+			gpsd_packetdump((char *)lexer->outbuffer, lexer->outbuflen));
     } else {
 	gpsd_report(LOG_ERROR, "Rejected too long packet type %d len %zu\n",
 		    packet_type, packetlen);
@@ -1366,7 +1379,7 @@ static void packet_discard(struct gps_packet_t *lexer)
 	gpsd_report(LOG_RAW + 1,
 		    "Packet discard of %zu, chars remaining is %zu = %s\n",
 		    discard, remaining,
-		    gpsd_hexdump((char *)lexer->inbuffer, lexer->inbuflen));
+		    gpsd_packetdump((char *)lexer->inbuffer, lexer->inbuflen));
 }
 
 static void character_discard(struct gps_packet_t *lexer)
@@ -1377,7 +1390,7 @@ static void character_discard(struct gps_packet_t *lexer)
     if (lexer->debug >= LOG_RAW+1)
 	gpsd_report(LOG_RAW + 1, "Character discarded, buffer %zu chars = %s\n",
 		    lexer->inbuflen,
-		    gpsd_hexdump((char *)lexer->inbuffer, lexer->inbuflen));
+		    gpsd_packetdump((char *)lexer->inbuffer, lexer->inbuflen));
 }
 
 /* get 0-origin big-endian words relative to start of packet buffer */
@@ -1466,6 +1479,10 @@ void packet_parse(struct gps_packet_t *lexer)
 	    if (strncmp((char *)lexer->inbuffer, "!AIVDM", 6) == 0)
 		packet_accept(lexer, AIVDM_PACKET);
 	    else if (strncmp((char *)lexer->inbuffer, "!AIVDO", 6) == 0)
+		packet_accept(lexer, AIVDM_PACKET);
+	    else if (strncmp((char *)lexer->inbuffer, "!BSVDM", 6) == 0)
+		packet_accept(lexer, AIVDM_PACKET);
+	    else if (strncmp((char *)lexer->inbuffer, "!BSVDO", 6) == 0)
 		packet_accept(lexer, AIVDM_PACKET);
 	    else
 #endif /* AIVDM_ENABLE */
@@ -1616,6 +1633,7 @@ void packet_parse(struct gps_packet_t *lexer)
 #ifdef TSIP_ENABLE
 		/* check for some common TSIP packet types:
 		 * 0x13, TSIP Parsing Error Notification
+		 * 0x38, Request SV system data
 		 * 0x41, GPS time, data length 10
 		 * 0x42, Single Precision Fix, data length 16
 		 * 0x43, Velocity Fix, data length 20
@@ -1645,7 +1663,7 @@ void packet_parse(struct gps_packet_t *lexer)
 		/*@ +charint @*/
 		pkt_id = lexer->inbuffer[1];	/* packet ID */
                 /* *INDENT-OFF* */
-		if (!((0x13 == pkt_id) || (0xbb == pkt_id) || (0xbc == pkt_id))
+		if (!((0x13 == pkt_id) || (0xbb == pkt_id) || (0xbc == pkt_id)  || (0x38 == pkt_id))
 		    && ((0x41 > pkt_id) || (0x8f < pkt_id))) {
 		    gpsd_report(LOG_IO,
 				"Packet ID 0x%02x out of range for TSIP\n",
@@ -1655,6 +1673,8 @@ void packet_parse(struct gps_packet_t *lexer)
                 /* *INDENT-ON* */
 		/*@ -ifempty */
 		if ((0x13 == pkt_id) && (0x01 <= packetlen))
+		    /* pass */ ;
+		else if ((0x38 == pkt_id) && (0x03 == packetlen))
 		    /* pass */ ;
 		else if ((0x41 == pkt_id)
 			 && ((0x0e == packetlen) || (0x0f == packetlen)))
@@ -2001,7 +2021,7 @@ ssize_t packet_get(int fd, struct gps_packet_t *lexer)
 	    gpsd_report(LOG_RAW + 1,
 			"Read %zd chars to buffer offset %zd (total %zd): %s\n",
 			recvd, lexer->inbuflen, lexer->inbuflen + recvd,
-			gpsd_hexdump((char *)lexer->inbufptr, (size_t) recvd));
+			gpsd_packetdump((char *)lexer->inbufptr, (size_t) recvd));
 	lexer->inbuflen += recvd;
     }
     gpsd_report(LOG_SPIN, "packet_get() fd %d -> %zd (%d)\n",

@@ -13,9 +13,9 @@
    NMEA_PASHR_A,	/* grind through recognizing $PASHR */
    NMEA_PASHR_S,	/* grind through recognizing $PASHR */
    NMEA_PASHR_H,	/* grind through recognizing $PASHR */
-   NMEA_BINARY_BODY,	/* Ashtech-style binary packet body, skip until \r\n */ 
-   NMEA_BINARY_CR,	/* \r on end of Ashtech-style binary packet */ 
-   NMEA_BINARY_NL,	/* \n on end of Ashtech-style binary packet */ 
+   NMEA_BINARY_BODY,	/* Ashtech-style binary packet body, skip until \r\n */
+   NMEA_BINARY_CR,	/* \r on end of Ashtech-style binary packet */
+   NMEA_BINARY_NL,	/* \n on end of Ashtech-style binary packet */
    NMEA_CR,	   	/* seen terminating \r of NMEA packet */
    NMEA_RECOGNIZED,	/* saw trailing \n of NMEA packet */
 
@@ -23,6 +23,8 @@
    SIRF_ACK_LEAD_2,	/* seen c of possible SiRF Ack */
    AIS_LEAD_1,		/* seen A of possible marine AIS message */
    AIS_LEAD_2,		/* seen I of possible marine AIS message */
+   AIS_LEAD_ALT1,	/* seen B of possible marine AIS message */
+   AIS_LEAD_ALT2,	/* seen S of possible marine AIS message */
 
    SEATALK_LEAD_1,	/* SeaTalk/Garmin packet leader 'I' */
    WEATHER_LEAD_1,	/* Weather instrument packet leader 'W' */
@@ -56,7 +58,7 @@
    SIRF_LENGTH_1,	/* seen first byte of SiRF length */
    SIRF_PAYLOAD,	/* we're in a SiRF payload part */
    SIRF_DELIVERED,	/* saw last byte of SiRF payload/checksum */
-   SIRF_TRAILER_1,	/* saw first byte of SiRF trailer */ 
+   SIRF_TRAILER_1,	/* saw first byte of SiRF trailer */
    SIRF_RECOGNIZED,	/* saw second byte of SiRF trailer */
 #endif /* SIRF_ENABLE */
 

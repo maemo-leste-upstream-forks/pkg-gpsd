@@ -9,7 +9,8 @@
  * 22-23, and 25-27 has not.
  * For the special IMO messages (types 6 and 8), only the following have been
  * tested against known-good decodings:
- *  - IMO236 met/hydro message: Type=8, DAC=1, FI=11 
+ *  - IMO236 met/hydro message: Type=8, DAC=1, FI=11
+ *  - IMO289 met/hydro message: Type=8, DAC=1, FI=31
  *
  * This file is Copyright (c) 2010 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
@@ -25,19 +26,7 @@
  * Parse the data from the device
  */
 
-#define DAC1FID11_AIRTEMP_OFFSET		600
-#define DAC1FID11_DEWPOINT_OFFSET		200
-#define DAC1FID11_PRESSURE_OFFSET		-800
-#define DAC1FID11_LEVEL_OFFSET			100
-#define DAC1FID11_WATERTEMP_OFFSET		100
-
-#define DAC1FID31_AIRTEMP_OFFSET		600
-#define DAC1FID31_DEWPOINT_OFFSET		200
-#define DAC1FID31_PRESSURE_OFFSET		-800
-#define DAC1FID31_LEVEL_OFFSET			100
-#define DAC1FID31_WATERTEMP_OFFSET		100
-
-static void from_sixbit(char *bitvec, uint start, int count, char *to)
+static void from_sixbit(unsigned char *bitvec, uint start, int count, char *to)
 {
     /*@ +type @*/
 #ifdef S_SPLINT_S
@@ -79,9 +68,9 @@ bool ais_binary_decode(struct ais_t *ais,
     int i;
 
 #define BITS_PER_BYTE	8
-#define UBITS(s, l)	ubits((char *)bits, s, l, false)
-#define SBITS(s, l)	sbits((char *)bits, s, l, false)
-#define UCHARS(s, to)	from_sixbit((char *)bits, s, sizeof(to), to)
+#define UBITS(s, l)	ubits((unsigned char *)bits, s, l, false)
+#define SBITS(s, l)	sbits((signed char *)bits, s, l, false)
+#define UCHARS(s, to)	from_sixbit((unsigned char *)bits, s, sizeof(to), to)
     ais->type = UBITS(0, 6);
     ais->repeat = UBITS(6, 2);
     ais->mmsi = UBITS(8, 30);
@@ -178,7 +167,25 @@ bool ais_binary_decode(struct ais_t *ais,
 	ais->type6.fid            = UBITS(82, 6);
 	ais->type6.bitcount       = bitlen - 88;
 	imo = false;
-	if (ais->type6.dac == 1)
+	/* UK and Republic Of Ireland */
+	if (ais->type6.dac == 235 || ais->type6.dac == 250) {
+	    switch (ais->type6.fid) {
+	    case 10:	/* GLA - AtoN monitoring data */
+		ais->type6.dac235fid10.ana_int		= UBITS(88, 10);
+		ais->type6.dac235fid10.ana_ext1		= UBITS(98, 10);
+		ais->type6.dac235fid10.ana_ext2		= UBITS(108, 10);
+		ais->type6.dac235fid10.racon   = UBITS(118, 2);
+		ais->type6.dac235fid10.light   = UBITS(120, 2);
+		ais->type6.dac235fid10.alarm  = UBITS(122, 1);
+		ais->type6.dac235fid10.stat_ext		= UBITS(123, 8);
+		ais->type6.dac235fid10.off_pos	= UBITS(131, 1);
+		/* skip 4 bits */
+		imo = true;
+	    }
+	    break;
+	}
+	/* International */
+	else if (ais->type6.dac == 1)
 	    switch (ais->type6.fid) {
 	    case 12:	/* IMO236 - Dangerous cargo indication */
 		UCHARS(88, ais->type6.dac1fid12.lastport);
@@ -197,6 +204,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type6.dac1fid12.amount		= UBITS(345, 10);
 		ais->type6.dac1fid12.unit		= UBITS(355, 2);
 		/* skip 3 bits */
+		imo = true;
 		break;
 	    case 14:	/* IMO236 - Tidal Window */
 		ais->type6.dac1fid32.month	= UBITS(88, 4);
@@ -218,9 +226,11 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type6.dac1fid32.ntidals = u;
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
+		imo = true;
 		break;
 	    case 15:	/* IMO236 - Extended Ship Static and Voyage Related Data */
 		ais->type6.dac1fid15.airdraught	= UBITS(56, 11);
+		imo = true;
 		break;
 	    case 16:	/* IMO236 - Number of persons on board */
 		if (ais->type6.bitcount == 136)
@@ -240,6 +250,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type6.dac1fid18.lon	= SBITS(268, 25);
 		ais->type6.dac1fid18.lat	= SBITS(293, 24);
 		/* skip 43 bits */
+		imo = true;
 		break;
 	    case 20:	/* IMO289 - Berthing data - addressed */
 		ais->type6.dac1fid20.linkage	= UBITS(88, 10);
@@ -280,6 +291,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		UCHARS(191, ais->type6.dac1fid20.berth_name);
 		ais->type6.dac1fid20.berth_lon	= SBITS(311, 25);
 		ais->type6.dac1fid20.berth_lat	= SBITS(336, 24);
+		imo = true;
 		break;
 	    case 23:        /* IMO289 - Area notice - addressed */
 		break;
@@ -291,6 +303,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		    ais->type6.dac1fid25.cargos[u].subtype = UBITS(104+u*17,13);
 		}
 		ais->type6.dac1fid25.ncargos = u;
+		imo = true;
 		break;
 	    case 28:	/* IMO289 - Route info - addressed */
 		ais->type6.dac1fid28.linkage	= UBITS(88, 10);
@@ -311,12 +324,14 @@ bool ais_binary_decode(struct ais_t *ais,
 		}
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
+		imo = true;
 		break;
 	    case 30:	/* IMO289 - Text description - addressed */
 		ais->type6.dac1fid30.linkage   = UBITS(88, 10);
-		from_sixbit((char *)bits,
+		from_sixbit((unsigned char *)bits,
 			    98, bitlen-98,
 			    ais->type6.dac1fid30.text);
+		imo = true;
 		break;
 	    case 32:	/* IMO289 - Tidal Window */
 		ais->type6.dac1fid32.month	= UBITS(88, 4);
@@ -338,6 +353,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type6.dac1fid32.ntidals = u;
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
+		imo = true;
 		break;
 	    }
 	if (!imo)
@@ -391,18 +407,14 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type8.dac1fid11.wspeed		= UBITS(121, 7);
 		ais->type8.dac1fid11.wgust		= UBITS(128, 7);
 		ais->type8.dac1fid11.wdir		= UBITS(135, 9);
-		ais->type8.dac1fid11.wgustdir	= UBITS(144, 9); 
-		ais->type8.dac1fid11.airtemp	= UBITS(153, 11)
-		    - DAC1FID11_AIRTEMP_OFFSET;
+		ais->type8.dac1fid11.wgustdir	= UBITS(144, 9);
+		ais->type8.dac1fid11.airtemp	= UBITS(153, 11);
 		ais->type8.dac1fid11.humidity	= UBITS(164, 7);
-		ais->type8.dac1fid11.dewpoint	= UBITS(171, 10)
-		    - DAC1FID11_DEWPOINT_OFFSET;
-		ais->type8.dac1fid11.pressure	= UBITS(181, 9)
-		    - DAC1FID11_PRESSURE_OFFSET;
+		ais->type8.dac1fid11.dewpoint	= UBITS(171, 10);
+		ais->type8.dac1fid11.pressure	= UBITS(181, 9);
 		ais->type8.dac1fid11.pressuretend	= UBITS(190, 2);
 		ais->type8.dac1fid11.visibility	= UBITS(192, 8);
-		ais->type8.dac1fid11.waterlevel	= UBITS(200, 9)
-		    - DAC1FID11_LEVEL_OFFSET;
+		ais->type8.dac1fid11.waterlevel	= UBITS(200, 9);
 		ais->type8.dac1fid11.leveltrend	= UBITS(209, 2);
 		ais->type8.dac1fid11.cspeed		= UBITS(211, 8);
 		ais->type8.dac1fid11.cdir		= UBITS(219, 9);
@@ -419,8 +431,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type8.dac1fid11.swellperiod	= UBITS(303, 6);
 		ais->type8.dac1fid11.swelldir	= UBITS(309, 9);
 		ais->type8.dac1fid11.seastate	= UBITS(318, 4);
-		ais->type8.dac1fid11.watertemp	= UBITS(322, 10)
-		    - DAC1FID11_WATERTEMP_OFFSET;
+		ais->type8.dac1fid11.watertemp	= UBITS(322, 10);
 		ais->type8.dac1fid11.preciptype	= UBITS(332, 3);
 		ais->type8.dac1fid11.salinity	= UBITS(335, 9);
 		ais->type8.dac1fid11.ice		= UBITS(344, 2);
@@ -441,10 +452,12 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type8.dac1fid13.thour  	= UBITS(457, 5);
 		ais->type8.dac1fid13.tminute	= UBITS(462, 6);
 		/* skip 4 bits */
+		imo = true;
 		break;
 	    case 15:        /* IMO236 - Extended ship and voyage */
 		ais->type8.dac1fid15.airdraught	= UBITS(56, 11);
 		/* skip 5 bits */
+		imo = true;
 		break;
 	    case 17:        /* IMO289 - VTS-generated/synthetic targets */
 #define ARRAY_BASE 56
@@ -477,6 +490,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type8.dac1fid17.ntargets = u;
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
+		imo = true;
 		break;
 	    case 19:        /* IMO289 - Marine Traffic Signal */
 		ais->type8.dac1fid19.linkage	= UBITS(56, 10);
@@ -489,6 +503,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type8.dac1fid19.minute	= UBITS(247, 6);
 		ais->type8.dac1fid19.nextsignal	= UBITS(253, 5);
 		/* skip 102 bits */
+		imo = true;
 		break;
 	    case 21:        /* IMO289 - Weather obs. report from ship */
 		break;
@@ -517,16 +532,18 @@ bool ais_binary_decode(struct ais_t *ais,
 		}
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
+		imo = true;
 		break;
 	    case 29:        /* IMO289 - Text Description - broadcast */
 		ais->type8.dac1fid29.linkage   = UBITS(56, 10);
-		from_sixbit((char *)bits,
+		from_sixbit((unsigned char *)bits,
 			    66, bitlen-66,
 			    ais->type8.dac1fid29.text);
+		imo = true;
 		break;
 	    case 31:        /* IMO289 - Meteorological/Hydrological data */
-		ais->type8.dac1fid31.lat		= SBITS(56, 24);
-		ais->type8.dac1fid31.lon		= SBITS(80, 25);
+		ais->type8.dac1fid31.lon		= SBITS(56, 25);
+		ais->type8.dac1fid31.lat		= SBITS(81, 24);
 		ais->type8.dac1fid31.accuracy       = (bool)UBITS(105, 1);
 		ais->type8.dac1fid31.day		= UBITS(106, 5);
 		ais->type8.dac1fid31.hour		= UBITS(111, 5);
@@ -534,19 +551,15 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type8.dac1fid31.wspeed		= UBITS(122, 7);
 		ais->type8.dac1fid31.wgust		= UBITS(129, 7);
 		ais->type8.dac1fid31.wdir		= UBITS(136, 9);
-		ais->type8.dac1fid31.wgustdir	= UBITS(145, 9); 
-		ais->type8.dac1fid31.airtemp	= SBITS(154, 11)
-		    - DAC1FID31_AIRTEMP_OFFSET;
+		ais->type8.dac1fid31.wgustdir	= UBITS(145, 9);
+		ais->type8.dac1fid31.airtemp	= SBITS(154, 11);
 		ais->type8.dac1fid31.humidity	= UBITS(165, 7);
-		ais->type8.dac1fid31.dewpoint	= UBITS(172, 10)
-		    - DAC1FID31_DEWPOINT_OFFSET;
-		ais->type8.dac1fid31.pressure	= UBITS(182, 9)
-		    - DAC1FID31_PRESSURE_OFFSET;
+		ais->type8.dac1fid31.dewpoint	= SBITS(172, 10);
+		ais->type8.dac1fid31.pressure	= UBITS(182, 9);
 		ais->type8.dac1fid31.pressuretend	= UBITS(191, 2);
 		ais->type8.dac1fid31.visgreater	= UBITS(193, 1);
 		ais->type8.dac1fid31.visibility	= UBITS(194, 7);
-		ais->type8.dac1fid31.waterlevel	= UBITS(200, 12)
-		    - DAC1FID31_LEVEL_OFFSET;
+		ais->type8.dac1fid31.waterlevel	= UBITS(201, 12);
 		ais->type8.dac1fid31.leveltrend	= UBITS(213, 2);
 		ais->type8.dac1fid31.cspeed		= UBITS(215, 8);
 		ais->type8.dac1fid31.cdir		= UBITS(223, 9);
@@ -563,8 +576,7 @@ bool ais_binary_decode(struct ais_t *ais,
 		ais->type8.dac1fid31.swellperiod	= UBITS(307, 6);
 		ais->type8.dac1fid31.swelldir	= UBITS(313, 9);
 		ais->type8.dac1fid31.seastate	= UBITS(322, 4);
-		ais->type8.dac1fid31.watertemp	= UBITS(326, 10)
-		    - DAC1FID31_WATERTEMP_OFFSET;
+		ais->type8.dac1fid31.watertemp	= SBITS(326, 10);
 		ais->type8.dac1fid31.preciptype	= UBITS(336, 3);
 		ais->type8.dac1fid31.salinity	= UBITS(339, 9);
 		ais->type8.dac1fid31.ice		= UBITS(348, 2);
@@ -617,7 +629,7 @@ bool ais_binary_decode(struct ais_t *ais,
 	ais->type12.dest_mmsi      = UBITS(40, 30);
 	ais->type12.retransmit     = (bool)UBITS(70, 1);
 	//ais->type12.spare        = UBITS(71, 1);
-	from_sixbit((char *)bits,
+	from_sixbit((unsigned char *)bits,
 		    72, bitlen-72,
 		    ais->type12.text);
 	break;
@@ -628,7 +640,7 @@ bool ais_binary_decode(struct ais_t *ais,
 	    return false;
 	}
 	//ais->type14.spare          = UBITS(38, 2);
-	from_sixbit((char *)bits,
+	from_sixbit((unsigned char *)bits,
 		    40, bitlen-40,
 		    ais->type14.text);
 	break;
@@ -771,10 +783,10 @@ bool ais_binary_decode(struct ais_t *ais,
 	    return false;
 	}
 	ais->type21.aid_type = UBITS(38, 5);
-	from_sixbit((char *)bits,
+	from_sixbit((unsigned char *)bits,
 		    43, 21, ais->type21.name);
 	if (strlen(ais->type21.name) == 20 && bitlen > 272)
-	    from_sixbit((char *)bits,
+	    from_sixbit((unsigned char *)bits,
 			272, (bitlen - 272)/6,
 			ais->type21.name+20);
 	ais->type21.accuracy     = UBITS(163, 1);
@@ -810,8 +822,8 @@ bool ais_binary_decode(struct ais_t *ais,
 	    ais->type22.area.sw_lon       = SBITS(104, 18);
 	    ais->type22.area.sw_lat       = SBITS(122, 17);
 	} else {
-	    ais->type22.mmsi.dest1             = SBITS(69, 30);
-	    ais->type22.mmsi.dest2             = SBITS(104, 30);
+	    ais->type22.mmsi.dest1             = UBITS(69, 30);
+	    ais->type22.mmsi.dest2             = UBITS(104, 30);
 	}
 	ais->type22.band_a       = UBITS(140, 1);
 	ais->type22.band_b       = UBITS(141, 1);
@@ -949,6 +961,11 @@ bool ais_binary_decode(struct ais_t *ais,
 		     (ais->type26.bitcount + 7) / 8);
 	break;
     case 27:	/* Long Range AIS Broadcast message */
+	if (bitlen != 96) {
+	    gpsd_report(LOG_WARN, "AIVDM message type 27 size not 96 bits (%zd).\n",
+			bitlen);
+	    return false;
+	}
 	ais->type27.accuracy        = (bool)UBITS(38, 1);
 	ais->type27.raim		= UBITS(39, 1)!=0;
 	ais->type27.status		= UBITS(40, 4);
@@ -973,4 +990,4 @@ bool ais_binary_decode(struct ais_t *ais,
 }
 /*@ -charint @*/
 
-/* driver_aivdm.c ends here */
+/* driver_ais.c ends here */
