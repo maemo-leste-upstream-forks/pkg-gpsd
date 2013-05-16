@@ -169,7 +169,7 @@ static void cooked_pvt(void)
 /*@ -globstate -nullpass (splint is confused) */
 static void nmea_update(void)
 {
-    static char sentences[NMEA_MAX];
+    static char sentences[NMEA_MAX * 2];
     char **fields;
 
     assert(cookedwin != NULL);
@@ -179,9 +179,11 @@ static void nmea_update(void)
     assert(gprmcwin != NULL);
     assert(gpgstwin != NULL);
 
+    /* can be NULL if packet was overlong */
     fields = session.driver.nmea.field;
 
-    if (session.packet.outbuffer[0] == (unsigned char)'$') {
+    if (session.packet.outbuffer[0] == (unsigned char)'$' 
+		&& fields != NULL && fields[0] != NULL) {
 	int ymax, xmax;
 	timestamp_t now;
 	getmaxyx(nmeawin, ymax, xmax);

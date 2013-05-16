@@ -10,19 +10,13 @@ the "Upstream Bugs" page on the project website.
 
 ** Bugs in gpsd and its clients:
 
-*** Old Earthmate support is currently broken
-
-Support for the the pre-2003 version of the Earthmate using Zodiac 
-binary protocol is currently broken.  Sometime after 2.96 the code
-for dealing with the EARTHA handshake came unstuck.
-
 *** Tracker bugs
 
 See the GPSD bug tracker on the project website, but don't be
 surprised if it's empty or very sparse.  Our rate of new defects per
 month is quite low.
 
-** Dispatcher/network issues
+*** Dispatcher/network issues
 
 **** Reading AISHub data via UDP confuses xgps with short writes
 
@@ -31,12 +25,6 @@ works inside thyrsus.com) and run xgps. Probably some kind of
 packet aggregation issue as it doesn't happen with test logs.
 
 *** Driver issues
-
-**** There are portability issues in the rtcm2 driver
-
-The rtcm2 binary driver fails port testing on the following
-architectures: s390, s390x, and sparc. This is probably due 
-to the compiler not honoring #pragma pack(1).
 
 **** gpsctl -b should work on UBX, but does not.
 
@@ -54,12 +42,19 @@ different types in them, and a copy of the RTCM3 standard at latest revision
 
 This one is mine and Kurt Schwehr's. Support is currently nearly
 complete; the only missing cases are a handful of IMO 236 and IMO 289
-message 6 and 8 subtypes - specifically, 6/23, 8/21. 8/22, 8/24, and
+message 6 and 8 subtypes - specifically, 6/23, 8/21, 8/22, 8/24, and
 8/26.
 
 **** Addressed case of AIS Types 25 and 26 is not handled.
 
 We'd need machinery to shift a byte array 30 bits left...
+
+**** JSON passthrough for AIS
+
+Roy Barkas wants to be able to pass custom JSON up to GPSD in an
+armored AIS sentence, so all his clients will get it.  See
+http://lists.nongnu.org/archive/html/gpsd-dev/2013-01/msg00022.html
+for the full proposal.
 
 ** Ports
 
@@ -169,12 +164,6 @@ implementation; it's a fairly lightweight protocol, flexible enough to
 handle all the quantities required, and it is actually in use in
 production reference networks. RT-IGS is also a packet-oriented
 format, rather than a file-oriented format like RINEX.
-
-*** NOFLOAT build
-
-We want to be able to build a minimalist version that doesn't require
-floating-point arithmetic, for deployment on low-power ARM devices 
-without FPU.
 
 *** Support for more survey / professional / up-scale receivers.
 

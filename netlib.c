@@ -33,6 +33,7 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
     socket_t s = -1;
     bool bind_me;
 
+    INVALIDATE_SOCKET(s);
     /*@-type@*/
     ppe = getprotobyname(protocol);
     if (strcmp(protocol, "udp") == 0) {
@@ -114,8 +115,15 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
     }
 #endif
 #ifdef TCP_NODELAY
+    /*
+     * This is a good performance enhancement when the socket is going to
+     * be used to pass a lot of short commands.  It prevents them from being
+     * delayed by the Nagle algorithm until they can be aggreagated into
+     * a large packet.  See http://en.wikipedia.org/wiki/Nagle%27s_algorithm
+     * for discussion.
+     */
     if (type == SOCK_STREAM)
-	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *)&one, sizeof one);
+	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *)&one, sizeof(one));
 #endif
 
     /* set socket to noblocking */
@@ -159,8 +167,8 @@ socket_t netlib_localsocket(const char *sockfile, int socktype)
 
 	memset(&saddr, 0, sizeof(struct sockaddr_un));
 	saddr.sun_family = AF_UNIX;
-	(void)strlcpy(saddr.sun_path, 
-		      sockfile, 
+	(void)strlcpy(saddr.sun_path,
+		      sockfile,
 		      sizeof(saddr.sun_path));
 
 	/*@-unrecog@*/
@@ -174,8 +182,8 @@ socket_t netlib_localsocket(const char *sockfile, int socktype)
     }
 }
 
-char *netlib_sock2ip(int fd)
-/* retrieve the IP address corresponding to a socket */ 
+char *netlib_sock2ip(socket_t fd)
+/* retrieve the IP address corresponding to a socket */
 {
     sockaddr_t fsin;
     socklen_t alen = (socklen_t) sizeof(fsin);

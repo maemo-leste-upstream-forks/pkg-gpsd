@@ -27,7 +27,7 @@ struct privdata_t
 
 /*
  * Unpleasant that we have to declare a static context pointer here - means
- * you can't have multiple DBUS sessions open (not that this matters 
+ * you can't have multiple DBUS sessions open (not that this matters
  * much in practice). The problem is the DBUS API lacks some hook
  * arguments that it ought to have.
  */
@@ -74,12 +74,9 @@ static DBusHandlerResult handle_gps_fix(DBusMessage * message)
  * Message dispatching function
  *
  */
-static DBusHandlerResult signal_handler(DBusConnection * connection,
+static DBusHandlerResult signal_handler(DBusConnection * connection UNUSED,
 					DBusMessage * message)
 {
-    /* dummy, need to use the variable for some reason */
-    connection = NULL;
-
     if (dbus_message_is_signal(message, "org.gpsd", "fix"))
 	return handle_gps_fix(message);
     /*

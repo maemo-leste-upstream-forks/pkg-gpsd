@@ -14,9 +14,7 @@
 
 /*@ -duplicatequals -formattype */
 static unsigned char buf[80];
-static union int_float i_f;
-static union long_double l_d;
-static char sb1, sb2;
+static signed char sb1, sb2;
 static unsigned char ub1, ub2;
 static short sw1, sw2;
 static unsigned short uw1, uw2;
@@ -70,8 +68,8 @@ static void bedumpall(void)
     (void)printf("getbeu64: %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
 		 (uint64_t) uL1, (uint64_t) uL2,
 		 (uint64_t) getbeu64(buf, 0), (uint64_t) getbeu64(buf, 8));
-    (void)printf("getbef: %f %f\n", f1, getbef(buf, 24));
-    (void)printf("getbed: %.16f %.16f\n", d1, getbed(buf, 16));
+    (void)printf("getbef32: %f %f\n", f1, getbef32((const char *)buf, 24));
+    (void)printf("getbed64: %.16f %.16f\n", d1, getbed64((const char *)buf, 16));
 }
 
 static void ledumpall(void)
@@ -100,8 +98,8 @@ static void ledumpall(void)
     (void)printf("getleu64: %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
 		 (uint64_t) uL1, (uint64_t) uL2,
 		 (uint64_t) getleu64(buf, 0), (uint64_t) getleu64(buf, 8));
-    (void)printf("getlef: %f %f\n", f1, getlef(buf, 24));
-    (void)printf("getled: %.16f %.16f\n", d1, getled(buf, 16));
+    (void)printf("getlef32: %f %f\n", f1, getlef32((const char *)buf, 24));
+    (void)printf("getled64: %.16f %.16f\n", d1, getled64((const char *)buf, 16));
 }
 
 struct unsigned_test
@@ -145,6 +143,45 @@ int main(int argc, char *argv[])
     memcpy(buf + 24, "\x40\x49\x0f\xdb", 4);
     /*@ +observertrans +usereleased @*/
 
+    /*@-type@*/
+    sb1 = getsb(buf, 0);
+    sb2 = getsb(buf, 8);
+    ub1 = getub(buf, 0);
+    ub2 = getub(buf, 8);
+    sw1 = getbes16(buf, 0);
+    sw2 = getbes16(buf, 8);
+    uw1 = getbeu16(buf, 0);
+    uw2 = getbeu16(buf, 8);
+    sl1 = getbes32(buf, 0);
+    sl2 = getbes32(buf, 8);
+    ul1 = getbeu32(buf, 0);
+    ul2 = getbeu32(buf, 8);
+    sL1 = getbes64(buf, 0);
+    sL2 = getbes64(buf, 8);
+    uL1 = getbeu64(buf, 0);
+    uL2 = getbeu64(buf, 8);
+    f1 = getbef32((const char *)buf, 24);
+    d1 = getbed64((const char *)buf, 16);
+    sb1 = getsb(buf, 0);
+    sb2 = getsb(buf, 8);
+    ub1 = getub(buf, 0);
+    ub2 = getub(buf, 8);
+    sw1 = getles16(buf, 0);
+    sw2 = getles16(buf, 8);
+    uw1 = getleu16(buf, 0);
+    uw2 = getleu16(buf, 8);
+    sl1 = getles32(buf, 0);
+    sl2 = getles32(buf, 8);
+    ul1 = getleu32(buf, 0);
+    ul2 = getleu32(buf, 8);
+    sL1 = getles64(buf, 0);
+    sL2 = getles64(buf, 8);
+    uL1 = getleu64(buf, 0);
+    uL2 = getleu64(buf, 8);
+    f1 = getlef32((const char *)buf, 24);
+    d1 = getled64((const char *)buf, 16);
+    /*@+type@*/
+
     if (!quiet) {
 	(void)fputs("Test data:", stdout);
 	for (sp = buf; sp < buf + 28; sp++)
@@ -152,60 +189,25 @@ int main(int argc, char *argv[])
 	(void)putc('\n', stdout);
 
 	/* big-endian test */
-	/*@-type@*/
 	printf("Big-endian:\n");
-	sb1 = getsb(buf, 0);
-	sb2 = getsb(buf, 8);
-	ub1 = getub(buf, 0);
-	ub2 = getub(buf, 8);
-	sw1 = getbes16(buf, 0);
-	sw2 = getbes16(buf, 8);
-	uw1 = getbeu16(buf, 0);
-	uw2 = getbeu16(buf, 8);
-	sl1 = getbes32(buf, 0);
-	sl2 = getbes32(buf, 8);
-	ul1 = getbeu32(buf, 0);
-	ul2 = getbeu32(buf, 8);
-	sL1 = getbes64(buf, 0);
-	sL2 = getbes64(buf, 8);
-	uL1 = getbeu64(buf, 0);
-	uL2 = getbeu64(buf, 8);
-	f1 = getbef(buf, 24);
-	d1 = getbed(buf, 16);
-	/*@+type@*/
 	bedumpall();
 
 	/* little-endian test */
 	printf("Little-endian:\n");
-	/*@-type@*/
-	sb1 = getsb(buf, 0);
-	sb2 = getsb(buf, 8);
-	ub1 = getub(buf, 0);
-	ub2 = getub(buf, 8);
-	sw1 = getles16(buf, 0);
-	sw2 = getles16(buf, 8);
-	uw1 = getleu16(buf, 0);
-	uw2 = getleu16(buf, 8);
-	sl1 = getles32(buf, 0);
-	sl2 = getles32(buf, 8);
-	ul1 = getleu32(buf, 0);
-	ul2 = getleu32(buf, 8);
-	sL1 = getles64(buf, 0);
-	sL2 = getles64(buf, 8);
-	uL1 = getleu64(buf, 0);
-	uL2 = getleu64(buf, 8);
-	f1 = getlef(buf, 24);
-	d1 = getled(buf, 16);
-	/*@+type@*/
 	ledumpall();
     }
+
+    if (sb1 != 1)  printf("getsb(buf, 0) FAILED\n");
+    if (sb2 != -1) printf("getsb(buf, 8) FAILED\n");
+    if (ub1 != 1)  printf("getub(buf, 0) FAILED\n");
+    if (ub2 != 0xff) printf("getub(buf, 8) FAILED\n");
 
     (void)printf("Testing bitfield extraction\n");
     for (up = unsigned_tests;
 	 up <
 	 unsigned_tests + sizeof(unsigned_tests) / sizeof(unsigned_tests[0]);
 	 up++) {
-	uint64_t res = ubits((char *)buf, up->start, up->width, up->le);
+	uint64_t res = ubits((unsigned char *)buf, up->start, up->width, up->le);
 	bool success = (res == up->expected);
 	if (!success)
 	    failures = true;
@@ -217,5 +219,5 @@ int main(int argc, char *argv[])
 			 success ? "succeeded" : "FAILED");
     }
 
-    exit(failures ? 1 : 0);
+    exit(failures ? EXIT_FAILURE : EXIT_SUCCESS);
 }

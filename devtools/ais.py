@@ -306,6 +306,35 @@ type5 = (
     spare(1),
     )
 
+type6_dac_or_fid_unknown = (
+    bitfield("data",           920, 'raw',      None, "Data"),
+    )
+
+type6_dispatch = {}
+type6_dispatch[0] = type6_dac_or_fid_unknown
+
+# DAC 235 and 250 (UK, Rep. of Ireland)
+type6_dac235_dispatch = {}
+type6_dac235_dispatch[0] = type6_dac_or_fid_unknown
+
+type6_dac235_fid10 = (
+    bitfield("ana_int",        10, 'unsigned', None, "Supply voltage"),
+    bitfield("ana_ext1",       10, 'unsigned', None, "Analogue (Ext#1)"),
+    bitfield("ana_ext2",       10, 'unsigned', None, "Analogue (Ext#2)"),
+    bitfield("racon",           2, 'unsigned', None, "RACON status"),
+    bitfield("light",           2, 'unsigned', None, "Light status"),
+    bitfield("health",          1, 'unsigned', None, "Health"),
+    bitfield("stat_ext",        8, 'unsigned', None, "Status (ext)"),
+    bitfield("off_pos",         1, 'unsigned', None, "Position status"),
+)
+type6_dac235_dispatch[10] = type6_dac235_fid10
+
+type6_dac235 = (
+    dispatch("fid", type6_dac235_dispatch, lambda m: m if m in type6_dac235_dispatch else 0),
+    )
+type6_dispatch[235] = type6_dac235
+type6_dispatch[250] = type6_dac235
+
 type6 = (
     bitfield("seqno",            2, 'unsigned', None, "Sequence Number"),
     bitfield("dest_mmsi",       30, 'unsigned', None, "Destination MMSI"),
@@ -313,7 +342,7 @@ type6 = (
     spare(1),
     bitfield("dac",             10, 'unsigned', 0,    "DAC"),
     bitfield("fid",              6, 'unsigned', 0,    "Functional ID"),
-    bitfield("data",           920, 'raw',      None, "Data"),
+    dispatch("dac", type6_dispatch, lambda m: m if m in type6_dispatch else 0),
     )
 
 type7 = (
@@ -812,7 +841,7 @@ type25 = (
              conditional=lambda i, v: v["addressed"]),
     bitfield("app_id",       16, 'unsigned',       0, "Application ID",
              conditional=lambda i, v: v["structured"]),
-    bitfield("data",       None, 'raw',         None, "Data"),
+    bitfield("data",          0, 'raw',         None, "Data"),
     )
 
 # No type 26 handling yet,
@@ -835,7 +864,7 @@ type27 = (
 
 aivdm_decode = (
     bitfield('msgtype',       6, 'unsigned',    0, "Message Type",
-        validator=lambda n: n > 0 and n <= 26),
+        validator=lambda n: n > 0 and n <= 27),
     bitfield('repeat',	      2, 'unsigned', None, "Repeat Indicator"),
     bitfield('mmsi',         30, 'unsigned',    0, "MMSI"),
     # This is the master dispatch on AIS message type
@@ -1051,13 +1080,13 @@ def packet_scanner(source):
             crc = fields[6].split('*')[1].strip()
         except IndexError:
             if skiperr:
-                sys.stderr.write("%d: malformed line %s\n" % (lc, line.strip()))
+                sys.stderr.write("%d: malformed line: %s\n" % (lc, line.strip()))
                 well_formed = False
             else:
                 raise AISUnpackingException(lc, "checksum", crc)
         if csum != crc:
             if skiperr:
-                sys.stderr.write("%d: bad checksum %s, expecting %s: %s\n" % (lc, csum, `crc`, line.strip()))
+                sys.stderr.write("%d: bad checksum %s, expecting %s: %s\n" % (lc, `crc`, csum, line.strip()))
                 well_formed = False
             else:
                 raise AISUnpackingException(lc, "checksum", crc)
@@ -1067,11 +1096,12 @@ def packet_scanner(source):
         bits = BitVector()
         bits.from_sixbit(payloads[channel], pad)
         yield (lc, raw, bits)
+        raw = ''
 
 def postprocess(cooked):
     "Postprocess cooked fields from a message."
     # Handle type 21 name extension
-    if cooked[0][1] == 21:
+    if cooked[0][1] == 21 and len(cooked) > 19:
         cooked[4][1] += cooked[19][1]
         cooked.pop(-1)
     return cooked
@@ -1127,7 +1157,7 @@ def parse_ais_messages(source, scaled=False, skiperr=False, verbose=0):
                 if not (actual >= expected_range[0] and actual <= expected_range[1]):
                     bogon = True
                     if skiperr:
-                        sys.stderr.write("%d: type %d expected %s bits but saw %s\n" % (lc, values['msgtype'], expected, actual))
+                        sys.stderr.write("%d: type %d expected %s bits but saw %s: %s\n" % (lc, values['msgtype'], expected, actual, raw.strip().split()))
                     else:
                         raise AISUnpackingException(lc, "length", actual)
             # We're done, hand back a decoding
@@ -1140,13 +1170,13 @@ def parse_ais_messages(source, scaled=False, skiperr=False, verbose=0):
             raise GeneratorExit
         except AISUnpackingException, e:
             if skiperr:
-                sys.stderr.write("%s on %s\n" % (`e`, raw.strip()))
+                sys.stderr.write("%s: %s\n" % (`e`, raw.strip().split()))
                 continue
             else:
-                raise e
+                raise
         except:
             (exc_type, exc_value, exc_traceback) = sys.exc_info()
-            sys.stderr.write("Unknown exception on line %d\n" % lc)
+            sys.stderr.write("%d: Unknown exception: %s\n" % (lc, raw.strip().split()))
             if skiperr:
                 continue
             else:

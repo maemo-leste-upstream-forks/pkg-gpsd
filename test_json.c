@@ -20,7 +20,7 @@ static void assert_case(int num, int status)
     if (status != 0) {
 	(void)fprintf(stderr, "case %d FAILED, status %d (%s).\n", num,
 		      status, json_error_string(status));
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 }
 
@@ -30,7 +30,7 @@ static void assert_string(char *attr, char *fld, char *val)
 	(void)fprintf(stderr,
 		      "'%s' string attribute eval failed, value = %s.\n",
 		      attr, fld);
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 }
 
@@ -40,7 +40,7 @@ static void assert_integer(char *attr, int fld, int val)
 	(void)fprintf(stderr,
 		      "'%s' integer attribute eval failed, value = %d.\n",
 		      attr, fld);
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 }
 
@@ -50,7 +50,7 @@ static void assert_uinteger(char *attr, uint fld, uint val)
 	(void)fprintf(stderr,
 		      "'%s' integer attribute eval failed, value = %u.\n",
 		      attr, fld);
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 }
 
@@ -61,7 +61,7 @@ static void assert_boolean(char *attr, bool fld, bool val)
 	(void)fprintf(stderr,
 		      "'%s' boolean attribute eval failed, value = %s.\n",
 		      attr, fld ? "true" : "false");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
     /*@+boolcompare@*/
 }
@@ -76,7 +76,7 @@ static void assert_real(char *attr, double fld, double val)
 	(void)fprintf(stderr,
 		      "'%s' real attribute eval failed, value = %f.\n", attr,
 		      fld);
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 }
 
@@ -206,6 +206,11 @@ static const struct json_attr_t json_attrs_8[] = {
     {"foe",  t_integer, .addr.integer = &foe, .map=enum_table},
     {NULL},
 };
+
+/* Case 9: Like case 6 but w/ an empty array */
+
+static const char *json_str9 = "{\"parts\":[]}";
+
 /*@ +fullinitblock @*/
 /* *INDENT-ON* */
 
@@ -223,7 +228,7 @@ int main(int argc UNUSED, char *argv[]UNUSED)
 	case 'h':
 	default:
 	    (void)fputs("usage: test_json [-D lvl]\n", stderr);
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	}
     }
 
@@ -303,7 +308,11 @@ int main(int argc UNUSED, char *argv[]UNUSED)
     assert_integer("fie", fie, 6);
     assert_integer("foe", foe, 14);
 
+    status = json_read_object(json_str9, json_attrs_6, NULL);
+    assert_case(9, status);
+    assert_integer("dumbcount", dumbcount, 0);
+
     (void)fprintf(stderr, "succeeded.\n");
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 }

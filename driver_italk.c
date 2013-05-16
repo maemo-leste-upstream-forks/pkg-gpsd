@@ -6,14 +6,13 @@
  *
  * Week counters are not limited to 10 bits. It's unknown what
  * the firmware is doing to disambiguate them, if anything; it might just
- * be adding a fixed offset based on a hidden epoch value, in which case 
+ * be adding a fixed offset based on a hidden epoch value, in which case
  * unhappy things will occur on the next rollover.
  */
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-#include <termios.h>
 #ifndef S_SPLINT_S
 #include <unistd.h>
 #endif /* S_SPLINT_S */
@@ -47,9 +46,9 @@ static gps_mask_t decode_itk_navfix(struct gps_device_t *session,
 	return -1;
     }
 
-    flags = (ushort) getleu16(buf, 7 + 4);
-    //cflags = (ushort) getleu16(buf, 7 + 6);
-    pflags = (ushort) getleu16(buf, 7 + 8);
+    flags = (unsigned short) getleu16(buf, 7 + 4);
+    //cflags = (unsigned short) getleu16(buf, 7 + 6);
+    pflags = (unsigned short) getleu16(buf, 7 + 8);
 
     session->gpsdata.status = STATUS_NO_FIX;
     session->newdata.mode = MODE_NO_FIX;
@@ -141,7 +140,7 @@ static gps_mask_t decode_itk_prnstatus(struct gps_device_t *session,
 	    unsigned int off = 7 + 52 + 10 * i;
 	    unsigned short flags;
 
-	    flags = (ushort) getleu16(buf, off);
+	    flags = (unsigned short) getleu16(buf, off);
 	    session->gpsdata.ss[i] = (float)(getleu16(buf, off + 2) & 0xff);
 	    session->gpsdata.PRN[i] = (int)getleu16(buf, off + 4) & 0xff;
 	    session->gpsdata.elevation[i] = (int)getles16(buf, off + 6) & 0xff;
@@ -179,7 +178,7 @@ static gps_mask_t decode_itk_utcionomodel(struct gps_device_t *session,
 	return 0;
     }
 
-    flags = (ushort) getleu16(buf, 7);
+    flags = (unsigned short) getleu16(buf, 7);
     if (0 == (flags & UTC_IONO_MODEL_UTCVALID))
 	return 0;
 
@@ -200,7 +199,7 @@ static gps_mask_t decode_itk_subframe(struct gps_device_t *session,
 				      unsigned char *buf, size_t len)
 {
     unsigned short flags, prn, sf;
-    unsigned int i; 
+    unsigned int i;
     uint32_t words[10];
 
     if (len != 64) {
@@ -209,9 +208,9 @@ static gps_mask_t decode_itk_subframe(struct gps_device_t *session,
 	return 0;
     }
 
-    flags = (ushort) getleu16(buf, 7 + 4);
-    prn = (ushort) getleu16(buf, 7 + 6);
-    sf = (ushort) getleu16(buf, 7 + 8);
+    flags = (unsigned short) getleu16(buf, 7 + 4);
+    prn = (unsigned short) getleu16(buf, 7 + 6);
+    sf = (unsigned short) getleu16(buf, 7 + 8);
     gpsd_report(LOG_PROG, "iTalk 50B SUBFRAME prn %u sf %u - decode %s %s\n",
 		prn, sf,
 		flags & SUBFRAME_WORD_FLAG_MASK ? "error" : "ok",
@@ -233,9 +232,8 @@ static gps_mask_t decode_itk_pseudo(struct gps_device_t *session,
 				      unsigned char *buf, size_t len)
 {
     unsigned short flags, n, i;
-    union long_double l_d;
 
-    n = (ushort) getleu16(buf, 7 + 4);
+    n = (unsigned short) getleu16(buf, 7 + 4);
     if ((n < 1) || (n > MAXCHANNELS)){
 	gpsd_report(LOG_INF, "ITALK: bad PSEUDO channel count\n");
 	return 0;
@@ -252,7 +250,7 @@ static gps_mask_t decode_itk_pseudo(struct gps_device_t *session,
 	return 0; // bail if measurement time not valid.
 
     session->newdata.time = gpsd_gpstime_resolve(session,
-	(unsigned short int) getleu16(buf, 7 + 8),
+						 (unsigned short int)getleu16((char *)buf, 7 + 8),
 	(unsigned int)getleu32(buf, 7 + 38) / 1000.0);
 
     /*@-type@*/
@@ -260,8 +258,8 @@ static gps_mask_t decode_itk_pseudo(struct gps_device_t *session,
 	session->gpsdata.PRN[i] = getleu16(buf, 7 + 26 + (i*36)) & 0xff;
 	session->gpsdata.ss[i] = getleu16(buf, 7 + 26 + (i*36 + 2)) & 0x3f;
 	session->gpsdata.raw.satstat[i] = getleu32(buf, 7 + 26 + (i*36 + 4));
-	session->gpsdata.raw.pseudorange[i] = getled(buf, 7 + 26 + (i*36 + 8));
-	session->gpsdata.raw.doppler[i] = getled(buf, 7 + 26 + (i*36 + 16));
+	session->gpsdata.raw.pseudorange[i] = getled64((char *)buf, 7 + 26 + (i*36 + 8));
+	session->gpsdata.raw.doppler[i] = getled64((char *)buf, 7 + 26 + (i*36 + 16));
 	session->gpsdata.raw.carrierphase[i] = getleu16(buf, 7 + 26 + (i*36 + 28));
 
 	session->gpsdata.raw.mtime[i] = session->newdata.time;

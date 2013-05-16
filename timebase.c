@@ -2,7 +2,7 @@
 
 All of gpsd's assumptions about time and GPS time reporting live in this file.
 
-This is a work in progress.  Currently GPSD requires that the host system 
+This is a work in progress.  Currently GPSD requires that the host system
 clock be accurate to within one second.  We are attempting to relax this
 to "accurate within one GPS rollover period" for receivers reporting
 GPS week+TOW.
@@ -60,15 +60,15 @@ source.
 available.
 
 5) Another source *may* be available - the GPS leap second count, if we can
-get the device to report it. The latter is not a given; SiRFs before 
+get the device to report it. The latter is not a given; SiRFs before
 firmware rev 2.3.2 don't report it unless special subframe data reporting
 is enabled, which requires 38400bps. Evermore GPSes can't be made to
-report it at all.  
+report it at all.
 
-Conclusion: if the system clock isn't accurate enough that we can deduce 
+Conclusion: if the system clock isn't accurate enough that we can deduce
 what rollover period we're in, we're utterly hosed. Furthermore, if it's
-not accurate to within a second and only NMEA devices are reporting, 
-we don't know what century it is! 
+not accurate to within a second and only NMEA devices are reporting,
+we don't know what century it is!
 
 Therefore, we must assume the system clock is reliable.
 
@@ -84,12 +84,18 @@ BSD terms apply: see the file COPYING in the distribution root for details.
 #include "gpsd.h"
 #include "timebase.h"
 
-#define SECS_PER_WEEK	(60*60*24*7)	/* seconds per week */
-#define GPS_ROLLOVER	(1024*SECS_PER_WEEK)	/* rollover period */
-
 void gpsd_time_init(struct gps_context_t *context, time_t starttime)
 /* initialize the GPS context's time fields */
 {
+    /* 
+     * gpsd can't work with 'right' timezones (leapseconds inserted in
+     * the timezone offset).  Avoid this and all manner of other local
+     * time issues by telling the system we want times returned in UTC.
+     */
+    /*@-observertrans@*/
+    (void)putenv("TZ=UTC");
+    /*@+observertrans@*/
+
     /*
      * Provides a start time for getting the century.  Do this, just
      * in case one of our embedded deployments is still in place in
@@ -106,6 +112,7 @@ void gpsd_time_init(struct gps_context_t *context, time_t starttime)
     if (context->start_time < GPS_EPOCH)
 	gpsd_report(LOG_ERROR, "system time looks bogus, dates may not be reliable.\n");
     else {
+	/* we've forced the UTC timezone, so this is actually UTC */
 	struct tm *now = localtime(&context->start_time);
 	char scr[128];
 	/*
@@ -115,7 +122,7 @@ void gpsd_time_init(struct gps_context_t *context, time_t starttime)
 	now->tm_year += 1900;
 	context->century = now->tm_year - (now->tm_year % 100);
 	(void)unix_to_iso8601((timestamp_t)context->start_time, scr, sizeof(scr));
-	gpsd_report(LOG_INF, "startup at %s (%d)\n", 
+	gpsd_report(LOG_INF, "startup at %s (%d)\n",
 		    scr, (int)context->start_time);
     }
 }
@@ -128,11 +135,10 @@ void gpsd_set_century(struct gps_device_t *session)
  * started up in.
  */
 {
-    unsigned char *cp; 
     char *end;
     if (strstr((char *)session->packet.outbuffer, "Date:") != NULL) {
 	int year;
-	cp = session->packet.outbuffer + 5;
+	unsigned char *cp = session->packet.outbuffer + 5;
 	while (isspace(*cp))
 	    --cp;
 	year = (int)strtol((char *)cp, &end, 10);
@@ -146,7 +152,7 @@ timestamp_t gpsd_utc_resolve(/*@in@*/struct gps_device_t *session)
 {
     /*
      * We'd like to *correct* for rollover the way we do for GPS week.
-     * In theory, comparing extracted UTC against present time should 
+     * In theory, comparing extracted UTC against present time should
      * allow us to compute the device's epoch assumption.  In practice,
      * this will be hairy and risky.
      */
@@ -166,16 +172,11 @@ timestamp_t gpsd_utc_resolve(/*@in@*/struct gps_device_t *session)
     /*
      * If the GPS is reporting a time from before the daemon started, we've
      * had a rollover event while the daemon was running.
-     *
-     * The reason for the 12-hour slop is that our recorded start time is local,
-     * but GPSes deliver time as though in UTC.  This test could be exact if we
-     * counted on knowing our timezone at startup, but since we can't count on
-     * knowing location...
      */
-    if (session->newdata.time + (12*60*60) < (timestamp_t)session->context->start_time) {
+    if (session->newdata.time < (timestamp_t)session->context->start_time) {
 	char scr[128];
 	(void)unix_to_iso8601(session->newdata.time, scr, sizeof(scr));
-	gpsd_report(LOG_WARN, "GPS week rollover makes time %s (%f) invalid\n", 
+	gpsd_report(LOG_WARN, "GPS week rollover makes time %s (%f) invalid\n",
 		    scr, session->newdata.time);
     }
 
@@ -188,19 +189,17 @@ timestamp_t gpsd_gpstime_resolve(/*@in@*/struct gps_device_t *session,
 {
     timestamp_t t;
 
-#ifdef __UNUSED__
     /*
      * This code detects and compensates for week counter rollovers that
-     * happen while gpsd is running. It will not save you if there was a 
+     * happen while gpsd is running. It will not save you if there was a
      * rollover that confused the receiver before gpsd booted up.  It *will*
      * work even when Block IIF satellites increase the week counter width
-     * to 13 bits,
+     * to 13 bits.
      */
     if ((int)week < (session->context->gps_week & 0x3ff)) {
 	gpsd_report(LOG_INF, "GPS week 10-bit rollover detected.\n");
 	++session->context->rollovers;
     }
-#endif /* __UNUSED__ */
 
     /*
      * This guard copes with both conventional GPS weeks and the "extended"

@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-gps, xgps, xgpsspeed, cgps, lcdgps \- test clients for gpsd
+gps, xgps, xgpsspeed, cgps, lcdgps, gegps \- test clients for gpsd
 .SH "SYNOPSIS"
 .HP \w'\fBxgps\fR\ 'u
 \fBxgps\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
@@ -139,7 +139,11 @@ xgpsspeed
 is a speedometer that uses position information from the GPS\&. It accepts an \-h option and optional argument as for
 gps, or a \-V option to dump the package version and exit\&.
 .PP
+The default display mode resembles a car speedometer\&. With the option \-\-nautical you get a more elaborate speed and track presentation modeled after a marine navigation display\&.
+.PP
 The \-speedunits option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&.
+.PP
+In the nautical mode only, \-\-maxspeed sets the maximum on the speedometer\&.
 .SS "cgps"
 .PP
 cgps
@@ -241,7 +245,9 @@ pere@hungry\&.com
 chris\&.kuethe@gmail\&.com
 (gpxlogger), Chen Wei
 weichen302@aol\&.com
-(gegps)\&.
+(gegps & xgpsspeed), Robin Wittler
+real@the\-real\&.org
+(xgpsspeed)\&.
 .PP
 This manual page by Eric S\&. Raymond
 esr@thyrsus\&.com

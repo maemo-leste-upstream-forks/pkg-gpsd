@@ -131,14 +131,14 @@ static void conditionally_log_fix(struct gps_data_t *gpsdata)
     if ((int_time == old_int_time) || gpsdata->fix.mode < MODE_2D)
 	return;
 
-    /* may not be worth logging if we've moved only a very short distance */ 
+    /* may not be worth logging if we've moved only a very short distance */
     if (minmove>0 && !first && earth_distance(
 					gpsdata->fix.latitude,
 					gpsdata->fix.longitude,
 					old_lat, old_lon) < minmove)
 	return;
 
-    /* 
+    /*
      * Make new track if the jump in time is above
      * timeout.  Handle jumps both forward and
      * backwards in time.  The clock sometimes jumps
@@ -174,7 +174,7 @@ static void quit_handler(int signum)
 	syslog(LOG_INFO, "exiting, signal %d received", signum);
     print_gpx_footer();
     (void)gps_close(&gpsdata);
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 /**************************************************************************
@@ -192,7 +192,7 @@ static void usage(void)
 	    "defaults to '%s -i 5 -e %s localhost:2947'\n",
 	    progname, progname, export_default()->name);
     /*@-nullderef@*/
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 /*@-mustfreefresh -mustfreeonly -branchstate -globstate@*/
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
 
     if (export_default() == NULL) {
 	(void)fprintf(stderr, "%s: no export methods.\n", progname);
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     logfile = stdout;
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 		(void)fprintf(stderr,
 			      "%s: %s is not a known export method.\n",
 			      progname, optarg);
-		exit(1);
+		exit(EXIT_FAILURE);
 	    }
 	    break;
        case 'f':       /* Output file name. */
@@ -274,13 +274,13 @@ int main(int argc, char **argv)
 	    break;
 	case 'l':
 	    export_list(stderr);
-	    exit(0);
+	    exit(EXIT_SUCCESS);
         case 'm':
 	    minmove = (double )atoi(optarg);
 	    break;
 	case 'V':
 	    (void)fprintf(stderr, "%s revision " REVISION "\n", progname);
-	    exit(0);
+	    exit(EXIT_SUCCESS);
 	default:
 	    usage();
 	    /* NOTREACHED */
@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 
     if (daemonize && logfile == stdout) {
 	syslog(LOG_ERR, "Daemon mode with no valid logfile name - exiting.");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     if (method != NULL)
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 	(void)fprintf(stderr,
 		      "%s: no gpsd running or network error: %d, %s\n",
 		      progname, errno, gps_errstr(errno));
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     if (source.device != NULL)
@@ -339,6 +339,6 @@ int main(int argc, char **argv)
     print_gpx_footer();
     (void)gps_close(&gpsdata);
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 /*@+mustfreefresh +mustfreeonly +branchstate +globstate@*/

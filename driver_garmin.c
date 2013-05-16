@@ -35,7 +35,7 @@
  *
  * There is one physical link protocol for serial which uses DLE/ETX
  * framing.  There is another physical protocol for USB which relies
- * on the packetization intrinstic to USB bulk pipes.
+ * on the packetization intrinsic to USB bulk pipes.
  *
  * There are several link protocols; all devices implement L000.
  * There are then product-specific protocols; most devices implement
@@ -43,7 +43,7 @@
  * protocol.
  *
  * Application protocols are named A000 and then with different
- * 3-digit numbres.  They are carried over Link protocols.
+ * 3-digit numbers.  They are carried over Link protocols.
  *
  * Thus, much of the higher-level code dealing the data formats is
  * shared between USB Binary and Serial Binary.
@@ -483,7 +483,7 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 		CLEAR_IS | REPORT_IS;
 	    /*
 	     * Garmin documentation says we should wait until four good fixes
-	     * have been seen before trying to use the device for precision 
+	     * have been seen before trying to use the device for precision
 	     * time service.
 	     */
 	    if (session->fixcnt > 3)
@@ -516,8 +516,8 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 	    gpsd_report(LOG_INF,
 			"Garmin: PVT RMD Sat: %3u, cycles: %9u, pr: %16.6f, "
 			"phase: %7.3f, slp_dtct: %3s, snr: %3u, Valid: %3s\n",
-			(int)rmd->sv[i].svid + 1, 
-			GPSD_LE32TOH(rmd->sv[i].cycles), 
+			(int)rmd->sv[i].svid + 1,
+			GPSD_LE32TOH(rmd->sv[i].cycles),
 			rmd->sv[i].pr,
 			(GPSD_LE16TOH(rmd->sv[i].phase) * 360.0) / 2048.0,
 			rmd->sv[i].slp_dtct != 0 ? "Yes" : "No",
@@ -537,7 +537,7 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 	for (i = 0, j = 0; i < GARMIN_CHANNELS; i++, sats++) {
 	    gpsd_report(LOG_INF,
 			"Garmin:   Sat %3d, snr: %5u, elev: %2d, Azmth: %3d, Stat: %x\n",
-			sats->svid, GPSD_LE16TOH(sats->snr), sats->elev, 
+			sats->svid, GPSD_LE16TOH(sats->snr), sats->elev,
 			GPSD_LE16TOH(sats->azmth),
 			sats->status);
 
@@ -817,6 +817,7 @@ static void Build_Send_SER_Packet(struct gps_device_t *session,
  * libudev: http://www.kernel.org/pub/linux/utils/kernel/hotplug/libudev/
  */
 /*@-compdef -usedef -nullpass@*/
+// cppcheck-suppress unusedFunction
 static bool is_usb_device(const char *path UNUSED, int vendor, int product)
 {
     // discover devices
@@ -908,7 +909,7 @@ static bool garmin_usb_detect(struct gps_device_t *session UNUSED)
 #ifdef HAVE_LIBUSB
 	if (!is_usb_device(session->gpsdata.dev.path, 0x091e, 0x0003))
 	    return false;
-	
+
 	if (!gpsd_set_raw(session)) {
 	    gpsd_report(LOG_ERROR,
 			"Garmin: garmin_usb_detect: error changing port attributes: %s\n",

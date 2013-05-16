@@ -105,15 +105,38 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	break;
     case 6:			/* Binary Message */
 	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u|%u|%u|%u|%u|%zd:%s",
+		       "%u|%u|%u|%u|%u",
 		       ais->type6.seqno,
 		       ais->type6.dest_mmsi,
 		       (uint) ais->type6.retransmit,
 		       ais->type6.dac,
-		       ais->type6.fid,
-		       ais->type6.bitcount,
-		       gpsd_hexdump(ais->type6.bitdata,
-				    (ais->type6.bitcount + 7) / 8));
+		       ais->type6.fid);
+	switch(ais->type6.dac) {
+	case 235:			/* UK */
+	case 250:			/* Rep. Of Ireland */
+	    switch(ais->type6.fid) {
+	    case 10:		/* GLA - AtoN monitoring */
+		(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+			       "|%u|%u|%u|%u|%u|%u|%u|%u",
+			       ais->type6.dac235fid10.ana_int,
+			       ais->type6.dac235fid10.ana_ext1,
+			       ais->type6.dac235fid10.ana_ext2,
+			       ais->type6.dac235fid10.racon,
+			       ais->type6.dac235fid10.light,
+			       (uint)ais->type6.dac235fid10.alarm,
+			       ais->type6.dac235fid10.stat_ext,
+			       (uint)ais->type6.dac235fid10.off_pos);
+		imo = true;
+		break;
+	    }
+	    break;
+	}
+	if (!imo)
+	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+			   "|%zd:%s",
+			   ais->type6.bitcount,
+			   gpsd_hexdump(ais->type6.bitdata,
+					(ais->type6.bitcount + 7) / 8));
 	break;
     case 7:			/* Binary Acknowledge */
     case 13:			/* Safety Related Acknowledge */
@@ -132,7 +155,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	    switch(ais->type8.fid) {
 	    case 11:		/* IMO236 - Met/Hydro message */
 		(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-			       "|%d|%d|%02uT%02u:%02uZ|%u|%u|%u|%u|%d|%u|%d|%u|%u|%u|%d|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%d|%u|%u|%u",
+			       "|%d|%d|%02uT%02u:%02uZ|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%d|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u",
 			       ais->type8.dac1fid11.lon,
 			       ais->type8.dac1fid11.lat,
 			       ais->type8.dac1fid11.day,
@@ -169,6 +192,47 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 			       ais->type8.dac1fid11.preciptype,
 			       ais->type8.dac1fid11.salinity,
 			       ais->type8.dac1fid11.ice);
+		imo = true;
+		break;
+	    case 31:		/* IMO289 - Met/Hydro message */
+		(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+			       "|%d|%d|%02uT%02u:%02uZ|%u|%u|%u|%u|%d|%u|%d|%u|%u|%u|%d|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%d|%u|%u|%u",
+			       ais->type8.dac1fid31.lon,
+			       ais->type8.dac1fid31.lat,
+			       ais->type8.dac1fid31.day,
+			       ais->type8.dac1fid31.hour,
+			       ais->type8.dac1fid31.minute,
+			       ais->type8.dac1fid31.wspeed,
+			       ais->type8.dac1fid31.wgust,
+			       ais->type8.dac1fid31.wdir,
+			       ais->type8.dac1fid31.wgustdir,
+			       ais->type8.dac1fid31.airtemp,
+			       ais->type8.dac1fid31.humidity,
+			       ais->type8.dac1fid31.dewpoint,
+			       ais->type8.dac1fid31.pressure,
+			       ais->type8.dac1fid31.pressuretend,
+			       ais->type8.dac1fid31.visibility,
+			       ais->type8.dac1fid31.waterlevel,
+			       ais->type8.dac1fid31.leveltrend,
+			       ais->type8.dac1fid31.cspeed,
+			       ais->type8.dac1fid31.cdir,
+			       ais->type8.dac1fid31.cspeed2,
+			       ais->type8.dac1fid31.cdir2,
+			       ais->type8.dac1fid31.cdepth2,
+			       ais->type8.dac1fid31.cspeed3,
+			       ais->type8.dac1fid31.cdir3,
+			       ais->type8.dac1fid31.cdepth3,
+			       ais->type8.dac1fid31.waveheight,
+			       ais->type8.dac1fid31.waveperiod,
+			       ais->type8.dac1fid31.wavedir,
+			       ais->type8.dac1fid31.swellheight,
+			       ais->type8.dac1fid31.swellperiod,
+			       ais->type8.dac1fid31.swelldir,
+			       ais->type8.dac1fid31.seastate,
+			       ais->type8.dac1fid31.watertemp,
+			       ais->type8.dac1fid31.preciptype,
+			       ais->type8.dac1fid31.salinity,
+			       ais->type8.dac1fid31.ice);
 		imo = true;
 		break;
 	    }
@@ -379,7 +443,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	break;
     case 25:			/* Binary Message, Single Slot */
 	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u|%u|%u|%u|%zd:%s\r\n",
+		       "%u|%u|%u|%u|%zd:%s",
 		       (uint) ais->type25.addressed,
 		       (uint) ais->type25.structured,
 		       ais->type25.dest_mmsi,
@@ -390,7 +454,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	break;
     case 26:			/* Binary Message, Multiple Slot */
 	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u|%u|%u|%u|%zd:%s:%u\r\n",
+		       "%u|%u|%u|%u|%zd:%s:%u",
 		       (uint) ais->type26.addressed,
 		       (uint) ais->type26.structured,
 		       ais->type26.dest_mmsi,
@@ -399,6 +463,18 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       gpsd_hexdump(ais->type26.bitdata,
 				    (ais->type26.bitcount + 7) / 8),
 		       ais->type26.radio);
+	break;
+    case 27:			/* Long Range AIS Broadcast message */
+	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+		       "%u|%u|%d|%d|%u|%u|%u|%u",
+		       ais->type27.status,
+		       (uint)ais->type27.accuracy,
+		       ais->type27.lon,
+		       ais->type27.lat,
+		       ais->type27.speed,
+		       ais->type27.course,
+		       (uint)ais->type27.raim,
+		       (uint)ais->type27.gnss);
 	break;
     default:
 	(void)snprintf(buf + strlen(buf),
@@ -447,6 +523,7 @@ static void decode(FILE *fpin, FILE*fpout)
     //(void)strlcpy(session.gpsdata.dev.path, "stdin", sizeof(session.gpsdata.dev.path));
     memset(&policy, '\0', sizeof(policy));
     policy.json = json;
+    policy.scaled = scaled;
 
     gps_context_init(&context);
     gpsd_time_init(&context, time(NULL));
@@ -455,8 +532,8 @@ static void decode(FILE *fpin, FILE*fpout)
     gpsd_clear(&session);
     session.gpsdata.gps_fd = fileno(fpin);
     session.gpsdata.dev.baudrate = 38400;     /* hack to enable subframes */
-    (void)strlcpy(session.gpsdata.dev.path, 
-		  "stdin", 
+    (void)strlcpy(session.gpsdata.dev.path,
+		  "stdin",
 		  sizeof(session.gpsdata.dev.path));
 
     for (;;)
@@ -477,11 +554,11 @@ static void decode(FILE *fpin, FILE*fpout)
 	    if ((changed & PASSTHROUGH_IS) != 0) {
 		(void)fputs((char *)session.packet.outbuffer, fpout);
 		(void)fputs("\n", fpout);
-	    } 
+	    }
 #ifdef SOCKET_EXPORT_ENABLE
 	    else {
-		json_data_report(changed, 
-				 &session, &policy, 
+		json_data_report(changed,
+				 &session, &policy,
 				 buf, sizeof(buf));
 		(void)fputs(buf, fpout);
 	    }
@@ -508,10 +585,13 @@ static void encode(FILE *fpin, FILE *fpout)
 
     memset(&policy, '\0', sizeof(policy));
     memset(&session, '\0', sizeof(session));
-    (void)strlcpy(session.gpsdata.dev.path, 
-		  "stdin", 
+    (void)strlcpy(session.gpsdata.dev.path,
+		  "stdin",
 		  sizeof(session.gpsdata.dev.path));
     policy.json = true;
+    /* Parsing is always made in unscaled mode,
+     * this policy applies to the dumping */
+    policy.scaled = scaled;
 
     while (fgets(inbuf, (int)sizeof(inbuf), fpin) != NULL) {
 	int status;
@@ -524,12 +604,12 @@ static void encode(FILE *fpin, FILE *fpout)
 	    (void)fprintf(stderr,
 			  "gpsdecode: dying with status %d (%s) on line %d\n",
 			  status, json_error_string(status), lineno);
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	}
-	json_data_report(session.gpsdata.set, 
-			 &session, &policy, 
+	json_data_report(session.gpsdata.set,
+			 &session, &policy,
 			 inbuf, sizeof(inbuf));
-	(void)fputs(inbuf, fpout);	
+	(void)fputs(inbuf, fpout);
     }
 }
 /*@ +compdestroy +compdef +usedef @*/
@@ -578,7 +658,7 @@ int main(int argc, char **argv)
 	case 'v':
 	    verbose = 1;
 	    break;
-		
+
 	case 'D':
 	    verbose = atoi(optarg);
 #if defined(CLIENTDEBUG_ENABLE) && defined(SOCKET_EXPORT_ENABLE)
@@ -588,12 +668,12 @@ int main(int argc, char **argv)
 
 	case 'V':
 	    (void)fprintf(stderr, "gpsdecode revision " VERSION "\n");
-	    exit(0);
+	    exit(EXIT_SUCCESS);
 
 	case '?':
 	default:
 	    (void)fputs("gpsdecode [-v]\n", stderr);
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	}
     }
     //argc -= optind;
@@ -604,11 +684,11 @@ int main(int argc, char **argv)
 	encode(stdin, stdout);
 #else
 	(void)fprintf(stderr, "gpsdecode: encoding support isn't compiled.\n");
-	exit(1);
+	exit(EXIT_FAILURE);
 #endif /* SOCKET_EXPORT_ENABLE */
     } else
 	decode(stdin, stdout);
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 /* gpsdecode.c ends here */

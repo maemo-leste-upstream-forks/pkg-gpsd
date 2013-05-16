@@ -98,6 +98,28 @@
 	{NULL}
     };
 
+    const struct json_attr_t json_ais6_fid10[] = {
+	AIS_HEADER
+	AIS_TYPE6
+	{"ana_int",       t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.ana_int,
+                                       .dflt.uinteger = 0},
+	{"ana_ext1",      t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.ana_ext1,
+                                       .dflt.uinteger = 0},
+	{"ana_ext2",      t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.ana_ext2,
+                                       .dflt.uinteger = 0},
+	{"racon",         t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.racon,
+                                       .dflt.uinteger = 0},
+	{"light",         t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.light,
+                                       .dflt.uinteger = 0},
+	{"alarm",         t_boolean,   .addr.boolean = &ais->type6.dac235fid10.alarm,
+                                       .dflt.boolean = false},
+	{"stat_ext",      t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.stat_ext,
+                                       .dflt.uinteger = 0},
+	{"off_pos",       t_boolean,   .addr.boolean = &ais->type6.dac235fid10.off_pos,
+                                       .dflt.boolean = false},
+	{NULL}
+    };
+
     char departure[JSON_VAL_MAX+1];
     const struct json_attr_t json_ais6_fid12[] = {
 	AIS_HEADER
@@ -144,6 +166,7 @@
                                        .dflt.uinteger = 0},
 	{"subtype",       t_uinteger,STRUCTOBJECT(struct cargo_t, subtype),
                                        .dflt.uinteger = 0},
+        {NULL}
     };
 /*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais6_fid25[] = {
@@ -260,6 +283,7 @@
                                        .dflt.integer = AIS_LON4_NOT_AVAILABLE},
 	{"lat",           t_integer, STRUCTOBJECT(struct waypoint_t, lat),
                                        .dflt.integer = AIS_LAT4_NOT_AVAILABLE},
+        {NULL}
     };
 /*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais6_fid28[] = {
@@ -307,6 +331,7 @@
                                        .dflt.uinteger = DAC1FID32_CDIR_NOT_AVAILABLE},
 	{"cspeed",        t_uinteger,STRUCTOBJECT(struct tidal_t, cspeed),
                                        .dflt.uinteger = DAC1FID32_CSPEED_NOT_AVAILABLE},
+        {NULL}
     };
 /*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais6_fid32[] = {
@@ -359,12 +384,12 @@
                                        .dflt.uinteger = DAC1FID11_WDIR_NOT_AVAILABLE},
 	{"wgustdir",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.wgustdir,
                                        .dflt.uinteger = DAC1FID11_WDIR_NOT_AVAILABLE},
-	{"airtemp",       t_integer,   .addr.integer = &ais->type8.dac1fid11.airtemp,
-                                       .dflt.integer = DAC1FID11_AIRTEMP_NOT_AVAILABLE},
+	{"airtemp",       t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.airtemp,
+                                       .dflt.uinteger = DAC1FID11_AIRTEMP_NOT_AVAILABLE},
 	{"humidity",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.humidity,
                                        .dflt.uinteger = DAC1FID11_HUMIDITY_NOT_AVAILABLE},
-	{"dewpoint",      t_integer,   .addr.integer = &ais->type8.dac1fid11.dewpoint,
-                                       .dflt.integer = DAC1FID11_DEWPOINT_NOT_AVAILABLE},
+	{"dewpoint",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.dewpoint,
+                                       .dflt.uinteger = DAC1FID11_DEWPOINT_NOT_AVAILABLE},
 	{"pressure",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.pressure,
                                        .dflt.uinteger = DAC1FID11_PRESSURE_NOT_AVAILABLE},
 	{"pressuretend",  t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.pressuretend,
@@ -374,7 +399,7 @@
 	{"waterlevel",    t_integer,   .addr.integer = &ais->type8.dac1fid11.waterlevel,
                                        .dflt.integer = DAC1FID11_WATERLEVEL_NOT_AVAILABLE},
 	{"leveltrend",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.leveltrend,
-                                       .dflt.uinteger = DAC1FID11_LEVELTREND_NOT_AVAILABLE},
+                                       .dflt.uinteger = DAC1FID11_WATERLEVELTREND_NOT_AVAILABLE},
 	{"cspeed",        t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.cspeed,
                                        .dflt.uinteger = DAC1FID11_CSPEED_NOT_AVAILABLE},
 	{"cdir",          t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.cdir,
@@ -405,8 +430,8 @@
                                        .dflt.uinteger = DAC1FID11_WAVEDIR_NOT_AVAILABLE},
 	{"seastate",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.seastate,
                                        .dflt.uinteger = DAC1FID11_SEASTATE_NOT_AVAILABLE},
-	{"watertemp",     t_integer,   .addr.integer = &ais->type8.dac1fid11.watertemp,
-                                       .dflt.integer = DAC1FID11_WATERTEMP_NOT_AVAILABLE},
+	{"watertemp",     t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.watertemp,
+                                       .dflt.uinteger = DAC1FID11_WATERTEMP_NOT_AVAILABLE},
 	{"preciptype",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.preciptype,
                                        .dflt.uinteger = DAC1FID11_PRECIPTYPE_NOT_AVAILABLE},
 	{"salinity",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.salinity,
@@ -477,6 +502,7 @@
                                        .dflt.uinteger = AIS_SECOND_NOT_AVAILABLE},
 	{"speed",         t_uinteger,STRUCTOBJECT(struct target_t, speed),
                                        .dflt.uinteger = DAC1FID17_SPEED_NOT_AVAILABLE},
+        {NULL}
     };
 /*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais8_fid17[] = {
@@ -516,6 +542,7 @@
                                        .dflt.integer = AIS_LON4_NOT_AVAILABLE},
 	{"lat",           t_integer, STRUCTOBJECT(struct waypoint_t, lat),
                                        .dflt.integer = AIS_LAT4_NOT_AVAILABLE},
+        {NULL}
     };
 /*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais8_fid27[] = {
@@ -555,9 +582,11 @@
                                        .dflt.integer = DAC1FID31_LAT_NOT_AVAILABLE},
 	{"accuracy",      t_boolean,   .addr.boolean = &ais->type8.dac1fid31.accuracy,
                                        .dflt.boolean = false},
+	{"timestamp",     t_string,    .addr.string = timestamp,
+                                       .len = sizeof(timestamp)},
 	{"wspeed",        t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.wspeed,
                                        .dflt.uinteger = DAC1FID31_WIND_NOT_AVAILABLE},
-	{"wgust ",        t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.wgust ,
+	{"wgust",         t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.wgust,
                                        .dflt.uinteger = DAC1FID31_WIND_NOT_AVAILABLE},
 	{"wdir",          t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.wdir,
                                        .dflt.uinteger = DAC1FID31_DIR_NOT_AVAILABLE},
@@ -565,18 +594,22 @@
                                        .dflt.uinteger = DAC1FID31_DIR_NOT_AVAILABLE},
 	{"airtemp",       t_integer,   .addr.integer = &ais->type8.dac1fid31.airtemp,
                                        .dflt.integer = DAC1FID31_AIRTEMP_NOT_AVAILABLE},
+	{"humidity",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.humidity,
+                                       .dflt.uinteger = DAC1FID31_HUMIDITY_NOT_AVAILABLE},
+	{"dewpoint",      t_integer,   .addr.integer = &ais->type8.dac1fid31.dewpoint,
+                                       .dflt.integer = DAC1FID31_DEWPOINT_NOT_AVAILABLE},
 	{"pressure",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.pressure,
                                        .dflt.uinteger = DAC1FID31_PRESSURE_NOT_AVAILABLE},
 	{"pressuretend",  t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.pressuretend,
-                                       .dflt.uinteger = DAC1FID31_PRESSURETREND_NOT_AVAILABLE},
-	{"visibility",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.visibility,
-                                       .dflt.uinteger = DAC1FID31_VISIBILITY_NOT_AVAILABLE},
+                                       .dflt.uinteger = DAC1FID31_PRESSURETEND_NOT_AVAILABLE},
 	{"visgreater",    t_boolean,   .addr.boolean = &ais->type8.dac1fid31.visgreater,
                                        .dflt.boolean = false},
+	{"visibility",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.visibility,
+                                       .dflt.uinteger = DAC1FID31_VISIBILITY_NOT_AVAILABLE},
 	{"waterlevel",    t_integer,   .addr.integer = &ais->type8.dac1fid31.waterlevel,
                                        .dflt.integer = DAC1FID31_WATERLEVEL_NOT_AVAILABLE},
 	{"leveltrend",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.leveltrend,
-                                       .dflt.uinteger = DAC1FID31_LEVELTREND_NOT_AVAILABLE},
+                                       .dflt.uinteger = DAC1FID31_WATERLEVELTREND_NOT_AVAILABLE},
 	{"cspeed",        t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.cspeed,
                                        .dflt.uinteger = DAC1FID31_CSPEED_NOT_AVAILABLE},
 	{"cdir",          t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.cdir,
@@ -607,12 +640,14 @@
                                        .dflt.uinteger = DAC1FID31_DIR_NOT_AVAILABLE},
 	{"seastate",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.seastate,
                                        .dflt.uinteger = DAC1FID31_SEASTATE_NOT_AVAILABLE},
+	{"watertemp",     t_integer,   .addr.integer = &ais->type8.dac1fid31.watertemp,
+                                       .dflt.integer = DAC1FID31_WATERTEMP_NOT_AVAILABLE},
 	{"preciptype",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.preciptype,
                                        .dflt.uinteger = DAC1FID31_PRECIPTYPE_NOT_AVAILABLE},
 	{"salinity",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.salinity,
                                        .dflt.uinteger = DAC1FID31_SALINITY_NOT_AVAILABLE},
-	{"ice",           t_boolean,   .addr.boolean = &ais->type8.dac1fid31.ice,
-                                       .dflt.boolean = false},
+	{"ice",           t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.ice,
+                                       .dflt.uinteger = DAC1FID31_ICE_NOT_AVAILABLE},
 	{NULL}
     };
 

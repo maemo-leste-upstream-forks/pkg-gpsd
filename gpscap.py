@@ -65,6 +65,7 @@ class GPSDictionary(ConfigParser.RawConfigParser):
 <th>Interface</th>
 <th>Tested with</th>
 <th>NMEA version</th>
+<th>PPS</th>
 <th style='width:50%%'>Notes</th>
 </tr>
 """
@@ -97,7 +98,7 @@ class GPSDictionary(ConfigParser.RawConfigParser):
                 namefield = dev
                 if self.has_option(dev, "techdoc"):
                     namefield = "<a href='%s'>%s</a>" % (self.get(dev, "techdoc"), dev)
-                if self.has_option(dev, "discontinued"):
+                if self.has_option(dev, "discontinued") and self.getboolean(dev, "discontinued"):
                     namefield = namefield + "&nbsp;<img title='Device discontinued' src='discontinued.png' alt='Discontinued icon'>"
                 ofp.write("<td>%s</td>\n" % namefield)
                 ofp.write("<td>%s</td>\n" % self.get(dev, "packaging"))
@@ -118,7 +119,7 @@ class GPSDictionary(ConfigParser.RawConfigParser):
                         testfield += "<img title='Have regression test' src='regression.png' alt='Regression-test icon'>"
                     else:
                         testfield += tested
-                if self.has_option(dev, "noconfigure"):
+                if self.has_option(dev, "configurable") and self.get(dev, "configurable") == 'insane':
                     testfield += "<img title='Requires -b option' src='noconfigure.png' alt='No-configure icon'>"
                 if self.get(dev, "rating") == "excellent":
                     testfield += "<img src='star.png' alt='Star icon'><img src='star.png' alt='Star icon'><img src='star.png' alt='Star icon'><img src='star.png' alt='Star icon'>"
@@ -137,13 +138,24 @@ class GPSDictionary(ConfigParser.RawConfigParser):
                 if self.has_option(dev, "nmea"):
                     nmea = self.get(dev, "nmea")
                 ofp.write("<td>%s</td>\n" % nmea)
+                if self.has_option(dev, "pps") and self.get(dev, "pps") == "True":
+                    pps_accuracy = ntp_offset = ""
+                    if self.has_option(dev, "pps_accuracy"):
+                        pps_accuracy = self.get(dev, "pps_accuracy")
+                    if self.has_option(dev, "ntp_offset"):
+                        ntp_offset = self.get(dev, "ntp_offset")
+                    if pps_accuracy and ntp_offset:
+                        ofp.write("<td>%s<br>%s</td>\n" % (pps_accuracy, ntp_offset))
+                    else:
+                        ofp.write("<td>?<br>\n")
+                else:
+                    ofp.write("<td>&nbsp;</td>\n")
                 if self.has_option(dev, "notes"):
                     notes = self.get(dev, "notes")
                 else:
                     notes = ""
                 if self.has_option(dev, "submitter"):
-                    notes += " Reported by %s." % self.get(dev, "submitter")
-                notes = notes.replace("@", "&#x40;").replace("<", "&lt;").replace(">", "&gt;")
+                    notes += " Reported by %s." % self.get(dev, "submitter").replace("@", "&#x40;").replace("<", "&lt;").replace(">", "&gt;")
                 ofp.write("<td>%s</td>\n" % notes)
                 ofp.write("</tr>\n")
         ofp.write("</table>\n")

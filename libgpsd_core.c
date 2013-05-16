@@ -1,7 +1,7 @@
 /* libgpsd_core.c -- manage access to sensors
  *
  * Access to the driver layer goes through the entry points in this file.
- * The idea is to present a session as an abstraction from which you get 
+ * The idea is to present a session as an abstraction from which you get
  * fixes (and possibly other data updates) by calling gpsd_poll(). The
  * rest is setup and teardown.
  *
@@ -25,24 +25,21 @@
 #endif /* S_SPLINT_S */
 
 #include "gpsd.h"
-#if defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S)
-#include <linux/can.h>
-#include <linux/can/raw.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#endif /* defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S) */
+#if defined(NMEA2000_ENABLE)
+#include "driver_nmea2000.h"
+#endif /* defined(NMEA2000_ENABLE) */
 
 static void gpsd_run_device_hook(char *device_name, char *hook)
 {
     struct stat statbuf;
     if (stat(DEVICEHOOKPATH, &statbuf) == -1)
 	gpsd_report(LOG_PROG, "no %s present, skipped running %s hook\n",
-		    DEVICEHOOKPATH, hook); 
+		    DEVICEHOOKPATH, hook);
     else {
 	/*
 	 * We make an exception to the no-malloc rule here because
 	 * the pointer will never persist outside this small scope
-	 * and can thus never cause a leak or stale-pointer problem. 
+	 * and can thus never cause a leak or stale-pointer problem.
 	 */
 	size_t bufsize = strlen(DEVICEHOOKPATH) + 1 + strlen(device_name) + 1 + strlen(hook) + 1;
 	char *buf = malloc(bufsize);
@@ -190,7 +187,12 @@ void gpsd_deactivate(struct gps_device_t *session)
 #endif /* RECONFIGURE_ENABLE */
     gpsd_report(LOG_INF, "closing GPS=%s (%d)\n",
 		session->gpsdata.dev.path, session->gpsdata.gps_fd);
-    (void)gpsd_close(session);
+#if defined(NMEA2000_ENABLE)
+    if (session->sourcetype == source_can)
+        (void)nmea2000_close(session);
+    else
+#endif /* of defined(NMEA2000_ENABLE) */
+        (void)gpsd_close(session);
     gpsd_run_device_hook(session->gpsdata.dev.path, "DEACTIVATE");
 }
 
@@ -232,10 +234,10 @@ int gpsd_open(struct gps_device_t *session)
 	return session->gpsdata.gps_fd;
     /* otherwise, could be an TCP data feed */
     } else if (strncmp(session->gpsdata.dev.path, "tcp://", 6) == 0) {
-	char server[GPS_PATH_MAX], *port;
+	char server[strlen(session->gpsdata.dev.path)], *port;
 	socket_t dsock;
 	(void)strlcpy(server, session->gpsdata.dev.path + 6, sizeof(server));
-	session->gpsdata.gps_fd = -1;
+	INVALIDATE_SOCKET(session->gpsdata.gps_fd);
 	port = strchr(server, ':');
 	if (port == NULL) {
 	    gpsd_report(LOG_ERROR, "Missing colon in TCP feed spec.\n");
@@ -255,7 +257,7 @@ int gpsd_open(struct gps_device_t *session)
 	return session->gpsdata.gps_fd;
     /* or could be UDP */
     } else if (strncmp(session->gpsdata.dev.path, "udp://", 6) == 0) {
-	char server[GPS_PATH_MAX], *port;
+	char server[strlen(session->gpsdata.dev.path)], *port;
 	socket_t dsock;
 	(void)strlcpy(server, session->gpsdata.dev.path + 6, sizeof(server));
 	session->gpsdata.gps_fd = -1;
@@ -281,10 +283,10 @@ int gpsd_open(struct gps_device_t *session)
 #ifdef PASSTHROUGH_ENABLE
     if (strncmp(session->gpsdata.dev.path, "gpsd://", 7) == 0) {
 	/*@-branchstate -nullpass@*/
-	char server[GPS_PATH_MAX], *port;
+	char server[strlen(session->gpsdata.dev.path)], *port;
 	socket_t dsock;
 	(void)strlcpy(server, session->gpsdata.dev.path + 7, sizeof(server));
-	session->gpsdata.gps_fd = -1;
+	INVALIDATE_SOCKET(session->gpsdata.gps_fd);
 	if ((port = strchr(server, ':')) == NULL) {
 	    port = DEFAULT_GPSD_PORT;
 	} else
@@ -306,55 +308,7 @@ int gpsd_open(struct gps_device_t *session)
 #endif /* PASSTHROUGH_ENABLE */
 #if defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S)
     if (strncmp(session->gpsdata.dev.path, "nmea2000://", 11) == 0) {
-	char interface_name[GPS_PATH_MAX];
-	socket_t sock;
-	int status;
-	struct ifreq ifr;
-	struct sockaddr_can addr;
-
-	session->gpsdata.gps_fd = -1;
-	/* Create the socket */
-	sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);
- 
-	if (sock == -1) {
-	    gpsd_report(LOG_ERROR, "NMEA2000 open: can not get socket.\n");
-	    return -1;
-	}
-
-	status = fcntl(sock, F_SETFL, O_NONBLOCK);
-	if (status != 0) {
-	    gpsd_report(LOG_ERROR, "NMEA2000 open: can not set socket to O_NONBLOCK.\n");
-	    close(sock);
-	    return -1;
-	}
-
-	(void)strlcpy(interface_name, session->gpsdata.dev.path + 11, sizeof(interface_name));
-	/* Locate the interface you wish to use */
-	strlcpy(ifr.ifr_name, interface_name, sizeof(ifr.ifr_name));
-	status = ioctl(sock, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled 
-						   * with that device's index */
-
-	if (status != 0) {
-	    gpsd_report(LOG_ERROR, "NMEA2000 open: can not find CAN device.\n");
-	    close(sock);
-	    return -1;
-	}
-
-	/* Select that CAN interface, and bind the socket to it. */
-	addr.can_family = AF_CAN;
-	addr.can_ifindex = ifr.ifr_ifindex;
-	status = bind(sock, (struct sockaddr*)&addr, sizeof(addr) );
-	if (status != 0) {
-	    gpsd_report(LOG_ERROR, "NMEA2000 open: bind failed.\n");
-	    close(sock);
-	    return -1;
-	}
-
-	gpsd_switch_driver(session, "NMEA2000");
-	session->gpsdata.gps_fd = sock;
-	session->sourcetype = source_nmea2000;
-	session->servicetype = service_nmea2000;
-	return session->gpsdata.gps_fd;
+        return nmea2000_open(session);
     }
 #endif /* defined(NMEA2000_ENABLE) && !defined(S_SPLINT_S) */
     /* fall through to plain serial open */
@@ -373,7 +327,8 @@ int gpsd_activate(struct gps_device_t *session)
     else {
 #ifdef NON_NMEA_ENABLE
 	/* if it's a sensor, it must be probed */
-	if (session->servicetype == service_sensor)  {
+        if ((session->servicetype == service_sensor) && 
+	    (session->sourcetype != source_can)) {
 	    const struct gps_type_t **dp;
 
 	    /*@ -mustfreeonly @*/
@@ -519,9 +474,9 @@ static bool invert(double mat[4][4], /*@out@*/ double inverse[4][4])
     double Det2_13_01 = mat[1][0] * mat[3][1] - mat[1][1] * mat[3][0];
     //double Det2_13_02 = mat[1][0]*mat[3][2] - mat[1][2]*mat[3][0];
     double Det2_13_03 = mat[1][0] * mat[3][3] - mat[1][3] * mat[3][0];
-    //double Det2_13_12 = mat[1][1]*mat[3][2] - mat[1][2]*mat[3][1]; 
+    //double Det2_13_12 = mat[1][1]*mat[3][2] - mat[1][2]*mat[3][1];
     double Det2_13_13 = mat[1][1] * mat[3][3] - mat[1][3] * mat[3][1];
-    //double Det2_13_23 = mat[1][2]*mat[3][3] - mat[1][3]*mat[3][2]; 
+    //double Det2_13_23 = mat[1][2]*mat[3][3] - mat[1][3]*mat[3][2];
     double Det2_23_01 = mat[2][0] * mat[3][1] - mat[2][1] * mat[3][0];
     double Det2_23_02 = mat[2][0] * mat[3][2] - mat[2][2] * mat[3][0];
     double Det2_23_03 = mat[2][0] * mat[3][3] - mat[2][3] * mat[3][0];
@@ -903,36 +858,41 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
      *
      * Thus, we look for an inter-character delay much larger than an
      * average 4800bps sentence time.  How should this delay be set?  Well,
-     * counting framing bits and erring on the side of caution, it's 
+     * counting framing bits and erring on the side of caution, it's
      * about 480 characters per second or 2083 microeconds per character;
      * that's almost exactly 0.125 seconds per average 60-char sentence.
      * Doubling this to avoid false positives, we look for an inter-character
      * delay of greater than 0.250s.
      *
-     * The above assumes a cycle time of 1 second.  To get the minimum size of 
+     * The above assumes a cycle time of 1 second.  To get the minimum size of
      * the quiet period, we multiply by the device cycle time.
      *
-     * We can sanity-check these calculation by watching logs. If we have set 
+     * We can sanity-check these calculation by watching logs. If we have set
      * MINIMUM_QUIET_TIME correctly, the "transmission pause" message below
      * will consistently be emitted just before the sentence that shows up
      * as start-of-cycle in gpsmon, and never emitted at any other point
      * in the cycle.
      *
      * In practice, it seems that edge detection succeeds at 9600bps but
-     * fails at 4800bps.  This is not surprising, as previous profiling has 
-     * indicated that at 4800bps some devices overrun a 1-second cycle time 
+     * fails at 4800bps.  This is not surprising, as previous profiling has
+     * indicated that at 4800bps some devices overrun a 1-second cycle time
      * with the data they transmit.
      */
 #define MINIMUM_QUIET_TIME	0.25
     if (session->packet.outbuflen == 0)
-    { 
+    {
 	/* beginning of a new packet */
 	timestamp_t now = timestamp();
 	if (session->device_type != NULL && session->packet.start_time > 0) {
-	    double quiet_time = (MINIMUM_QUIET_TIME * session->device_type->min_cycle);
+#ifdef RECONFIGURE_ENABLE
+	    const time_t min_cycle = session->device_type->min_cycle;
+#else
+	    const time_t min_cycle = 1;
+#endif /* RECONFIGURE_ENABLE */
+	    double quiet_time = (MINIMUM_QUIET_TIME * min_cycle);
 	    double gap = now - session->packet.start_time;
 
-	    if (gap > session->device_type->min_cycle)
+	    if (gap > min_cycle)
 		gpsd_report(LOG_WARN, "cycle-start detector failed.\n");
 	    else if (gap > quiet_time) {
 		gpsd_report(LOG_PROG, "transmission pause of %f\n", gap);
@@ -1022,7 +982,7 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 
 	/* track the packet count since achieving sync on the device */
 	if (first_sync) {
-	    speed_t speed = gpsd_get_speed(&session->ttyset);
+	    speed_t speed = gpsd_get_speed(session);
 
 	    /*@-nullderef@*/
 	    gpsd_report(LOG_INF,
@@ -1058,14 +1018,14 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 
 	/*
 	 * The guard looks superfluous, but it keeps the rather expensive
-	 * gpsd_hexdump() function from being called even when the debug
+	 * gpsd_packetdump() function from being called even when the debug
 	 * level does not actually require it.
 	 */
 	if (session->context->debug >= LOG_RAW)
 	    gpsd_report(LOG_RAW, "raw packet of type %d, %zd:%s\n",
 			session->packet.type,
 			session->packet.outbuflen,
-			gpsd_hexdump((char *)session->packet.outbuffer, session->packet.outbuflen));
+			gpsd_packetdump((char *)session->packet.outbuffer, session->packet.outbuflen));
 
 	/* Get data from current packet into the fix structure */
 	if (session->packet.type != COMMENT_PACKET)
@@ -1156,7 +1116,7 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 void gpsd_wrap(struct gps_device_t *session)
 /* end-of-session wrapup */
 {
-    if (session->gpsdata.gps_fd != -1)
+    if (!BAD_SOCKET(session->gpsdata.gps_fd))
 	gpsd_deactivate(session);
 }
 
@@ -1167,5 +1127,13 @@ void gpsd_zero_satellites( /*@out@*/ struct gps_data_t *out)
     (void)memset(out->azimuth, 0, sizeof(out->azimuth));
     (void)memset(out->ss, 0, sizeof(out->ss));
     out->satellites_visible = 0;
+#if 0
+    /*
+     * We used to clear DOPs here, but this causes misbehavior on some
+     * combined GPS/GLONASS/QZSS receivers like the Telit SL869; the
+     * symptom is that the "satellites_used" field in a struct gps_data_t
+     * filled in by gps_read() is always zero.
+     */
     gps_clear_dop(&out->dop);
+#endif
 }
