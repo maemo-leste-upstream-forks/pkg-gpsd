@@ -53,8 +53,14 @@ libQgpsmm.so.20 libqgpsmm20 #MINVER#
  (c++)"netlib_localsocket(char const*, int)@Base" 3.5
  (c++)"netlib_sock2ip(int)@Base" 3.5
  (c++)"true2magnetic(double, double, double)@Base" 3.5
- (c++)"sbits(char*, unsigned int, unsigned int, bool)@Base" 3.5-4~
- (c++)"ubits(char*, unsigned int, unsigned int, bool)@Base" 3.5-4~
+ (c++)"gpsd_packetdump(char*, unsigned long)@Base" 3.9
+ (c++)"sbits(signed char*, unsigned int, unsigned int, bool)@Base" 3.9
+ (c++)"ubits(unsigned char*, unsigned int, unsigned int, bool)@Base" 3.9
+ (c++)"getbed64(char const*, int)@Base" 3.9
+ (c++)"getbef32(char const*, int)@Base" 3.9
+ (c++)"getled64(char const*, int)@Base" 3.9
+ (c++)"getlef32(char const*, int)@Base" 3.9
+ (c++)"putbef32(char*, int, float)@Base" 3.9
 #MISSING: 3.5-1# deg_to_str@Base 3.3
  earth_distance@Base 3.3
  earth_distance_and_bearings@Base 3.3
