@@ -1,10 +1,16 @@
 gpsd (3.9-1) unstable; urgency=low
 
-  * [422ba51f] Merging upstream version 3.9
-  * [9473cec7] Adding pt_BR translation.
+  * [5c5616d5] Imported Upstream version 3.9
+  * [6503bfe7] Adding pt_BR translation.
     Thanks to Adriano Rafael Gomes (Closes: #693375)
+  * [f3a7edf5] Dropping all patches, applied upstream.
+  * [105f538b] Updating changelog.
+  * [420650f8] Merge branch 'upstream'
+  * [d57dcc29] libgpsd bumped its soname, no transitions involved.
+  * [d676aeb1] Update symbols files.
+  * [bd7ffc51] Handle the situation that libgpsd has soname different from libgps.
 
- -- Bernd Zeimetz <bzed@debian.org>  Thu, 16 May 2013 18:58:55 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 19 May 2013 22:28:09 +0200
 
 gpsd (3.6-5) unstable; urgency=medium
 
