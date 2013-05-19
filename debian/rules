@@ -3,8 +3,8 @@
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
 
-SONAME := 20
-
+LIBGPS_SONAME := 20
+LIBGPSD_SONAME := 21
 
 include /usr/share/quilt/quilt.make
 
@@ -199,13 +199,13 @@ binary: install-stamp
 	dh_fixperms  -Xgpsd.hotplug
 	dh_lintian
 ifeq (,$(DEB_BUILD_OPTIONS))
-	dh_makeshlibs -Nlibqgpsmm$(SONAME)  -Xlibgpsd -- -c4
-	dh_makeshlibs -plibqgpsmm$(SONAME) -- -c1
+	dh_makeshlibs -Nlibqgpsmm$(LIBGPS_SONAME)  -Xlibgpsd -- -c4
+	dh_makeshlibs -plibqgpsmm$(LIBGPS_SONAME) -- -c1
 else
-	dh_makeshlibs -Nlibqgpsmm$(SONAME) -Xlibgpsd
-	dh_makeshlibs -plibqgpsmm$(SONAME)
+	dh_makeshlibs -Nlibqgpsmm$(LIBGPS_SONAME) -Xlibgpsd
+	dh_makeshlibs -plibqgpsmm$(LIBGPS_SONAME)
 endif
-	echo 'libgpsd $(SONAME) libgps$(SONAME)' > debian/shlibs.local
+	echo 'libgpsd $(LIBGPSD_SONAME) libgps$(LIBGPS_SONAME)' > debian/shlibs.local
 	dh_shlibdeps 
 ifneq (,$(UDEV_BREAKS))
 	echo "gpsd:Breaks=udev (<< $(UDEV_BREAKS))" >> $(CURDIR)/debian/gpsd.substvars
