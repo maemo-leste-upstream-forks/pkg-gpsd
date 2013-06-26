@@ -17,7 +17,8 @@ Build-Depends: debhelper (>= 8.1.3~), po-debconf,
  scons (>= 2.0.1), chrpath,
  dh-buildinfo,
  hardening-includes,
- pps-tools (>= 0.20120406+g0deb9c7e-2~) [linux-any]
+ pps-tools (>= 0.20120406+g0deb9c7e-2~) [linux-any],
+ dh-systemd (>= 1.3)
 Standards-Version: 3.9.2
 Homepage: http://www.catb.org/gpsd/
 Vcs-Browser: http://git.recluse.de/?p=debian/pkg-gpsd.git
