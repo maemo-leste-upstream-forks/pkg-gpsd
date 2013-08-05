@@ -1,3 +1,15 @@
+gpsd (3.9-2) unstable; urgency=low
+
+  [ Bernd Zeimetz ]
+  * [649f6e3b] Fix symbols file for m68k and others without unsigned long.
+    (Closes: #718741)
+
+  [ Michael Stapelberg ]
+  * [d41eaabd] switch to dh-systemd for proper systemd maintscripts
+    (Closes: #714199)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 05 Aug 2013 16:23:10 +0200
+
 gpsd (3.9-1) unstable; urgency=low
 
   * [5c5616d5] Imported Upstream version 3.9
