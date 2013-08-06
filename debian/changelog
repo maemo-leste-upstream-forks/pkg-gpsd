@@ -1,3 +1,10 @@
+gpsd (3.9-3) unstable; urgency=low
+
+  * [75fe68f6] Add patch to work around the PATH_MAX issue on hurd.
+    The patch was not applie dupstream and went missing on the last upload.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 06 Aug 2013 22:26:32 +0200
+
 gpsd (3.9-2) unstable; urgency=low
 
   [ Bernd Zeimetz ]
