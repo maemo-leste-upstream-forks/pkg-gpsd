@@ -1,1 +1,7 @@
 usr/lib/python*/*-packages/gps/*_d.so
+test_bits       usr/lib/gpsd/debug
+test_packet     usr/lib/gpsd/debug
+test_geoid      usr/lib/gpsd/debug
+test_mkgmtime   usr/lib/gpsd/debug
+test_libgps     usr/lib/gpsd/debug
+test_json       usr/lib/gpsd/debug
