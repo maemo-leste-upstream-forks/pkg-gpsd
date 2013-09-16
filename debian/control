@@ -143,8 +143,8 @@ Package: libqgpsmm-dev
 Architecture: any
 Section: libdevel
 Depends: ${misc:Depends}, pkg-config,
- libqgpsmm20 (>= ${source:Upstream-Version}), libqgpsmm20 (<< ${source:Upstream-Version}+1~),
- libgps-dev (>= ${source:Upstream-Version}), libgps-dev (<< ${source:Upstream-Version}+1~)
+ libqgpsmm20 (= ${binary:Version}),
+ libgps-dev (= ${binary:Version})
 Description: Global Positioning System - Qt wrapper for libgps (development)
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
