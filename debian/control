@@ -27,7 +27,9 @@ X-Python-Version: >= 2.3
 
 Package: gpsd
 Architecture: any
-Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13), ${shlibs:Depends}, ${misc:Depends}
+Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
+ ${shlibs:Depends}, ${misc:Depends},
+ libgps20 (= ${binary:Version})
 Recommends: udev [linux-any], ${python:Depends}, python
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients, dbus
@@ -59,7 +61,9 @@ Description: Global Positioning System - debugging symbols
 
 Package: gpsd-clients
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, python-gps, python-gtk2, python-cairo, ${python:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ libgps20 (= ${binary:Version}),
+ python-gps, python-gtk2, python-cairo, ${python:Depends}
 Suggests: gpsd
 Conflicts: gps
 Breaks: ${python:Breaks}
