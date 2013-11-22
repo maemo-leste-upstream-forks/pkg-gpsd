@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsfake
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
 .\"      Date: 12 Feb 2005
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -31,7 +31,7 @@
 gpsfake \- test harness for gpsd, simulating a GPS
 .SH "SYNOPSIS"
 .HP \w'\fBgpsfake\fR\ 'u
-\fBgpsfake\fR [\-1] [\-h] [\-b] [\-f] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-g] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-P\ \fIport\fR] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-u] [\-v] [\fIlogfile\fR...]
+\fBgpsfake\fR [\-1] [\-h] [\-b] [\-f] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-g] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-P\ \fIport\fR] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-u] [\-t] [\-v] [\fIlogfile\fR...]
 .SH "DESCRIPTION"
 .PP
 gpsfake
@@ -144,8 +144,12 @@ The
 sets the baud rate for the slave tty\&. The default is 4800\&.
 .PP
 The
+\fB\-t\fR
+forces the test framework to use TCP rather than pty devices\&. Besides being a test of TCP source handling, this may be useful for testing from within chroot jails where access to pty devices is locked out\&.
+.PP
+The
 \fB\-u\fR
-forces the test framework to use UDP rather than pty devices\&. This may be useful for testing from within chroot jails where access to pty devices is locked out\&.
+forces the test framework to use UDP rather than pty devices\&. Besides being a test of UDP source handling, this may be useful for testing from within chroot jails where access to pty devices is locked out\&.
 .PP
 The
 \fB\-v\fR
@@ -173,6 +177,24 @@ will print a notification each time it cycles\&.
 .PP
 Normally, gpsfake creates a pty for each logfile and passes the slave side of the device to the daemon\&. If the header comment in the logfile contains the string "UDP", packets are instead shipped via UDP port 5000 to the address 192\&.168\&.0\&.1\&.255\&. You can monitor them with this:
 \fBtcpdump \-s0 \-n \-A \-i lo udp and port 5000\fR\&.
+.SH "MAGIC COMMENTS"
+.PP
+Certain magic comments in test load headers can change the conditions of the test\&. These are:
+.PP
+Serial:
+.RS 4
+May contain a serial\-port setting such as 4800 7N2 \- baud rate followed by 7 or 8 for byte length, N or O or E for parity and 1 or 2 for stop bits\&. The test is run with those settings on the slave port that the daemon sees\&.
+.RE
+.PP
+Transport:
+.RS 4
+Values \*(AqTCP\*(Aq and \*(AqUDP\*(Aq force the use of TCP and UDP feeds respectively (the default is a pty)\&.
+.RE
+.PP
+Delay\-Cookie:
+.RS 4
+Must be followed by two whitespace\-separated fields, a delimiter character and a numeric delay in seconds\&. Instead of being broken up by packet boundaries, the test load is split on the delimiters\&. The delay is performed after each feed\&. Can be useful for imposing write boundaries in the middle of packets\&.
+.RE
 .SH "CUSTOM TESTS"
 .PP
 gpsfake
@@ -200,16 +222,14 @@ gpsfake
 exits with "Cannot execute gpsd: executable not found\&." the environment variable GPSD_HOME can be set to the path where gpsd can be found\&. (instead of adding that folder to the PATH environment variable
 .SH "SEE ALSO"
 .PP
-
 \fBgpsd\fR(8),
 \fBgps\fR(1),
 \fBlibgps\fR(3),
 \fBlibgpsd\fR(3),
 \fBgpsctl\fR(1),
 \fBgpspipe\fR(1),
-\fBgpsprof\fR(1)
-\fBgpsmon\fR(1)\&.
+\fBgpsprof\fR(1)\fBgpsmon\fR(1)\&.
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond
-esr@thyrsus\&.com\&.
+<esr@thyrsus\&.com>\&.

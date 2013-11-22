@@ -1,7 +1,9 @@
 = Building GPSD from source ==
 
 This is a guide to building GPSD from a bare source tree.  It includes
-guidance on how to cross-build the package.
+guidance on how to cross-build the package. 
+
+Some hints for people building binary packages are in packaging/readme.txt.
 
 (This file is marked up in asciidoc.)
 
@@ -10,7 +12,7 @@ guidance on how to cross-build the package.
 Under Linux, assuming you have all your build prerequisites in place,
 this line will do:
 
-   scons && scons testregress && sudo scons udev-install 
+   scons && scons check && sudo scons udev-install 
 
 If you get any errors, you need to read the detailed instructions that follow.
 
@@ -18,26 +20,29 @@ If you get any errors, you need to read the detailed instructions that follow.
 
 Necessary components for any build:
 
-|==============================================================================
+|============================================================================
 |C compiler         | gpsd and client library are written in C
 |Python             | some code is generated from python scripts
 |scons              | for executing the build recipe 
 |chrpath            | needed with scons for RPATH setting
-|==============================================================================
+|============================================================================
 
 === C compiler ===
 
 C99 conformance is required in the compiler. The C code depends on one
-non-C99 feature: anonymous unions.  We could eliminate these, but the
-cost would be source-level interface breakage if we have to move
-structure members in and out of unions.
+non-C99 feature (supported by GCC, clang, and pretty much any C
+compiler that also speaks C++): anonymous unions.  We could eliminate
+these, but the cost would be source-level interface breakage if we
+have to move structure members in and out of unions.
 
-GPSD is normally built and tested with GCC. The shared-memory
-interface relies on one GCCism, but the code is otherwise pretty
-compiler-agnostic.  It is reported that clang produces a gpsd that
-passes all regression tests. If -Wmissing-field-initializers or
-its non-gcc equivalent is set you will get a lot of warnings; 
-this is due to generated code and cannot be fixed.
+GPSD is normally built and tested with GCC. If the option
+-Wmissing-field-initializers or its non-gcc equivalent is set you will
+get a lot of warnings; this is due to generated code and cannot be
+fixed.
+
+The shared-memory interface relies on one GCCism, but the code is
+otherwise pretty compiler-agnostic.  It is reported that clang
+produces a gpsd that passes all regression tests.
 
 Older versions of gcc don't recognize Wno-missing-field-initializers;
 this has been reported from GCC 3.4.6.  We don't recommend building
@@ -59,6 +64,13 @@ distinction) the Python development package used for building C
 extensions.  Usually these are called "python" and "python-dev". You
 will know you are missing the latter if your compilation fails 
 because of a missing Python.h.
+
+The xgps test client requires the following Python extensions:
+
+|============================================================================
+|gobject            | GNOME object introspection library
+|pygtk              | Python bindings for GTK
+|===========================================================================
 
 === Scons ===
 
@@ -111,6 +123,7 @@ various additional capabilities and extensions:
 |C++ compiler	  | allows building libgpsmm C++ wrapper for client library
 |Qt 4.53+         | allows building libQgpsmm C++ wrapper for client library
 |libcap           | Capabilities library, allows 1PPS support under Linux
+|curses           | curses screen-painting library, allows building cgps
 |============================================================================
 
 If you have libusb-1.0.0 or later, the GPSD build will autodetect
@@ -129,14 +142,19 @@ For working with DBUS, you'll need the DBUS development
 headers and libraries installed.  Under Debian/Ubuntu these
 are the packages libdbus-1-dev and libdbus-glib-1-dev.
 
-Under Ubuntu, the ncurses package you want is libncurses5-dev.
-Depending on how your distribution packages ncurses you may
-also require libtinfo5, a separate terminfo library.
+Under Ubuntu, the ncurses package you want is libncurses5-dev.  Under
+Fedora, it's ncurses-devel.  Depending on how your distribution
+packages ncurses you may also require libtinfo5, a separate terminfo
+library.
 
 On some recent versions of Ubuntu (notably 11.10) there is a packaging
 defect that may cause your build to blow up in SCons. It's a missing
 package info file for the tinfo library. To fix this, install the file
-packaging/tinfo.pc in /usr/lib/pkgconfig/tinfo.pc.
+packaging/tinfo.pc in /usr/lib/pkgconfig/tinfo.pc. 13.10 fixed this.
+
+We've seen a report that compiling on the Raspberry Pi fails with 
+a complaint about curses.h not being found.  You need to install
+Raspbian's curses development library if this happens.
 
 For building from the source tree, or if you change the man page
 source, xslt and docbook xsl style files are used to generate nroff
@@ -147,6 +165,7 @@ process:
 |libxslt            | xsltproc is used to build man pages from xml
 |docbook-xsl        | style file for xml to man translation
 |xmlto              | DocBook formatter program
+|asciidoc           | DocBook front end with lighter markup
 |============================================================================
 
 The build degrades gracefully in the absence of any of these. You should
@@ -167,7 +186,7 @@ will need some subset of the following modules:
 |cdc_am     | USB Communication Device Class Abstract Control Model interface
 |============================================================================
 
-These are listed in rough order of devices covered as of 2011; the
+These are listed in rough order of devices covered as of 2013; the
 PL23203 by itself accounts for over 70% of deployed USB mice.  We
 recommend building with pl2303, ftdi_sio, cypress_m8, and cp210x.
 
@@ -217,10 +236,10 @@ won't try building the documentation.  The actual fix is to install
 DocBook on your machine so there will be a local copy of the
 stylesheet where xmlto can find it.
 
-After building, please run 'scons testregress' to test the correctness
+After building, please run 'scons check' to test the correctness
 of the build.  It is not necessary to install first, but you do need
 to have "." in your $PATH to run regressions uninstalled.  Python is
-required for regression tests. If any of the tests fail, you probavly
+required for regression tests. If any of the tests fail, you probably
 have a toolchain issue.  The most common such problem is issues with
 strict C99 conformance in floating-point libraries.
 
@@ -238,6 +257,39 @@ You will need php and php-gd installed to support the PHP web page.
 included with the distribution. To install it, copy the file
 'gpsd.php' to your HTML document directory. Then see the
 post-installation instructions in INSTALL for how to configure it.
+
+== The leapseconds cache ==
+
+Early in your build, the recipe will try to go over the Internet to
+one of several sources of current data on the leap-second offset in
+order to ensure that the file leapseconds.cache is up to date.  This,
+in turn, is used to build a timebase.h include file.
+
+This procedure may fail if you are building inside an intranet that
+requires an authenticating web proxy.  If that occurs, it will time
+out with a warning and a suggestion to use the leapfetch=no build
+option.
+
+Building with leapfetch=no may, in unusual circumstances, result in
+reported GPS time being off by a second or more.  The circumstances
+are:
+
+1. It has been less than 20 minutes since power-up; the GPS has
+   not yet received the current leapsecond offset as part of the
+   periodic ephemeris download.
+
+2. One or more leap-second offset increments have been issued between
+   when your GPSD source tree was cloned from the repository (or
+   leapsecond.cache was later updated) and now.  Leap-second
+   increments, compensating for minute and unpredictable changes in
+   the Earth's rotation, are occasionally issued by international time
+   authorities.
+
+Note that the same failure can occur with any GPSD installation.  But
+by refreshing leapseconds.cache you reduce the error window for
+leap-second offset bumps to affect your installation so that it begins
+as late as possible, at your build time rather than from when the 
+source tree was copied.
 
 == Optional features ==
 
@@ -266,17 +318,29 @@ status of Qt supported platforms as of version 4.6.
 
 == Port and toolchain testing ==
 
-'scons testregress' will run a comprehensive regression-test suite.
-You should do this, at minimum, every time you build from source
-on a new machine type.  GPSD does enough bit-twiddling and floating
-point that it is very sensitive to toolchain problems; you'll want to
-be sure those aren't going to bite you in production.
+'scons check' will run a comprehensive regression-test suite.  You
+should do this, at minimum, every time you build from source on a new
+machine type.  GPSD does enough bit-twiddling and floating point that
+it is very sensitive to toolchain problems; you'll want to be sure
+those aren't going to bite you in production.
+
+So the tests will run fast and be easy to do often, we make the test
+framework shove data through the pty and socket layers *way* faster
+than would ever occur in production.  If you get regression-test
+failures that aren't repeatable and look like the test framework is
+sporadically failing to feed the last line or two of test loads, try
+increasing the delay constants in fake.py.  If you have to do this, 
+please report your experience to the GPSD maintainers.
+
+For instructions on how to live-test the software, see the file INSTALL.
 
 == Reverting to a clean state ==
 
 The scons equivalent of 'make clean' is 'scons -c'. This will revert
-your source tree to a clean state as though you had just cloned or
-downloaded it.
+your source tree to a clean state nearly as though you had just cloned or
+downloaded it; some scons housekeeping stuff is left in place.  If you
+interrupted a regression test, 'distclean' will remove generated test
+programs.
 
 == Cross-building ==
 
@@ -351,6 +415,8 @@ When you are cross-compiling, you'll need chrpath at version 0.14 or
 later for cross-architecture support.  If it's not yet packaged for
 your environment, see http://alioth.debian.org/projects/chrpath/
 
+You may also find it useful to set manbuild=no.
+
 == Autostarting the daemon ==
 
 The preferred way to start gpsd is on-demand by a hotplug script 
@@ -363,3 +429,5 @@ If you for some reason need to start gpsd unconditionally at
 boot time (in particular, if you need to support RS232 devices)
 there's a model init.d script under packaging/deb and a systemd
 setup under systemd/.
+
+// end

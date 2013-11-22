@@ -51,15 +51,15 @@ static sourcetype_t gpsd_classify(const char *path)
 	sourcetype_t devtype = source_rs232;
 #ifdef __linux__
 	/* Linux major device numbers live here
-	 * ftp://ftp.kernel.org/pub/linux/docs/device-list/devices-2.6+.txt
+	 * https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devices.txt
 	 */
 	int devmajor = major(sb.st_rdev);
         /* 207 are Freescale i.MX UARTs (ttymxc*) */
 	if (devmajor == 4 || devmajor == 204 || devmajor == 207)
 	    devtype = source_rs232;
-	else if (devmajor == 188)
+	else if (devmajor == 188 || devmajor == 166)
 	    devtype = source_usb;
-	else if (devmajor == 216 || devtype == 217)
+	else if (devmajor == 216 || devmajor == 217)
 	    devtype = source_bluetooth;
 	else if (devmajor == 3 || (devmajor >= 136 && devmajor <= 143))
 	    devtype = source_pty;
@@ -114,13 +114,6 @@ void gpsd_tty_init(struct gps_device_t *session)
     /* mark GPS fd closed and its baud rate unknown */
     session->gpsdata.gps_fd = -1;
     session->saved_baud = -1;
-#ifdef NTPSHM_ENABLE
-    /* mark NTPD shared memory segments as unused */
-    session->shmindex = -1;
-# ifdef PPS_ENABLE
-    session->shmTimeP = -1;
-# endif	/* PPS_ENABLE */
-#endif /* NTPSHM_ENABLE */
     session->zerokill = false;
     session->reawake = (timestamp_t)0;
 }
@@ -178,11 +171,31 @@ speed_t gpsd_get_speed_old(const struct gps_device_t *dev)
     return gpsd_get_speed_termios(&dev->ttyset_old);
 }
 
+char gpsd_get_parity(const struct gps_device_t *dev)
+{
+    char parity = 'N';
+    if ((dev->ttyset.c_cflag & (PARENB | PARODD)) == (PARENB | PARODD))
+	parity = 'O';
+    else if ((dev->ttyset.c_cflag & PARENB) == PARENB)
+	parity = 'E';
+    return parity;
+}
+
+int gpsd_get_stopbits(const struct gps_device_t *dev)
+{
+    int stopbits = 0;
+    if ((dev->ttyset.c_cflag & CS8) == CS8)
+	stopbits = 1;
+    else if ((dev->ttyset.c_cflag & (CS7 | CSTOPB)) == (CS7 | CSTOPB))
+	stopbits = 2;
+    return stopbits;
+}
+
 bool gpsd_set_raw(struct gps_device_t * session)
 {
     (void)cfmakeraw(&session->ttyset);
     if (tcsetattr(session->gpsdata.gps_fd, TCIOFLUSH, &session->ttyset) == -1) {
-	gpsd_report(LOG_ERROR,
+	gpsd_report(session->context->debug, LOG_ERROR,
 		    "error changing port attributes: %s\n", strerror(errno));
 	return false;
     }
@@ -315,7 +328,8 @@ void gpsd_set_speed(struct gps_device_t *session,
 	(void)usleep(200000);
 	(void)tcflush(session->gpsdata.gps_fd, TCIOFLUSH);
     }
-    gpsd_report(LOG_INF, "speed %u, %d%c%d\n",
+    gpsd_report(session->context->debug, LOG_INF,
+		"speed %u, %d%c%d\n",
 		gpsd_get_speed(session), 9 - stopbits, parity,
 		stopbits);
 
@@ -336,8 +350,8 @@ void gpsd_set_speed(struct gps_device_t *session,
 		&& session->sourcetype != source_bluetooth) {
 	if (isatty(session->gpsdata.gps_fd) != 0
 	    && !session->context->readonly) {
-	    const struct gps_type_t **dp;
 	    if (session->device_type == NULL) {
+		const struct gps_type_t **dp;
 		for (dp = gpsd_drivers; *dp; dp++)
 		    if ((*dp)->event_hook != NULL)
 			(*dp)->event_hook(session, event_wakeup);
@@ -360,11 +374,11 @@ int gpsd_serial_open(struct gps_device_t *session)
     if (session->context->readonly
 	|| (session->sourcetype <= source_blockdev)) {
 	mode = (mode_t) O_RDONLY;
-	gpsd_report(LOG_INF,
+	gpsd_report(session->context->debug, LOG_INF,
 		    "opening read-only GPS data source type %d and at '%s'\n",
 		    (int)session->sourcetype, session->gpsdata.dev.path);
     } else {
-	gpsd_report(LOG_INF,
+	gpsd_report(session->context->debug, LOG_INF,
 		    "opening GPS data source type %d at '%s'\n",
 		    (int)session->sourcetype, session->gpsdata.dev.path);
     }
@@ -381,15 +395,18 @@ int gpsd_serial_open(struct gps_device_t *session)
         if (connect(session->gpsdata.gps_fd, (struct sockaddr *) &addr, sizeof (addr)) == -1) {
 	    if (errno != EINPROGRESS && errno != EAGAIN) {
 		(void)close(session->gpsdata.gps_fd);
-		gpsd_report(LOG_ERROR, "bluetooth socket connect failed: %s\n",
+		gpsd_report(session->context->debug, LOG_ERROR,
+			    "bluetooth socket connect failed: %s\n",
 			    strerror(errno));
 		return -1;
 	    }
-	    gpsd_report(LOG_ERROR, "bluetooth socket connect in progress or again : %s\n",
+	    gpsd_report(session->context->debug, LOG_ERROR,
+			"bluetooth socket connect in progress or again : %s\n",
 			strerror(errno));
         }
 	(void)fcntl(session->gpsdata.gps_fd, F_SETFL, (int)mode | O_NONBLOCK);
-	gpsd_report(LOG_PROG, "bluez device open success: %s %s\n",
+	gpsd_report(session->context->debug, LOG_PROG,
+		    "bluez device open success: %s %s\n",
 		    session->gpsdata.dev.path, strerror(errno));
     } else
 #endif /* BLUEZ */
@@ -397,17 +414,19 @@ int gpsd_serial_open(struct gps_device_t *session)
         if ((session->gpsdata.gps_fd =
 	     open(session->gpsdata.dev.path,
 		      (int)(mode | O_NONBLOCK | O_NOCTTY))) == -1) {
-            gpsd_report(LOG_ERROR,
+            gpsd_report(session->context->debug, LOG_ERROR,
 			    "device open failed: %s - retrying read-only\n",
 			    strerror(errno));
 	    if ((session->gpsdata.gps_fd =
 		 open(session->gpsdata.dev.path,
 			  O_RDONLY | O_NONBLOCK | O_NOCTTY)) == -1) {
-		gpsd_report(LOG_ERROR, "read-only device open failed: %s\n",
-				strerror(errno));
+		gpsd_report(session->context->debug, LOG_ERROR,
+			    "read-only device open failed: %s\n",
+			    strerror(errno));
 		return -1;
 	    }
-	    gpsd_report(LOG_PROG, "file device open success: %s\n",
+	    gpsd_report(session->context->debug, LOG_PROG,
+			"file device open success: %s\n",
 			strerror(errno));
 	}
     }
@@ -436,7 +455,7 @@ int gpsd_serial_open(struct gps_device_t *session)
 	 * Don't touch devices already opened by another process.
 	 */
 	if (fusercount(session->gpsdata.dev.path) > 1) {
-            gpsd_report(LOG_ERROR,
+            gpsd_report(session->context->debug, LOG_ERROR,
 			"%s already opened by another process\n",
 			session->gpsdata.dev.path);
 	    (void)close(session->gpsdata.gps_fd);
@@ -514,12 +533,14 @@ int gpsd_serial_open(struct gps_device_t *session)
 	session->gpsdata.dev.stopbits = 1;
     }
 
-    gpsd_report(LOG_SPIN, "open(%s) -> %d in gpsd_serial_open()\n",
+    gpsd_report(session->context->debug, LOG_SPIN,
+		"open(%s) -> %d in gpsd_serial_open()\n",
 		session->gpsdata.dev.path, session->gpsdata.gps_fd);
     return session->gpsdata.gps_fd;
 }
 
-ssize_t gpsd_write(struct gps_device_t * session, const char *buf, size_t len)
+ssize_t gpsd_serial_write(struct gps_device_t * session,
+			  const char *buf, const size_t len)
 {
     ssize_t status;
     bool ok;
@@ -530,9 +551,13 @@ ssize_t gpsd_write(struct gps_device_t * session, const char *buf, size_t len)
     ok = (status == (ssize_t) len);
     (void)tcdrain(session->gpsdata.gps_fd);
     /* extra guard prevents expensive hexdump calls */
-    if (session->context->debug >= LOG_IO)
-	gpsd_report(LOG_IO, "=> GPS: %s%s\n",
-		    gpsd_packetdump((char *)buf, len), ok ? "" : " FAILED");
+    if (session->context->debug >= LOG_IO) {
+	char scratchbuf[MAX_PACKET_LENGTH*2+1];
+	gpsd_report(session->context->debug, LOG_IO,
+		    "=> GPS: %s%s\n",
+		    gpsd_packetdump(scratchbuf, sizeof(scratchbuf),
+				    (char *)buf, len), ok ? "" : " FAILED");
+    }
     return status;
 }
 
@@ -552,7 +577,6 @@ bool gpsd_next_hunt_setting(struct gps_device_t * session)
 	return false;
 
     if (session->packet.retry_counter++ >= SNIFF_RETRIES) {
-	session->packet.retry_counter = 0;
 #ifdef FIXED_PORT_SPEED
 	return false;
 #else
@@ -585,6 +609,7 @@ bool gpsd_next_hunt_setting(struct gps_device_t * session)
 		       session->gpsdata.dev.stopbits
 #endif /* FIXED_STOP_BITS */
 	    );
+	session->packet.retry_counter = 0;
     }
 
     return true;		/* keep hunting */
@@ -636,7 +661,8 @@ void gpsd_close(struct gps_device_t *session)
 	    (void)tcsetattr(session->gpsdata.gps_fd, TCSANOW,
 			    &session->ttyset_old);
 	}
-	gpsd_report(LOG_SPIN, "close(%d) in gpsd_close(%s)\n",
+	gpsd_report(session->context->debug, LOG_SPIN,
+		    "close(%d) in gpsd_close(%s)\n",
 		    session->gpsdata.gps_fd, session->gpsdata.dev.path);
 	(void)close(session->gpsdata.gps_fd);
 	session->gpsdata.gps_fd = -1;

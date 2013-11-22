@@ -18,7 +18,7 @@
 #include "gpsmon.h"
 
 #if defined(SIRF_ENABLE) && defined(BINARY_ENABLE)
-extern const struct gps_type_t sirf_binary;
+extern const struct gps_type_t driver_sirf;
 
 static WINDOW *mid2win, *mid4win, *mid6win, *mid7win, *mid9win, *mid13win;
 static WINDOW *mid19win, *mid27win;
@@ -169,7 +169,11 @@ static bool sirf_initialize(void)
     display(mid7win, 1, 1, "SVs: ");
     display(mid7win, 1, 9, "Drift: ");
     display(mid7win, 1, 23, "Bias: ");
-    display(mid7win, 2, 1, "Estimated GPS Time: ");
+    display(mid7win, 2, 1, "Est. GPS Time: ");
+    display(mid7win, 2, 27, "PPS offset: ");
+#ifndef PPS_ENABLE
+    (void)mvwaddstr(mid7win, 2, 40, "Not available");
+#endif /* PPS_ENABLE */
     display(mid7win, 3, 8, " Packet type 7 (0x07) ");
     (void)wattrset(mid7win, A_NORMAL);
 
@@ -271,11 +275,14 @@ static void decode_ecef(double x, double y, double z,
 /*@ -globstate */
 static void sirf_update(void)
 {
-    int i, j, ch, sv, off;
+    int i, j, ch, sv;
     unsigned char *buf;
     size_t len;
     uint8_t dgps;
     char tbuf[JSON_DATE_MAX+1];
+#ifdef PPS_ENABLE
+    struct timedrift_t drift;
+#endif /* PPS_ENABLE */
 
     /* splint pacification */
     assert(mid2win!=NULL && mid27win != NULL);
@@ -332,7 +339,7 @@ static void sirf_update(void)
     case 0x04:			/* Measured Tracking Data */
 	ch = (int)getub(buf, 7);
 	for (i = 0; i < ch; i++) {
-	    int az, el, state;
+	    int az, el, state, off;
 	    double cn;
 
 	    off = 8 + 15 * i;
@@ -383,7 +390,7 @@ static void sirf_update(void)
 	display(mid7win, 1, 5, "%2d", getub(buf, 7));	/* SVs */
 	display(mid7win, 1, 16, "%lu", getbeu32(buf, 8));	/* Clock drift */
 	display(mid7win, 1, 29, "%lu", getbeu32(buf, 12));	/* Clock Bias */
-	display(mid7win, 2, 21, "%lu", getbeu32(buf, 16));	/* Estimated Time */
+	display(mid7win, 2, 16, "%lu", getbeu32(buf, 16));	/* Estimated Time */
 	monitor_log("CSD 0x07=");
 	break;
 
@@ -578,6 +585,18 @@ static void sirf_update(void)
 	(void)wnoutrefresh(mid19win);
     }
     /*@ +nullpass -nullderef @*/
+
+#ifdef PPS_ENABLE
+    /*@-compdef@*/
+    /*@-type@*/ /* splint is confused about struct timespec */
+    if (pps_thread_lastpps(&session, &drift) > 0) {
+	double timedelta = timespec_diff_ns(drift.real, drift.clock) * 1e-9;
+	display(mid7win, 2, 39, "%.9f", timedelta);	/* PPS offset */
+	(void)wnoutrefresh(mid7win);
+    }
+    /*@+type@*/
+    /*@+compdef@*/
+#endif /* PPS_ENABLE */
 }
 
 /*@ +globstate */
@@ -672,7 +691,7 @@ const struct monitor_object_t sirf_mmt = {
 #endif /* CONTROLSEND_ENABLE */
     .wrap = sirf_wrap,
     .min_y = 22,.min_x = 80,
-    .driver = &sirf_binary,
+    .driver = &driver_sirf,
 };
 #endif /* defined(SIRF_ENABLE) && defined(BINARY_ENABLE) */
 

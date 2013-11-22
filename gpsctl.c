@@ -21,8 +21,21 @@
 #include "gpsd.h"
 #include "revision.h"
 
+#define HIGH_LEVEL_TIMEOUT	8
+
 static int debuglevel;
-static unsigned int timeout = 8;
+static bool explicit_timeout = false;
+static unsigned int timeout = 0;	/* no timeout */
+static struct gps_context_t context;
+static bool hunting = true;
+
+ssize_t gpsd_write(struct gps_device_t *session,
+		   const char *buf,
+		   const size_t len)
+/* pass low-level data to devices straight through */
+{
+    return gpsd_serial_write(session, buf, len);
+}
 
 /*
  * Set this as high or higher than the maximum number of subtype
@@ -30,111 +43,16 @@ static unsigned int timeout = 8;
  */
 #define REDIRECT_SNIFF	15
 
-void gpsd_report(int errlevel UNUSED, const char *fmt, ... )
-/* our version of the logger */
+void gpsd_report(const int debuglevel, const int errlevel,
+		 const char *fmt, ...)
 {
-    if (errlevel <= debuglevel) {
-	char *err_str;
-	va_list ap;
-	va_start(ap, fmt);
-	switch ( errlevel ) {
-	case LOG_ERROR:
-		err_str = "ERROR: ";
-		break;
-	case LOG_SHOUT:
-		err_str = "SHOUT: ";
-		break;
-	case LOG_WARN:
-		err_str = "WARN: ";
-		break;
-	case LOG_INF:
-		err_str = "INFO: ";
-		break;
-	case LOG_DATA:
-		err_str = "DATA: ";
-		break;
-	case LOG_PROG:
-		err_str = "PROG: ";
-		break;
-	case LOG_IO:
-		err_str = "IO: ";
-		break;
-	case LOG_SPIN:
-		err_str = "SPIN: ";
-		break;
-	case LOG_RAW:
-		err_str = "RAW: ";
-		break;
-	default:
-		err_str = "UNK: ";
-	}
+    va_list ap;
 
-	(void)fputs("gpsctl:", stderr);
-	(void)fputs(err_str, stderr);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-    }
+    va_start(ap, fmt);
+    gpsd_labeled_report(debuglevel, errlevel, "gpsctl:", fmt, ap);
+    va_end(ap);
+			
 }
-
-/*@ -noret @*/
-static gps_mask_t get_packet(struct gps_device_t *session)
-/* try to get a well-formed packet from the GPS */
-{
-    static fd_set rfds;
-    gps_mask_t fieldmask;
-#ifdef COMPAT_SELECT
-    struct timeval tv;
-#else
-    struct timespec tv;
-    sigset_t oldset, blockset;
-
-    (void)sigemptyset(&blockset);
-    (void)sigaddset(&blockset, SIGHUP);
-    (void)sigaddset(&blockset, SIGINT);
-    (void)sigaddset(&blockset, SIGTERM);
-    (void)sigaddset(&blockset, SIGQUIT);
-    (void)sigprocmask(SIG_BLOCK, &blockset, &oldset);
-#endif /* COMPAT_SELECT */
-
-    FD_ZERO(&rfds);
-    for (;;) {
-	FD_CLR(session->gpsdata.gps_fd, &rfds);
-
-	/*@ -usedef -type -nullpass -compdef @*/
-	/*
-	 * If the timeout on this select isn't longer than the device's
-	 * cycle time, the code will be prone to flaky timing-dependent
-	 * failures.
-	 */
-	errno = 0;
-	tv.tv_sec = 2;
-#ifdef COMPAT_SELECT
-	tv.tv_usec = 0;
-	if (select(session->gpsdata.gps_fd + 1, &rfds, NULL, NULL, &tv) == -1) {
-#else
-	tv.tv_nsec = 0;
-	if (pselect(session->gpsdata.gps_fd + 1, &rfds, NULL, NULL, &tv, &oldset) == -1) {
-#endif
-	    if (errno == EINTR || !FD_ISSET(session->gpsdata.gps_fd, &rfds))
-		continue;
-	    gpsd_report(LOG_ERROR, "select %s\n", strerror(errno));
-	    exit(EXIT_FAILURE);
-	}
-	/*@ +usedef +type +nullpass +compdef @*/
-
-	fieldmask = gpsd_poll(session);
-
-	/* conditional prevents mask dumper from eating CPU */
-	if (debuglevel >= LOG_DATA)
-	    gpsd_report(LOG_DATA,
-			"packet mask = %s\n",
-			gps_maskdump(session->gpsdata.set));
-
-	if ((fieldmask &~ ONLINE_SET)!=0)
-	    return fieldmask;
-    }
-}
-/*@ +noret @*/
 
 static void settle(struct gps_device_t *session)
 /* allow the device to settle after a control operation */
@@ -146,6 +64,13 @@ static void settle(struct gps_device_t *session)
     (void)usleep(50000);
     (void)tcdrain(session->gpsdata.gps_fd);
 }
+
+/*
+ * Allows any response other than ERROR.  Use it for queries where a 
+ * failure return (due to, for example, a missing driver method) is 
+ * immediate, but successful responses have unpredictable lag.  
+ */
+#define NON_ERROR	0	/* must be distinct from any gps_mask_t value */
 
 static bool gps_query(/*@out@*/struct gps_data_t *gpsdata,
 		       gps_mask_t expect,
@@ -178,18 +103,18 @@ static bool gps_query(/*@out@*/struct gps_data_t *gpsdata,
 	(void)strlcat(buf, "\n", BUFSIZ);
     /*@-usedef@*/
     if (write(gpsdata->gps_fd, buf, strlen(buf)) <= 0) {
-	gpsd_report(LOG_ERROR, "gps_query(), write failed\n");
+	gpsd_report(context.debug, LOG_ERROR, "gps_query(), write failed\n");
 	return false;
     }
     /*@+usedef@*/
-    gpsd_report(LOG_PROG, "gps_query(), wrote, %s\n", buf);
+    gpsd_report(context.debug, LOG_PROG, "gps_query(), wrote, %s\n", buf);
 
     FD_ZERO(&rfds);
     starttime = time(NULL);
     for (;;) {
 	FD_CLR(gpsdata->gps_fd, &rfds);
 
-	gpsd_report(LOG_PROG, "waiting...\n");
+	gpsd_report(context.debug, LOG_PROG, "waiting...\n");
 
 	/*@ -usedef -type -nullpass -compdef @*/
 	tv.tv_sec = 2;
@@ -202,24 +127,24 @@ static bool gps_query(/*@out@*/struct gps_data_t *gpsdata,
 #endif
 	    if (errno == EINTR || !FD_ISSET(gpsdata->gps_fd, &rfds))
 		continue;
-	    gpsd_report(LOG_ERROR, "select %s\n", strerror(errno));
+	    gpsd_report(context.debug, LOG_ERROR, "select %s\n", strerror(errno));
 	    exit(EXIT_FAILURE);
 	}
 	/*@ +usedef +type +nullpass +compdef @*/
 
-	gpsd_report(LOG_PROG, "reading...\n");
+	gpsd_report(context.debug, LOG_PROG, "reading...\n");
 
 	(void)gps_read(gpsdata);
 	if (ERROR_SET & gpsdata->set) {
-	    gpsd_report(LOG_ERROR, "error '%s'\n", gpsdata->error);
+	    gpsd_report(context.debug, LOG_ERROR, "error '%s'\n", gpsdata->error);
 	    return false;
 	}
 
 	/*@ +ignorequals @*/
-	if ((expect & gpsdata->set) != 0)
+	if ((expect == NON_ERROR) || (expect & gpsdata->set) != 0)
 	    return true;
-	else if (time(NULL) - starttime > timeout) {
-	    gpsd_report(LOG_ERROR,
+	else if (timeout > 0 && (time(NULL) - starttime > timeout)) {
+	    gpsd_report(context.debug, LOG_ERROR,
 			"timed out after %d seconds\n",
 			timeout);
 	    return false;
@@ -233,10 +158,10 @@ static bool gps_query(/*@out@*/struct gps_data_t *gpsdata,
 static void onsig(int sig)
 {
     if (sig == SIGALRM) {
-	gpsd_report(LOG_ERROR, "packet recognition timed out.\n");
+	gpsd_report(context.debug, LOG_ERROR, "packet recognition timed out.\n");
 	exit(EXIT_FAILURE);
     } else {
-	gpsd_report(LOG_ERROR, "killed by signal %d\n", sig);
+	gpsd_report(context.debug, LOG_ERROR, "killed by signal %d\n", sig);
 	exit(EXIT_SUCCESS);
     }
 }
@@ -254,6 +179,23 @@ static char /*@observer@*/ *gpsd_id( /*@in@ */ struct gps_device_t *session)
 	(void)strlcat(buf, session->subtype, sizeof(buf));
     }
     return (buf);
+}
+
+static void ctlhook(struct gps_device_t *device UNUSED, gps_mask_t changed UNUSED)
+/* recognize when we've achieved sync */
+{
+    static int packet_counter = 0;
+
+    /*
+     * If it's NMEA, go back around enough times for the type probes to
+     * reveal any secret identity (like SiRF or UBX) the chip might have.
+     * If it's not, getting more packets might fetch subtype information.
+     */
+    if (packet_counter++ >= REDIRECT_SNIFF)
+    {
+	hunting = false;
+	(void) alarm(0);
+    }
 }
 
 int main(int argc, char **argv)
@@ -281,7 +223,8 @@ int main(int argc, char **argv)
 #ifdef RECONFIGURE_ENABLE
 	    rate = optarg;
 #else
-	    gpsd_report(LOG_ERROR, "cycle-change capability has been conditioned out.\n");
+	    gpsd_report(context.debug, LOG_ERROR,
+			"cycle-change capability has been conditioned out.\n");
 #endif /* RECONFIGURE_ENABLE */
 	    break;
 	case 'x':		/* ship specified control string */
@@ -289,12 +232,13 @@ int main(int argc, char **argv)
 	    control = optarg;
 	    lowlevel = true;
 	    if ((cooklen = hex_escapes(cooked, control)) <= 0) {
-		gpsd_report(LOG_ERROR,
+		gpsd_report(context.debug, LOG_ERROR,
 			    "invalid escape string (error %d)\n", (int)cooklen);
 		exit(EXIT_FAILURE);
 	    }
 #else
-	    gpsd_report(LOG_ERROR, "control_send capability has been conditioned out.\n");
+	    gpsd_report(context.debug, LOG_ERROR,
+			"control_send capability has been conditioned out.\n");
 #endif /* CONTROLSEND_ENABLE */
 	    break;
 	case 'e':		/* echo specified control string with wrapper */
@@ -333,7 +277,8 @@ int main(int argc, char **argv)
 #ifdef RECONFIGURE_ENABLE
 	    to_nmea = true;
 #else
-	    gpsd_report(LOG_ERROR, "speed-change capability has been conditioned out.\n");
+	    gpsd_report(context.debug, LOG_ERROR,
+			"speed-change capability has been conditioned out.\n");
 #endif /* RECONFIGURE_ENABLE */
 	    break;
 	case 'r':		/* force-switch to default mode */
@@ -341,14 +286,16 @@ int main(int argc, char **argv)
 	    reset = true;
 	    lowlevel = false;	/* so we'll abort if the daemon is running */
 #else
-	    gpsd_report(LOG_ERROR, "reset capability has been conditioned out.\n");
+	    gpsd_report(context.debug, LOG_ERROR,
+			"reset capability has been conditioned out.\n");
 #endif /* RECONFIGURE_ENABLE */
 	    break;
 	case 's':		/* change output baud rate */
 #ifdef RECONFIGURE_ENABLE
 	    speed = optarg;
 #else
-	    gpsd_report(LOG_ERROR, "speed-change capability has been conditioned out.\n");
+	    gpsd_report(context.debug, LOG_ERROR,
+			"speed-change capability has been conditioned out.\n");
 #endif /* RECONFIGURE_ENABLE */
 	    break;
 	case 't':		/* force the device type */
@@ -356,6 +303,7 @@ int main(int argc, char **argv)
 	    break;
 	case 'T':		/* set the timeout on packet recognition */
 	    timeout = (unsigned)atoi(optarg);
+	    explicit_timeout = true;
 	    break;
 	case 'D':		/* set debugging level */
 	    debuglevel = atoi(optarg);
@@ -366,7 +314,7 @@ int main(int argc, char **argv)
 	case 'V':
 	    (void)fprintf(stderr, "version %s (revision %s)\n",
 			  VERSION, REVISION);
-	    break;
+	    exit(EXIT_SUCCESS);
 	case 'h':
 	default:
 	    fprintf(stderr, USAGE);
@@ -386,19 +334,22 @@ int main(int argc, char **argv)
 	    }
 	}
 	if (matchcount == 0)
-	    gpsd_report(LOG_ERROR, "no driver type name matches '%s'.\n", devtype);
+	    gpsd_report(context.debug, LOG_ERROR,
+			"no driver type name matches '%s'.\n", devtype);
 	else if (matchcount == 1) {
 	    assert(forcetype != NULL);
-	    gpsd_report(LOG_PROG, "%s driver selected.\n", forcetype->type_name);
+	    gpsd_report(context.debug, LOG_PROG,
+			"%s driver selected.\n", forcetype->type_name);
 	} else {
 	    forcetype = NULL;
-	    gpsd_report(LOG_ERROR, "%d driver type names match '%s'.\n",
+	    gpsd_report(context.debug, LOG_ERROR,
+			"%d driver type names match '%s'.\n",
 			matchcount, devtype);
 	}
     }
 
     if (((int)to_nmea + (int)to_binary + (int)reset) > 1) {
-	gpsd_report(LOG_ERROR, "make up your mind, would you?\n");
+	gpsd_report(context.debug, LOG_ERROR, "make up your mind, would you?\n");
 	exit(EXIT_SUCCESS);
     }
 
@@ -410,7 +361,8 @@ int main(int argc, char **argv)
     if (!lowlevel) {
 	/* Try to open the stream to gpsd. */
 	if (gps_open(NULL, NULL, &gpsdata) != 0) {
-	    gpsd_report(LOG_ERROR, "no gpsd running or network error: %s.\n",
+	    gpsd_report(context.debug, LOG_ERROR,
+			"no gpsd running or network error: %s.\n",
 			netlib_errstr(errno));
 	    lowlevel = true;
 	}
@@ -420,23 +372,27 @@ int main(int argc, char **argv)
     if (!lowlevel) {
 	int i, devcount;
 
+	if (!explicit_timeout)
+	    timeout = HIGH_LEVEL_TIMEOUT;
+
 	/* what devices have we available? */
 	if (!gps_query(&gpsdata, DEVICELIST_SET, (int)timeout, "?DEVICES;\n")) {
-	    gpsd_report(LOG_ERROR, "no DEVICES response received.\n");
+	    gpsd_report(context.debug, LOG_ERROR, "no DEVICES response received.\n");
 	    (void)gps_close(&gpsdata);
 	    exit(EXIT_FAILURE);
 	}
 	if (gpsdata.devices.ndevices == 0) {
-	    gpsd_report(LOG_ERROR, "no devices connected.\n");
+	    gpsd_report(context.debug, LOG_ERROR, "no devices connected.\n");
 	    (void)gps_close(&gpsdata);
 	    exit(EXIT_FAILURE);
 	} else if (gpsdata.devices.ndevices > 1 && device == NULL) {
-	    gpsd_report(LOG_ERROR,
+	    gpsd_report(context.debug, LOG_ERROR,
 			"multiple devices and no device specified.\n");
 	    (void)gps_close(&gpsdata);
 	    exit(EXIT_FAILURE);
 	}
-	gpsd_report(LOG_PROG,"%d device(s) found.\n",gpsdata.devices.ndevices);
+	gpsd_report(context.debug, LOG_PROG,
+		    "%d device(s) found.\n",gpsdata.devices.ndevices);
 
 	/* try to mine the devicelist return for the data we want */
 	if (gpsdata.devices.ndevices == 1 && device == NULL) {
@@ -448,7 +404,8 @@ int main(int argc, char **argv)
 		if (strcmp(device, gpsdata.devices.list[i].path) == 0) {
 		    goto devicelist_entry_matches;
 		}
-	    gpsd_report(LOG_ERROR, "specified device not found in device list.\n");
+	    gpsd_report(context.debug, LOG_ERROR,
+			"specified device not found in device list.\n");
 	    (void)gps_close(&gpsdata);
 	    exit(EXIT_FAILURE);
 	devicelist_entry_matches:;
@@ -461,7 +418,7 @@ int main(int argc, char **argv)
 	/* if the device has not identified, watch it until it does so */
 	if (gpsdata.dev.driver[0] == '\0') {
 	    if (gps_stream(&gpsdata, WATCH_ENABLE|WATCH_JSON, NULL) == -1) {
-		gpsd_report(LOG_ERROR, "stream set failed.\n");
+		gpsd_report(context.debug, LOG_ERROR, "stream set failed.\n");
 		(void)gps_close(&gpsdata);
 		exit(EXIT_FAILURE);
 	    }
@@ -469,7 +426,7 @@ int main(int argc, char **argv)
 	    while (devcount > 0) {
 		errno = 0;
 		if (gps_read(&gpsdata) == -1) {
-		    gpsd_report(LOG_ERROR, "data read failed.\n");
+		    gpsd_report(context.debug, LOG_ERROR, "data read failed.\n");
 		    (void)gps_close(&gpsdata);
 		    exit(EXIT_FAILURE);
 		}
@@ -482,7 +439,7 @@ int main(int argc, char **argv)
 		    }
 		}
 	    }
-	    gpsd_report(LOG_ERROR, "data read failed.\n");
+	    gpsd_report(context.debug, LOG_ERROR, "data read failed.\n");
 	    (void)gps_close(&gpsdata);
 	    exit(EXIT_FAILURE);
 	matching_device_seen:;
@@ -490,7 +447,7 @@ int main(int argc, char **argv)
 
 	/* sanity check */
 	if (gpsdata.dev.driver[0] == '\0') {
-	    gpsd_report(LOG_SHOUT, "%s can't be identified.\n",
+	    gpsd_report(context.debug, LOG_SHOUT, "%s can't be identified.\n",
 			gpsdata.dev.path);
 	    (void)gps_close(&gpsdata);
 	    exit(EXIT_SUCCESS);
@@ -498,34 +455,60 @@ int main(int argc, char **argv)
 
 	/* if no control operation was specified, just ID the device */
 	if (speed==NULL && rate == NULL && !to_nmea && !to_binary && !reset) {
-		gpsd_report(LOG_SHOUT, "%s identified as %s at %d\n",
-			    gpsdata.dev.path,
-			    gpsdata.dev.driver,
-			    gpsdata.dev.baudrate);
+	    (void)printf("%s identified as a %s", 
+			 gpsdata.dev.path, gpsdata.dev.driver);
+	    if (gpsdata.dev.subtype[0] != '\0') {
+		(void)fputc(' ', stdout);
+		(void)fputs(gpsdata.dev.subtype, stdout);
+	    }
+	    if (gpsdata.dev.baudrate > 0)
+		(void)printf(" at %u baud", gpsdata.dev.baudrate);
+	    (void)fputc('.', stdout);
+	    (void)fputc('\n', stdout);
 	}
 
 	status = 0;
 #ifdef RECONFIGURE_ENABLE
 	if (reset)
 	{
-	    gpsd_report(LOG_PROG, "cannot reset with gpsd running.\n");
+	    gpsd_report(context.debug, LOG_PROG,
+			"cannot reset with gpsd running.\n");
 	    exit(EXIT_SUCCESS);
 	}
 
 	/*@-boolops@*/
+	/*
+	 * We used to wait on DEVICE_SET here.  That doesn't work
+	 * anymore because when the demon generates its response it
+	 * sets the mode bit in the response from the current packet
+	 * type, which may not have changed (probably will not have
+	 * changed) even though the command to switch modes has been
+	 * sent and will shortly take effect.
+	 */
 	if (to_nmea) {
-	    if (!gps_query(&gpsdata, DEVICE_SET, (int)timeout, "?DEVICE={\"path\":\"%s\",\"native\":0}\r\n", device) || (gpsdata.dev.driver_mode != MODE_NMEA)) {
-		gpsd_report(LOG_ERROR, "%s mode change to NMEA failed\n", gpsdata.dev.path);
+	    if (!gps_query(&gpsdata, NON_ERROR, (int)timeout, 
+			   "?DEVICE={\"path\":\"%s\",\"native\":0}\r\n",
+			   device)) {
+		gpsd_report(context.debug, LOG_ERROR,
+			    "%s mode change to NMEA failed\n",
+			    gpsdata.dev.path);
 		status = 1;
 	    } else
-		gpsd_report(LOG_PROG, "%s mode change succeeded\n", gpsdata.dev.path);
+		gpsd_report(context.debug, LOG_PROG,
+			    "%s mode change succeeded\n", gpsdata.dev.path);
 	}
 	else if (to_binary) {
-	    if (gps_query(&gpsdata, DEVICE_SET, (int)timeout, "?DEVICE={\"path\":\"%s\",\"native\":1}\r\n", device) || (gpsdata.dev.driver_mode != MODE_BINARY)) {
-		gpsd_report(LOG_ERROR, "%s mode change to native mode failed\n", gpsdata.dev.path);
+	    if (!gps_query(&gpsdata, NON_ERROR, (int)timeout,
+			   "?DEVICE={\"path\":\"%s\",\"native\":1}\r\n",
+			   device)) {
+		gpsd_report(context.debug, LOG_ERROR,
+			    "%s mode change to native mode failed\n",
+			    gpsdata.dev.path);
 		status = 1;
 	    } else
-		gpsd_report(LOG_PROG, "%s mode change succeeded\n", gpsdata.dev.path);
+		gpsd_report(context.debug, LOG_PROG,
+			    "%s mode change succeeded\n",
+			    gpsdata.dev.path);
 	}
 	/*@+boolops@*/
 	if (speed != NULL) {
@@ -543,17 +526,20 @@ int main(int argc, char **argv)
 		if (modespec!=NULL) {
 		    *modespec = '\0';
 		    if (strchr("78", *++modespec) == NULL) {
-			gpsd_report(LOG_ERROR, "No support for that word lengths.\n");
+			gpsd_report(context.debug, LOG_ERROR,
+				    "No support for that word length.\n");
 			status = 1;
 		    }
 		    parity = *++modespec;
 		    if (strchr("NOE", parity) == NULL) {
-			gpsd_report(LOG_ERROR, "What parity is '%c'?\n", parity);
+			gpsd_report(context.debug, LOG_ERROR,
+				    "What parity is '%c'?\n", parity);
 			status = 1;
 		    }
 		    stopbits = *++modespec;
 		    if (strchr("12", stopbits) == NULL) {
-			gpsd_report(LOG_ERROR, "Stop bits must be 1 or 2.\n");
+			gpsd_report(context.debug, LOG_ERROR,
+				    "Stop bits must be 1 or 2.\n");
 			status = 1;
 		    }
 		}
@@ -564,12 +550,14 @@ int main(int argc, char **argv)
 				     device, speed, parity, stopbits);
 	    }
 	    if (atoi(speed) != (int)gpsdata.dev.baudrate) {
-		gpsd_report(LOG_ERROR, "%s driver won't support %s%c%c\n",
+		gpsd_report(context.debug, LOG_ERROR,
+			    "%s driver won't support %s%c%c\n",
 			    gpsdata.dev.path,
 			    speed, parity, stopbits);
 		status = 1;
 	    } else
-		gpsd_report(LOG_PROG, "%s change to %s%c%c succeeded\n",
+		gpsd_report(context.debug, LOG_PROG,
+			    "%s change to %s%c%c succeeded\n",
 			    gpsdata.dev.path,
 			    speed, parity, stopbits);
 	}
@@ -586,12 +574,12 @@ int main(int argc, char **argv)
     } else if (reset) {
 	/* hard reset will go through lower-level operations */
 	const int speeds[] = {2400, 4800, 9600, 19200, 38400, 57600, 115200};
-	static struct gps_context_t	context;	/* start it zeroed */
 	static struct gps_device_t	session;	/* zero this too */
 	int i;
 
 	if (device == NULL || forcetype == NULL) {
-		gpsd_report(LOG_ERROR, "device and type must be specified for the reset operation.\n");
+		gpsd_report(context.debug, LOG_ERROR,
+			    "device and type must be specified for the reset operation.\n");
 		exit(EXIT_FAILURE);
 	    }
 
@@ -621,8 +609,16 @@ int main(int argc, char **argv)
 #endif /* RECONFIGURE_ENABLE */
     } else {
 	/* access to the daemon failed, use the low-level facilities */
-	static struct gps_context_t	context;	/* start it zeroed */
 	static struct gps_device_t	session;	/* zero this too */
+	fd_set all_fds;
+	fd_set rfds;
+
+	/*
+	 * Unless the user explicitly requested it, always run to end of 
+	 * hunt rather than timing out. Otherwise we can easily get messages
+	 * that spuriously look like failure at high baud rates. 
+	 */
+
 	/*@ -mustfreeonly -immediatetrans @*/
 	gps_context_init(&context);
 	context.debug = debuglevel;
@@ -631,66 +627,89 @@ int main(int argc, char **argv)
 	if (echo)
 	    context.readonly = true;
 
-	(void) alarm(timeout);
-	(void) signal(SIGALRM, onsig);
+	if (timeout > 0) {
+	    (void) alarm(timeout);
+	    (void) signal(SIGALRM, onsig);
+	}
 	/*
 	 * Unless the user has forced a type and only wants to see the
 	 * string (not send it) we now need to try to open the device
 	 * and find out what is actually there.
 	 */
 	if (!(forcetype != NULL && echo)) {
-	    int seq;
-
+	    int maxfd = 0;
 	    if (device == NULL) {
-		gpsd_report(LOG_ERROR, "device must be specified for low-level access.\n");
+		gpsd_report(context.debug, LOG_ERROR,
+			    "device must be specified for low-level access.\n");
 		exit(EXIT_FAILURE);
 	    }
-	    gpsd_time_init(&context, time(NULL));
+
 	    gpsd_init(&session, &context, device);
-	    gpsd_report(LOG_PROG, "initialization passed.\n");
-	    if (gpsd_activate(&session) == -1) {
-		gpsd_report(LOG_ERROR,
-			      "activation of device %s failed, errno=%d\n",
-			      device, errno);
+	    if (gpsd_activate(&session, O_PROBEONLY) < 0) {
+		gpsd_report(context.debug, LOG_ERROR,
+			    "initial GPS device %s open failed\n",
+			    device);
 		exit(EXIT_FAILURE);
 	    }
-	    /* hunt for packet type and serial parameters */
-	    for (seq = 0; session.device_type == NULL; seq++) {
-		if (get_packet(&session) == ERROR_SET) {
-		    gpsd_report(LOG_ERROR,
-				"autodetection failed.\n");
+	    gpsd_report(context.debug, LOG_INF, 
+			"device %s activated\n", session.gpsdata.dev.path);
+	    /*@i1@*/FD_SET(session.gpsdata.gps_fd, &all_fds);
+	    if (session.gpsdata.gps_fd > maxfd)
+		 maxfd = session.gpsdata.gps_fd;
+
+	    /* initialize the GPS context's time fields */
+	    gpsd_time_init(&context, time(NULL));
+
+	    /*@-compdef@*/
+	    /* grab packets until we time out, get sync, or fail sync */
+	    for (hunting = true; hunting; )
+	    {
+		switch(gpsd_await_data(&rfds, maxfd, &all_fds, context.debug))
+		{
+		case AWAIT_GOT_INPUT:
+		    break;
+		case AWAIT_NOT_READY:
+		    continue;
+		case AWAIT_FAILED:
 		    exit(EXIT_FAILURE);
-		} else if (session.packet.type > COMMENT_PACKET) {
-		    gpsd_report(LOG_IO,
-				"autodetection after %d reads finds packet type %d.\n", seq, session.packet.type);
-		    (void) alarm(0);
+		}
+
+		switch(gpsd_multipoll(FD_ISSET(session.gpsdata.gps_fd, &rfds),
+					       &session, ctlhook, 0))
+		{
+		case DEVICE_READY:
+		    FD_SET(session.gpsdata.gps_fd, &all_fds);
+		    break;
+		case DEVICE_UNREADY:
+		    FD_CLR(session.gpsdata.gps_fd, &all_fds);
+		    break;
+		case DEVICE_ERROR:
+		    /* this is where a failure to sync lands */
+		    gpsd_report(context.debug, LOG_WARN,
+				"device error, bailing out.\n");
+		    exit(EXIT_FAILURE);
+		default:
 		    break;
 		}
 	    }
-	    gpsd_report(LOG_PROG, "%s looks like a %s at %d.\n",
-			device, gpsd_id(&session), session.gpsdata.dev.baudrate);
+	    /*@+compdef@*/
 
-	    if (forcetype!=NULL && strcmp("Generic NMEA", session.device_type->type_name) !=0 && strcmp(forcetype->type_name, session.device_type->type_name)!=0) {
-		gpsd_report(LOG_ERROR, "'%s' doesn't match non-generic type '%s' of selected device.\n", forcetype->type_name, session.device_type->type_name);
-	    }
+	    gpsd_report(context.debug, LOG_PROG,
+			"%s looks like a %s at %d.\n",
+			device, gpsd_id(&session),
+			session.gpsdata.dev.baudrate);
 
-	    /*
-	     * If we've identified this as an NMEA device, we have to eat
-	     * packets for a while to see if one of our probes elicits an
-	     * ID response telling us that it's really a SiRF or
-	     * something.  If so, the libgpsd(3) layer will automatically
-	     * redispatch to the correct driver type.
-	     */
-	    if (strcmp(session.device_type->type_name, "Generic NMEA") == 0) {
-		int dummy;
-		for (dummy = 0; dummy < REDIRECT_SNIFF; dummy++) {
-		    if ((get_packet(&session) & DEVICEID_SET)!=0)
-			break;
-		}
+	    if (forcetype!=NULL && strcmp("NMEA0183", session.device_type->type_name) !=0 && strcmp(forcetype->type_name, session.device_type->type_name)!=0) {
+		gpsd_report(context.debug, LOG_ERROR,
+			    "'%s' doesn't match non-generic type '%s' of selected device.\n",
+			    forcetype->type_name,
+			    session.device_type->type_name);
 	    }
-	    gpsd_report(LOG_SHOUT, "%s identified as a %s at %d.\n",
-			device, gpsd_id(&session), session.gpsdata.dev.baudrate);
 	}
+
+	(void)printf("%s identified as a %s at %u baud.\n",
+                       device, gpsd_id(&session),
+                       session.gpsdata.dev.baudrate);
 
 	/* if no control operation was specified, we're done */
 	if (speed==NULL && !to_nmea && !to_binary && control==NULL)
@@ -712,15 +731,15 @@ int main(int argc, char **argv)
 	    bool write_enable = context.readonly;
 	    context.readonly = false;
 	    if (session.device_type->mode_switcher == NULL) {
-		gpsd_report(LOG_SHOUT,
+		gpsd_report(context.debug, LOG_SHOUT,
 			      "%s devices have no mode switch.\n",
 			      session.device_type->type_name);
 		status = 1;
 	    } else {
 		int target_mode = to_nmea ? MODE_NMEA : MODE_BINARY;
 
-		gpsd_report(LOG_SHOUT,
-			      "switching to mode %s.\n",
+		gpsd_report(context.debug, LOG_SHOUT,
+			    "switching to mode %s.\n",
 			    to_nmea ? "NMEA" : "BINARY");
 		session.device_type->mode_switcher(&session, target_mode);
 		settle(&session);
@@ -738,24 +757,27 @@ int main(int argc, char **argv)
 	    if (modespec!=NULL) {
 		*modespec = '\0';
 		if (strchr("78", *++modespec) == NULL) {
-		    gpsd_report(LOG_ERROR, "No support for that word lengths.\n");
+		    gpsd_report(context.debug, LOG_ERROR,
+				"No support for that word lengths.\n");
 		    status = 1;
 		}
 		parity = *++modespec;
 		if (strchr("NOE", parity) == NULL) {
-		    gpsd_report(LOG_ERROR, "What parity is '%c'?\n", parity);
+		    gpsd_report(context.debug, LOG_ERROR,
+				"What parity is '%c'?\n", parity);
 		    status = 1;
 		}
 		stopbits = *++modespec;
 		if (strchr("12", parity) == NULL) {
-		    gpsd_report(LOG_ERROR, "Stop bits must be 1 or 2.\n");
+		    gpsd_report(context.debug, LOG_ERROR,
+				"Stop bits must be 1 or 2.\n");
 		    status = 1;
 		}
 		stopbits = (int)(stopbits-'0');
 	    }
 	    if (status == 0) {
 		if (session.device_type->speed_switcher == NULL) {
-		    gpsd_report(LOG_ERROR,
+		    gpsd_report(context.debug, LOG_ERROR,
 				"%s devices have no speed switch.\n",
 				session.device_type->type_name);
 		    status = 1;
@@ -765,11 +787,13 @@ int main(int argc, char **argv)
 							     parity,
 							     stopbits)) {
 		    settle(&session);
-		    gpsd_report(LOG_PROG, "%s change to %s%c%d succeeded\n",
-			    session.gpsdata.dev.path,
-			    speed, parity, stopbits);
+		    gpsd_report(context.debug, LOG_PROG,
+				"%s change to %s%c%d succeeded\n",
+				session.gpsdata.dev.path,
+				speed, parity, stopbits);
 		} else {
-		    gpsd_report(LOG_ERROR, "%s driver won't support %s%c%d.\n",
+		    gpsd_report(context.debug, LOG_ERROR,
+				"%s driver won't support %s%c%d.\n",
 				session.gpsdata.dev.path,
 				speed, parity, stopbits);
 		    status = 1;
@@ -780,7 +804,7 @@ int main(int argc, char **argv)
 	    bool write_enable = context.readonly;
 	    context.readonly = false;
 	    if (session.device_type->rate_switcher == NULL) {
-		gpsd_report(LOG_ERROR,
+		gpsd_report(context.debug, LOG_ERROR,
 			      "%s devices have no rate switcher.\n",
 			      session.device_type->type_name);
 		status = 1;
@@ -788,7 +812,7 @@ int main(int argc, char **argv)
 		double rate_dbl = strtod(rate, NULL);
 
 		if (!session.device_type->rate_switcher(&session, rate_dbl)) {
-		    gpsd_report(LOG_ERROR, "rate switch failed.\n");
+		    gpsd_report(context.debug, LOG_ERROR, "rate switch failed.\n");
 		    status = 1;
 		}
 		settle(&session);
@@ -802,7 +826,7 @@ int main(int argc, char **argv)
 	    bool write_enable = context.readonly;
 	    context.readonly = false;
 	    if (session.device_type->control_send == NULL) {
-		gpsd_report(LOG_ERROR,
+		gpsd_report(context.debug, LOG_ERROR,
 			      "%s devices have no control sender.\n",
 			      session.device_type->type_name);
 		status = 1;
@@ -810,7 +834,8 @@ int main(int argc, char **argv)
 		if (session.device_type->control_send(&session,
 						      cooked,
 						      (size_t)cooklen) == -1) {
-		    gpsd_report(LOG_ERROR, "control transmission failed.\n");
+		    gpsd_report(context.debug, LOG_ERROR,
+				"control transmission failed.\n");
 		    status = 1;
 		}
 		settle(&session);

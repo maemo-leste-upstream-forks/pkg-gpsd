@@ -26,6 +26,7 @@ BSD terms apply: see the file COPYING in the distribution root for details.
       <arg choice='opt'>-V </arg>
       <arg choice='opt'>-h </arg>
       <arg choice='opt'>-n </arg>
+      <arg choice='opt'>-a </arg>
       <arg choice='opt'>-l <replaceable>logfile</replaceable></arg>
       <arg choice='opt'>-t <replaceable>driver-prefix</replaceable></arg>
       <arg choice='opt'>
@@ -84,6 +85,13 @@ connection. In direct-connect mode <application>gpsmon</application>
 will hunt for a correct baud rate and lock on to it
 automatically.</para>
 
+<para>Unlike <application>gpsd</application>,
+<application>gpsmon</application> run in direct mode does not do its
+own device probing.  Thus, in particular, if you point it at a
+GPS with a native binary mode that happens to be emitting NMEA, it
+won't identify the actual type unless the device emits a recognizable
+NMEA trigger sentence.  The -t and -i options may help you.</para>
+
 <para>The -F option is only valid in client mode; it specifies a
 control socket to which the program should send device control
 strings.  You must specify a valid pathname of a Unix-domain socket on
@@ -104,7 +112,7 @@ immediately on device open.  This may be useful is, for example,
 you want to capture the startup message from a device that displays
 firmware version information there.</para>
 
-<para>The -n option forces gpsmon to request nmea183 packets instead of the
+<para>The -n option forces gpsmon to request NMEA0183 packets instead of the
 raw datastream from gpsd.</para>
 
 <para>The -t option sets up a fallback type. Give it a string that
@@ -114,11 +122,21 @@ by the packet type lacks those capabilities.  Most useful when the
 packet type is NMEA but the device is known to have a binary mode,
 such as SiRF binary.</para>
 
-<para>After startup, the top part of the screen reports the contents
-of several especially interesting packet types.  The bottom half of
-the screen is a scrolling hex dump of all packets the GPS is issuing.
-Dump lines beginning &gt;&gt;&gt; represent control packets sent to the
-GPS.</para>
+<para>The -a option enables a special debugging mode that does not
+use screen painting.  Packets are dumped normally; any character 
+typed suspends packet dumping and brings up a command prompt. This
+feature will mainly be of interest to GPSD developers.</para>
+
+<para>After startup (without -a), the top part of the screen reports
+the contents of several especially interesting packet types.  The "PPS
+offset" field, if nonempty, is the delta between the last 1PPS top of
+second and the system clock at that time.</para>
+
+<para>The bottom half of the screen is a scrolling hex dump of all
+packets the GPS is issuing.  Dump lines beginning &gt;&gt;&gt;
+represent control packets sent to the GPS. Lines consisting of "PPS"
+surrounded by dashes, if present, indicate 1PPS and the start of the
+reporting cycle.</para>
 
 </refsect1>
 <refsect1 id='commands'><title>COMMANDS</title>
@@ -265,8 +283,9 @@ These will be shipped to the device.</para>
 but all extended NMEA devices for which
 <application>gpsmon</application> presently has support.)</para>
 
-<para>All fields are raw data from the GPS except the "Cooked PVT"
-window near top of screen, provided as a sheck.</para>
+<para>All fields are raw data from the GPS except (a) the "Cooked PVT"
+window near top of screen, provided as a check and (b) the "PPS
+offset" field.</para>
 
 <para>There are no device-specific commands. Which generic
 commands are available may vary by type: examine the output
@@ -276,7 +295,8 @@ of <command>gpsmon -l</command> to learn more.</para>
 <refsect2><title>SiRF support</title>
 <para>Most information is raw from the GPS.  Underlined fields are
 derived by translation from ECEF coordinates or application of
-leap-second and local time-zone offsets.</para>
+leap-second and local time-zone offsets. 1PPS is the clock lag as
+usual.</para>
 
 <para>The following commands are supported for SiRF GPSes only:</para>
 
@@ -322,13 +342,18 @@ the 'M' command.</para>
 <citetitle>SiRF Binary Protocol Reference Manual</citetitle>.</para>
 
 </refsect2>
+<refsect2><title>u-blox support</title>
+<para>Most information is raw from the GPS. Underlined fields are
+derived by translation from ECEF coordinates. 1PPS is the clock lag as
+usual. There are no per-type special commands.</para>
+
+</refsect2>
 </refsect1>
 <refsect1 id='bugs'><title>BUGS AND LIMITATIONS</title>
 
-<para>If you run <application>gpsmon</application> in client mode,
-and kill the daemon while <application>gpsmon</application> is
-still running, <application>gpsmon</application> will hang.
-Don't do that...</para>
+<para>The PPS Offset field will never be updated when running in
+client mode, even if you can see PPS events in the packet window.
+This limitation may be fixed in a future release.</para>
 
 <!--
 Debug window dumps of control message sends to the GPS (preceded

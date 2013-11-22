@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsmon
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
 .\"      Date: 17 Feb 2009
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -31,7 +31,7 @@
 gpsmon \- real\-time GPS packet monitor and control utility
 .SH "SYNOPSIS"
 .HP \w'\fBgpsmon\fR\ 'u
-\fBgpsmon\fR [\-L] [\-V] [\-h] [\-n] [\-l\ \fIlogfile\fR] [\-t\ \fIdriver\-prefix\fR] [[\ \fIserver\fR\ [\fI:port\fR\ [\fI:device\fR]]\ |\ \fIdevice\fR]] [\-D\ \fIdebuglevel\fR]
+\fBgpsmon\fR [\-L] [\-V] [\-h] [\-n] [\-a] [\-l\ \fIlogfile\fR] [\-t\ \fIdriver\-prefix\fR] [[\ \fIserver\fR\ [\fI:port\fR\ [\fI:device\fR]]\ |\ \fIdevice\fR]] [\-D\ \fIdebuglevel\fR]
 .SH "DESCRIPTION"
 .PP
 gpsmon
@@ -52,6 +52,11 @@ daemon (and its associated control socket) or directly connected to a specified 
 gpsmon
 will hunt for a correct baud rate and lock on to it automatically\&.
 .PP
+Unlike
+gpsd,
+gpsmon
+run in direct mode does not do its own device probing\&. Thus, in particular, if you point it at a GPS with a native binary mode that happens to be emitting NMEA, it won\*(Aqt identify the actual type unless the device emits a recognizable NMEA trigger sentence\&. The \-t and \-i options may help you\&.
+.PP
 The \-F option is only valid in client mode; it specifies a control socket to which the program should send device control strings\&. You must specify a valid pathname of a Unix\-domain socket on your local filesystem\&.
 .PP
 The \-D option enables packet\-getter debugging output and is probably only useful to developers of the GPSD code\&. Consult the packet\-getter source code for relevant values\&.
@@ -62,11 +67,15 @@ has built\-in support for, and which generic commands can be applied to which GP
 .PP
 The \-l option sets up logging to a specified file to start immediately on device open\&. This may be useful is, for example, you want to capture the startup message from a device that displays firmware version information there\&.
 .PP
-The \-n option forces gpsmon to request nmea183 packets instead of the raw datastream from gpsd\&.
+The \-n option forces gpsmon to request NMEA0183 packets instead of the raw datastream from gpsd\&.
 .PP
 The \-t option sets up a fallback type\&. Give it a string that is a distinguishing prefix of exactly one driver type name; this will be used for mode, speed, and rate switching if the driver selected by the packet type lacks those capabilities\&. Most useful when the packet type is NMEA but the device is known to have a binary mode, such as SiRF binary\&.
 .PP
-After startup, the top part of the screen reports the contents of several especially interesting packet types\&. The bottom half of the screen is a scrolling hex dump of all packets the GPS is issuing\&. Dump lines beginning >>> represent control packets sent to the GPS\&.
+The \-a option enables a special debugging mode that does not use screen painting\&. Packets are dumped normally; any character typed suspends packet dumping and brings up a command prompt\&. This feature will mainly be of interest to GPSD developers\&.
+.PP
+After startup (without \-a), the top part of the screen reports the contents of several especially interesting packet types\&. The "PPS offset" field, if nonempty, is the delta between the last 1PPS top of second and the system clock at that time\&.
+.PP
+The bottom half of the screen is a scrolling hex dump of all packets the GPS is issuing\&. Dump lines beginning >>> represent control packets sent to the GPS\&. Lines consisting of "PPS" surrounded by dashes, if present, indicate 1PPS and the start of the reporting cycle\&.
 .SH "COMMANDS"
 .PP
 The following device\-independent commands are available while
@@ -152,14 +161,14 @@ Unfreeze display, resume normal operation\&.
 gpsmon
 presently has support\&.)
 .PP
-All fields are raw data from the GPS except the "Cooked PVT" window near top of screen, provided as a sheck\&.
+All fields are raw data from the GPS except (a) the "Cooked PVT" window near top of screen, provided as a check and (b) the "PPS offset" field\&.
 .PP
 There are no device\-specific commands\&. Which generic commands are available may vary by type: examine the output of
 \fBgpsmon \-l\fR
 to learn more\&.
 .SS "SiRF support"
 .PP
-Most information is raw from the GPS\&. Underlined fields are derived by translation from ECEF coordinates or application of leap\-second and local time\-zone offsets\&.
+Most information is raw from the GPS\&. Underlined fields are derived by translation from ECEF coordinates or application of leap\-second and local time\-zone offsets\&. 1PPS is the clock lag as usual\&.
 .PP
 The following commands are supported for SiRF GPSes only:
 .PP
@@ -183,18 +192,14 @@ P
 .PP
 To interpret what you see, you will need a copy of the
 SiRF Binary Protocol Reference Manual\&.
+.SS "u\-blox support"
+.PP
+Most information is raw from the GPS\&. Underlined fields are derived by translation from ECEF coordinates\&. 1PPS is the clock lag as usual\&. There are no per\-type special commands\&.
 .SH "BUGS AND LIMITATIONS"
 .PP
-If you run
-gpsmon
-in client mode, and kill the daemon while
-gpsmon
-is still running,
-gpsmon
-will hang\&. Don\*(Aqt do that\&.\&.\&.
+The PPS Offset field will never be updated when running in client mode, even if you can see PPS events in the packet window\&. This limitation may be fixed in a future release\&.
 .SH "SEE ALSO"
 .PP
-
 \fBgpsd\fR(8),
 \fBgpsdctl\fR(8),
 \fBgps\fR(1),
@@ -208,4 +213,4 @@ will hang\&. Don\*(Aqt do that\&.\&.\&.
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond
-esr@thyrsus\&.com\&.
+<esr@thyrsus\&.com>\&.

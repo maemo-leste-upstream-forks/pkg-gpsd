@@ -10,6 +10,7 @@
 	AIS_HEADER
 	{"status",        t_uinteger,  .addr.uinteger = &ais->type1.status,
                                        .dflt.uinteger = 0},
+	{"status_text",   t_ignore},
 	{"turn",          t_integer,   .addr.integer = &ais->type1.turn,
                                        .dflt.integer = AIS_TURN_NOT_AVAILABLE},
 	{"speed",         t_uinteger,  .addr.uinteger = &ais->type1.speed,
@@ -48,6 +49,7 @@
                                        .dflt.integer = AIS_LAT_NOT_AVAILABLE},
 	{"epfd",          t_uinteger,  .addr.uinteger = &ais->type4.epfd,
                                        .dflt.uinteger = 0},
+	{"epfd_text",   t_ignore},
 	{"raim",          t_boolean,   .addr.boolean = &ais->type4.raim,
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type4.radio,
@@ -68,6 +70,7 @@
                                        .len = sizeof(ais->type5.shipname)},
 	{"shiptype",      t_uinteger,  .addr.uinteger = &ais->type5.shiptype,
                                        .dflt.uinteger = 0},
+	{"shiptype_text",   t_ignore},
 	{"to_bow",        t_uinteger,  .addr.uinteger = &ais->type5.to_bow,
                                        .dflt.uinteger = 0},
 	{"to_stern",      t_uinteger,  .addr.uinteger = &ais->type5.to_stern,
@@ -78,6 +81,7 @@
                                        .dflt.uinteger = 0},
 	{"epfd",          t_uinteger,  .addr.uinteger = &ais->type5.epfd,
                                        .dflt.uinteger = 0},
+	{"epfd_text",   t_ignore},
 	{"eta",           t_string,    .addr.string = eta,
                                        .len = sizeof(eta)},
 	{"draught",       t_uinteger,  .addr.uinteger = &ais->type5.draught,
@@ -109,8 +113,10 @@
                                        .dflt.uinteger = 0},
 	{"racon",         t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.racon,
                                        .dflt.uinteger = 0},
+	{"racon_text",   t_ignore},
 	{"light",         t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.light,
                                        .dflt.uinteger = 0},
+	{"light_text",   t_ignore},
 	{"alarm",         t_boolean,   .addr.boolean = &ais->type6.dac235fid10.alarm,
                                        .dflt.boolean = false},
 	{"stat_ext",      t_uinteger,  .addr.uinteger = &ais->type6.dac235fid10.stat_ext,
@@ -161,26 +167,6 @@
 	{NULL}
     };
 
-    const struct json_attr_t json_ais6_fid25_cargos_subtype[] = {
-	{"code",          t_uinteger,STRUCTOBJECT(struct cargo_t, code),
-                                       .dflt.uinteger = 0},
-	{"subtype",       t_uinteger,STRUCTOBJECT(struct cargo_t, subtype),
-                                       .dflt.uinteger = 0},
-        {NULL}
-    };
-/*@-type@*//* STRUCTARRAY confuses splint */
-    const struct json_attr_t json_ais6_fid25[] = {
-	AIS_HEADER
-	AIS_TYPE6
-	{"unit",          t_uinteger,  .addr.uinteger = &ais->type6.dac1fid25.unit,
-                                       .dflt.uinteger = 0},
-	{"amount",        t_uinteger,  .addr.uinteger = &ais->type6.dac1fid25.amount,
-                                       .dflt.uinteger = 0},
-	{"cargos",        t_array,     STRUCTARRAY(ais->type6.dac1fid25.cargos, json_ais6_fid25_cargos_subtype, &ais->type6.dac1fid25.ncargos)},
-	{NULL}
-    };
-/*@+type@*/
-
     char arrival[JSON_VAL_MAX+1];
     const struct json_attr_t json_ais6_fid18[] = {
 	AIS_HEADER
@@ -212,6 +198,7 @@
                                        .dflt.uinteger = 0},
 	{"position",      t_uinteger,  .addr.uinteger = &ais->type6.dac1fid20.position,
                                        .dflt.uinteger = 0},
+	{"position_text",   t_ignore},
 	{"arrival",       t_string,    .addr.string = arrival,
                                        .len = sizeof(arrival)},
 	{"availability",  t_uinteger,  .addr.uinteger = &ais->type6.dac1fid20.availability,
@@ -277,6 +264,69 @@
 	{NULL}
     };
 
+    const struct json_attr_t json_ais6_fid21[] = {
+	AIS_HEADER
+	AIS_TYPE6
+	{"country",       t_string,    .addr.string = ais->type6.dac200fid21.country,
+                                       .len = sizeof(ais->type6.dac200fid21.country)},
+	{"locode",        t_string,    .addr.string = ais->type6.dac200fid21.locode,
+                                       .len = sizeof(ais->type6.dac200fid21.locode)},
+	{"section",       t_string,    .addr.string = ais->type6.dac200fid21.section,
+                                       .len = sizeof(ais->type6.dac200fid21.section)},
+	{"terminal",      t_string,    .addr.string = ais->type6.dac200fid21.terminal,
+                                       .len = sizeof(ais->type6.dac200fid21.terminal)},
+	{"hectometre",    t_string,    .addr.string = ais->type6.dac200fid21.hectometre,
+                                       .len = sizeof(ais->type6.dac200fid21.hectometre)},
+	{"eta",           t_string,    .addr.string = eta,
+                                       .len = sizeof(eta)},
+	{"tugs",          t_uinteger,  .addr.uinteger = &ais->type6.dac200fid21.tugs,
+                                       .dflt.uinteger = 0},
+	{"airdraught",    t_uinteger,  .addr.uinteger = &ais->type6.dac200fid21.airdraught,
+                                       .dflt.uinteger = 0},
+	{NULL}
+    };
+
+    char rta[JSON_VAL_MAX+1];
+    const struct json_attr_t json_ais6_fid22[] = {
+	AIS_HEADER
+	AIS_TYPE6
+	{"country",       t_string,    .addr.string = ais->type6.dac200fid22.country,
+                                       .len = sizeof(ais->type6.dac200fid22.country)},
+	{"locode",        t_string,    .addr.string = ais->type6.dac200fid22.locode,
+                                       .len = sizeof(ais->type6.dac200fid22.locode)},
+	{"section",       t_string,    .addr.string = ais->type6.dac200fid22.section,
+                                       .len = sizeof(ais->type6.dac200fid22.section)},
+	{"terminal",      t_string,    .addr.string = ais->type6.dac200fid22.terminal,
+                                       .len = sizeof(ais->type6.dac200fid22.terminal)},
+	{"hectometre",    t_string,    .addr.string = ais->type6.dac200fid22.hectometre,
+                                       .len = sizeof(ais->type6.dac200fid22.hectometre)},
+	{"rta",           t_string,    .addr.string = rta,
+                                       .len = sizeof(rta)},
+	{"status",        t_uinteger,  .addr.uinteger = &ais->type6.dac200fid22.status,
+                                       .dflt.uinteger = DAC200FID22_STATUS_NOT_AVAILABLE},
+	{NULL}
+    };
+
+    const struct json_attr_t json_ais6_fid25_cargos_subtype[] = {
+	{"code",          t_uinteger,STRUCTOBJECT(struct cargo_t, code),
+                                       .dflt.uinteger = 0},
+	{"subtype",       t_uinteger,STRUCTOBJECT(struct cargo_t, subtype),
+                                       .dflt.uinteger = 0},
+        {NULL}
+    };
+/*@-type@*//* STRUCTARRAY confuses splint */
+    const struct json_attr_t json_ais6_fid25[] = {
+	AIS_HEADER
+	AIS_TYPE6
+	{"unit",          t_uinteger,  .addr.uinteger = &ais->type6.dac1fid25.unit,
+                                       .dflt.uinteger = 0},
+	{"amount",        t_uinteger,  .addr.uinteger = &ais->type6.dac1fid25.amount,
+                                       .dflt.uinteger = 0},
+	{"cargos",        t_array,     STRUCTARRAY(ais->type6.dac1fid25.cargos, json_ais6_fid25_cargos_subtype, &ais->type6.dac1fid25.ncargos)},
+	{NULL}
+    };
+/*@+type@*/
+
     char start[JSON_VAL_MAX+1];
     const struct json_attr_t json_ais6_fid28_waypoints_subtype[] = {
 	{"lon",           t_integer, STRUCTOBJECT(struct waypoint_t, lon),
@@ -295,6 +345,7 @@
                                        .dflt.uinteger = 0},
 	{"rtype",         t_uinteger,  .addr.uinteger = &ais->type6.dac1fid28.rtype,
                                        .dflt.uinteger = 0},
+	{"rtype_text",   t_ignore},
 	{"start",         t_string,    .addr.string = start,
                                        .len = sizeof(start)},
 	{"duration",      t_uinteger,  .addr.uinteger = &ais->type6.dac1fid28.duration,
@@ -346,6 +397,18 @@
     };
 /*@+type@*/
 
+    const struct json_attr_t json_ais6_fid55[] = {
+	AIS_HEADER
+	AIS_TYPE6
+	{"crew",          t_uinteger,  .addr.uinteger = &ais->type6.dac200fid55.crew,
+                                       .dflt.uinteger = DAC200FID55_COUNT_NOT_AVAILABLE},
+	{"passengers",    t_uinteger,  .addr.uinteger = &ais->type6.dac200fid55.passengers,
+                                       .dflt.uinteger = DAC200FID55_COUNT_NOT_AVAILABLE},
+	{"personnel",     t_uinteger,  .addr.uinteger = &ais->type6.dac200fid55.personnel,
+                                       .dflt.uinteger = DAC200FID55_COUNT_NOT_AVAILABLE},
+	{NULL}
+    };
+
     const struct json_attr_t json_ais7[] = {
 	AIS_HEADER
 	{"mmsi1",         t_uinteger,  .addr.uinteger = &ais->type7.mmsi1,
@@ -364,6 +427,35 @@
 	AIS_TYPE8
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
+	{NULL}
+    };
+
+    const struct json_attr_t json_ais8_fid10[] = {
+	AIS_HEADER
+	AIS_TYPE8
+	{"vin",           t_string,    .addr.string = ais->type8.dac200fid10.vin,
+                                       .len = sizeof(ais->type8.dac200fid10.vin)},
+	{"length",        t_uinteger,  .addr.uinteger = &ais->type8.dac200fid10.length,
+                                       .dflt.uinteger = 0},
+	{"beam",          t_uinteger,  .addr.uinteger = &ais->type8.dac200fid10.beam,
+                                       .dflt.uinteger = 0},
+	{"type",          t_uinteger,  .addr.uinteger = &ais->type8.dac200fid10.type,
+                                       .dflt.uinteger = 0},
+	{"type_text",   t_ignore},
+	{"hazard",        t_uinteger,  .addr.uinteger = &ais->type8.dac200fid10.hazard,
+                                       .dflt.uinteger = 0},
+	{"hazard_text",   t_ignore},
+	{"draught",       t_uinteger,  .addr.uinteger = &ais->type8.dac200fid10.draught,
+                                       .dflt.uinteger = 0},
+	{"loaded",        t_uinteger,  .addr.uinteger = &ais->type8.dac200fid10.loaded,
+                                       .dflt.uinteger = 0},
+	{"loaded_text",   t_ignore},
+	{"speed_q",       t_boolean,   .addr.boolean = &ais->type8.dac200fid10.speed_q,
+                                       .dflt.boolean = false},
+	{"course_q",      t_boolean,   .addr.boolean = &ais->type8.dac200fid10.course_q,
+                                       .dflt.boolean = false},
+	{"heading_q",     t_boolean,   .addr.boolean = &ais->type8.dac200fid10.heading_q,
+                                       .dflt.boolean = false},
 	{NULL}
     };
 
@@ -434,22 +526,26 @@
                                        .dflt.uinteger = DAC1FID11_WATERTEMP_NOT_AVAILABLE},
 	{"preciptype",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.preciptype,
                                        .dflt.uinteger = DAC1FID11_PRECIPTYPE_NOT_AVAILABLE},
+	{"preciptype_text",   t_ignore},
 	{"salinity",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.salinity,
                                        .dflt.uinteger = DAC1FID11_SALINITY_NOT_AVAILABLE},
 	{"ice",           t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.ice,
                                        .dflt.uinteger = DAC1FID11_ICE_NOT_AVAILABLE},
+	{"ice_text",   t_ignore},
 	{NULL}
     };
 
+    char closefrom[JSON_VAL_MAX+1];
+    char closeto[JSON_VAL_MAX+1];
     const struct json_attr_t json_ais8_fid13[] = {
 	AIS_HEADER
 	AIS_TYPE8
 	{"reason",        t_string,    .addr.string = ais->type8.dac1fid13.reason,
                                        .len = sizeof(ais->type8.dac1fid13.reason)},
-	{"closefrom",     t_string,    .addr.string = ais->type8.dac1fid13.closefrom,
-                                       .len = sizeof(ais->type8.dac1fid13.closefrom)},
-	{"closeto",       t_string,    .addr.string = ais->type8.dac1fid13.closeto,
-                                       .len = sizeof(ais->type8.dac1fid13.closeto)},
+	{"closefrom",     t_string,    .addr.string = closefrom,
+                                       .len = sizeof(closefrom)},
+	{"closeto",       t_string,    .addr.string = closeto,
+                                       .len = sizeof(closeto)},
 	{"radius",        t_uinteger,  .addr.uinteger = &ais->type8.dac1fid13.radius,
                                        .dflt.uinteger = AIS_DAC1FID13_RADIUS_NOT_AVAILABLE},
 	{"extunit",       t_uinteger,  .addr.uinteger = &ais->type8.dac1fid13.extunit,
@@ -477,6 +573,14 @@
 	AIS_HEADER
 	AIS_TYPE8
 	{"airdraught",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid15.airdraught,
+                                       .dflt.uinteger = 0},
+	{NULL}
+    };
+
+    const struct json_attr_t json_ais8_fid16[] = {
+	AIS_HEADER
+	AIS_TYPE8
+	{"persons",       t_uinteger,  .addr.uinteger = &ais->type8.dac1fid16.persons,
                                        .dflt.uinteger = 0},
 	{NULL}
     };
@@ -528,14 +632,66 @@
                                        .dflt.uinteger = 0},
 	{"signal",        t_uinteger,  .addr.uinteger = &ais->type8.dac1fid19.signal,
                                        .dflt.uinteger = 0},
+	{"signal_text",   t_ignore},
 	{"hour",          t_uinteger,  .addr.uinteger = &ais->type8.dac1fid19.hour,
                                        .dflt.uinteger = AIS_HOUR_NOT_AVAILABLE},
 	{"minute",        t_uinteger,  .addr.uinteger = &ais->type8.dac1fid19.minute,
                                        .dflt.uinteger = AIS_MINUTE_NOT_AVAILABLE},
 	{"nextsignal",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid19.nextsignal,
                                        .dflt.uinteger = 0},
+	{"nextsignal_type",   t_ignore},
 	{NULL}
     };
+
+    char end[JSON_VAL_MAX+1];
+    const struct json_attr_t json_ais8_fid23[] = {
+	AIS_HEADER
+	AIS_TYPE8
+	{"start",         t_string,    .addr.string = start,
+                                       .len = sizeof(start)},
+	{"end",           t_string,    .addr.string = end,
+                                       .len = sizeof(end)},
+	{"start_lon",     t_integer,   .addr.integer = &ais->type8.dac200fid23.start_lon,
+                                       .dflt.integer = AIS_LON4_NOT_AVAILABLE},
+	{"start_lat",     t_integer,   .addr.integer = &ais->type8.dac200fid23.start_lat,
+                                       .dflt.integer = AIS_LAT4_NOT_AVAILABLE},
+	{"end_lon",       t_integer,   .addr.integer = &ais->type8.dac200fid23.end_lon,
+                                       .dflt.integer = AIS_LON4_NOT_AVAILABLE},
+	{"end_lat",       t_integer,   .addr.integer = &ais->type8.dac200fid23.end_lat,
+                                       .dflt.integer = AIS_LAT4_NOT_AVAILABLE},
+	{"type",          t_uinteger,  .addr.uinteger = &ais->type8.dac200fid23.type,
+                                       .dflt.uinteger = DAC200FID23_TYPE_UNKNOWN},
+	{"type_text",   t_ignore},
+	{"min",           t_integer,   .addr.integer = &ais->type8.dac200fid23.min,
+                                       .dflt.integer = DAC200FID23_MIN_UNKNOWN},
+	{"max",           t_integer,   .addr.integer = &ais->type8.dac200fid23.max,
+                                       .dflt.integer = DAC200FID23_MAX_UNKNOWN},
+	{"intensity",     t_uinteger,  .addr.uinteger = &ais->type8.dac200fid23.intensity,
+                                       .dflt.uinteger = DAC200FID23_CLASS_UNKNOWN},
+	{"intensity_text",   t_ignore},
+	{"wind",          t_uinteger,  .addr.uinteger = &ais->type8.dac200fid23.wind,
+                                       .dflt.uinteger = DAC200FID23_WIND_UNKNOWN},
+	{"wind_text",   t_ignore},
+	{NULL}
+    };
+
+    const struct json_attr_t json_ais8_fid24_gauges_subtype[] = {
+	{"id",            t_uinteger,STRUCTOBJECT(struct gauge_t, id),
+                                       .dflt.uinteger = DAC200FID24_GAUGE_ID_UNKNOWN},
+	{"level",         t_integer, STRUCTOBJECT(struct gauge_t, level),
+                                       .dflt.integer = DAC200FID24_GAUGE_LEVEL_UNKNOWN},
+        {NULL}
+    };
+/*@-type@*//* STRUCTARRAY confuses splint */
+    const struct json_attr_t json_ais8_fid24[] = {
+	AIS_HEADER
+	AIS_TYPE8
+	{"country",       t_string,    .addr.string = ais->type8.dac200fid24.country,
+                                       .len = sizeof(ais->type8.dac200fid24.country)},
+	{"gauges",        t_array,     STRUCTARRAY(ais->type8.dac200fid24.gauges, json_ais8_fid24_gauges_subtype, &ais->type8.dac200fid24.ngauges)},
+	{NULL}
+    };
+/*@+type@*/
 
     const struct json_attr_t json_ais8_fid27_waypoints_subtype[] = {
 	{"lon",           t_integer, STRUCTOBJECT(struct waypoint_t, lon),
@@ -554,6 +710,7 @@
                                        .dflt.uinteger = 0},
 	{"rtype",         t_uinteger,  .addr.uinteger = &ais->type8.dac1fid27.rtype,
                                        .dflt.uinteger = 0},
+	{"rtype_text",   t_ignore},
 	{"start",         t_string,    .addr.string = start,
                                        .len = sizeof(start)},
 	{"duration",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid27.duration,
@@ -644,10 +801,27 @@
                                        .dflt.integer = DAC1FID31_WATERTEMP_NOT_AVAILABLE},
 	{"preciptype",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.preciptype,
                                        .dflt.uinteger = DAC1FID31_PRECIPTYPE_NOT_AVAILABLE},
+	{"preciptype_text",   t_ignore},
 	{"salinity",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.salinity,
                                        .dflt.uinteger = DAC1FID31_SALINITY_NOT_AVAILABLE},
 	{"ice",           t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.ice,
                                        .dflt.uinteger = DAC1FID31_ICE_NOT_AVAILABLE},
+	{NULL}
+    };
+
+    const struct json_attr_t json_ais8_fid40[] = {
+	AIS_HEADER
+	AIS_TYPE8
+	{"form",          t_uinteger,  .addr.uinteger = &ais->type8.dac200fid40.form,
+                                       .dflt.uinteger = DAC200FID40_FORM_UNKNOWN},
+	{"facing",        t_uinteger,  .addr.uinteger = &ais->type8.dac200fid40.facing,
+                                       .dflt.uinteger = DAC200FID40_FACING_UNKNOWN},
+	{"direction",     t_uinteger,  .addr.uinteger = &ais->type8.dac200fid40.direction,
+                                       .dflt.uinteger = DAC200FID40_DIRECTION_UNKNOWN},
+	{"direction_text",   t_ignore},
+	{"status",        t_uinteger,  .addr.uinteger = &ais->type8.dac200fid40.status,
+                                       .dflt.uinteger = DAC200FID40_STATUS_UNKNOWN},
+	{"status_text",   t_ignore},
 	{NULL}
     };
 
@@ -815,6 +989,7 @@
                                        .len = sizeof(ais->type19.shipname)},
 	{"shiptype",      t_uinteger,  .addr.uinteger = &ais->type19.shiptype,
                                        .dflt.uinteger = 0},
+	{"shiptype_text",   t_ignore},
 	{"to_bow",        t_uinteger,  .addr.uinteger = &ais->type19.to_bow,
                                        .dflt.uinteger = 0},
 	{"to_stern",      t_uinteger,  .addr.uinteger = &ais->type19.to_stern,
@@ -825,6 +1000,7 @@
                                        .dflt.uinteger = 0},
 	{"epfd",          t_uinteger,  .addr.uinteger = &ais->type19.epfd,
                                        .dflt.uinteger = 0},
+	{"epfd_text",   t_ignore},
 	{"raim",          t_boolean,   .addr.boolean = &ais->type19.raim,
                                        .dflt.boolean = false},
 	{"dte",           t_uinteger,  .addr.uinteger = &ais->type19.dte,
@@ -875,6 +1051,7 @@
 	AIS_HEADER
 	{"aid_type",      t_uinteger,  .addr.uinteger = &ais->type21.aid_type,
                                        .dflt.uinteger = 0},
+	{"aid_type_text",   t_ignore},
 	{"name",          t_string,    .addr.string = ais->type21.name,
                                        .len = sizeof(ais->type21.name)},
 	{"accuracy",      t_boolean,   .addr.boolean = &ais->type21.accuracy,
@@ -893,6 +1070,7 @@
                                        .dflt.uinteger = 0},
 	{"epfd",          t_uinteger,  .addr.uinteger = &ais->type21.epfd,
                                        .dflt.uinteger = 0},
+	{"epfd_text",   t_ignore},
 	{"second",        t_uinteger,  .addr.uinteger = &ais->type21.second,
                                        .dflt.uinteger = 0},
 	{"regional",      t_uinteger,  .addr.uinteger = &ais->type21.regional,
@@ -951,8 +1129,10 @@
                                        .dflt.integer = AIS_GNS_LAT_NOT_AVAILABLE},
 	{"stationtype",   t_uinteger,  .addr.uinteger = &ais->type23.stationtype,
                                        .dflt.uinteger = 0},
+	{"stationtype_text",   t_ignore},
 	{"shiptype",      t_uinteger,  .addr.uinteger = &ais->type23.shiptype,
                                        .dflt.uinteger = 0},
+	{"shiptype_text",   t_ignore},
 	{"txrx",          t_uinteger,  .addr.uinteger = &ais->type23.txrx,
                                        .dflt.uinteger = 0},
 	{"interval",      t_uinteger,  .addr.uinteger = &ais->type23.interval,
@@ -968,8 +1148,13 @@
                                        .len = sizeof(ais->type24.shipname)},
 	{"shiptype",      t_uinteger,  .addr.uinteger = &ais->type24.shiptype,
                                        .dflt.uinteger = 0},
+	{"shiptype_text",   t_ignore},
 	{"vendorid",      t_string,    .addr.string = ais->type24.vendorid,
                                        .len = sizeof(ais->type24.vendorid)},
+	{"model",         t_uinteger,  .addr.uinteger = &ais->type24.model,
+                                       .dflt.uinteger = 0},
+	{"serial",        t_uinteger,  .addr.uinteger = &ais->type24.serial,
+                                       .dflt.uinteger = 0},
 	{"callsign",      t_string,    .addr.string = ais->type24.callsign,
                                        .len = sizeof(ais->type24.callsign)},
 	{"mothership_mmsi",t_uinteger,  .addr.uinteger = &ais->type24.mothership_mmsi,

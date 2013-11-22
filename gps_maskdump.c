@@ -12,7 +12,7 @@
 
 const char *gps_maskdump(gps_mask_t set)
 {
-    static char buf[190];
+    static char buf[206];
     const struct {
 	gps_mask_t      mask;
 	const char      *name;
@@ -48,6 +48,7 @@ const char *gps_maskdump(gps_mask_t set)
 	{POLICY_SET,	"POLICY"},
 	{LOGMESSAGE_SET,	"LOGMESSAGE"},
 	{ERROR_SET,	"ERROR"},
+	{TIMEDRIFT_SET,	"TIMEDRIFT"},
 	{RAW_IS,	"RAW"},
 	{USED_IS,	"USED"},
 	{DRIVER_IS,	"DRIVER"},

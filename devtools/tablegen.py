@@ -6,10 +6,12 @@
 # correct offsets in the tables themselves.
 #
 # Requires the AIVDM.txt file on standard input. Takes a single argument,
-# the line number of a table start.  Things you can generate:
+# which must match a string in a //: Type comment.  Things you can generate:
 #
 # * -t: A corrected version of the table.  It will redo all the offsets to be
-#   in conformance with the bit widths.  
+#   in conformance with the bit widths. (The other options rely only on the
+#   bit widths). If the old and new tables are different, an error message
+#   describing the corrections will be emitted to standard error.
 #
 # * -s: A structure definition capturing the message info, with member
 #   names extracted from the table and types computed from it.
@@ -26,8 +28,9 @@
 #   generate the specification structure for a JSON parse that reads JSON
 #   into an instance of the message structure.
 #
-# * -a: Generate all of -s, -d, -c, and -r, , not to stdout but to
-#   files named with the argument as a distinguishing part of the stem.
+# * -a: Generate all of -s, -d, -c, and -r, and -t, not to stdout but to
+#   files named with 'tablegen' as a distinguishing part of the stem.
+#   The stem name can be overridden with the -o option.
 #
 # This generates almost all the code required to support a new message type.
 # It's not quite "Look, ma, no handhacking!" You'll need to add default
@@ -46,13 +49,21 @@
 # of fields in the table.  This may be useful for dealing with groups of
 # messages that have a common head section.
 #
+# This code interprets magic comments in the input
+#
+# //: Type
+#    The token following "Type" is the name of the table
+# //: xxxx vocabulary
+#    A subtable describing a controlled vocabulary for field xxxx in the
+#    preceding table.
+#
 # TO-DO: generate code for ais.py.
 
 import sys, getopt
 
 def correct_table(wfp):
     # Writes the corrected table.
-    print >>sys.stderr, "Total bits:", base 
+    print >>sys.stderr, "Total bits:", base
     for (i, t) in enumerate(table):
         if offsets[i].strip():
             print >>wfp, "|" + offsets[i] + t[owidth+1:].rstrip()
@@ -62,7 +73,8 @@ def correct_table(wfp):
 def make_driver_code(wfp):
     # Writes calls to bit-extraction macros.
     # Requires UBITS, SBITS, UCHARS to act as they do in the AIVDM driver.
-    # Also relies on ais_context->bitlen to be the message bit length.
+    # Also relies on bitlen to be the message bit length, and i to be
+    # available as abn index variable.
     record = after is None
     arrayname = None
     base = '\t'
@@ -92,16 +104,16 @@ def make_driver_code(wfp):
                 print >>wfp, '#define ELEMENT_SIZE %s' % trailing
                 if explicit:
                     lengthfield = last
-                    print >>wfp, indent + "for (ind = 0; ind < %s; ind++) {" % lengthfield 
+                    print >>wfp, indent + "for (i = 0; i < %s; i++) {" % lengthfield 
                 else:
                     lengthfield = "n" + arrayname
-                    print >>wfp, indent + "for (ind = 0; ARRAY_BASE + (ELEMENT_SIZE*ind) <= ais_context->bitlen; ind++) {" 
+                    print >>wfp, indent + "for (i = 0; ARRAY_BASE + (ELEMENT_SIZE*i) < bitlen; i++) {" 
                 indent += step
-                print >>wfp, indent + "int a = ARRAY_BASE + (ELEMENT_SIZE*ind);" 
+                print >>wfp, indent + "int a = ARRAY_BASE + (ELEMENT_SIZE*i);" 
                 continue
             offset = offsets[i].split('-')[0]
             if arrayname:
-                target = "%s.%s[ind].%s" % (structname, arrayname, name)
+                target = "%s.%s[i].%s" % (structnme, arrayname, name)
                 offset = "a + " + offset 
             else:
                 target = "%s.%s" % (structname, name)
@@ -110,6 +122,8 @@ def make_driver_code(wfp):
                       (target, {'u':'U', 'e':'U', 'i':'S'}[ftype[0].lower()], offset, width)
             elif ftype == 't':
                 print >>wfp, indent + "UCHARS(%s, %s);" % (offset, target)
+            elif ftype == 'b':
+                print >>wfp, indent + "%s\t= (bool)UBITS(%s, 1);" % (target, offset)
             else:
                 print >>wfp, indent + "/* %s bits of type %s */" % (width,ftype)
             last = name
@@ -123,6 +137,7 @@ def make_driver_code(wfp):
 
 def make_structure(wfp):
     # Write a structure definition correponding to the table.
+    global structname
     record = after is None
     baseindent = 8
     step = 4
@@ -167,7 +182,7 @@ def make_structure(wfp):
             elif ftype == 'i' or ftype[0] == 'I':
                 decl = "signed int %s;\t/* %s */" % (name, description)
             elif ftype == 'b':
-                decl = "signed int %s;\t/* %s */" % (name, description)
+                decl = "bool %s;\t/* %s */" % (name, description)
             elif ftype == 't':
                 stl = int(width)/6
                 decl = "char %s[%d+1];\t/* %s */" % (name, stl, description)
@@ -178,10 +193,26 @@ def make_structure(wfp):
     if arrayname:
         inwards -= step
         print >>wfp, tabify(baseindent + inwards) + "} %s[%s];" % (arrayname, arraydim)
-    print >>wfp, tabify(baseindent) + "} %s;" % structname
+    if "->" in structname:
+        typename = structname.split("->")[1]
+    if "." in typename:
+        structname = structname.split(".")[1]    
+    print >>wfp, tabify(baseindent) + "} %s;" % typename
 
 def make_json_dumper(wfp):
-    # Write the skeleton of a JSON dump corresponding to the table
+    # Write the skeleton of a JSON dump corresponding to the table.
+    # Also, if there are subtables, some initializers
+    if subtables:
+        for (name, lines) in subtables:
+            wfp.write("    const char *%s_vocabulary[] = {\n" % name)
+            for line in lines:
+                value = line[1]
+                if value.endswith(" (default)"):
+                    value = value[:-10]
+                wfp.write('        "%s",\n' % value)
+            wfp.write("    };\n")
+            wfp.write('#define DISPLAY_%s(n) (((n) < (unsigned int)NITEMS(%s_vocabulary)) ? %s_vocabulary[n] : "INVALID %s")\n' % (name.upper(), name, name, name.upper()))
+        wfp.write("\n")
     record = after is None
     # Elements of each tuple type except 'a':
     #   1. variable name,
@@ -196,6 +227,7 @@ def make_json_dumper(wfp):
     #   4. None
     #   5. Name of length field
     tuples = []
+    vocabularies = [x[0] for x in subtables]
     for (i, t) in enumerate(table):
         if '|' in t:
             fields = map(lambda s: s.strip(), t.split('|'))
@@ -210,6 +242,7 @@ def make_json_dumper(wfp):
             if ftype == 'x' or not record:
                 continue
             fmt = r'\"%s\":' % name
+            fmt_text = r'\"%s_text\":' % name
             if ftype == 'u':
                 tuples.append((name,
                                fmt+"%u", "%s",
@@ -217,7 +250,15 @@ def make_json_dumper(wfp):
             elif ftype == 'e':
                 tuples.append((name,
                                fmt+"%u", "%s",
-                               fmt+r"\"%s\"", 'FOO[%s]'))
+                               None, None))
+                if vocabularies:
+                    this = vocabularies.pop(0)
+                    ref = "DISPLAY_%s(%%s)" % (this.upper())
+                else:
+                    ref = 'FOO[%s]'
+                tuples.append((name,
+                               fmt_text+r"\"%s\"", ref,
+                               None, None))
             elif ftype == 'i':
                 tuples.append((name,
                                fmt+"%d", "%s",
@@ -270,19 +311,22 @@ def make_json_dumper(wfp):
             continue        
         # At end of tuples, or if scaled flag changes, or if next op is array,
         # flush out dump code for a span of fields.
-        if tuples[i+1][1] == None:
-            endit = r',\"%s\":['
-        elif i+1 == len(tuples):
-            if not inarray:
-                endit = '}\r\n'
+        if i+1 == len(tuples):
+            endit = '}",'
+        elif tuples[i+1][1] == None:
+            endit = r',\"%s\":[",' % tuples[i+1][0]
         elif scaled(i) != scaled(i+1):
-            endit =  '.",'
+            endit =  ',",'
         else:
             endit = None
         if endit:
             if not scaled(i):
                 print >>wfp, base + header
-                print >>wfp, base + step + '"'+','.join(tslice(i,1)) + endit
+                if inarray:
+                    prefix = '{"'
+                else:
+                    prefix = '"'
+                print >>wfp, base + step + prefix +','.join(tslice(i,1)) + endit
                 for (j, t) in enumerate(tuples[startspan:i+1]):
                     if inarray:
                         ref = structname + "." + inarray + "[i]." + t[0]
@@ -325,9 +369,9 @@ def make_json_dumper(wfp):
     if inarray:
         base = " " * 8
         print >>wfp, base + "}"
-        print >>wfp, base + "if (buf[strlen(buf) - 1] == ',')"
-        print >>wfp, base + step + "buf[strlen(buf)-1] = '\0';"
-        print >>wfp, base + "(void)strlcat(buf, ']}\r\n', buflen - strlen(buf));"
+        print >>wfp, base + "if (buf[strlen(buf)-1] == ',')"
+        print >>wfp, base + step + r"buf[strlen(buf)-1] = '\0';"
+        print >>wfp, base + "(void)strlcat(buf, \"]}\", buflen - strlen(buf));"
 
 def make_json_generator(wfp):
     # Write a stanza for jsongen.py.in describing how to generate a
@@ -338,11 +382,11 @@ def make_json_generator(wfp):
     record = after is None
     print >>wfp, '''\
     {
-        "initname" : "__INITIALIZER__",
-        "headers": ("AIS_HEADER",),
-        "structname": "%s",
-        "fieldmap":(
-            # fieldname    type        default''' % (structname,)
+    "initname" : "__INITIALIZER__",
+    "headers": ("AIS_HEADER",),
+    "structname": "%s",
+    "fieldmap":(
+        # fieldname    type        default''' % (structname,)
     for (i, t) in enumerate(table):
         if '|' in t:
             fields = map(lambda s: s.strip(), t.split('|'))
@@ -370,9 +414,9 @@ def make_json_generator(wfp):
                 else:
                     lengthfield = "n" + arrayname
                 extra = " " * 8
-                print >>wfp, "            ('%s',%s 'array', (" % \
+                print >>wfp, "        ('%s',%s 'array', (" % \
                       (arrayname, " "*(10-len(arrayname)))
-                print >>wfp, "                ('%s_t', '%s', (" % (typename, lengthfield)
+                print >>wfp, "            ('%s_t', '%s', (" % (typename, lengthfield)
             else:
                 # Depends on the assumption that the read code
                 # always sees unscaled JSON.
@@ -386,7 +430,7 @@ def make_json_generator(wfp):
                     't': "string",
                     'd': "string",
                     }[ftype[0]]
-                default = {
+                typedefault = {
                     'u': "'PUT_DEFAULT_HERE'",
                     'U': "'PUT_DEFAULT_HERE'",
                     'e': "'PUT DEFAULT HERE'",
@@ -395,11 +439,23 @@ def make_json_generator(wfp):
                     'b': "\'false\'",
                     't': "None",
                     }[ftype[0]]
-                print >>wfp, extra + "            ('%s',%s '%s',%s %s)," % (name,
+                namedefaults = {
+                    "month": "'0'",
+                    "day": "'0'",
+                    "hour": "'24'",
+                    "minute": "'60'",
+                    "second": "'60'",
+                    }
+                default = namedefaults.get(name) or typedefault
+                print >>wfp, extra + "        ('%s',%s '%s',%s %s)," % (name,
                                                      " "*(10-len(name)),
                                                      readtype,
                                                      " "*(8-len(readtype)),
                                                      default)
+                if ftype[0] == 'e':
+                    print >>wfp, extra + "        ('%s_text',%s'ignore',   None)," % \
+                          (name, " "*(6-len(name)))
+
             last = name
     if arrayname:
         print >>wfp, "                    )))),"
@@ -408,12 +464,13 @@ def make_json_generator(wfp):
 
 if __name__ == '__main__':
     try:
-        (options, arguments) = getopt.getopt(sys.argv[1:], "a:tc:s:d:S:E:r:")
+        (options, arguments) = getopt.getopt(sys.argv[1:], "a:tc:s:d:S:E:r:o:")
     except getopt.GetoptError, msg:
         print "tablecheck.py: " + str(msg)
         raise SystemExit, 1
     generate = maketable = makestruct = makedump = readgen = all = False
     after = before = None
+    filestem = "tablegen"
     for (switch, val) in options:
         if switch == '-a':
             all = True
@@ -436,6 +493,8 @@ if __name__ == '__main__':
             after = val
         elif switch == '-E':
             before = val
+        elif switch == '-o':
+            filestem = val
 
     if not generate and not maketable and not makestruct and not makedump and not readgen and not all:
         print >>sys.stderr, "tablecheck.py: no mode selected"
@@ -445,29 +504,64 @@ if __name__ == '__main__':
     # Sets the following:
     #    table - the table lines
     #    widths - array of table widths
-    #    trailing - bit length of the table or trailing array elemend 
-    startline = int(arguments[0])
+    #    ranges - array of table offsets
+    #    trailing - bit length of the table or trailing array element
+    #    subtables - list of following vocabulary tables.
+    tablename = arguments[0]
     table = []
-    keep = False
-    i = 0
+    ranges = []
+    subtables = []
+    state = 0
     for line in sys.stdin:
-        i += 1
-        if i == startline:
+        if state == 0 and line.startswith("//: Type") and tablename in line:
+            state = 1
+            continue
+        elif state == 1:		# Found table tag
             if line.startswith("|="):
-                keep = True
-            else:
-                print >>sys.stderr, "Bad table start"
-                sys.exit(1)
-        elif line.startswith("|="):
-            keep = False
-        if keep:
-            if line[0] == '|':
+                state = 2
+                continue
+        elif state == 2:		# Found table header
+            if line.startswith("|="):
+                state = 3
+                continue
+            elif line[0] == '|':
                 fields = line.split("|")
                 trailing = fields[1]
+                ranges.append(fields[1].strip())
                 fields[1] = " " * len(fields[1])
                 line = "|".join(fields)
+            else:
+                ranges.append('')
             table.append(line)
-    table = table[2:]
+            continue
+        elif state == 3:		# Found table end
+            state = 4
+            continue
+        elif state == 4:		# Skipping until subsidiary table
+            if line.startswith("//:") and "vocabulary" in line:
+                subtable_name = line.split()[1]
+                subtable_content = []
+                state = 5
+        elif state == 5:		# Seen subtable header
+            if line.startswith("|="):
+                state = 6
+                continue
+        elif state == 6:		# Parsing subtable content
+            if line.startswith("|="):
+                subtables.append((subtable_name, subtable_content))
+                state = 4
+                continue
+            elif line[0] == '|':
+                subtable_content.append([f.strip() for f in line[1:].strip().split("|")])
+            continue
+    if state == 0:
+        print >>sys.stderr, "Can't find named table."
+        sys.exit(1)        
+    elif state < 3:
+        print >>sys.stderr, "Ill-formed table (in state %d)." % state
+        sys.exit(1)
+    table = table[1:]
+    ranges = ranges[1:]
     widths = []
     for line in table:
         fields = line.split('|')
@@ -484,6 +578,7 @@ if __name__ == '__main__':
     # Compute offsets for an AIVDM message breakdown, given the bit widths.
     offsets = []
     base = 0
+    corrections = False
     for w in widths:
         if w is None:
             offsets.append(`base`)
@@ -494,16 +589,24 @@ if __name__ == '__main__':
             w = int(w)
             offsets.append("%d-%d" % (base, base + w - 1))
             base += w
+    if filter(lambda p: p[0] != p[1], zip(ranges, offsets)):
+        corrections = True
+        print "Offset corrections:"
+        for (old, new) in zip(ranges, offsets):
+            if old != new:
+                print >>sys.stderr, old, "->", new 
     owidth = max(*map(len, offsets)) 
     for (i, off) in enumerate(offsets):
         offsets[i] += " " * (owidth - len(offsets[i]))
 
     # Here's where we generate useful output.
     if all:
-        make_driver_code(open(structname + ".c", "w"))
-        make_structure(open(structname + ".h", "w"))
-        make_json_dumper(open(structname + "_json.c", "w"))
-        make_json_generator(open(structname + ".py", "w"))
+        if corrections:
+            correct_table(open(filestem + ".txt", "w"))
+        make_driver_code(open(filestem + ".c", "w"))
+        make_structure(open(filestem + ".h", "w"))
+        make_json_dumper(open(filestem + "_json.c", "w"))
+        make_json_generator(open(filestem + ".py", "w"))
     elif maketable:
         correct_table(sys.stdout)
     elif generate:

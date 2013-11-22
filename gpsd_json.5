@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsd_json
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
 .\"      Date: 28 Aug 2011
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -1285,6 +1285,8 @@ l l l l
 l l l l
 l l l l
 l l l l
+l l l l
+l l l l
 l l l l.
 T{
 class
@@ -1350,8 +1352,32 @@ T}:T{
 boolean
 T}:T{
 If true, apply scaling divisors to output before
-	dumping; default is false\&. Applies only to AIS and Subframe
-	reports\&.
+	dumping; default is false\&.
+T}
+T{
+split24
+T}:T{
+No
+T}:T{
+boolean
+T}:T{
+If true, aggregate AIS type24 sentence parts\&.  If false,
+        report each part as a separate JSON object, leaving the
+        client to match MMSIs and aggregate\&.  Default is
+        false\&. Applies only to AIS reports\&.
+T}
+T{
+pps
+T}:T{
+No
+T}:T{
+boolean
+T}:T{
+If true, emit a PPS bar when the device issues
+        1PPS\&.  Intended to be used with the "nmea" and "raw" modes\&.
+        Default is false\&. \fBNote: this is an
+        unstable experimental feature which may change or be removed
+        without notice\&.\fR
 T}
 T{
 device
@@ -1579,13 +1605,13 @@ T}:T{
 seconds from the realtime clock
 T}
 T{
-real_musec
+real_nsec
 T}:T{
 Yes
 T}:T{
 numeric
 T}:T{
-microseconds from the realtime clock
+nanoseconds from the realtime clock
 T}
 T{
 clock_sec
@@ -1597,13 +1623,13 @@ T}:T{
 seconds from the system clock
 T}
 T{
-clock_musec
+clock_nsec
 T}:T{
 Yes
 T}:T{
 numeric
 T}:T{
-microseconds from the system clock
+nanoseconds from the system clock
 T}
 .TE
 .sp 1
@@ -1620,8 +1646,8 @@ Here\*(Aqs an example:
 .\}
 .nf
 {"class":"PPS","device":"/dev/ttyUSB0",
-     "real_sec":1330212592, "real_musec":343182,
-     "clock_sec":1330212592,"clock_musec":343184}
+     "real_sec":1330212592, "real_nsec":343182,
+     "clock_sec":1330212592,"clock_nsec":343184}
 .fi
 .if n \{\
 .RE
@@ -2987,7 +3013,7 @@ AIS packets are dumped as JSON objects with class "AIS"\&. Each AIS report objec
 AIVDM/AIVDO Protocol Decoding
 document on the GPSD project website; each message field table may be directly interpreted as a specification for the members of the corresponding JSON object type\&.
 .PP
-By default, certain scaling and conversion operations are performed for JSON output\&. Latitudes and longitudes are scaled to decimal degrees rather than the native AIS unit of 1/10000th of a minute of arc\&. Ship (but not air) speeds are scaled to knots rather than tenth\-of\-knot units\&. Navigation status and positioning\-system type are dumped as text strings rather than AIS numeric codes\&. Rate of turn may appear as "nan" if is unavailable, or as one of the strings "fastright" or "fastleft" if it is out of the AIS encoding range; otherwise it is quadratically mapped back to the turn sensor number in degrees per minute\&. Vessel draughts are converted to decimal meters rather than native AIS decimeters\&. Various other scaling conversions are described in
+By default, certain scaling and conversion operations are performed for JSON output\&. Latitudes and longitudes are scaled to decimal degrees rather than the native AIS unit of 1/10000th of a minute of arc\&. Ship (but not air) speeds are scaled to knots rather than tenth\-of\-knot units\&. Rate of turn may appear as "nan" if is unavailable, or as one of the strings "fastright" or "fastleft" if it is out of the AIS encoding range; otherwise it is quadratically mapped back to the turn sensor number in degrees per minute\&. Vessel draughts are converted to decimal meters rather than native AIS decimeters\&. Various other scaling conversions are described in
 "AIVDM/AIVDO Protocol Decoding"\&.
 .SH "SUBFRAME DUMP FORMATS"
 .PP
@@ -3000,7 +3026,6 @@ driver may not support Subframes\&.
 Subframe packets are dumped as JSON objects with class "SUBFRAME"\&. Each Subframe report object contains a "frame" field giving the subframe number, a "tSV" field for the transmitting satellite number, a "TOW17" field containing the 17 MSBs of the start of the next 12\-second message and a "scaled" field telling whether the remainder of the fields are dumped in scaled or unscaled form\&. It will also contain a "device" field naming the data source\&. Each SUBFRAME object will have a sub\-object specific to that subframe page type\&. Those sub\-object fields have names and types similar to those specified in the IS\-GPS\-200E document; each message field table may be directly interpreted as a specification for the members of the corresponding JSON object type\&.
 .SH "SEE ALSO"
 .PP
-
 \fBgpsd\fR(8),
 \fBlibgps\fR(3),
 .SH "AUTHOR"

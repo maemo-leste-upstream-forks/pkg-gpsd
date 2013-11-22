@@ -268,12 +268,12 @@ static int json_devicelist_read(const char *buf, struct gps_data_t *gpsdata,
 	                                .len = sizeof(gpsdata->devices.list[0].subtype)},
 	{"native",     t_integer,    STRUCTOBJECT(struct devconfig_t, driver_mode),
 				        .dflt.integer = -1},
-	{"bps",	       t_integer,    STRUCTOBJECT(struct devconfig_t, baudrate),
-				        .dflt.integer = -1},
+	{"bps",	       t_uinteger,   STRUCTOBJECT(struct devconfig_t, baudrate),
+				        .dflt.uinteger = DEVDEFAULT_BPS},
 	{"parity",     t_character,  STRUCTOBJECT(struct devconfig_t, parity),
-	                                .dflt.character = 'N'},
-	{"stopbits",   t_integer,    STRUCTOBJECT(struct devconfig_t, stopbits),
-				        .dflt.integer = -1},
+	                                .dflt.character = DEVDEFAULT_PARITY},
+	{"stopbits",   t_uinteger,   STRUCTOBJECT(struct devconfig_t, stopbits),
+				        .dflt.integer = DEVDEFAULT_STOPBITS},
 	{"cycle",      t_real,       STRUCTOBJECT(struct devconfig_t, cycle),
 				        .dflt.real = NAN},
 	{"mincycle",   t_real,       STRUCTOBJECT(struct devconfig_t, mincycle),
@@ -347,6 +347,50 @@ static int json_error_read(const char *buf, struct gps_data_t *gpsdata,
 
     memset(&gpsdata->error, '\0', sizeof(gpsdata->error));
     status = json_read_object(buf, json_attrs_error, endptr);
+    if (status != 0)
+	return status;
+
+    return status;
+}
+
+int json_pps_read(const char *buf, struct gps_data_t *gpsdata,
+			   /*@null@*/ const char **endptr)
+{
+    int real_sec = 0, real_nsec = 0, clock_sec = 0, clock_nsec = 0;
+    /*@ -fullinitblock @*/
+    const struct json_attr_t json_attrs_pps[] = {
+	/* *INDENT-OFF* */
+        {"class",     t_check,   .dflt.check = "PPS"},
+	{"device",    t_string,  .addr.string = gpsdata->dev.path,
+			         .len = sizeof(gpsdata->dev.path)},
+	{"real_sec",  t_integer, .addr.integer = &real_sec,
+			         .dflt.integer = 0},
+	{"real_nsec", t_integer, .addr.integer = &real_nsec,
+			         .dflt.integer = 0},
+	{"clock_sec", t_integer, .addr.integer = &clock_sec,
+			         .dflt.integer = 0},
+	{"clock_nsec",t_integer, .addr.integer = &clock_nsec,
+			         .dflt.integer = 0},
+	{NULL},
+	/* *INDENT-ON* */
+    };
+    /*@ +fullinitblock @*/
+    int status;
+
+    memset(&gpsdata->timedrift, '\0', sizeof(gpsdata->timedrift));
+    status = json_read_object(buf, json_attrs_pps, endptr);
+    /*
+     * This is theoretically dodgy, but in practice likely not
+     * to break until GPSes are obsolete.
+     */
+    /*@-usedef@*/
+    /*@-type@*//* splint is confused about struct timespec */
+    gpsdata->timedrift.real.tv_sec = (long)real_sec;
+    gpsdata->timedrift.real.tv_nsec = (time_t)real_nsec;
+    gpsdata->timedrift.clock.tv_sec = (long)clock_sec;
+    gpsdata->timedrift.clock.tv_nsec = (time_t)clock_nsec;
+    /*@+type@*/
+    /*@+usedef@*/
     if (status != 0)
 	return status;
 
@@ -452,6 +496,17 @@ int libgps_json_unpack(const char *buf,
 	}
 	return status;
 #endif /* RTCM104V2_ENABLE */
+#ifdef RTCM104V3_ENABLE
+    } else if (STARTSWITH(classtag, "\"class\":\"RTCM3\"")) {
+	status = json_rtcm3_read(buf,
+				 gpsdata->dev.path, sizeof(gpsdata->dev.path),
+				 &gpsdata->rtcm3, end);
+	if (status == 0) {
+	    gpsdata->set &= ~UNION_SET;
+	    gpsdata->set |= RTCM3_SET;
+	}
+	return status;
+#endif /* RTCM104V3_ENABLE */
 #ifdef AIVDM_ENABLE
     } else if (STARTSWITH(classtag, "\"class\":\"AIS\"")) {
 	status = json_ais_read(buf,
@@ -468,6 +523,13 @@ int libgps_json_unpack(const char *buf,
 	if (status == 0) {
 	    gpsdata->set &= ~UNION_SET;
 	    gpsdata->set |= ERROR_SET;
+	}
+	return status;
+    } else if (STARTSWITH(classtag, "\"class\":\"PPS\"")) {
+	status = json_pps_read(buf, gpsdata, end);
+	if (status == 0) {
+	    gpsdata->set &= ~UNION_SET;
+	    gpsdata->set |= TIMEDRIFT_SET;
 	}
 	return status;
     } else

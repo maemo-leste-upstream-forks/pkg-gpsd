@@ -179,6 +179,7 @@ int gps_stream(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED,
     int status = -1;
 
 #ifdef SOCKET_EXPORT_ENABLE
+    /* cppcheck-suppress redundantAssignment */
     status = gps_sock_stream(gpsdata, flags, d);
 #endif /* SOCKET_EXPORT_ENABLE */
 
@@ -211,6 +212,7 @@ bool gps_waiting(const struct gps_data_t *gpsdata CONDITIONALLY_UNUSED, int time
 #endif /* SHM_EXPORT_ENABLE */
 
 #ifdef SOCKET_EXPORT_ENABLE
+    // cppcheck-suppress pointerPositive
     if ((intptr_t)(gpsdata->gps_fd) >= 0)
 	waiting = gps_sock_waiting(gpsdata, timeout);
 #endif /* SOCKET_EXPORT_ENABLE */
@@ -319,12 +321,14 @@ void libgps_dump_state(struct gps_data_t *collect)
 		      collect->version.proto_minor);
     if (collect->set & POLICY_SET)
 	(void)fprintf(debugfp,
-		      "POLICY: watcher=%s nmea=%s raw=%d scaled=%s timing=%s, devpath=%s\n",
+		      "POLICY: watcher=%s nmea=%s raw=%d scaled=%s timing=%s, split24=%s pps=%s, devpath=%s\n",
 		      collect->policy.watcher ? "true" : "false",
 		      collect->policy.nmea ? "true" : "false",
 		      collect->policy.raw,
 		      collect->policy.scaled ? "true" : "false",
 		      collect->policy.timing ? "true" : "false",
+		      collect->policy.split24 ? "true" : "false",
+		      collect->policy.pps ? "true" : "false",
 		      collect->policy.devpath);
     if (collect->set & SATELLITE_SET) {
 	int i;
@@ -332,10 +336,15 @@ void libgps_dump_state(struct gps_data_t *collect)
 	(void)fprintf(debugfp, "SKY: satellites in view: %d\n",
 		      collect->satellites_visible);
 	for (i = 0; i < collect->satellites_visible; i++) {
+	    bool used_in_solution = false;
+	    int j;
+	    for (j = 0; j < MAXCHANNELS; j++)
+		if (collect->used[j] == i)
+		    used_in_solution = true;
 	    (void)fprintf(debugfp, "    %2.2d: %2.2d %3.3d %3.0f %c\n",
 			  collect->PRN[i], collect->elevation[i],
 			  collect->azimuth[i], collect->ss[i],
-			  collect->used[i] ? 'Y' : 'N');
+			  used_in_solution ? 'Y' : 'N');
 	}
     }
     if (collect->set & DEVICE_SET)

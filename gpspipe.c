@@ -100,6 +100,7 @@ static void usage(void)
 		  "-R Dump super-raw mode (GPS binary).\n"
 		  "-w Dump gpsd native data.\n"
 		  "-S Set scaled flag.\n"
+		  "-2 Set the split24 flag.\n"
 		  "-l Sleep for ten seconds before connecting to gpsd.\n"
 		  "-t Time stamp the data.\n"
 		  "-T [format] set the timestamp format (strftime(3)-like; implies '-t')\n"
@@ -108,6 +109,7 @@ static void usage(void)
 		  "-n [count] exit after count packets.\n"
 		  "-v Print a little spinner.\n"
 		  "-p Include profiling info in the JSON.\n"
+		  "-P Include PPS JSON in NMEA or raw mode.\n"
 		  "-V Print version and exit.\n\n"
 		  "You must specify one, or more, of -r, -R, or -w\n"
 		  "You must use -o if you use -d.\n");
@@ -141,7 +143,7 @@ int main(int argc, char **argv)
 
     /*@-branchstate@*/
     flags = WATCH_ENABLE;
-    while ((option = getopt(argc, argv, "?dD:lhrRwStT:vVn:s:o:pu")) != -1) {
+    while ((option = getopt(argc, argv, "?dD:lhrRwStT:vVn:s:o:pPu2")) != -1) {
 	switch (option) {
 	case 'D':
 	    debug = atoi(optarg);
@@ -194,6 +196,9 @@ int main(int argc, char **argv)
 	case 'p':
 	    profile = true;
 	    break;
+	case 'P':
+	    flags |= WATCH_PPS;
+	    break;
 	case 'V':
 	    (void)fprintf(stderr, "%s: %s (revision %s)\n",
 			  argv[0], VERSION, REVISION);
@@ -203,6 +208,9 @@ int main(int argc, char **argv)
 	    break;
 	case 'o':
 	    outfile = optarg;
+	    break;
+	case '2':
+	    flags |= WATCH_SPLIT24;
 	    break;
 	case '?':
 	case 'h':

@@ -3,9 +3,9 @@
 """
 gpsfake.py -- classes for creating a controlled test environment around gpsd.
 
-The gpsfake(1) regression tester shipped with gpsd is a trivial wrapper
+The gpsfake(1) regression tester shipped with GPSD is a trivial wrapper
 around this code.  For a more interesting usage example, see the
-valgrind-audit script shipped with the gpsd code.
+valgrind-audit script shipped with the GPSD code.
 
 To use this code, start by instantiating a TestSession class.  Use the
 prefix argument if you want to run the daemon under some kind of run-time
@@ -45,13 +45,16 @@ run with -N, so the output will go to stderr (along with, for example,
 Valgrind notifications).
 
 Each FakeGPS instance tries to packetize the data from the logfile it
-is initialized with. It uses the same packet-getter as the daeomon.
+is initialized with. It uses the same packet-getter as the daemon.
+Exception: if there is a Delay-Cookie line in a header comment, that
+delimiter is used to split up the test load.
 
-The TestSession code maintains a run queue of FakeGPS and gps.gs (client-
-session) objects. It repeatedly cycles through the run queue.  For each
-client session object in the queue, it tries to read data from gpsd.  For
-each fake GPS, it sends one line of stored data.  When a fake-GPS's
-go predicate becomes false, the fake GPS is removed from the run queue.
+The TestSession code maintains a run queue of FakeGPS and gps.gs
+(client- session) objects. It repeatedly cycles through the run queue.
+For each client session object in the queue, it tries to read data
+from gpsd.  For each fake GPS, it sends one line or packet of stored
+data.  When a fake-GPS's go predicate becomes false, the fake GPS is
+removed from the run queue.
 
 There are two ways to use this code.  The more deterministic is
 non-threaded mode: set up your client sessions and fake GPS devices,
@@ -64,8 +67,8 @@ To allow for adding and removing clients while the test is running,
 run in threaded mode by calling the start() method.  This simply calls
 the run method in a subthread, with locking of critical regions.
 """
-import os, time, signal, pty, termios # fcntl, array, struct
-import exceptions, threading, socket
+import os, sys, time, signal, pty, termios # fcntl, array, struct
+import exceptions, threading, socket, select
 import gps
 import packet as sniffer
 
@@ -73,28 +76,55 @@ import packet as sniffer
 # they're too high you'll slow the tests down a lot.  If they're too low
 # you'll get random spurious regression failures that usually look
 # like lines missing from the end of the test output relative to the
-# check file.  These numbers might have to be adjusted upward on faster
-# machines.  The need for them may be symptomatic of race conditions
+# check file.  The need for them may be symptomatic of race conditions
 # in the pty layer or elsewhere.
 
-# Define a per-line delay on writes so we won't spam the buffers in
-# the pty layer or gpsd itself.  Removing this entirely was tried but
-# caused failures under NetBSD.  Values smaller than the system timer
-# tick don't make any difference here.
-WRITE_PAD = 0.001
+# WRITE_PAD: Define a per-line delay on writes so we won't spam the
+# buffers in the pty layer or gpsd itself. Values smaller than the
+# system timer tick don't make any difference here.
 
-# We delay briefly after a GPS source is exhausted before removing it.
-# This should give its subscribers time to get gpsd's response before
-# we call the cleanup code. Note that using fractional seconds in
-# CLOSE_DELAY may have no effect; Python time.time() returns a float
-# value, but it is not guaranteed by Python that the C implementation
-# underneath will return with precision finer than 1 second. (Linux
-# and *BSD return full precision.) Dropping this to 0.1 has been
-# tried but caused failures.
-CLOSE_DELAY = 0.2
+# CLOSE_DELAY: We delay briefly after a GPS source is exhausted before
+# removing it.  This should give its subscribers time to get gpsd's
+# response before we call the cleanup code. Note that using fractional
+# seconds in CLOSE_DELAY may have no effect; Python time.time()
+# returns a float value, but it is not guaranteed by Python that the C
+# implementation underneath will return with precision finer than 1
+# second. (Linux and *BSD return full precision.)
+
+# Field reports:
+#
+# Eric Raymond  on Linux 3.11.0 under an Intel Core Duo at 2.66GHz.
+#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.1    Works, 112s real
+#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.05   Fails
+#
+# Michael Tatarinov on a Raspberry Pi:
+#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.05    Works, 344s real
+#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.0     Fails, 339s real
+#
+# From Hal Murray on NetBSD 6.1.2 on an Intel(R) Celeron(R) CPU 2.80GHz
+#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.4    Works, takes 688.69s real
+#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.3    Fails tcp-torture.log, 677.53s real
+#
+# Greg Troxel running NetBSD 6 on a core i5 (i386, 4 cpus) 2.90GHz.
+#  WRITE_PAD = 0.001 / CLOSE_DELAY = 0.2 had failures (645s)
+#  WRITE_PAD = 0.001 / CLOSE_DELAY = 0.4 had failures (662s)
+#  WRITE_PAD = 0.004 / CLOSE_DELAY = 0.8 all tests passed
+#  WRITE_PAD = 0.001 / CLOSE_DELAY = 0.8 all tests passed (697s)
+#
+
+if sys.platform.startswith("linux"):
+    WRITE_PAD = 0.0
+    CLOSE_DELAY = 0.1
+elif sys.platform.startswith("freebsd"):
+    WRITE_PAD = 0.001
+    CLOSE_DELAY = 0.4
+else:
+    WRITE_PAD = 0.004
+    CLOSE_DELAY = 0.8
 
 class TestLoadError(exceptions.Exception):
     def __init__(self, msg):
+        exceptions.Exception.__init__(self)
         self.msg = msg
 
 class TestLoad:
@@ -106,25 +136,31 @@ class TestLoad:
         self.name = logfp.name
         self.logfp = logfp
         self.predump = predump
-        self.logfile = logfp.name
         self.type = None
         self.sourcetype = "pty"
         self.serial = None
-        # Grab the packets
+        self.delay = WRITE_PAD
+        self.delimiter = None
+        # Stash away a copy in case we need to resplit
+        text = logfp.read()
+        logfp = open(logfp.name)
+        # Grab the packets in the normal way
         getter = sniffer.new()
         #gps.packet.register_report(reporter)
         type_latch = None
+        commentlen = 0
         while True:
-            (plen, ptype, packet, counter) = getter.get(logfp.fileno())
+            (plen, ptype, packet, _counter) = getter.get(logfp.fileno())
             if plen <= 0:
                 break
             elif ptype == sniffer.COMMENT_PACKET:
+                commentlen += len(packet)
                 # Some comments are magic
                 if "Serial:" in packet:
                     # Change serial parameters
                     packet = packet[1:].strip()
                     try:
-                        (xx, baud, params) = packet.split()
+                        (_xx, baud, params) = packet.split()
                         baud = int(baud)
                         if params[0] in ('7', '8'):
                             databits = int(params[0])
@@ -140,10 +176,22 @@ class TestLoad:
                             raise ValueError
                     except (ValueError, IndexError):
                         raise TestLoadError("bad serial-parameter spec in %s"%\
-                                            logfp.name)                    
+                                            self.name)                    
                     self.serial = (baud, databits, parity, stopbits)
-                elif "UDP" in packet:
+                elif "Transport: UDP" in packet:
                     self.sourcetype = "UDP"
+                elif "Transport: TCP" in packet:
+                    self.sourcetype = "TCP"
+                elif "Delay-Cookie:" in packet:
+                    if packet.startswith("#"):
+                        packet = packet[1:]
+                    try:
+                        (_dummy, self.delimiter, delay) = packet.strip().split()
+                        self.delay = float(delay)
+                    except ValueError:
+                        raise TestLoadError("bad Delay-Cookie line in %s"%\
+                                            self.name)
+                    self.resplit = True
             else:
                 if type_latch is None:
                     type_latch = ptype
@@ -151,7 +199,7 @@ class TestLoad:
                     print repr(packet)
                 if not packet:
                     raise TestLoadError("zero-length packet from %s"%\
-                                        logfp.name)                    
+                                        self.name)                    
                 self.sentences.append(packet)
         # Look at the first packet to grok the GPS type
         self.textual = (type_latch == sniffer.NMEA_PACKET)
@@ -159,9 +207,13 @@ class TestLoad:
             self.legend = "gpsfake: line %d: "
         else:
             self.legend = "gpsfake: packet %d"
+        # Maybe this needs to be split on different delimiters?
+        if self.delimiter is not None:
+            self.sentences = text[commentlen:].split(self.delimiter)
 
 class PacketError(exceptions.Exception):
     def __init__(self, msg):
+        exceptions.Exception.__init__(self)
         self.msg = msg
 
 class FakeGPS:
@@ -188,7 +240,7 @@ class FakeGPS:
         self.write(line)
         if self.progress:
             self.progress("gpsfake: %s feeds %d=%s\n" % (self.testload.name, len(line), repr(line)))
-        time.sleep(WRITE_PAD)
+        time.sleep(self.testload.delay)
         self.index += 1
 
 class FakePTY(FakeGPS):
@@ -197,7 +249,7 @@ class FakePTY(FakeGPS):
                  speed=4800, databits=8, parity='N', stopbits=1,
                  progress=None):
         FakeGPS.__init__(self, testload, progress)
-        # Allow Serial: header to be overridden by explicit spped.
+        # Allow Serial: header to be overridden by explicit speed.
         if self.testload.serial:
             (speed, databits, parity, stopbits) = self.testload.serial
         self.speed = speed
@@ -222,7 +274,6 @@ class FakePTY(FakeGPS):
             115200: termios.B115200,
             230400: termios.B230400,
         }
-        speed = baudrates[speed]	# Throw an error if the speed isn't legal
         (self.fd, self.slave_fd) = pty.openpty()
         self.byname = os.ttyname(self.slave_fd)
         (iflag, oflag, cflag, lflag, ispeed, ospeed, cc) = termios.tcgetattr(self.slave_fd)
@@ -238,15 +289,20 @@ class FakePTY(FakeGPS):
             cflag |= termios.CS8
         if stopbits == 2:
             cflag |= termios.CSTOPB
+        # Warning: attempting to set parity makes Fedora lose its cookies
         if parity == 'E':
             iflag |= termios.INPCK
             cflag |= termios.PARENB
         elif parity == 'O':
             iflag |= termios.INPCK
             cflag |= termios.PARENB | termios.PARODD
-        ispeed = ospeed = speed
-        termios.tcsetattr(self.slave_fd, termios.TCSANOW,
+        ispeed = ospeed = baudrates[speed]
+        try:
+            termios.tcsetattr(self.slave_fd, termios.TCSANOW,
                           [iflag, oflag, cflag, lflag, ispeed, ospeed, cc])
+        except termios.error:
+            raise TestLoadError("error attempting to set serial mode to %s %s%s%s" \
+                                % (speed, databits, parity, stopbits))
     def read(self):
         "Discard control strings written by gpsd."
         # A tcflush implementation works on Linux but fails on OpenBSD 4.
@@ -267,6 +323,49 @@ class FakePTY(FakeGPS):
         "Wait for the associated device to drain (e.g. before closing)."
         termios.tcdrain(self.fd)
 
+class FakeTCP(FakeGPS):
+    "A TCP serverlet with a test log ready to be cycled to it."
+    def __init__(self, testload,
+                 host, port,
+                 progress=None):
+        FakeGPS.__init__(self, testload, progress)
+        self.host = host
+        self.port = int(port)
+        self.byname = "tcp://" + host + ":" + str(port)
+        self.dispatcher = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # This magic prevents "Address already in use" errors after
+        # we release the socket.
+        self.dispatcher.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.dispatcher.bind((self.host, self.port))
+        self.dispatcher.listen(5)
+        self.readables = [self.dispatcher]
+
+    def read(self):
+        "Handle connection requests and data."
+        readable, _writable, _errored = select.select(self.readables, [], [], 0)
+        for s in readable:
+            if s == self.dispatcher:	# Connection request
+                client_socket, _address = s.accept()
+                self.readables = [client_socket]
+                self.dispatcher.close()
+            else:			# Incoming data
+                data = s.recv(1024)
+                if not data:
+                    s.close()
+                    self.readables.remove(s)
+
+    def write(self, line):
+        "Send the next log packet to everybody connected."
+        for s in self.readables:
+            if s != self.dispatcher:
+                s.send(line)
+
+    def drain(self):
+        "Wait for the associated device(s) to drain (e.g. before closing)."
+        for s in self.readables:
+            if s != self.dispatcher:
+                s.shutdown(socket.SHUT_RDWR)
+
 class FakeUDP(FakeGPS):
     "A UDP broadcaster with a test log ready to be cycled to it."
     def __init__(self, testload,
@@ -275,7 +374,7 @@ class FakeUDP(FakeGPS):
         FakeGPS.__init__(self, testload, progress)
         self.ipaddr = ipaddr
         self.port = port
-        self.byname = "udp://" + ipaddr + ":" + port
+        self.byname = "udp://" + ipaddr + ":" + str(port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def read(self):
@@ -291,6 +390,7 @@ class FakeUDP(FakeGPS):
 
 class DaemonError(exceptions.Exception):
     def __init__(self, msg):
+        exceptions.Exception.__init__(self)
         self.msg = msg
     def __str__(self):
         return repr(self.msg)
@@ -404,11 +504,12 @@ class DaemonInstance:
 
 class TestSessionError(exceptions.Exception):
     def __init__(self, msg):
+        exceptions.Exception.__init__(self)
         self.msg = msg
 
 class TestSession:
     "Manage a session including a daemon with fake GPSes and clients."
-    def __init__(self, prefix=None, port=None, options=None, verbose=0, predump=False, udp=False):
+    def __init__(self, prefix=None, port=None, options=None, verbose=0, predump=False, udp=False, tcp=False):
         "Initialize the test session by launching the daemon."
         self.prefix = prefix
         self.port = port
@@ -416,6 +517,7 @@ class TestSession:
         self.verbose = verbose
         self.predump = predump
         self.udp = udp
+        self.tcp = tcp
         self.daemon = DaemonInstance()
         self.fakegpslist = {}
         self.client_id = 0
@@ -423,6 +525,7 @@ class TestSession:
         self.writers = 0
         self.runqueue = []
         self.index = 0
+        self.baseport = 49194	# In the IANA orivate port range
         if port:
             self.port = port
         else:
@@ -446,8 +549,15 @@ class TestSession:
         if logfile not in self.fakegpslist:
             testload = TestLoad(logfile, predump=self.predump)
             if testload.sourcetype == "UDP" or self.udp:
-                newgps = FakeUDP(testload, ipaddr="127.0.0.1", port="5000",
-                                   progress=self.progress)
+                newgps = FakeUDP(testload, ipaddr="127.0.0.1",
+                                 port=self.baseport,
+                                 progress=self.progress)
+                self.baseport += 1
+            elif testload.sourcetype == "TCP" or self.tcp:
+                newgps = FakeTCP(testload, host="127.0.0.1",
+                                 port=self.baseport,
+                                 progress=self.progress)
+                self.baseport += 1
             else:
                 newgps = FakePTY(testload, speed=speed, 
                                    progress=self.progress)

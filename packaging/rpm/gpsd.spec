@@ -1,7 +1,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name: gpsd
-Version: 3.9~dev
+Version: 3.10
 Release: 1%{?dist}
 Summary: Service daemon for mediating access to a GPS
 
@@ -211,6 +211,7 @@ fi
 %{_bindir}/gpsmon
 %{_bindir}/gpsctl
 %{_bindir}/gegps
+%{_bindir}/gps2udp
 %{_libdir}/libgps*.so.*
 #/lib/udev/gpsd*
 %{python_sitearch}/gps*
@@ -220,6 +221,7 @@ fi
 %{_mandir}/man1/gpsprof.1*
 %{_mandir}/man1/gpsmon.1*
 %{_mandir}/man1/gegps.1*
+%{_mandir}/man1/gps2udp.1*
 %{_mandir}/man1/gpsctl.1*
 %{_mandir}/man5/gpsd_json.5*
 

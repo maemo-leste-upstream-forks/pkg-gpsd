@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsdctl
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
 .\"      Date: 25 Jun 2011
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -45,15 +45,20 @@ The "device" argument should be the pathname of a device\&. A device on the list
 Two environment variables are interpreted\&.
 \fBGPSD_SOCKET\fR
 sets the location of the control socket\&. It defaults to
-/var/run/gpsd\&.sock\&.
+/var/run/gpsd\&.sock
+if the effective user ID of this program is root,
+/tmp/gpsd\&.sock
+otherwise\&.
 .PP
 \fBGPSD_OPTIONS\fR
 may be a list of options to be passed to
 gpsd
 when this tool launches it\&. It defaults to an empty string\&.
+.SH "RETURN VALUES"
+.PP
+1 if the action was unknown or the write to the control socket failed, 0 otherwise
 .SH "SEE ALSO"
 .PP
-
 \fBgpsd\fR(8),
 \fBgpsctl\fR(1),
 \fBgps\fR(1),
@@ -64,4 +69,4 @@ when this tool launches it\&. It defaults to an empty string\&.
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond
-esr@thyrsus\&.com\&.
+<esr@thyrsus\&.com>\&.

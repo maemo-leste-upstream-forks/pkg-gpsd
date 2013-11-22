@@ -115,19 +115,28 @@ double getbed64(const char *buf, int off)
     return l_d.d;
 }
 
-/*@-shiftimplementation@*/
 void putbef32(char *buf, int off, float val)
 {
     union int_float i_f;
 
     i_f.f = val;
-    /* this would be a putbe32 call if not for a signedness issue */
-    buf[off] = (char)(((i_f.i) >> 16) >> 8);
+    /*@-shiftimplementation +ignoresigns@*/
+    putbe32(buf, off, i_f.i);
+    /*@+shiftimplementation -ignoresigns@*/
 }
-/*@+shiftimplementation@*/
 
 #ifdef __UNUSED__
-// cppcheck-suppress unusedFunction
+void putbed64(char *buf, int off, double val)
+{
+    union long_double l_d;
+
+    l_d.d = val;
+    /*@-shiftimplementation +ignoresigns@*/
+    putbe32(buf, (off), (l_d.l) >> 32);
+    putbe32(buf, (off)+4, (l_d.l));
+    /*@+shiftimplementation -ignoresigns@*/
+}
+
 u_int16_t swap_u16(u_int16_t i)
 /* byte-swap a 16-bit unsigned int */
 {
@@ -139,7 +148,6 @@ u_int16_t swap_u16(u_int16_t i)
     return (c1 << 8) + c2;
 }
 
-// cppcheck-suppress unusedFunction
 u_int32_t swap_u32(u_int32_t i)
 /* byte-swap a 32-bit unsigned int */
 {
@@ -153,7 +161,6 @@ u_int32_t swap_u32(u_int32_t i)
     return ((u_int32_t)c1 << 24) + ((u_int32_t)c2 << 16) + ((u_int32_t)c3 << 8) + c4;
 }
 
-// cppcheck-suppress unusedFunction
 u_int64_t swap_u64(u_int64_t i)
 /* byte-swap a 64-bit unsigned int */
 {

@@ -8,7 +8,9 @@
 
 #include "gpsd.h"
 
-const char /*@ observer @*/ *gpsd_packetdump(char *binbuf, size_t binbuflen)
+/*@-mustdefine@*/
+const char /*@ observer @*/ *gpsd_packetdump(char *scbuf, size_t scbuflen,
+					     char *binbuf, size_t binbuflen)
 {
     char *cp;
     bool printable = true;
@@ -20,13 +22,14 @@ const char /*@ observer @*/ *gpsd_packetdump(char *binbuf, size_t binbuflen)
     if (printable)
 	return binbuf;
     else
-	return gpsd_hexdump(binbuf, binbuflen);
+	return gpsd_hexdump(scbuf, scbuflen, binbuf, binbuflen);
 }
+/*@+mustdefine@*/
 
-const char /*@ observer @*/ *gpsd_hexdump(char *binbuf, size_t binbuflen)
+/*@-mustdefine@*/
+const char /*@ observer @*/ *gpsd_hexdump(char *scbuf, size_t scbuflen,
+					  char *binbuf, size_t binbuflen)
 {
-    /* FIXME: this isn't thead-safe! */
-    static char hexbuf[MAX_PACKET_LENGTH * 2 + 1];
 #ifndef SQUELCH_ENABLE
     size_t i, j = 0;
     size_t len =
@@ -39,17 +42,18 @@ const char /*@ observer @*/ *gpsd_hexdump(char *binbuf, size_t binbuflen)
 	return "";
 
     /*@ -shiftimplementation @*/
-    for (i = 0; i < len; i++) {
-	hexbuf[j++] = hexchar[(ibuf[i] & 0xf0) >> 4];
-	hexbuf[j++] = hexchar[ibuf[i] & 0x0f];
+    for (i = 0; i < len && i * 2 < scbuflen - 2; i++) {
+	scbuf[j++] = hexchar[(ibuf[i] & 0xf0) >> 4];
+	scbuf[j++] = hexchar[ibuf[i] & 0x0f];
     }
     /*@ +shiftimplementation @*/
-    hexbuf[j] = '\0';
+    scbuf[j] = '\0';
 #else /* SQUELCH defined */
-    hexbuf[0] = '\0';
+    scbuf[0] = '\0';
 #endif /* SQUELCH_ENABLE */
-    return hexbuf;
+    return scbuf;
 }
+/*@+mustdefine@*/
 
 /*@ +charint -shiftimplementation @*/
 static int hex2bin(const char *s)
@@ -83,20 +87,22 @@ static int hex2bin(const char *s)
 int gpsd_hexpack( /*@in@*/ const char *src, /*@out@ */ char *dst, size_t len)
 /* hex2bin source string to destination - destination can be same as source */
 {
-    int i, k, l;
+    int i, j;
 
     /*@ -mustdefine @*/
-    l = (int)(strlen(src) / 2);
-    if ((l < 1) || ((size_t) l > len))
+    j = (int)(strlen(src) / 2);
+    if ((j < 1) || ((size_t) j > len))
 	return -2;
 
-    for (i = 0; i < l; i++)
+    for (i = 0; i < j; i++) {
+	int k;
 	if ((k = hex2bin(src + i * 2)) != -1)
 	    dst[i] = (char)(k & 0xff);
 	else
 	    return -1;
+    }
     (void)memset(dst + i, '\0', (size_t) (len - i));
-    return l;
+    return j;
     /*@ +mustdefine @*/
 }
 
