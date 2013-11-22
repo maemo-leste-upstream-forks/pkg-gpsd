@@ -38,7 +38,10 @@ SCONSOPTS = \
 	strip=no \
 	dbus_export=yes \
 	docdir=/usr/share/doc/gpsd \
-	libdir=/usr/lib/$(DEB_HOST_MULTIARCH)
+	libdir=/usr/lib/$(DEB_HOST_MULTIARCH) \
+	gpsd_user=_gpsd \
+	gpsd_group=dialout
+
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	SCONSOPTS += debug=yes

@@ -27,6 +27,21 @@ if [ "$1" = "configure" ] ; then
     fi
 
 
+    echo "Creating/updating _gpsd user account..."
+    adduser --system --ingroup dialout --home /run/gpsd \
+            --gecos "GPSD system user" --shell /bin/false \
+            --quiet --disabled-password _gpsd || {
+        # adduser failed. Why?
+        if getent passwd _gpsd >/dev/null ; then
+            echo "Non-system user _gpsd found. I will not overwrite a non-system" >&2
+            echo "user.  Remove the user and reinstall gpsd." >&2
+            exit 1
+        fi
+        # unknown adduser error, simply exit
+        exit 1
+    }
+
+
 fi
 
 #DEBHELPER#
