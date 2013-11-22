@@ -1,4 +1,4 @@
-libgps.so.20 libgps20 #MINVER#
+libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 3.3
  (c++)"gpsmm::gps_inner_open(char const*, char const*)@Base" 3.3
  (c++)"gpsmm::data()@Base" 3.3

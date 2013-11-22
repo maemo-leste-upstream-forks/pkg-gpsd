@@ -3,8 +3,13 @@
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
 
-LIBGPS_SONAME := 20
-LIBGPSD_SONAME := 21
+LIBGPS_SONAME := $(strip $(shell grep -E '^libgps_version_current' SConstruct | sed 's,.*=[^0-9]*\([0-9]*\).*,\1,'))
+LIBGPSD_SONAME := $(strip $(shell grep -E '^libgpsd_version_current' SConstruct | sed 's,.*=[^0-9]*\([0-9]*\).*,\1,'))
+
+
+LIBGPS_DEBIAN_FILE_SOURCES := $(strip $(shell ls -1 debian/*LIBGPSSONAME* ))
+LIBGPS_DEBIAN_FILE_TARGETS := $(strip $(shell echo $(LIBGPS_DEBIAN_FILE_SOURCES) | sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g'))
+
 
 include /usr/share/quilt/quilt.make
 
@@ -79,6 +84,25 @@ SCONS_ENV := set -e ;\
 		export CPPFLAGS="$(cppflags)";
 
 
+$(LIBGPS_DEBIAN_FILE_TARGETS): $(LIBGPS_DEBIAN_FILE_SOURCES)
+	for source in $(LIBGPS_DEBIAN_FILE_SOURCES); do \
+	    target=$$(echo "$$source" | sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g') ;\
+	    sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g;s,LIBGPSDSONAME,$(LIBGPSD_SONAME),g' "$$source" > "$$target" ;\
+	done
+
+debian/control: debian/control.in
+	if grep -q "Package: libgps$(LIBGPS_SONAME)" debian/control; then \
+		touch debian/control ;\
+	else \
+		rm -f $@ ;\
+		sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g;s,LIBGPSDSONAME,$(LIBGPSD_SONAME),g' $< > $@ ;\
+		if [ -d .git ]; then \
+			git add debian/control ;\
+			git commit -m 'Updating debian/control from debian/control.in' debian/control ;\
+		fi ;\
+	fi
+
+
 build-indep: build
 build-arch: build
 
@@ -111,7 +135,7 @@ build-static-stamp: $(QUILT_STAMPFN)
 	touch $@
 
 clean: clean-patched unpatch
-clean-patched:
+clean-patched: debian/control
 	dh_testdir
 	dh_testroot
 	set -e; \
@@ -129,11 +153,12 @@ clean-patched:
 	    config.log \
 	    static_lib \
 	    debian/shlibs.local \
-	    leapsecond.pyc
+	    leapsecond.pyc \
+	    $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_clean
 
 install: install-stamp
-install-stamp: build-stamp build-static-stamp
+install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_testdir
 	dh_testroot
 	dh_prep
@@ -227,4 +252,4 @@ binary-arch: binary
 .PHONY: binary binary-indep binary-arch \
 	install install-arch install-indep \
 	clean clean-patched \
-	build
+	build debian/control

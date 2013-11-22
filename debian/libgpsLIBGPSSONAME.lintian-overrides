@@ -1,0 +1,2 @@
+libgpsLIBGPSSONAME: shlib-missing-in-control-file libgpsd LIBGPSDSONAME for usr/lib/*/libgpsd.so.LIBGPSDSONAME.0.0
+libgpsLIBGPSSONAME: shlib-missing-in-symbols-control-file libgpsd LIBGPSDSONAME for usr/lib/*/libgpsd.so.LIBGPSDSONAME.0.0

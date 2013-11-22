@@ -1,4 +1,4 @@
-libQgpsmm.so.20 libqgpsmm20 #MINVER#
+libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"gps_sock_data(gps_data_t const*)@Base" 3.3
  (c++)"gps_sock_open(char const*, char const*, gps_data_t*)@Base" 3.3
  (c++)"gps_sock_read(gps_data_t*)@Base" 3.3

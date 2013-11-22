@@ -1,2 +1,0 @@
-libgps20: shlib-missing-in-control-file libgpsd 21 for usr/lib/*/libgpsd.so.21.0.0
-libgps20: shlib-missing-in-symbols-control-file libgpsd 21 for usr/lib/*/libgpsd.so.21.0.0
