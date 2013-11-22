@@ -6,12 +6,27 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "gpsd.h"
 
-void gpsd_report(int errlevel UNUSED, const char *fmt UNUSED, ...)
+ssize_t gpsd_write(struct gps_device_t *session,
+		   const char *buf,
+		   const size_t len)
+/* pass low-level data to devices straight through */
 {
-    /* stub required to prevent linkage error */
+    return gpsd_serial_write(session, buf, len);
+}
+
+void gpsd_report(const int debuglevel, const int errlevel,
+		 const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    gpsd_labeled_report(debuglevel, errlevel, "geoid:", fmt, ap);
+    va_end(ap);
+			
 }
 
 int main(int argc, char **argv)

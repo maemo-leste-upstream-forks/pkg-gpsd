@@ -67,19 +67,18 @@ int gps_shm_open(/*@out@*/struct gps_data_t *gpsdata)
 }
 
 bool gps_shm_waiting(const struct gps_data_t *gpsdata, int timeout)
-/* check to see if new dayta has been written */
+/* check to see if new data has been written */
 {
     volatile struct shmexport_t *shared = (struct shmexport_t *)PRIVATE(gpsdata)->shmseg;
-    bool newdata;
     timestamp_t basetime = timestamp();
 
     /* busy-waiting sucks, but there's not really an alternative */
     for (;;) {
-	newdata = false;
-	barrier();
-	if (shared->bookend1 == shared->bookend2 && shared->bookend1 > PRIVATE(gpsdata)->tick + timeout)
+	bool newdata = false;
+	memory_barrier();
+	if (shared->bookend1 == shared->bookend2 && shared->bookend1 > PRIVATE(gpsdata)->tick)
 	    newdata = true;
-	barrier();
+	memory_barrier();
 	if (newdata || (timestamp() - basetime >= (double)timeout))
 	    break;
     }
@@ -101,9 +100,9 @@ int gps_shm_read(struct gps_data_t *gpsdata)
 	struct gps_data_t noclobber;
 
 	/*
-	 * Following block of instructions must not be reordered, otherwise
-	 * havoc will ensue.  The barrier() call should prevent reordering
-	 * of the data accesses.
+	 * Following block of instructions must not be reordered,
+	 * otherwise havoc will ensue.  The memory_barrier() call
+	 * should prevent reordering of the data accesses.
 	 *
 	 * This is a simple optimistic-concurrency technique.  We wrote
 	 * the second bookend first, then the data, then the first bookend.
@@ -112,11 +111,11 @@ int gps_shm_read(struct gps_data_t *gpsdata)
 	 * get clobbered first and the data can be detected as bad.
 	 */
 	before = shared->bookend1;
-	barrier();
+	memory_barrier();
 	(void)memcpy((void *)&noclobber,
 		     (void *)&shared->gpsdata,
 		     sizeof(struct gps_data_t));
-	barrier();
+	memory_barrier();
 	after = shared->bookend2;
 
 	if (before != after)

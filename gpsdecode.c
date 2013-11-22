@@ -17,6 +17,7 @@
 static int verbose = 0;
 static bool scaled = true;
 static bool json = true;
+static bool split24 = false;
 static unsigned int ntypes = 0;
 static unsigned int typelist[32];
 
@@ -26,26 +27,31 @@ static unsigned int typelist[32];
  *
  **************************************************************************/
 
-void gpsd_report(int errlevel, const char *fmt, ...)
-/* assemble command in printf(3) style, use stderr or syslog */
+ssize_t gpsd_write(struct gps_device_t *session,
+		   const char *buf,
+		   const size_t len)
+/* pass low-level data to devices straight through */
 {
-    if (errlevel <= verbose) {
-	char buf[BUFSIZ];
-	va_list ap;
+    return gpsd_serial_write(session, buf, len);
+}
 
-	(void)strlcpy(buf, "gpsdecode: ", BUFSIZ);
-	va_start(ap, fmt);
-	(void)vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt,
-			ap);
-	va_end(ap);
-	(void)fputs(buf, stderr);
-    }
+void gpsd_report(const int debuglevel, const int errlevel,
+		 const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    gpsd_labeled_report(debuglevel, errlevel, "gpsdecode:", fmt, ap);
+    va_end(ap);
+			
 }
 
 #ifdef AIVDM_ENABLE
 static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 {
+    char scratchbuf[MAX_PACKET_LENGTH*2+1];
     bool imo = false;
+
     (void)snprintf(buf, buflen, "%u|%u|%09u|", ais->type, ais->repeat,
 		   ais->mmsi);
     /*@ -formatcode @*/
@@ -135,7 +141,8 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
 			   "|%zd:%s",
 			   ais->type6.bitcount,
-			   gpsd_hexdump(ais->type6.bitdata,
+			   gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
+					ais->type6.bitdata,
 					(ais->type6.bitcount + 7) / 8));
 	break;
     case 7:			/* Binary Acknowledge */
@@ -242,7 +249,8 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
 			   "|%zd:%s",
 			   ais->type8.bitcount,
-			   gpsd_hexdump(ais->type8.bitdata,
+			   gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
+					ais->type8.bitdata,
 					(ais->type8.bitcount + 7) / 8));
 	break;
     case 9:
@@ -300,7 +308,8 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type17.lon,
 		       ais->type17.lat,
 		       ais->type17.bitcount,
-		       gpsd_hexdump(ais->type17.bitdata,
+		       gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
+				    ais->type17.bitdata,
 				    (ais->type17.bitcount + 7) / 8));
 	break;
     case 18:
@@ -428,7 +437,13 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
 		       "%u|", ais->type24.shiptype);
 	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%s|%s|", ais->type24.vendorid, ais->type24.callsign);
+		       "%s|", ais->type24.vendorid);
+	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+		       "%u|", ais->type24.model);
+	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+		       "%u|", ais->type24.serial);
+	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+		       "%s|", ais->type24.callsign);
 	if (AIS_AUXILIARY_MMSI(ais->mmsi)) {
 	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
 			   "%u", ais->type24.mothership_mmsi);
@@ -449,7 +464,8 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type25.dest_mmsi,
 		       ais->type25.app_id,
 		       ais->type25.bitcount,
-		       gpsd_hexdump(ais->type25.bitdata,
+		       gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
+				    ais->type25.bitdata,
 				    (ais->type25.bitcount + 7) / 8));
 	break;
     case 26:			/* Binary Message, Multiple Slot */
@@ -460,7 +476,8 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type26.dest_mmsi,
 		       ais->type26.app_id,
 		       ais->type26.bitcount,
-		       gpsd_hexdump(ais->type26.bitdata,
+		       gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
+				    ais->type26.bitdata,
 				    (ais->type26.bitcount + 7) / 8),
 		       ais->type26.radio);
 	break;
@@ -557,6 +574,10 @@ static void decode(FILE *fpin, FILE*fpout)
 	    }
 #ifdef SOCKET_EXPORT_ENABLE
 	    else {
+		if ((changed & AIS_SET)!=0) {
+		    if (session.gpsdata.ais.type == 24 && session.gpsdata.ais.type24.part != both && !split24)
+			continue;
+		}
 		json_data_report(changed,
 				 &session, &policy,
 				 buf, sizeof(buf));
@@ -566,6 +587,8 @@ static void decode(FILE *fpin, FILE*fpout)
 #ifdef AIVDM_ENABLE
 	} else if (session.packet.type == AIVDM_PACKET) {
 	    if ((changed & AIS_SET)!=0) {
+		if (session.gpsdata.ais.type == 24 && session.gpsdata.ais.type24.part != both && !split24)
+		    continue;
 		aivdm_csv_dump(&session.gpsdata.ais, buf, sizeof(buf));
 		(void)fputs(buf, fpout);
 	    }
@@ -621,7 +644,7 @@ int main(int argc, char **argv)
     enum
     { doencode, dodecode } mode = dodecode;
 
-    while ((c = getopt(argc, argv, "cdejpt:uvVD:")) != EOF) {
+    while ((c = getopt(argc, argv, "cdejpst:uvVD:")) != EOF) {
 	switch (c) {
 	case 'c':
 	    json = false;
@@ -637,6 +660,10 @@ int main(int argc, char **argv)
 
 	case 'j':
 	    json = true;
+	    break;
+
+	case 's':
+	    split24 = true;
 	    break;
 
 	case 't':

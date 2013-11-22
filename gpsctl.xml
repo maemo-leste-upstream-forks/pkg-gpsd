@@ -51,8 +51,10 @@ running, it is not necessary to specify the device;
 <application>gpsd</application>, which will locate it for you.</para>
 
 <para>When <application>gpsd</application> is not running, the device
-specification is required, and you will almost certainly need to be
-running as root in order to have write access to the device.</para>
+specification is required, and you will need to be running as root or
+be a member of the device's owning group in order to have write access
+to the device. On many Unix variants the owning group will be named
+'dialout'.</para>
 
 <para>The program accepts the following options:</para>
 <variablelist remap='TP'>
@@ -60,8 +62,7 @@ running as root in order to have write access to the device.</para>
 <varlistentry>
 <term>-b</term>
 <listitem>
-<para>Put the GPS into binary mode.  After the GPS resets itself, autobaud to
-the new speed.</para>
+<para>Put the GPS into native (binary) mode.</para>
 </listitem>
 </varlistentry>
 
@@ -102,8 +103,7 @@ to which device types, and exit.</para>
 <varlistentry>
 <term>-n</term>
 <listitem>
-<para>Put GPS into NMEA mode.  After the GPS resets itself autobaud to
-its new speed.</para>
+<para>Put GPS into NMEA mode.</para>
 </listitem>
 </varlistentry>
 
@@ -155,9 +155,9 @@ ESC. This switch implies <option>-f</option>.</para>
 <varlistentry>
 <term>-T</term>
 <listitem>
-<para>Change the sampling timeout. Defaults to 4 seconds, which
-should always be sufficient to get a packet from a device emitting at
-the normal rate of 1 per second.</para>
+<para>Change the sampling timeout. Defaults to 8 seconds, which should
+always be sufficient to get an identifying packet from a device
+emitting at the normal rate of 1 per second.</para>
 </listitem>
 </varlistentry>
 
@@ -183,8 +183,8 @@ the normal rate of 1 per second.</para>
 </varlistentry>
 </variablelist>
 
-<para>The argument of the forcing option. <option>-t</option>, should be a
-string which should be contained in exactly one of the known driver
+<para>The argument of the forcing option, <option>-t</option>, should be a
+string which is contained in exactly one of the known driver
 names; for a list, do <command>gpsctl -l</command>.</para>
 
 <para>Forcing the device type behaves somewhat differently depending
@@ -204,7 +204,7 @@ probe.)</para>
 identifying the GPS type of the selected device and exit.</para>
 
 <para>Reset (-r) operations must stand alone; others can be combined.
-Multiple options will be executed in tis order: mode changes (-b and
+Multiple options will be executed in this order: mode changes (-b and
 -n) first, speed changes (-s) second, and control-string sends (-c)
 last.</para>
 
@@ -240,6 +240,9 @@ GPS type itself.</para>
 <para>SiRF GPSes can only be identified by the success of an attempt
 to flip them into SiRF binary mode. Thus, the process of probing one of
 these running in NMEA will change its behavior.</para>
+
+<para>Baud rate and mode changes work in direct mode but are not
+reliable in client mode.  This will be fixed in a future release.</para>
 
 </refsect1>
 

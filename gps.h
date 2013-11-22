@@ -36,15 +36,24 @@ extern "C" {
  * 5.0 - MAXCHANNELS bumped from 20 to 32 for GLONASS (Mar 2011, release 2.96)
  *       gps_open() becomes reentrant, what gps_open_r() used to be.
  *       gps_poll() removed in favor of gps_read().  The raw hook is gone.
+ * 5.1 - GPS_PATH_MAX uses system PATH_MAX; split24 flag added. New
+ *       model and serial members in part B of AIS type 24, conforming
+ *       with ITU-R 1371-4. New timedrift structure.
  */
 #define GPSD_API_MAJOR_VERSION	5	/* bump on incompatible changes */
-#define GPSD_API_MINOR_VERSION	0	/* bump on compatible changes */
+#define GPSD_API_MINOR_VERSION	1	/* bump on compatible changes */
 
 #define MAXTAGLEN	8	/* maximum length of sentence tag name */
 #define MAXCHANNELS	72	/* must be > 12 GPS + 12 GLONASS + 2 WAAS */
 #define GPS_PRNMAX	32	/* above this number are SBAS satellites */
-#define GPS_PATH_MAX	128	/* dev files usually have short names */
 #define MAXUSERDEVS	4	/* max devices per user */
+
+/* PATH_MAX needs to be enough for long names like /dev/serial/by-id/... */
+#ifdef PATH_MAX
+#define GPS_PATH_MAX   PATH_MAX
+#else
+#define GPS_PATH_MAX   1024
+#endif
 
 /*
  * The structure describing an uncertainty volume in kinematic space.
@@ -270,12 +279,12 @@ struct rtcm3_rtk_hdr {		/* header data from 1001, 1002, 1003, 1004 */
     bool sync;			/* Synchronous GNSS Message Flag */
     unsigned short satcount;	/* # Satellite Signals Processed */
     bool smoothing;		/* Divergence-free Smoothing Indicator */
-    unsigned short interval;	/* Smoothing Interval */
+    unsigned int interval;	/* Smoothing Interval */
 };
 
 struct rtcm3_basic_rtk {
     unsigned char indicator;	/* Indicator */
-    short channel;		/* Satellite Frequency Channel Number
+    unsigned int channel;	/* Satellite Frequency Channel Number
 				   (GLONASS only) */
     double pseudorange;		/* Pseudorange */
     double rangediff;		/* PhaseRange – Pseudorange in meters */
@@ -284,7 +293,7 @@ struct rtcm3_basic_rtk {
 
 struct rtcm3_extended_rtk {
     unsigned char indicator;	/* Indicator */
-    short channel;		/* Satellite Frequency Channel Number
+    unsigned int channel;	/* Satellite Frequency Channel Number
 				   (GLONASS only) */
     double pseudorange;		/* Pseudorange */
     double rangediff;		/* PhaseRange – L1 Pseudorange */
@@ -329,9 +338,9 @@ struct rtcm3_t {
 		struct rtcm3_basic_rtk L1;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1001;
-	struct rtcm3_1002_t {
+	struct {
 	    struct rtcm3_rtk_hdr	header;
-	    struct {
+	    struct rtcm3_1002_t {
 		unsigned ident;			/* Satellite ID */
 		struct rtcm3_extended_rtk L1;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
@@ -367,54 +376,54 @@ struct rtcm3_t {
 	    double ecef_x, ecef_y, ecef_z;	/* ECEF antenna location */
 	    double height;			/* Antenna height */
 	} rtcm3_1006;
-	struct rtcm3_1007_t {
+	struct {
 	    unsigned int station_id;			/* Reference Station ID */
 	    char descriptor[RTCM3_MAX_DESCRIPTOR+1];	/* Description string */
-	    unsigned char setup_id;
+	    unsigned int setup_id;
 	} rtcm3_1007;
-	struct rtcm3_1008_t {
+	struct {
 	    unsigned int station_id;			/* Reference Station ID */
 	    char descriptor[RTCM3_MAX_DESCRIPTOR+1];	/* Description string */
-	    unsigned char setup_id;
+	    unsigned int setup_id;
 	    char serial[RTCM3_MAX_DESCRIPTOR+1];	/* Serial # string */
 	} rtcm3_1008;
-	struct rtcm3_1009_t {
+	struct {
 	    struct rtcm3_rtk_hdr	header;
-	    struct {
+	    struct rtcm3_1009_t {
 		unsigned ident;		/* Satellite ID */
 		struct rtcm3_basic_rtk L1;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1009;
-	struct rtcm3_1010_t {
+	struct {
 	    struct rtcm3_rtk_hdr	header;
-	    struct {
+	    struct rtcm3_1010_t {
 		unsigned ident;		/* Satellite ID */
 		struct rtcm3_extended_rtk L1;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1010;
-	struct rtcm3_1011_t {
+	struct {
 	    struct rtcm3_rtk_hdr	header;
-	    struct {
+	    struct rtcm3_1011_t {
 		unsigned ident;			/* Satellite ID */
 		struct rtcm3_extended_rtk L1;
 		struct rtcm3_extended_rtk L2;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1011;
-	struct rtcm3_1012_t {
+	struct {
 	    struct rtcm3_rtk_hdr	header;
-	    struct {
+	    struct rtcm3_1012_t {
 		unsigned ident;			/* Satellite ID */
 		struct rtcm3_extended_rtk L1;
 		struct rtcm3_extended_rtk L2;
 	    } rtk_data[RTCM3_MAX_SATELLITES];
 	} rtcm3_1012;
-	struct rtcm3_1013_t {
+	struct {
 	    unsigned int station_id;	/* Reference Station ID */
 	    unsigned short mjd;		/* Modified Julian Day (MJD) Number */
 	    unsigned int sod;		/* Seconds of Day (UTC) */
 	    unsigned char leapsecs;	/* Leap Seconds, GPS-UTC */
 	    unsigned char ncount;	/* Count of announcements to follow */
-	    struct {
+	    struct rtcm3_1013_t {
 		unsigned short id;		/* message type ID */
 		bool sync;
 		unsigned short interval;	/* interval in 0.1sec units */
@@ -424,7 +433,7 @@ struct rtcm3_t {
 	struct rtcm3_1014_t {
 	    unsigned int network_id;	/* Network ID */
 	    unsigned int subnetwork_id;	/* Subnetwork ID */
-	    unsigned char stationcount;	/* # auxiliary stations transmitted */
+	    unsigned int stationcount;	/* # auxiliary stations transmitted */
 	    unsigned int master_id;	/* Master Reference Station ID */
 	    unsigned int aux_id;	/* Auxilary Reference Station ID */
 	    double d_lat, d_lon, d_alt;	/* Aux-master location delta */
@@ -524,7 +533,7 @@ struct rtcm3_t {
 	struct rtcm3_1033_t {
 	    unsigned int station_id;			/* Reference Station ID */
 	    char descriptor[RTCM3_MAX_DESCRIPTOR+1];	/* Description string */
-	    unsigned char setup_id;
+	    unsigned int setup_id;
 	    char serial[RTCM3_MAX_DESCRIPTOR+1];	/* Serial # string */
 	    char receiver[RTCM3_MAX_DESCRIPTOR+1];	/* Receiver string */
 	    char firmware[RTCM3_MAX_DESCRIPTOR+1];	/* Firmware string */
@@ -970,6 +979,44 @@ struct ais_t
 	    size_t bitcount;		/* bit count of the data */
 	    union {
 		char bitdata[(AIS_TYPE6_BINARY_MAX + 7) / 8];
+		/* Inland AIS - ETA at lock/bridge/terminal */
+		struct {
+		    char country[2+1];	/* UN Country Code */
+		    char locode[3+1];	/* UN/LOCODE */
+		    char section[5+1];	/* Fairway section */
+		    char terminal[5+1];	/* Terminal code */
+		    char hectometre[5+1];	/* Fairway hectometre */
+		    unsigned int month;	/* ETA month */
+		    unsigned int day;	/* ETA day */
+		    unsigned int hour;	/* ETA hour */
+		    unsigned int minute;	/* ETA minute */
+		    unsigned int tugs;	/* Assisting Tugs */
+		    unsigned int airdraught;	/* Air Draught */
+		} dac200fid21;
+		/* Inland AIS - ETA at lock/bridge/terminal */
+		struct {
+		    char country[2+1];	/* UN Country Code */
+		    char locode[3+1];	/* UN/LOCODE */
+		    char section[5+1];	/* Fairway section */
+		    char terminal[5+1];	/* Terminal code */
+		    char hectometre[5+1];	/* Fairway hectometre */
+		    unsigned int month;	/* RTA month */
+		    unsigned int day;	/* RTA day */
+		    unsigned int hour;	/* RTA hour */
+		    unsigned int minute;	/* RTA minute */
+		    unsigned int status;	/* Status */
+#define DAC200FID22_STATUS_OPERATIONAL	0
+#define DAC200FID22_STATUS_LIMITED	1
+#define DAC200FID22_STATUS_OUT_OF_ORDER	2
+#define DAC200FID22_STATUS_NOT_AVAILABLE	0
+		} dac200fid22;
+		/* Inland AIS - Number of persons on board */
+		struct {
+		    unsigned int crew;	/* # crew on board */
+		    unsigned int passengers;	/* # passengers on board */
+		    unsigned int personnel;	/* # personnel on board */
+#define DAC200FID55_COUNT_NOT_AVAILABLE	255
+		} dac200fid55;
 		/* GLA - AtoN monitoring data (UK/ROI) */
 		struct {
 		    unsigned int ana_int;       /* Analogue (internal) */
@@ -1074,29 +1121,29 @@ struct ais_t
 			    unsigned int minute;	/* Report minute */
 			    bool vislimit;		/* Max range? */
 			    unsigned int visibility;	/* Units of 0.1 nm */
-#define DAC8FID21_VISIBILITY_NOT_AVAILABLE	127
-#define DAC8FID21_VISIBILITY_SCALE		10.0
+#define DAC1FID21_VISIBILITY_NOT_AVAILABLE	127
+#define DAC1FID21_VISIBILITY_SCALE		10.0
 			    unsigned humidity;		/* units of 1% */
 			    unsigned int wspeed;	/* average wind speed */
 			    unsigned int wgust;		/* wind gust */
-#define DAC8FID21_WSPEED_NOT_AVAILABLE		127
+#define DAC1FID21_WSPEED_NOT_AVAILABLE		127
 			    unsigned int wdir;		/* wind direction */
-#define DAC8FID21_WDIR_NOT_AVAILABLE		360
+#define DAC1FID21_WDIR_NOT_AVAILABLE		360
 			    unsigned int pressure;	/* air pressure, hpa */
-#define DAC8FID21_NONWMO_PRESSURE_NOT_AVAILABLE	403
-#define DAC8FID21_NONWMO_PRESSURE_HIGH		402	/* > 1200hPa */
-#define DAC8FID21_NONWMO_PRESSURE_OFFSET		400	/* N/A */
+#define DAC1FID21_NONWMO_PRESSURE_NOT_AVAILABLE	403
+#define DAC1FID21_NONWMO_PRESSURE_HIGH		402	/* > 1200hPa */
+#define DAC1FID21_NONWMO_PRESSURE_OFFSET		400	/* N/A */
 			    unsigned int pressuretend;	/* tendency */
 		    	    int airtemp;		/* temp, units 0.1C */
-#define DAC8FID21_AIRTEMP_NOT_AVAILABLE		-1024
-#define DAC8FID21_AIRTEMP_SCALE			10.0
+#define DAC1FID21_AIRTEMP_NOT_AVAILABLE		-1024
+#define DAC1FID21_AIRTEMP_SCALE			10.0
 			    unsigned int watertemp;	/* units 0.1degC */
-#define DAC8FID21_WATERTEMP_NOT_AVAILABLE	501
-#define DAC8FID21_WATERTEMP_SCALE		10.0
+#define DAC1FID21_WATERTEMP_NOT_AVAILABLE	501
+#define DAC1FID21_WATERTEMP_SCALE		10.0
 			    unsigned int waveperiod;	/* in seconds */
-#define DAC8FID21_WAVEPERIOD_NOT_AVAILABLE	63
+#define DAC1FID21_WAVEPERIOD_NOT_AVAILABLE	63
 			    unsigned int wavedir;	/* direction in deg */
-#define DAC8FID21_WAVEDIR_NOT_AVAILABLE		360
+#define DAC1FID21_WAVEDIR_NOT_AVAILABLE		360
 			    unsigned int swellheight;	/* in decimeters */
 			    unsigned int swellperiod;	/* in seconds */
 			    unsigned int swelldir;	/* direction in deg */
@@ -1110,38 +1157,38 @@ struct ais_t
 			    unsigned int minute;	/* Report minute */
 			    unsigned int course;	/* course over ground */
 			    unsigned int speed;		/* speed, m/s */
-#define DAC8FID21_SOG_NOT_AVAILABLE		31
-#define DAC8FID21_SOG_HIGH_SPEED		30
-#define DAC8FID21_SOG_SCALE			2.0
+#define DAC1FID21_SOG_NOT_AVAILABLE		31
+#define DAC1FID21_SOG_HIGH_SPEED		30
+#define DAC1FID21_SOG_SCALE			2.0
 			    unsigned int heading;	/* true heading */
-#define DAC8FID21_HDG_NOT_AVAILABLE		127
-#define DAC8FID21_HDG_SCALE			5.0
+#define DAC1FID21_HDG_NOT_AVAILABLE		127
+#define DAC1FID21_HDG_SCALE			5.0
 			    unsigned int pressure;	/* units of hPa * 0.1 */
-#define DAC8FID21_WMO_PRESSURE_SCALE		10
-#define DAC8FID21_WMO_PRESSURE_OFFSET		90.0
+#define DAC1FID21_WMO_PRESSURE_SCALE		10
+#define DAC1FID21_WMO_PRESSURE_OFFSET		90.0
 			    unsigned int pdelta;	/* units of hPa * 0.1 */
-#define DAC8FID21_PDELTA_SCALE			10
-#define DAC8FID21_PDELTA_OFFSET			50.0
+#define DAC1FID21_PDELTA_SCALE			10
+#define DAC1FID21_PDELTA_OFFSET			50.0
 			    unsigned int ptend;		/* enumerated */
 			    unsigned int twinddir;	/* in 5 degree steps */
-#define DAC8FID21_TWINDDIR_NOT_AVAILABLE	127
+#define DAC1FID21_TWINDDIR_NOT_AVAILABLE	127
 			    unsigned int twindspeed;	/* meters per second */
-#define DAC8FID21_TWINDSPEED_SCALE		2
-#define DAC8FID21_RWINDSPEED_NOT_AVAILABLE	255
+#define DAC1FID21_TWINDSPEED_SCALE		2
+#define DAC1FID21_RWINDSPEED_NOT_AVAILABLE	255
 			    unsigned int rwinddir;	/* in 5 degree steps */
-#define DAC8FID21_RWINDDIR_NOT_AVAILABLE	127
+#define DAC1FID21_RWINDDIR_NOT_AVAILABLE	127
 			    unsigned int rwindspeed;	/* meters per second */
-#define DAC8FID21_RWINDSPEED_SCALE		2
-#define DAC8FID21_RWINDSPEED_NOT_AVAILABLE	255
+#define DAC1FID21_RWINDSPEED_SCALE		2
+#define DAC1FID21_RWINDSPEED_NOT_AVAILABLE	255
 			    unsigned int mgustspeed;	/* meters per second */
-#define DAC8FID21_MGUSTSPEED_SCALE		2
-#define DAC8FID21_MGUSTSPEED_NOT_AVAILABLE	255
+#define DAC1FID21_MGUSTSPEED_SCALE		2
+#define DAC1FID21_MGUSTSPEED_NOT_AVAILABLE	255
 			    unsigned int mgustdir;	/* in 5 degree steps */
-#define DAC8FID21_MGUSTDIR_NOT_AVAILABLE	127
+#define DAC1FID21_MGUSTDIR_NOT_AVAILABLE	127
 			    unsigned int airtemp;	/* degress K */
-#define DAC8FID21_AIRTEMP_OFFSET		223
+#define DAC1FID21_AIRTEMP_OFFSET		223
 			    unsigned humidity;		/* units of 1% */
-#define DAC8FID21_HUMIDITY_NOT_VAILABLE		127
+#define DAC1FID21_HUMIDITY_NOT_VAILABLE		127
 			    /* some trailing fields are missing */
 			} wmo_obs;
 		    };
@@ -1167,14 +1214,6 @@ struct ais_t
 		} dac1fid30;
 		/* IMO289 & IMO236 - Tidal Window */
 		struct {
-		    unsigned int type;	/* Message Type */
-		    unsigned int repeat;	/* Repeat Indicator */
-		    unsigned int mmsi;	/* Source MMSI */
-		    unsigned int seqno;	/* Sequence Number */
-		    unsigned int dest_mmsi;	/* Destination MMSI */
-		    signed int retransmit;	/* Retransmit flag */
-		    unsigned int dac;	/* DAC */
-		    unsigned int fid;	/* FID */
 		    unsigned int month;	/* Month */
 		    unsigned int day;	/* Day */
 		    signed int ntidals;
@@ -1209,6 +1248,68 @@ struct ais_t
 	    size_t bitcount;		/* bit count of the data */
 	    union {
 		char bitdata[(AIS_TYPE8_BINARY_MAX + 7) / 8];
+		/* Inland static ship and voyage-related data */
+		struct {
+		    char vin[8+1];	/* European Vessel ID */
+		    unsigned int length;	/* Length of ship */
+		    unsigned int beam;	/* Beam of ship */
+		    unsigned int type;	/* Ship/combination type */
+		    unsigned int hazard;	/* Hazardous cargo */
+		    unsigned int draught;	/* Draught */
+		    unsigned int loaded;	/* Loaded/Unloaded */
+		    bool speed_q;	/* Speed inf. quality */
+		    bool course_q;	/* Course inf. quality */
+		    bool heading_q;	/* Heading inf. quality */
+		} dac200fid10;
+		/* Inland AIS EMMA Warning */
+		struct {
+		    unsigned int start_year;	/* Start Year */
+		    unsigned int start_month;	/* Start Month */
+		    unsigned int start_day;	/* Start Day */
+		    unsigned int end_year;	/* End Year */
+		    unsigned int end_month;	/* End Month */
+		    unsigned int end_day;	/* End Day */
+		    unsigned int start_hour;	/* Start Hour */
+		    unsigned int start_minute;	/* Start Minute */
+		    unsigned int end_hour;	/* End Hour */
+		    unsigned int end_minute;	/* End Minute */
+		    signed int start_lon;	/* Start Longitude */
+		    signed int start_lat;	/* Start Latitude */
+		    signed int end_lon;	/* End Longitude */
+		    signed int end_lat;	/* End Latitude */
+		    unsigned int type;	/* Type */
+#define DAC200FID23_TYPE_UNKNOWN		0
+		    signed int min;	/* Min value */
+#define DAC200FID23_MIN_UNKNOWN			255
+		    signed int max;	/* Max value */
+#define DAC200FID23_MAX_UNKNOWN			255
+		    unsigned int intensity;	/* Classification */
+#define DAC200FID23_CLASS_UNKNOWN		0
+		    unsigned int wind;	/* Wind Direction */
+#define DAC200FID23_WIND_UNKNOWN		0
+		} dac200fid23;
+		struct {
+		    char country[2+1];	/* UN Country Code */
+		    signed int ngauges;
+		    struct gauge_t {
+			unsigned int id;	/* Gauge ID */
+#define DAC200FID24_GAUGE_ID_UNKNOWN		0
+			signed int level;	/* Water Level */
+#define DAC200FID24_GAUGE_LEVEL_UNKNOWN		0
+		    } gauges[4];
+		} dac200fid24;
+		struct {
+		    signed int lon;	/* Signal Longitude */
+		    signed int lat;	/* Signal Latitude */
+		    unsigned int form;	/* Signal form */
+#define DAC200FID40_FORM_UNKNOWN		0
+		    unsigned int facing;	/* Signal orientation */
+#define DAC200FID40_FACING_UNKNOWN		0
+		    unsigned int direction;	/* Direction of impact */
+#define DAC200FID40_DIRECTION_UNKNOWN		0
+		    unsigned int status;	/* Light Status */
+#define DAC200FID40_STATUS_UNKNOWN		0
+		} dac200fid40;
 		/* IMO236  - Meteorological-Hydrological data
 		 * Trial message, not to be used after January 2013
 		 * Replaced by IMO289 (DAC 1, FID 31)
@@ -1310,6 +1411,10 @@ struct ais_t
 		struct {
 		    unsigned int airdraught;	/* Air Draught */
 		} dac1fid15;
+		/* IMO286 - Number of Persons on board */
+		struct {
+		    unsigned persons;	/* number of persons */
+		} dac1fid16;
 		/* IMO289 - VTS-generated/Synthetic Targets */
 		struct {
 		    signed int ntargets;
@@ -1638,8 +1743,15 @@ struct ais_t
 	/* Type 24 - Class B CS Static Data Report */
 	struct {
 	    char shipname[AIS_SHIPNAME_MAXLEN+1];	/* vessel name */
+	    enum {
+		both,
+		part_a,
+		part_b,
+	    } part;
 	    unsigned int shiptype;	/* ship type code */
 	    char vendorid[8];		/* vendor ID */
+	    unsigned int model;		/* unit model code */
+	    unsigned int serial;	/* serial number */
 	    char callsign[8];		/* callsign */
 	    union {
 		unsigned int mothership_mmsi;	/* MMSI of main vessel */
@@ -1769,10 +1881,20 @@ struct policy_t {
     int raw;				/* requesting raw data? */
     bool scaled;			/* requesting report scaling? */
     bool timing;			/* requesting timing info */
+    bool split24;			/* requesting split AIS Type 24s */
+    bool pps;				/* requesting PPS in NMEA/raw modes */
     int loglevel;			/* requested log level of messages */
     char devpath[GPS_PATH_MAX];		/* specific device to watch */
     char remote[GPS_PATH_MAX];		/* ...if this was passthrough */
 };
+
+struct timedrift_t {
+    struct timespec	real;
+    struct timespec	clock;
+};
+
+/* difference between timespecs in nanoseconds */
+#define timespec_diff_ns(x, y)	(int)(((x).tv_sec-(y).tv_sec)*1e9+(x).tv_nsec-(y).tv_nsec)
 
 /*
  * Someday we may support Windows, under which socket_t is a separate type.
@@ -1794,6 +1916,8 @@ typedef int socket_t;
 #define WATCH_SCALED	0x000100u	/* scale output to floats */
 #define WATCH_TIMING	0x000200u	/* timing information */
 #define WATCH_DEVICE	0x000800u	/* watch specific device */
+#define WATCH_SPLIT24	0x001000u	/* split AIS Type 24s */
+#define WATCH_PPS	0x002000u	/* enable PPS JSON */
 #define WATCH_NEWSTYLE	0x010000u	/* force JSON streaming */
 #define WATCH_OLDSTYLE	0x020000u	/* force old-style streaming */
 
@@ -1834,7 +1958,8 @@ struct gps_data_t {
 #define POLICY_SET	(1llu<<29)
 #define LOGMESSAGE_SET	(1llu<<30)
 #define ERROR_SET	(1llu<<31)
-#define SET_HIGH_BIT	31
+#define TIMEDRIFT_SET	(1llu<<32)
+#define SET_HIGH_BIT	33
     timestamp_t online;		/* NZ if GPS is on line, 0 if not.
 				 *
 				 * Note: gpsd clears this time when sentences
@@ -1885,7 +2010,7 @@ struct gps_data_t {
     char tag[MAXTAGLEN+1];	/* tag of last sentence processed */
 
     /* pack things never reported together to reduce structure size */
-#define UNION_SET	(RTCM2_SET|RTCM3_SET|SUBFRAME_SET|AIS_SET|ATTITUDE_SET|GST_SET|VERSION_SET|DEVICELIST_SET|LOGMESSAGE_SET|ERROR_SET)
+#define UNION_SET	(RTCM2_SET|RTCM3_SET|SUBFRAME_SET|AIS_SET|ATTITUDE_SET|GST_SET|VERSION_SET|DEVICELIST_SET|LOGMESSAGE_SET|ERROR_SET|TIMEDRIFT_SET)
     union {
 	/* unusual forms of sensor data that might come up the pipe */
 	struct rtcm2_t	rtcm2;
@@ -1903,6 +2028,7 @@ struct gps_data_t {
 	    struct devconfig_t list[MAXUSERDEVS];
 	} devices;
 	char error[256];
+	struct timedrift_t timedrift;
     };
 
     /* Private data - client code must not set this */
@@ -1921,6 +2047,9 @@ extern int gps_mainloop(struct gps_data_t *, int,
 			void (*)(struct gps_data_t *));
 extern const char /*@null observer@*/ *gps_data(const struct gps_data_t *);
 extern const char /*@observer@*/ *gps_errstr(const int);
+
+int json_pps_read(const char *buf, struct gps_data_t *,
+		  /*@null@*/ const char **);
 
 /* dependencies on struct gpsdata_t end hrere */
 
@@ -1993,7 +2122,7 @@ extern double wgs84_separation(double, double);
 #define strtok_r(s,d,p) strtok_s(s,d,p)
 #endif
 
-/* Some libc's don't have strlcat/strlcpy. Local copies are provided */
+/* Some libcs don't have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT
 size_t strlcat(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
 #endif

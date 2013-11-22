@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsctl
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
 .\"      Date: 29 Oct 2006
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -44,13 +44,13 @@ gpsd, which will locate it for you\&.
 .PP
 When
 gpsd
-is not running, the device specification is required, and you will almost certainly need to be running as root in order to have write access to the device\&.
+is not running, the device specification is required, and you will need to be running as root or be a member of the device\*(Aqs owning group in order to have write access to the device\&. On many Unix variants the owning group will be named \*(Aqdialout\*(Aq\&.
 .PP
 The program accepts the following options:
 .PP
 \-b
 .RS 4
-Put the GPS into binary mode\&. After the GPS resets itself, autobaud to the new speed\&.
+Put the GPS into native (binary) mode\&.
 .RE
 .PP
 \-c
@@ -77,7 +77,7 @@ List a table showing which option switches can be applied to which device types,
 .PP
 \-n
 .RS 4
-Put GPS into NMEA mode\&. After the GPS resets itself autobaud to its new speed\&.
+Put GPS into NMEA mode\&.
 .RE
 .PP
 \-s
@@ -102,7 +102,7 @@ will provide packet headers and trailers and checksum as appropriate for binary 
 .PP
 \-T
 .RS 4
-Change the sampling timeout\&. Defaults to 4 seconds, which should always be sufficient to get a packet from a device emitting at the normal rate of 1 per second\&.
+Change the sampling timeout\&. Defaults to 8 seconds, which should always be sufficient to get an identifying packet from a device emitting at the normal rate of 1 per second\&.
 .RE
 .PP
 \-h
@@ -120,8 +120,8 @@ Set level of debug messages\&.
 Display program version and exit\&.
 .RE
 .PP
-The argument of the forcing option\&.
-\fB\-t\fR, should be a string which should be contained in exactly one of the known driver names; for a list, do
+The argument of the forcing option,
+\fB\-t\fR, should be a string which is contained in exactly one of the known driver names; for a list, do
 \fBgpsctl \-l\fR\&.
 .PP
 Forcing the device type behaves somewhat differently depending on whether this tool is going through the daemon or not\&. In high\-level mode, if the device that daemon selects for you doesn\*(Aqt match the driver you specified,
@@ -132,7 +132,7 @@ In low\-level mode, if the device identifies as a Generic NMEA, use the selected
 .PP
 If no options are given, the program will display a message identifying the GPS type of the selected device and exit\&.
 .PP
-Reset (\-r) operations must stand alone; others can be combined\&. Multiple options will be executed in tis order: mode changes (\-b and \-n) first, speed changes (\-s) second, and control\-string sends (\-c) last\&.
+Reset (\-r) operations must stand alone; others can be combined\&. Multiple options will be executed in this order: mode changes (\-b and \-n) first, speed changes (\-s) second, and control\-string sends (\-c) last\&.
 .SH "EXAMPLES"
 .PP
 \fBgpsctl /dev/ttyUSB0\fR
@@ -149,9 +149,10 @@ Use low\-level operations (not going through a gpsd instance) to switch a GPS to
 .SH "BUGS"
 .PP
 SiRF GPSes can only be identified by the success of an attempt to flip them into SiRF binary mode\&. Thus, the process of probing one of these running in NMEA will change its behavior\&.
+.PP
+Baud rate and mode changes work in direct mode but are not reliable in client mode\&. This will be fixed in a future release\&.
 .SH "SEE ALSO"
 .PP
-
 \fBgpsd\fR(8),
 \fBgpsdctl\fR(8),
 \fBgps\fR(1),
@@ -162,4 +163,4 @@ SiRF GPSes can only be identified by the success of an attempt to flip them into
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond
-esr@thyrsus\&.com\&.
+<esr@thyrsus\&.com>\&.

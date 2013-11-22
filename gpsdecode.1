@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsdecode
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
 .\"      Date: 13 Jul 2005
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -31,7 +31,7 @@
 gpsdecode \- decode GPS, RTCM or AIS streams into a readable format
 .SH "SYNOPSIS"
 .HP \w'\fBgpsdecode\fR\ 'u
-\fBgpsdecode\fR [\-c] [\-d] [\-e] [\-j] [\-t\ \fItypelist\fR] [\-u] [\-v] [\-D\ \fIdebuglevel\fR] [\-V]
+\fBgpsdecode\fR [\-c] [\-d] [\-e] [\-j] [\-s] [\-t\ \fItypelist\fR] [\-u] [\-v] [\-D\ \fIdebuglevel\fR] [\-V]
 .SH "DESCRIPTION"
 .PP
 This tool is a batch\-mode decoder for NMEA and various binary packet formats associated with GPS, AIS, and differential\-correction services\&. It produces a JSON dump on standard output from binary on standard input\&. The JSON is the same format documented in
@@ -57,6 +57,10 @@ explicitly sets the output dump format to JSON (the default behavior)\&.
 The
 \fB\-e\fR
 option option tells the program to encode JSON on standard input to JSON on standard output\&. This option is only useful for regression\-testing of the JSON dumping and parsing code\&.
+.PP
+The
+\fB\-s\fR
+option option tells the program to report AIS Type 24 sentence halves separately rather than attempting to aggregate them\&.
 .PP
 The
 \fB\-t\fR
@@ -88,7 +92,6 @@ With the
 option, dump lines are values of AIS payload fields, pipe\-separated, in the order that they occur in the payload\&. Spans of fields expressing a date are emitted as an ISO8601 timestamp (look for colons and the trailing Z indicating Zulu/UTC time), and the 19\-bit group of TDMA status fields found at the end of message types 1\-4 are are dumped as a single unsigned integer (in hex preceded by "0x")\&. Unused regional\-authority fields are also dumped (in hex preceded by "0x")\&. Variable\-length binary fields are dumped as an integer bit length, followed by a colon, followed by a hex dump\&.
 .SH "SEE ALSO"
 .PP
-
 \fBgpsd\fR(8),
 \fBgpsctl\fR(1),
 \fBgpsdctl\fR(8),
@@ -100,4 +103,4 @@ option, dump lines are values of AIS payload fields, pipe\-separated, in the ord
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond
-esr@thyrsus\&.com\&.
+<esr@thyrsus\&.com>\&.

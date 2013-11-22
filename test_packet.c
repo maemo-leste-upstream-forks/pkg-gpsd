@@ -17,10 +17,18 @@
 
 static int verbose = 0;
 
-void gpsd_report(int errlevel, const char *fmt, ...)
+ssize_t gpsd_write(struct gps_device_t *session,
+		   const char *buf,
+		   const size_t len)
+/* pass low-level data to devices straight through */
+{
+    return gpsd_serial_write(session, buf, len);
+}
+
+void gpsd_report(int debuglevel, int errlevel, const char *fmt, ...)
 /* assemble command in printf(3) style, use stderr or syslog */
 {
-    if (errlevel <= verbose) {
+    if (errlevel <= debuglevel) {
 	char buf[BUFSIZ];
 	va_list ap;
 
@@ -316,6 +324,76 @@ static void runon_test(struct map *mp)
     /*@ +compdef +uniondef +usedef +formatcode @*/
 }
 
+static int property_check(void)
+{
+    const struct gps_type_t **dp;
+    int status;
+
+    for (dp = gpsd_drivers; *dp; dp++) {
+	if (*dp == NULL || (*dp)->packet_type == COMMENT_PACKET)
+	    continue;
+
+#ifdef RECONFIGURE_ENABLE
+	if (CONTROLLABLE(*dp))
+	    (void)fputs("control\t", stdout);
+	else
+	    (void)fputs(".\t", stdout);
+	if ((*dp)->event_hook != NULL)
+	    (void)fputs("hook\t", stdout);
+	else
+	    (void)fputs(".\t", stdout);
+#endif /* RECONFIGURE_ENABLE */
+	if ((*dp)->trigger != NULL)
+	    (void)fputs("trigger\t", stdout);
+	else if ((*dp)->probe_detect != NULL)
+	    (void)fputs("probe\t", stdout);
+	else
+	    (void)fputs(".\t", stdout);
+#ifdef CONTROLSEND_ENABLE
+	if ((*dp)->control_send != NULL)
+	    (void)fputs("send\t", stdout);
+	else
+	    (void)fputs(".\t", stdout);
+#endif /* CONTROLSEND_ENABLE */
+	if ((*dp)->packet_type > NMEA_PACKET)
+	    (void)fputs("binary\t", stdout);
+	else
+	    (void)fputs("NMEA\t", stdout);
+#ifdef CONTROLSEND_ENABLE
+	if (STICKY(*dp))
+	    (void)fputs("sticky\t", stdout);
+	else
+	    (void)fputs(".\t", stdout);
+#endif /* CONTROLSEND_ENABLE */
+	(void)puts((*dp)->type_name);
+    }
+
+    status = EXIT_SUCCESS;
+    for (dp = gpsd_drivers; *dp; dp++) {
+	if (*dp == NULL || (*dp)->packet_type == COMMENT_PACKET)
+	    continue;
+#ifdef CONTROLSEND_ENABLE
+	if (CONTROLLABLE(*dp) && (*dp)->control_send == NULL) {
+	    (void)fprintf(stderr, "%s has control methods but no send\n",
+			  (*dp)->type_name);
+	    status = EXIT_FAILURE;
+	}
+	if ((*dp)->event_hook != NULL && (*dp)->control_send == NULL) {
+	    (void)fprintf(stderr, "%s has event hook but no send\n",
+			  (*dp)->type_name);
+	    status = EXIT_FAILURE;
+	}
+	if ((*dp)->probe_detect != NULL && (*dp)->trigger != NULL) {
+	    (void)fprintf(stderr, "%s both a probe and a trigger string\n",
+			  (*dp)->type_name);
+	    status = EXIT_FAILURE;
+	}
+#endif /* CONTROLSEND_ENABLE */
+    }
+
+    return status;
+}
+
 int main(int argc, char *argv[])
 {
     struct map *mp;
@@ -323,8 +401,10 @@ int main(int argc, char *argv[])
     int option, singletest = 0;
 
     verbose = 0;
-    while ((option = getopt(argc, argv, "e:t:v:")) != -1) {
+    while ((option = getopt(argc, argv, "ce:t:v:")) != -1) {
 	switch (option) {
+	case 'c':
+	    exit(property_check());
 	case 'e':
 	    mp = singletests + atoi(optarg) - 1;
 	    (void)fwrite(mp->test, mp->testlen, sizeof(char), stdout);

@@ -54,11 +54,13 @@ bin2srec(unsigned int type, unsigned int offset, unsigned int num,
     return 0;
 }
 
+// cppcheck-suppress unusedFunction 
 int srec_hdr(unsigned int num, unsigned char *bbuf, unsigned char *sbuf)
 {
     return bin2srec(0, 0, num, bbuf, sbuf);
 }
 
+// cppcheck-suppress unusedFunction 
 int srec_fin(unsigned int num, unsigned char *sbuf)
 {
     unsigned char bbuf[4], sum;
@@ -121,7 +123,7 @@ unsigned char
 sr_sum(unsigned int count, unsigned int addr, unsigned char *bbuf)
 {
     int i, j;
-    unsigned char k, sum = 0;
+    unsigned char sum = 0;
 
     sum = (count & 0xff);
     sum += ((addr & 0x000000ff));
@@ -130,7 +132,7 @@ sr_sum(unsigned int count, unsigned int addr, unsigned char *bbuf)
     sum += ((addr & 0xff000000) >> 24);
     j = count - 5;
     for (i = 0; i < j; i++) {
-	k = bbuf[i];
+	unsigned char k = bbuf[i];
 	sum += k;
     }
     return ~sum;

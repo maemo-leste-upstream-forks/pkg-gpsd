@@ -14,7 +14,7 @@ static PyObject *ErrorObject = NULL;
 
 static PyObject *report_callback = NULL;
 
-void gpsd_report(int errlevel, const char *fmt, ... )
+void gpsd_report(int unused UNUSED, int errlevel, const char *fmt, ... )
 {
     char buf[BUFSIZ];
     PyObject *args;
@@ -243,6 +243,7 @@ level of the message and the message itself.\n\
 extern PyMODINIT_FUNC initpacket(void);
 
 PyMODINIT_FUNC
+// cppcheck-suppress unusedFunction 
 initpacket(void)
 {
     PyObject *m;
@@ -271,6 +272,5 @@ initpacket(void)
     PyModule_AddIntConstant(m, "GEOSTAR_PACKET", GEOSTAR_PACKET);
     PyModule_AddIntConstant(m, "RTCM2_PACKET", RTCM2_PACKET);
     PyModule_AddIntConstant(m, "RTCM3_PACKET", RTCM3_PACKET);
-
-    PyModule_AddIntConstant(m, "LOG_IO", LOG_IO);
+    PyModule_AddIntConstant(m, "JSON_PACKET", JSON_PACKET);
 }

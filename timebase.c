@@ -3,9 +3,9 @@
 All of gpsd's assumptions about time and GPS time reporting live in this file.
 
 This is a work in progress.  Currently GPSD requires that the host system
-clock be accurate to within one second.  We are attempting to relax this
+clock be accurate to within one second.  It would be nice to relax this
 to "accurate within one GPS rollover period" for receivers reporting
-GPS week+TOW.
+GPS week+TOW, but isn't possible in general.
 
 Date and time in GPS is represented as number of weeks from the start
 of zero second of 6 January 1980, plus number of seconds into the
@@ -21,7 +21,12 @@ necessarily processed correctly on consumer-grade devices, and will
 not be available at all when a GPS receiver has just
 cold-booted. Thus, UTC time reported from NMEA devices may be slightly
 inaccurate between a cold boot or leap second and the following
-subframe broadcast.
+subframe broadcast. 
+
+It might be best not to trust time for 20 minutes after GPSD startup
+if it is more than 500ms from current system time (that is long enough
+for an ephemeris to load) but this isn't actually implemented as the
+divergence will normally be only one second or less.
 
 GPS date and time are subject to a rollover problem in the 10-bit week
 number counter, which will re-zero every 1024 weeks (roughly every 20
@@ -63,14 +68,25 @@ available.
 get the device to report it. The latter is not a given; SiRFs before
 firmware rev 2.3.2 don't report it unless special subframe data reporting
 is enabled, which requires 38400bps. Evermore GPSes can't be made to
-report it at all.
+report it at all. Furthermore, before the almanac load the GPS may report
+a fixed (and possibly out of date) offset.
 
 Conclusion: if the system clock isn't accurate enough that we can deduce
 what rollover period we're in, we're utterly hosed. Furthermore, if it's
 not accurate to within a second and only NMEA devices are reporting,
-we don't know what century it is!
+we don't even know what century it is!
 
-Therefore, we must assume the system clock is reliable.
+Therefore, we must assume the system clock is reliable to within a second.
+
+However, none of these caveats affect the usefulness of PPS, which
+tells us top of second to theoretical 50ns accuracy (actually about 1
+microsecond over RS232 and roughly one poll interval over USB) and can
+be made to condition a local NTP instance that does *not* rely on the
+system clock. The combination of PPS with NTP time should be reliable
+regardless of what the local system clock gets up to. That is, unless
+NTP clock skew goes over 1 second, but this is unlikely to ever happen
+- and if it does the reasons will have nothing to do with GPS
+idiosyncracies.
 
 This file is Copyright (c) 2010 by the GPSD project
 BSD terms apply: see the file COPYING in the distribution root for details.
@@ -110,7 +126,8 @@ void gpsd_time_init(struct gps_context_t *context, time_t starttime)
     context->rollovers = (int)((context->start_time-GPS_EPOCH) / GPS_ROLLOVER);
 
     if (context->start_time < GPS_EPOCH)
-	gpsd_report(LOG_ERROR, "system time looks bogus, dates may not be reliable.\n");
+	gpsd_report(context->debug, LOG_ERROR,
+		    "system time looks bogus, dates may not be reliable.\n");
     else {
 	/* we've forced the UTC timezone, so this is actually UTC */
 	struct tm *now = localtime(&context->start_time);
@@ -122,7 +139,8 @@ void gpsd_time_init(struct gps_context_t *context, time_t starttime)
 	now->tm_year += 1900;
 	context->century = now->tm_year - (now->tm_year % 100);
 	(void)unix_to_iso8601((timestamp_t)context->start_time, scr, sizeof(scr));
-	gpsd_report(LOG_INF, "startup at %s (%d)\n",
+	gpsd_report(context->debug, LOG_INF,
+		    "startup at %s (%d)\n",
 		    scr, (int)context->start_time);
     }
 }
@@ -176,7 +194,8 @@ timestamp_t gpsd_utc_resolve(/*@in@*/struct gps_device_t *session)
     if (session->newdata.time < (timestamp_t)session->context->start_time) {
 	char scr[128];
 	(void)unix_to_iso8601(session->newdata.time, scr, sizeof(scr));
-	gpsd_report(LOG_WARN, "GPS week rollover makes time %s (%f) invalid\n",
+	gpsd_report(session->context->debug, LOG_WARN,
+		    "GPS week rollover makes time %s (%f) invalid\n",
 		    scr, session->newdata.time);
     }
 
@@ -197,7 +216,8 @@ timestamp_t gpsd_gpstime_resolve(/*@in@*/struct gps_device_t *session,
      * to 13 bits.
      */
     if ((int)week < (session->context->gps_week & 0x3ff)) {
-	gpsd_report(LOG_INF, "GPS week 10-bit rollover detected.\n");
+	gpsd_report(session->context->debug, LOG_INF,
+		    "GPS week 10-bit rollover detected.\n");
 	++session->context->rollovers;
     }
 

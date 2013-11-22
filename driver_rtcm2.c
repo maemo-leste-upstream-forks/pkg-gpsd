@@ -62,6 +62,72 @@ BSD terms apply: see the file COPYING in the distribution root for details.
 #include "gpsd.h"
 
 /*
+  __BYTE_ORDER__, __ORDER_BIG_ENDIAN__ and __ORDER_LITTLE_ENDIAN__ are
+  defined in some gcc versions only, probably depending on the
+  architecture. Try to use endian.h if the gcc way fails - endian.h also
+  does not seem to be available on all platforms.
+*/
+
+#if HAVE_BUILTIN_ENDIANNESS
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define WORDS_BIGENDIAN 1
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#undef WORDS_BIGENDIAN
+#else
+#error Unknown endianness!
+#endif
+
+#else /* HAVE_BUILTIN_ENDIANNESS */
+
+#if defined(HAVE_ENDIAN_H)
+#include <endian.h>
+#elif defined(HAVE_SYS_ENDIAN_H)
+#include <sys/endian.h>
+#elif defined(HAVE_MACHINE_ENDIAN_H)
+#include <machine/endian.h>
+#endif
+
+/*
+ * BSD uses _BYTE_ORDER, and Linux uses __BYTE_ORDER.
+ */
+#if !defined( __BYTE_ORDER) && defined(_BYTE_ORDER)
+#define __BYTE_ORDER _BYTE_ORDER
+#endif
+#if !defined( __BIG_ENDIAN) && defined(_BIG_ENDIAN)
+#define __BIG_ENDIAN _BIG_ENDIAN
+#endif
+#if !defined( __LITTLE_ENDIAN) && defined(_LITTLE_ENDIAN)
+#define __LITTLE_ENDIAN _LITTLE_ENDIAN
+#endif
+
+/*
+ * Darwin (Mac OS X) uses special defines.
+ */
+#if !defined( __BYTE_ORDER) && defined(__DARWIN_BYTE_ORDER)
+#define __BYTE_ORDER __DARWIN_BYTE_ORDER
+#endif
+#if !defined( __BIG_ENDIAN) && defined(__DARWIN_BIG_ENDIAN)
+#define __BIG_ENDIAN __DARWIN_BIG_ENDIAN
+#endif
+#if !defined( __LITTLE_ENDIAN) && defined(__DARWIN_LITTLE_ENDIAN)
+#define __LITTLE_ENDIAN __DARWIN_LITTLE_ENDIAN
+#endif
+
+#if !defined(__BYTE_ORDER) || !defined(__BIG_ENDIAN) || !defined(__LITTLE_ENDIAN)
+#error endianness macros are not defined
+#endif
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define WORDS_BIGENDIAN 1
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+#undef WORDS_BIGENDIAN
+#else
+#error Unknown endianness!
+#endif /* __BYTE_ORDER */
+
+#endif /* HAVE_BUILTIN_ENDIANNESS */
+
+/*
  * Structures for interpreting words in an RTCM-104 2.x message (after
  * parity checking and removing inversion).  Note, these structures
  * are overlayed on the raw data in order to decode them into
@@ -76,8 +142,9 @@ BSD terms apply: see the file COPYING in the distribution root for details.
  * Very few of these are left in 2012. By test, we know of s390, s390x,
  * and sparc.)
  *
- * The RTCM 2.1 standard is less explicit than it should be about signed-integer
- * representations.  Two's complement is specified for some but not all.
+ * The RTCM 2.1 standard is less explicit than it should be about
+ * signed-integer representations.  Two's complement is specified for
+ * some but not all.
  */
 
 #define	ZCOUNT_SCALE	0.6	/* sec */
@@ -681,6 +748,7 @@ static unsigned int tx_speed[] = { 25, 50, 100, 110, 150, 200, 250, 300 };
 
 #define DIMENSION(a) (unsigned)(sizeof(a)/sizeof(a[0]))
 
+/*@-type */
 void rtcm2_unpack( /*@out@*/ struct rtcm2_t *tp, char *buf)
 /* break out the raw bits into the content fields */
 {
@@ -927,6 +995,7 @@ static bool length_check(struct gps_packet_t *lexer)
 	&& lexer->isgps.bufindex >=
 	((struct rtcm2_msg_t *)lexer->isgps.buf)->w2.frmlen + 2u;
 }
+/*@+type */
 
 enum isgpsstat_t rtcm2_decode(struct gps_packet_t *lexer, unsigned int c)
 {

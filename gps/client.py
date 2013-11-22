@@ -1,7 +1,7 @@
 # This file is Copyright (c) 2010 by the GPSD project
 # BSD terms apply: see the file COPYING in the distribution root for details.
 #
-import time, socket, sys, select
+import time, socket, sys, select, exceptions
 
 if sys.hexversion >= 0x2060000:
     import json			# For Python 2.6
@@ -10,8 +10,9 @@ else:
 
 GPSD_PORT="2947"
 
-class json_error:
+class json_error(exceptions.Exception):
     def __init__(self, data, explanation):
+        exceptions.Exception.__init__(self)
         self.data = data
         self.explanation = explanation
 
@@ -43,7 +44,7 @@ class gpscommon:
         msg = "getaddrinfo returns an empty list"
         self.sock = None
         for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
-            af, socktype, proto, canonname, sa = res
+            af, socktype, proto, _canonname, sa = res
             try:
                 self.sock = socket.socket(af, socktype, proto)
                 #if self.debuglevel > 0: print 'connect:', (host, port)
@@ -68,7 +69,7 @@ class gpscommon:
         "Return True if data is ready for the client."
         if self.linebuffer:
             return True
-        (winput, woutput, wexceptions) = select.select((self.sock,), (), (), timeout)
+        (winput, _woutput, _wexceptions) = select.select((self.sock,), (), (), timeout)
         return winput != []
 
     def read(self):
@@ -128,10 +129,15 @@ WATCH_RARE	= 0x000040	# output of packets in hex
 WATCH_RAW	= 0x000080	# output of raw packets
 WATCH_SCALED	= 0x000100	# scale output to floats 
 WATCH_TIMING	= 0x000200	# timing information
+WATCH_SPLIT24	= 0x001000	# split AIS Type 24s
+WATCH_PPS	= 0x002000	# enable PPS in raw/NMEA
 WATCH_DEVICE	= 0x000800	# watch specific device
 
 class gpsjson(gpscommon):
     "Basic JSON decoding."
+    def __init__(self):
+        gpscommon.__init__(self)
+
     def __iter__(self):
         return self
 
@@ -161,20 +167,28 @@ class gpsjson(gpscommon):
                 arg += ',"scaled":false'
             if flags & WATCH_TIMING:
                 arg += ',"timing":false'
+            if flags & WATCH_SPLIT24:
+                arg += ',"split24":false'
+            if flags & WATCH_PPS:
+                arg += ',"pps":false'
         else: # flags & WATCH_ENABLE:
             arg = '?WATCH={"enable":true'
             if flags & WATCH_JSON:
                 arg += ',"json":true'
             if flags & WATCH_NMEA:
                 arg += ',"nmea":true'
-            if flags & WATCH_RAW:
-                arg += ',"raw":1'
             if flags & WATCH_RARE:
-                arg += ',"raw":0'
+                arg += ',"raw":1'
+            if flags & WATCH_RAW:
+                arg += ',"raw":2'
             if flags & WATCH_SCALED:
                 arg += ',"scaled":true'
             if flags & WATCH_TIMING:
                 arg += ',"timing":true'
+            if flags & WATCH_SPLIT24:
+                arg += ',"split24":true'
+            if flags & WATCH_PPS:
+                arg += ',"pps":true'
             if flags & WATCH_DEVICE:
                 arg += ',"device":"%s"' % devpath
         return self.send(arg + "}")
@@ -200,7 +214,7 @@ class dictwrapper:
     __repr__ = __str__
 
 #
-# Someday a cleaner Python iterface using this machinery will live here
+# Someday a cleaner Python interface using this machinery will live here
 #
 
 # End

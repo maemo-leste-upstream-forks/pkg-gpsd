@@ -999,8 +999,26 @@ object.</para>
 	<entry>No</entry>
 	<entry>boolean</entry>
         <entry>If true, apply scaling divisors to output before
-	dumping; default is false. Applies only to AIS and Subframe
-	reports.</entry>
+	dumping; default is false.</entry>
+</row>
+<row>
+	<entry>split24</entry>
+	<entry>No</entry>
+	<entry>boolean</entry>
+        <entry>If true, aggregate AIS type24 sentence parts.  If false,
+        report each part as a separate JSON object, leaving the
+        client to match MMSIs and aggregate.  Default is
+        false. Applies only to AIS reports.</entry>
+</row>
+<row>
+	<entry>pps</entry>
+	<entry>No</entry>
+	<entry>boolean</entry>
+        <entry>If true, emit a PPS bar when the device issues
+        1PPS.  Intended to be used with the "nmea" and "raw" modes.
+        Default is false. <emphasis role="bold">Note: this is an
+        unstable experimental feature which may change or be removed
+        without notice.</emphasis></entry>
 </row>
 <row>
 	<entry>device</entry>
@@ -1180,10 +1198,10 @@ Per Second) strobe from a device.</para>
         <entry>seconds from the realtime clock</entry>
 </row>
 <row>
-	<entry>real_musec</entry>
+	<entry>real_nsec</entry>
 	<entry>Yes</entry>
 	<entry>numeric</entry>
-        <entry>microseconds from the realtime clock</entry>
+        <entry>nanoseconds from the realtime clock</entry>
 </row>
 <row>
 	<entry>clock_sec</entry>
@@ -1192,10 +1210,10 @@ Per Second) strobe from a device.</para>
         <entry>seconds from the system clock</entry>
 </row>
 <row>
-	<entry>clock_musec</entry>
+	<entry>clock_nsec</entry>
 	<entry>Yes</entry>
 	<entry>numeric</entry>
-        <entry>microseconds from the system clock</entry>
+        <entry>nanoseconds from the system clock</entry>
 </row>
 </tbody>
 </tgroup>
@@ -1223,8 +1241,8 @@ are estimates based on measured latency in other applications)</para>
 
 <programlisting>
 {"class":"PPS","device":"/dev/ttyUSB0",
-     "real_sec":1330212592, "real_musec":343182,
-     "clock_sec":1330212592,"clock_musec":343184}
+     "real_sec":1330212592, "real_nsec":343182,
+     "clock_sec":1330212592,"clock_nsec":343184}
 </programlisting>
 
 </listitem>
@@ -2322,14 +2340,13 @@ JSON object type.</para>
 performed for JSON output.  Latitudes and longitudes are scaled to
 decimal degrees rather than the native AIS unit of 1/10000th of a
 minute of arc.  Ship (but not air) speeds are scaled to knots rather
-than tenth-of-knot units.  Navigation status and positioning-system
-type are dumped as text strings rather than AIS numeric codes. Rate of
-turn may appear as "nan" if is unavailable, or as one of the strings
-"fastright" or "fastleft" if it is out of the AIS encoding range;
-otherwise it is quadratically mapped back to the turn sensor number in
-degrees per minute. Vessel draughts are converted to decimal meters
-rather than native AIS decimeters. Various other scaling conversions
-are described in <citetitle>"AIVDM/AIVDO Protocol Decoding"</citetitle>.</para>
+than tenth-of-knot units. Rate of turn may appear as "nan" if is
+unavailable, or as one of the strings "fastright" or "fastleft" if it
+is out of the AIS encoding range; otherwise it is quadratically mapped
+back to the turn sensor number in degrees per minute. Vessel draughts
+are converted to decimal meters rather than native AIS
+decimeters. Various other scaling conversions are described in
+<citetitle>"AIVDM/AIVDO Protocol Decoding"</citetitle>.</para>
 
 </refsect1>
 <refsect1 id='subframe'><title>SUBFRAME DUMP FORMATS</title>

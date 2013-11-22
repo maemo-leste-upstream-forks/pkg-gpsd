@@ -14,7 +14,7 @@
 #include "gpsmon.h"
 
 #if defined(ONCORE_ENABLE) && defined(BINARY_ENABLE)
-extern const struct gps_type_t oncore_binary;
+extern const struct gps_type_t driver_oncore;
 
 static WINDOW *Ea1win, *Eawin, *Bbwin, *Enwin, *Bowin, *Aywin, *Aswin, *Atwin;
 static unsigned char EaSVlines[8];
@@ -150,6 +150,9 @@ static bool oncore_initialize(void)
     (void)wborder(Aywin, 0, 0, 0, 0, 0, 0, 0, 0),
 	(void)wattrset(Aywin, A_BOLD);
     (void)mvwprintw(Aywin, 1, 1, "PPS offset:");
+#ifndef PPS_ENABLE
+    (void)mvwaddstr(Aywin, 1, 13, "Not available");
+#endif /* PPS_ENABLE */
     (void)mvwprintw(Aywin, 3, 4, " @@Ay ");
     (void)wattrset(Aywin, A_NORMAL);
 
@@ -175,7 +178,7 @@ static bool oncore_initialize(void)
 
 static void oncore_update(void)
 {
-    unsigned int i, j, off;
+    unsigned int i, off;
     unsigned char *buf;
     unsigned int type;
 
@@ -297,6 +300,7 @@ static void oncore_update(void)
 	memset(Bblines, 0, sizeof(Bblines));
 	Bblines_mask = 0;
 	for (i = 0; i < ch; i++) {
+	    unsigned int j;
 	    off = 5 + 7 * i;
 	    sv = (unsigned char)getub(buf, off);
 	    /*@ -boolops @*/
@@ -326,7 +330,7 @@ static void oncore_update(void)
 	    doppl = (int)getbes16(buf, off + 1);
 	    el = (int)getub(buf, off + 3);
 	    az = (int)getbeu16(buf, off + 4);
-	    health = (int)getub(buf, off + 5);
+	    health = (int)getub(buf, off + 6);
 
 	    (void)wmove(Bbwin, (int)Bblines[i], 1);
 	    (void)wprintw(Bbwin, "%3d %3d %2d %5d %c%c", sv, az, el, doppl, (health & 0x02) ? 'U' : ' ',	/* unhealthy */
@@ -460,7 +464,7 @@ const struct monitor_object_t oncore_mmt = {
     .command = oncore_command,
     .wrap = oncore_wrap,
     .min_y = 20,.min_x = 80,	/* size of the device window */
-    .driver = &oncore_binary,
+    .driver = &driver_oncore,
 };
 
 #endif /* defined(ONCORE_ENABLE) && defined(BINARY_ENABLE) */

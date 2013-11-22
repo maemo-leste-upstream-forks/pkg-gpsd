@@ -30,7 +30,7 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
     struct addrinfo hints;
     struct addrinfo *result, *rp;
     int ret, type, proto, one = 1;
-    socket_t s = -1;
+    socket_t s;
     bool bind_me;
 
     INVALIDATE_SOCKET(s);
@@ -78,8 +78,6 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
 	else if (setsockopt
 		 (s, SOL_SOCKET, SO_REUSEADDR, (char *)&one,
 		  sizeof(one)) == -1) {
-	    if (s > -1)
-		(void)close(s);
 	    ret = NL_NOSOCKOPT;
 	} else {
 	    if (bind_me) {
@@ -95,7 +93,7 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
 	    }
 	}
 
-	if (s > -1) {
+	if (!BAD_SOCKET(s)) {
 	    (void)close(s);
 	}
     }
@@ -174,7 +172,7 @@ socket_t netlib_localsocket(const char *sockfile, int socktype)
 	/*@-unrecog@*/
 	if (connect(sock, (struct sockaddr *)&saddr, SUN_LEN(&saddr)) < 0) {
 	    (void)close(sock);
-	    return -1;
+	    return -2;
 	}
 	/*@+unrecog@*/
 

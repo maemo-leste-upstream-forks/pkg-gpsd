@@ -1,14 +1,47 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# webgps.py
-#
-# This is a Python port of webgps.c from http://www.wireless.org.au/~jhecker/gpsd/
-# by Beat Bolli <me+gps@drbeat.li>
-#
+"""webgps.py
+
+This is a Python port of webgps.c from http://www.wireless.org.au/~jhecker/gpsd/
+by Beat Bolli <me+gps@drbeat.li>
+
+It creates a skyview of the currently visible GPS satellites and their tracks
+over a time period.
+
+Usage:
+    ./webgps.py [duration]
+
+    duration may be
+    - a number of seconds
+    - a number followed by a time unit ('s' for secinds, 'm' for minutes,
+      'h' for hours or 'd' for days, e.g. '4h' for a duration of four hours)
+    - the letter 'c' for continuous operation
+
+If duration is missing, the current skyview is generated and webgps.py exits
+immediately. This is the same as giving a duration of 0.
+
+If a duration is given, webgps.py runs for this duration and generates the
+tracks of the GPS satellites in view. If the duration is the letter 'c',
+the script never exits and continuously updates the skyview.
+
+webgps.py generates two files: a HTML5 file that can be browsed, and a
+JavaScript file that contains the drawing commands for the skyview. The HTML5
+file auto-refreshes every five minutes. The generated file names are
+"gpsd-<duration>.html" and "gpsd-<duration>.js".
+
+If webgps.py is interrupted with Ctrl-C before the duration is over, it saves
+the current tracks into the file "tracks.p". This is a Python "pickle" file.
+If this file is present on start of webgps.py, it is loaded. This allows to
+restart webgps.py without losing accumulated satellite tracks.
+"""
 
 import time, calendar, math, socket, sys, os, select, pickle
-from gps import *
+try:
+    from gps import *
+except ImportError:
+    sys.path.append('..')
+    from gps import *
 
 TRACKMAX = 1024
 STALECOUNT = 10
@@ -41,6 +74,10 @@ class Track:
                 self.posn = self.posn[-TRACKMAX:]
             return 1
         return 0
+
+    def track(self):
+        '''Return the track as canvas drawing operations.'''
+        return 'M(%d,%d); ' % self.posn[0] + ''.join(['L(%d,%d); ' % p for p in self.posn[1:]])
 
 class SatTracks(gps):
     '''gpsd client writing HTML5 and <canvas> output.'''
@@ -192,17 +229,11 @@ function draw_satview() {
     ctx.strokeStyle = 'red';
 """);
 
-        def M(p):
-            return 'M(%d,%d); ' % p
-        def L(p):
-            return 'L(%d,%d); ' % p
-
         # Draw the tracks
         for t in self.sattrack.values():
             if t.posn:
-                fh.write("    ctx.globalAlpha = %s; ctx.beginPath(); %s%sctx.stroke();\n" % (
-                    t.stale == 0 and '0.66' or '1', M(t.posn[0]),
-                    ''.join([L(p) for p in t.posn[1:]])
+                fh.write("    ctx.globalAlpha = %s; ctx.beginPath(); %sctx.stroke();\n" % (
+                    t.stale == 0 and '0.66' or '1', t.track()
                 ))
 
         fh.write("""
@@ -250,14 +281,14 @@ function draw_satview() {
             t = self.sattrack[prn]
         except KeyError:
             self.sattrack[prn] = t = Track(prn)
-        self.needsupdate += t.add(x, y)
+        if t.add(x, y):
+            self.needsupdate = 1
 
     def update_tracks(self):
         self.make_stale()
         for s in self.satellites:
             x, y = polartocart(s.elevation, s.azimuth)
-            if self.insert_sat(s.PRN, x, y):
-                self.needsupdate = 1
+            self.insert_sat(s.PRN, x, y)
         self.delete_stale()
 
     def generate_html(self, htmlfile, jsfile):
@@ -273,7 +304,8 @@ function draw_satview() {
     def run(self, suffix, period):
         jsfile = 'gpsd' + suffix + '.js'
         htmlfile = 'gpsd' + suffix + '.html'
-        end = time.time() + period
+        if period is not None:
+            end = time.time() + period
         self.needsupdate = 1
         self.stream(WATCH_ENABLE | WATCH_NEWSTYLE)
         for report in self:
@@ -284,8 +316,10 @@ function draw_satview() {
                 self.generate_js(jsfile)
                 self.needsupdate = 0
             self.generate_html(htmlfile, jsfile)
-            if period <= 0 and self.fix.mode >= MODE_2D \
-            or period > 0 and time.time() > end:
+            if period is not None and (
+                period <= 0 and self.fix.mode >= MODE_2D or
+                period > 0 and time.time() > end
+            ):
                 break
 
 def main():
@@ -294,17 +328,14 @@ def main():
     factors = {
         's': 1, 'm': 60, 'h': 60 * 60, 'd': 24 * 60 * 60
     }
-    arg = argv and argv[0] or ''
+    arg = argv and argv[0] or '0'
     if arg[-1:] in factors.keys():
         period = int(arg[:-1]) * factors[arg[-1]]
     elif arg == 'c':
-	period = None
-    elif arg:
-        period = int(arg)
+        period = None
     else:
-        period = 0
-    if arg:
-	arg = '-' + arg
+        period = int(arg)
+    prefix = '-' + arg
 
     sat = SatTracks()
 
@@ -316,7 +347,7 @@ def main():
         p.close()
 
     try:
-        sat.run(arg, period)
+        sat.run(prefix, period)
     except KeyboardInterrupt:
         # save the tracks
         p = open(pfile, 'w')

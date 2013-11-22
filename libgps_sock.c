@@ -182,6 +182,7 @@ int gps_sock_read(/*@out@*/struct gps_data_t *gpsdata)
 	     * If we received 0 bytes, other side of socket is closing.
 	     * Return -1 as end-of-data indication.
 	     */
+	    // cppcheck-suppress duplicateBranch
 	    if (status == 0)
 		return -1;
 #ifndef USE_QT
@@ -267,9 +268,9 @@ int gps_unpack(char *buf, struct gps_data_t *gpsdata)
 
 	for (ns = buf; ns; ns = strstr(ns + 1, "GPSD")) {
 	    if ( /*@i1@*/ strncmp(ns, "GPSD", 4) == 0) {
-		bool eol = false;
 		/* the following should execute each time we have a good next sp */
 		for (sp = ns + 5; *sp != '\0'; sp = tp + 1) {
+		    bool eol;
 		    tp = sp + strcspn(sp, ",\r\n");
 		    eol = *tp == '\r' || *tp == '\n';
 		    if (*tp == '\0')
@@ -517,6 +518,10 @@ int gps_sock_stream(struct gps_data_t *gpsdata, unsigned int flags,
 		(void)strlcat(buf, "\"scaled\":false,", sizeof(buf));
 	    if (flags & WATCH_TIMING)
 		(void)strlcat(buf, "\"timing\":false,", sizeof(buf));
+	    if (flags & WATCH_SPLIT24)
+		(void)strlcat(buf, "\"split24\":false,", sizeof(buf));
+	    if (flags & WATCH_PPS)
+		(void)strlcat(buf, "\"pps\":false,", sizeof(buf));
 	    if (buf[strlen(buf) - 1] == ',')
 		buf[strlen(buf) - 1] = '\0';
 	    (void)strlcat(buf, "};", sizeof(buf));
@@ -543,6 +548,10 @@ int gps_sock_stream(struct gps_data_t *gpsdata, unsigned int flags,
 		(void)strlcat(buf, "\"scaled\":true,", sizeof(buf));
 	    if (flags & WATCH_TIMING)
 		(void)strlcat(buf, "\"timing\":true,", sizeof(buf));
+	    if (flags & WATCH_SPLIT24)
+		(void)strlcat(buf, "\"split24\":true,", sizeof(buf));
+	    if (flags & WATCH_PPS)
+		(void)strlcat(buf, "\"pps\":true,", sizeof(buf));
 	    /*@-nullpass@*//* shouldn't be needed, splint has a bug */
 	    if (flags & WATCH_DEVICE)
 		(void)snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),

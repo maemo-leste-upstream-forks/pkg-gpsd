@@ -30,18 +30,19 @@ ais_specs = (
     "structname": "ais->type1",
     "fieldmap":(
         # fieldname   type        default
-        ('status',   'uinteger', '0'),
-        ('turn',     'integer',  'AIS_TURN_NOT_AVAILABLE'),
-        ('speed',    'uinteger', 'AIS_SPEED_NOT_AVAILABLE'),
-        ('accuracy', 'boolean',  'false'),
-        ('lon',      'integer',  'AIS_LON_NOT_AVAILABLE'),
-        ('lat',      'integer',  'AIS_LAT_NOT_AVAILABLE'),
-        ('course',   'uinteger', 'AIS_COURSE_NOT_AVAILABLE'),
-        ('heading',  'uinteger', 'AIS_HEADING_NOT_AVAILABLE'),
-        ('second',   'uinteger', 'AIS_SEC_NOT_AVAILABLE'),
-        ('maneuver', 'uinteger', 'AIS_SEC_INOPERATIVE'),
-        ('raim',     'boolean',  'false'),
-        ('radio',    'uinteger', '0'),
+        ('status',     'uinteger', '0'),
+        ('status_text','ignore',   None),
+        ('turn',       'integer',  'AIS_TURN_NOT_AVAILABLE'),
+        ('speed',      'uinteger', 'AIS_SPEED_NOT_AVAILABLE'),
+        ('accuracy',   'boolean',  'false'),
+        ('lon',        'integer',  'AIS_LON_NOT_AVAILABLE'),
+        ('lat',        'integer',  'AIS_LAT_NOT_AVAILABLE'),
+        ('course',     'uinteger', 'AIS_COURSE_NOT_AVAILABLE'),
+        ('heading',    'uinteger', 'AIS_HEADING_NOT_AVAILABLE'),
+        ('second',     'uinteger', 'AIS_SEC_NOT_AVAILABLE'),
+        ('maneuver',   'uinteger', 'AIS_SEC_INOPERATIVE'),
+        ('raim',       'boolean',  'false'),
+        ('radio',      'uinteger', '0'),
         ),
     },
     # Message types 2 and 3 duplicate 1
@@ -56,6 +57,7 @@ ais_specs = (
         ('lon',       'integer',  "AIS_LON_NOT_AVAILABLE"),
         ('lat',       'integer',  "AIS_LAT_NOT_AVAILABLE"),
         ('epfd',      'uinteger', "0"),
+        ('epfd_text', 'ignore',   None),
         ('raim',      'boolean',  "false"),
         ('radio',     'uinteger', "0"),
         ),
@@ -72,11 +74,13 @@ ais_specs = (
         ('callsign',      'string',        None),
         ('shipname',      'string',        None),
         ('shiptype',      'uinteger',      '0'),
+        ('shiptype_text', 'ignore',        None),
         ('to_bow',        'uinteger',      '0'),
         ('to_stern',      'uinteger',      '0'),
         ('to_port',       'uinteger',      '0'),
         ('to_starboard',  'uinteger',      '0'),
         ('epfd',          'uinteger',      '0'),
+        ('epfd_text',     'ignore',        None),
         ('eta',           'string',        None),
         ('draught',       'uinteger',      '0'),
         ('destination',   'string',        None),
@@ -104,7 +108,9 @@ ais_specs = (
             ('ana_ext1',   'uinteger', '0'),
             ('ana_ext2',   'uinteger', '0'),
             ('racon',      'uinteger', '0'),
+            ('racon_text', 'ignore',   None),
             ('light',      'uinteger', '0'),
+            ('light_text', 'ignore',   None),
             ('alarm',      'boolean',  'false'),
             ('stat_ext',   'uinteger', '0'),
             ('off_pos',    'boolean',  'false'),
@@ -147,21 +153,6 @@ ais_specs = (
         ),
     },
     {
-        "initname" : "json_ais6_fid25",
-        "headers": ("AIS_HEADER","AIS_TYPE6",),
-        "structname": "ais->type6.dac1fid25",
-        "fieldmap":(
-            # fieldname    type        default
-            ('unit',       'uinteger', '0'),
-            ('amount',     'uinteger', '0'),
-            ('cargos',     'array',    (
-                ('cargo_t', 'ncargos', (
-                    ('code',       'uinteger', '0'),
-                    ('subtype',    'uinteger', '0'),
-                    )))),
-            ),
-    },
-    {
         "initname" : "json_ais6_fid18",
         "headers": ("AIS_HEADER","AIS_TYPE6",),
         "structname": "ais->type6.dac1fid18",
@@ -186,6 +177,7 @@ ais_specs = (
             ('berth_length', 'uinteger', '0'),
             ('berth_depth', 'uinteger', '0'),
             ('position',   'uinteger', '0'),
+            ('position_text', 'ignore', None),
             ('arrival',    'string', None),
             ('availability', 'uinteger', '0'),
             ('agent',      'uinteger', '0'),
@@ -221,6 +213,54 @@ ais_specs = (
     'stringbuffered' : ('arrival', 'berth_name',),
     },
     {
+    "initname" : "json_ais6_fid21",
+    "headers": ("AIS_HEADER","AIS_TYPE6"),
+    "structname": "ais->type6.dac200fid21",
+    "fieldmap":(
+        # fieldname    type        default
+        ('country',    'string',   None),
+        ('locode',     'string',   None),
+        ('section',    'string',   None),
+        ('terminal',   'string',   None),
+        ('hectometre', 'string',   None),
+        ('eta',        'string',   None),
+        ('tugs',       'uinteger', '0'),
+        ('airdraught', 'uinteger', '0'),
+        ),
+    "stringbuffered":("eta",),
+    },
+    {
+        "initname" : "json_ais6_fid22",
+        "headers": ("AIS_HEADER","AIS_TYPE6"),
+        "structname": "ais->type6.dac200fid22",
+        "fieldmap":(
+            # fieldname    type        default
+            ('country',    'string',   None),
+            ('locode',     'string',   None),
+            ('section',    'string',   None),
+            ('terminal',   'string',   None),
+            ('hectometre', 'string',   None),
+            ('rta',        'string',   None),
+            ('status',     'uinteger', 'DAC200FID22_STATUS_NOT_AVAILABLE'),
+        ),
+        "stringbuffered":("rta",),
+    },
+    {
+        "initname" : "json_ais6_fid25",
+        "headers": ("AIS_HEADER","AIS_TYPE6",),
+        "structname": "ais->type6.dac1fid25",
+        "fieldmap":(
+            # fieldname    type        default
+            ('unit',       'uinteger', '0'),
+            ('amount',     'uinteger', '0'),
+            ('cargos',     'array',    (
+                ('cargo_t', 'ncargos', (
+                    ('code',       'uinteger', '0'),
+                    ('subtype',    'uinteger', '0'),
+                    )))),
+            ),
+    },
+    {
     "initname" : "json_ais6_fid28",
     "headers": ("AIS_HEADER","AIS_TYPE6",),
     "structname": "ais->type6.dac1fid28",
@@ -229,6 +269,7 @@ ais_specs = (
         ('linkage',    'uinteger', '0'),
         ('sender',     'uinteger', '0'),
         ('rtype',      'uinteger', '0'),
+        ('rtype_text', 'ignore',   None),
         ('start',      'string',   None),
         ('duration',   'uinteger', '0'),
         ('waypoints',  'array', (
@@ -271,6 +312,17 @@ ais_specs = (
         ),
     },
     {
+    "initname" : "json_ais6_fid55",
+    "headers": ("AIS_HEADER","AIS_TYPE6"),
+    "structname": "ais->type6.dac200fid55",
+    "fieldmap":(
+        # fieldname    type        default
+        ('crew',       'uinteger', 'DAC200FID55_COUNT_NOT_AVAILABLE'),
+        ('passengers', 'uinteger', 'DAC200FID55_COUNT_NOT_AVAILABLE'),
+        ('personnel',  'uinteger', 'DAC200FID55_COUNT_NOT_AVAILABLE'),
+        ),
+    },
+    {
     "initname" : "json_ais7",
     "headers": ("AIS_HEADER",),
     "structname": "ais->type7",
@@ -291,6 +343,27 @@ ais_specs = (
         ('data',          'string',        None),
         ),
     "stringbuffered":("data",),
+    },
+    {
+    "initname" : "json_ais8_fid10",
+    "headers": ("AIS_HEADER","AIS_TYPE8",),
+    "structname": "ais->type8.dac200fid10",
+    "fieldmap":(
+        # fieldname    type        default
+        ('vin',        'string',   None),
+        ('length',     'uinteger', '0'),
+        ('beam',       'uinteger', '0'),
+        ('type',       'uinteger', '0'),
+        ('type_text',  'ignore',   None),
+        ('hazard',     'uinteger', '0'),
+        ('hazard_text','ignore',   None),
+        ('draught',    'uinteger', '0'),
+        ('loaded',     'uinteger', '0'),
+        ('loaded_text','ignore',   None),
+        ('speed_q',    'boolean',  'false'),
+        ('course_q',   'boolean',  'false'),
+        ('heading_q',  'boolean',  'false'),
+        ),
     },
     {
     "initname" : "json_ais8_fid11",
@@ -330,8 +403,10 @@ ais_specs = (
         ('seastate',     'uinteger',  'DAC1FID11_SEASTATE_NOT_AVAILABLE'),
         ('watertemp',    'uinteger',  'DAC1FID11_WATERTEMP_NOT_AVAILABLE'),
         ('preciptype',   'uinteger',  'DAC1FID11_PRECIPTYPE_NOT_AVAILABLE'),
+        ('preciptype_text', 'ignore', None),
         ('salinity',     'uinteger',  'DAC1FID11_SALINITY_NOT_AVAILABLE'),
         ('ice',          'uinteger',  'DAC1FID11_ICE_NOT_AVAILABLE'),
+        ('ice_text',     'ignore',    None),
         ),
     "stringbuffered":("timestamp",),
     },
@@ -355,7 +430,7 @@ ais_specs = (
             ('thour',      'uinteger', 'AIS_HOUR_NOT_AVAILABLE'),
             ('tminute',    'uinteger', 'AIS_MINUTE_NOT_AVAILABLE'),
         ),
-    'stringbuffered' : ('from', 'to'),
+    'stringbuffered' : ('closefrom', 'closeto'),
     },
     {
         "initname" : "json_ais8_fid15",
@@ -364,6 +439,15 @@ ais_specs = (
         "fieldmap":(
             # fieldname    type        default
             ('airdraught', 'uinteger', '0'),
+        ),
+    },
+    {
+    "initname" : "json_ais8_fid16",
+    "headers": ("AIS_HEADER","AIS_TYPE8",),
+    "structname": "ais->type8.dac1fid16",
+    "fieldmap":(
+        # fieldname           type             default
+        ('persons',           'uinteger',      '0'),
         ),
     },
     {
@@ -399,9 +483,48 @@ ais_specs = (
             ('lat',        'integer',  'AIS_LAT3_NOT_AVAILABLE'),
             ('status',     'uinteger', '0'),
             ('signal',     'uinteger', '0'),
+            ('signal_text','ignore',    None),
             ('hour',       'uinteger', 'AIS_HOUR_NOT_AVAILABLE'),
             ('minute',     'uinteger', 'AIS_MINUTE_NOT_AVAILABLE'),
             ('nextsignal', 'uinteger', '0'),
+            ('nextsignal_type', 'ignore', None),
+        ),
+    },
+    {
+    "initname" : "json_ais8_fid23",
+    "headers": ("AIS_HEADER","AIS_TYPE8"),
+    "structname": "ais->type8.dac200fid23",
+    "fieldmap":(
+        # fieldname    type        default
+        ('start',      'string',   None),
+        ('end',        'string',   None),
+        ('start_lon',  'integer',  'AIS_LON4_NOT_AVAILABLE'),
+        ('start_lat',  'integer',  'AIS_LAT4_NOT_AVAILABLE'),
+        ('end_lon',    'integer',  'AIS_LON4_NOT_AVAILABLE'),
+        ('end_lat',    'integer',  'AIS_LAT4_NOT_AVAILABLE'),
+        ('type',       'uinteger', 'DAC200FID23_TYPE_UNKNOWN'),
+        ('type_text',  'ignore',   None),
+        ('min',        'integer',  'DAC200FID23_MIN_UNKNOWN'),
+        ('max',        'integer',  'DAC200FID23_MAX_UNKNOWN'),
+        ('intensity',  'uinteger', 'DAC200FID23_CLASS_UNKNOWN'),
+        ('intensity_text', 'ignore',   None),
+        ('wind',       'uinteger', 'DAC200FID23_WIND_UNKNOWN'),
+        ('wind_text',  'ignore',   None),
+        ),
+    'stringbuffered' : ('start', 'end'),
+    },
+    {
+    "initname" : "json_ais8_fid24",
+    "headers": ("AIS_HEADER","AIS_TYPE8"),
+    "structname": "ais->type8.dac200fid24",
+    "fieldmap":(
+        # fieldname    type        default
+        ('country',    'string',   None),
+        ('gauges',     'array', (
+            ('gauge_t', 'ngauges', (
+                ('id',        'uinteger', 'DAC200FID24_GAUGE_ID_UNKNOWN'),
+                ('level',     'integer',  'DAC200FID24_GAUGE_LEVEL_UNKNOWN'),
+                    )))),
         ),
     },
     {
@@ -413,6 +536,7 @@ ais_specs = (
         ('linkage',    'uinteger', '0'),
         ('sender',     'uinteger', '0'),
         ('rtype',      'uinteger', '0'),
+        ('rtype_text', 'ignore',   None),
         ('start',      'string',   None),
         ('duration',   'uinteger', '0'),
         ('waypoints',  'array', (
@@ -473,10 +597,25 @@ ais_specs = (
         ('seastate',   'uinteger', 'DAC1FID31_SEASTATE_NOT_AVAILABLE'),
         ('watertemp',  'integer',  'DAC1FID31_WATERTEMP_NOT_AVAILABLE'),
         ('preciptype', 'uinteger', 'DAC1FID31_PRECIPTYPE_NOT_AVAILABLE'),
+        ('preciptype_text', 'ignore', None),
         ('salinity',   'uinteger', 'DAC1FID31_SALINITY_NOT_AVAILABLE'),
         ('ice',        'uinteger', 'DAC1FID31_ICE_NOT_AVAILABLE'),
         ),
     "stringbuffered":("timestamp",),
+    },
+    {
+    "initname" : "json_ais8_fid40",
+    "headers": ("AIS_HEADER","AIS_TYPE8"),
+    "structname": "ais->type8.dac200fid40",
+    "fieldmap":(
+        # fieldname    type        default
+        ('form',       'uinteger', 'DAC200FID40_FORM_UNKNOWN'),
+        ('facing',     'uinteger', 'DAC200FID40_FACING_UNKNOWN'),
+        ('direction',  'uinteger', 'DAC200FID40_DIRECTION_UNKNOWN'),
+        ('direction_text','ignore',   None),
+        ('status',     'uinteger', 'DAC200FID40_STATUS_UNKNOWN'),
+        ('status_text','ignore',   None),
+        ),
     },
     {
     "initname" : "json_ais9",
@@ -612,11 +751,13 @@ ais_specs = (
         ('regional',      'uinteger',      '0'),
         ('shipname',      'string',        None),
         ('shiptype',      'uinteger',      '0'),
+        ('shiptype_text', 'ignore',        None),
         ('to_bow',        'uinteger',      '0'),
         ('to_stern',      'uinteger',      '0'),
         ('to_port',       'uinteger',      '0'),
         ('to_starboard',  'uinteger',      '0'),
         ('epfd',          'uinteger',      '0'),
+        ('epfd_text',     'ignore',        None),
         ('raim',          'boolean',       'false'),
         ('dte',           'uinteger',      '1'),
         ('assigned',      'boolean',       'false'),
@@ -652,7 +793,8 @@ ais_specs = (
     "structname": "ais->type21",
     "fieldmap":(
         # fieldname       type             default
-        ('aid_type',          'uinteger',      '0'),
+        ('aid_type',      'uinteger',      '0'),
+        ('aid_type_text', 'ignore',        None),
         ('name',          'string',        None),
         ('accuracy',      'boolean',       'false'),
         ('lon',           'integer',       'AIS_LON_NOT_AVAILABLE'),
@@ -662,6 +804,7 @@ ais_specs = (
         ('to_port',       'uinteger',      '0'),
         ('to_starboard',  'uinteger',      '0'),
         ('epfd',          'uinteger',      '0'),
+        ('epfd_text',     'ignore',        None),
         ('second',        'uinteger',      '0'),
         ('regional',      'uinteger',      '0'),
         ('off_position',  'boolean',       'false'),
@@ -702,7 +845,9 @@ ais_specs = (
         ('sw_lon',        'integer',       'AIS_GNS_LON_NOT_AVAILABLE'),
         ('sw_lat',        'integer',       'AIS_GNS_LAT_NOT_AVAILABLE'),
         ('stationtype',   'uinteger',      '0'),
+        ('stationtype_text', 'ignore',     None),
         ('shiptype',      'uinteger',      '0'),
+        ('shiptype_text', 'ignore',        None),
         ('txrx',          'uinteger',      '0'),
         ('interval',      'uinteger',      '0'),
         ('quiet',         'uinteger',      '0'),
@@ -716,7 +861,10 @@ ais_specs = (
         # fieldname             type             default
         ('shipname',          'string',        None),	# Part A
         ('shiptype',          'uinteger',      '0'),	# Part B
+        ('shiptype_text',     'ignore',        None),
         ('vendorid',          'string',        None),	# Part B
+        ('model',             'uinteger',      '0'),	# Part B
+        ('serial',            'uinteger',      '0'),	# Part B
         ('callsign',          'string',        None),	# Part B
         ('mothership_mmsi',   'uinteger',      '0'),	# Part B
         ('dim.to_bow',        'uinteger',      '0'),	# Part B
@@ -775,18 +923,21 @@ ais_specs = (
 # You should not need to modify anything below this line.
 
 def generate(spec):
-    global outboard
-
     report = ""
     leader = " " * 39
     initname = spec["initname"]
     # Utter storage declarations for any fields that are declared to be
     # stringbuffered. These will need to be postprocessed in json_ais_read().
-    for (attr, itype, default) in spec["fieldmap"]:
-        if attr in spec.get("stringbuffered", []):
-            if attr not in outboard:
-                report += "    char %s[JSON_VAL_MAX+1];\n" % attr
-                outboard.append(attr)
+    attributes = [t[0] for t in spec["fieldmap"]]
+    for attr in spec.get("stringbuffered", []):
+        if attr not in attributes:
+            print >>sys.stderr, "buffered %s is not in base attributes of %s"\
+                  % (attr, initname)
+            raise SystemExit, 1
+        elif attr not in outboard:
+            report += "    char %s[JSON_VAL_MAX+1];\n" % attr
+            outboard.append(attr)
+                
     structname = spec["structname"]
     # If there are structarrays describing array subobjects, we need
     # to make a separate parse control initializer for each one.  The
@@ -836,6 +987,9 @@ def generate(spec):
                 target = structname + "." + attr
             if "." in attr:
                 attr = attr[attr.rfind(".")+1:]
+            if itype == 'ignore':
+                report += '\t{"%s",   t_ignore},\n' % attr
+                continue
             report += '\t{"%s",%st_%s,%s.addr.%s = %s%s,\n' % \
                    (attr, " "*(14-len(attr)), itype, " "*(10-len(itype)), itype, deref, target)
             if itype == "string":

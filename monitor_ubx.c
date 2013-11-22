@@ -9,12 +9,13 @@
 #include "bits.h"
 #include "gpsmon.h"
 
-#ifdef UBX_ENABLE
+#ifdef UBLOX_ENABLE
 #include "driver_ubx.h"
-extern const struct gps_type_t ubx_binary;
-static WINDOW *satwin, *navsolwin, *dopwin;
+extern const struct gps_type_t driver_ubx;
+static WINDOW *satwin, *navsolwin, *dopwin, *ppswin;
 
 #define display	(void)mvwprintw
+
 static bool ubx_initialize(void)
 {
     int i;
@@ -34,7 +35,7 @@ static bool ubx_initialize(void)
 
     /* "heavily inspired" by monitor_nmea.c */
     if ((navsolwin = derwin(devicewin, 13, 51, 0, 28)) == NULL)
-	return false;
+	return false;    
     (void)wborder(navsolwin, 0, 0, 0, 0, 0, 0, 0, 0),
 	(void)wattrset(navsolwin, A_BOLD);
     (void)wmove(navsolwin, 1, 1);
@@ -62,12 +63,23 @@ static bool ubx_initialize(void)
 
     if ((dopwin = derwin(devicewin, 3, 51, 13, 28)) == NULL)
 	return false;
-    (void)wborder(dopwin, 0, 0, 0, 0, 0, 0, 0, 0),
-	(void)wattrset(dopwin, A_BOLD);
+    (void)wborder(dopwin, 0, 0, 0, 0, 0, 0, 0, 0);
+    (void)wattrset(dopwin, A_BOLD);
     (void)wmove(dopwin, 1, 1);
     (void)wprintw(dopwin, "DOP [H]      [V]      [P]      [T]      [G]");
     display(dopwin, 2, 20, " NAV_DOP ");
     (void)wattrset(dopwin, A_NORMAL);
+
+    if ((ppswin = derwin(devicewin, 3, 51, 16, 28)) == NULL)
+	return false;
+    (void)wborder(ppswin, 0, 0, 0, 0, 0, 0, 0, 0);
+    (void)wattrset(ppswin, A_BOLD);
+    (void)mvwaddstr(ppswin, 1, 1, "PPS offset: ");
+#ifndef PPS_ENABLE
+    (void)mvwaddstr(ppswin, 1, 13, "Not available");
+#endif /* PPS_ENABLE */
+    display(ppswin, 2, 22, " PPS ");
+    (void)wattrset(ppswin, A_NORMAL);
 
     return true;
 }
@@ -116,6 +128,10 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
     if (data_len != 52)
 	return;
 
+#ifdef S_SPLINT_S
+    assert(navsolwin != NULL);
+#endif /* S_SPLINT_S */
+
     navmode = (unsigned char)getub(buf, 10);
     flags = (unsigned int)getub(buf, 11);
 
@@ -142,14 +158,16 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
     (void)wprintw(navsolwin, "%+9.2fm/s %+9.2fm/s %+9.2fm/s", evx, evy, evz);
 
     (void)wmove(navsolwin, 4, 11);
+    (void)wattrset(navsolwin, A_UNDERLINE);
     (void)wprintw(navsolwin, "%12.9f  %13.9f  %8.2fm",
 		  g.fix.latitude, g.fix.longitude, g.fix.altitude);
     (void)mvwaddch(navsolwin, 4, 23, ACS_DEGREE);
-    (void)mvwaddch(navsolwin, 4, 39, ACS_DEGREE);
+    (void)mvwaddch(navsolwin, 4, 38, ACS_DEGREE);
     (void)wmove(navsolwin, 5, 11);
     (void)wprintw(navsolwin, "%6.2fm/s %5.1fo %6.2fm/s",
 		  g.fix.speed, g.fix.track, g.fix.climb);
     (void)mvwaddch(navsolwin, 5, 26, ACS_DEGREE);
+    (void)wattrset(navsolwin, A_NORMAL);
 
     (void)wmove(navsolwin, 7, 7);
     /*@ -compdef @*/
@@ -162,7 +180,9 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
 
 	m = (m - s) / 6000;
 
+	(void)wattrset(navsolwin, A_UNDERLINE);
 	(void)wprintw(navsolwin, "%u %02u:%02u:%05.2f", day, h, m, (double)s / 100);
+	(void)wattrset(navsolwin, A_NORMAL);
     }
     /*@ +compdef @*/
     (void)wmove(navsolwin, 8, 11);
@@ -172,7 +192,7 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
 	(void)wprintw(navsolwin, "%d", (tow / 86400000));
     }
 
-    /* relies on the fact that expx and epy are aet to same value */
+    /* relies on the fact that epx and epy are set to same value */
     (void)wmove(navsolwin, 10, 12);
     (void)wprintw(navsolwin, "%7.2f", g.fix.epx);
     (void)wmove(navsolwin, 10, 33);
@@ -212,6 +232,9 @@ static void ubx_update(void)
     unsigned char *buf;
     size_t data_len;
     unsigned short msgid;
+#ifdef PPS_ENABLE
+    struct timedrift_t drift;
+#endif /* PPS_ENABLE */
 
     buf = session.packet.outbuffer;
     msgid = (unsigned short)((buf[2] << 8) | buf[3]);
@@ -230,6 +253,17 @@ static void ubx_update(void)
 	break;
     }
 
+#ifdef PPS_ENABLE
+    /*@-compdef@*/
+    /*@-type@*/ /* splint is confused about struct timespec */
+    if (pps_thread_lastpps(&session, &drift) > 0) {
+	double timedelta = timespec_diff_ns(drift.real, drift.clock) * 1e-9;
+	(void)mvwprintw(ppswin, 1, 13, "%.9f", timedelta);
+	(void)wnoutrefresh(ppswin);
+    }
+    /*@+type@*/
+    /*@+compdef@*/
+#endif /* PPS_ENABLE */
 }
 
 static int ubx_command(char line[]UNUSED)
@@ -248,7 +282,7 @@ const struct monitor_object_t ubx_mmt = {
     .update = ubx_update,
     .command = ubx_command,
     .wrap = ubx_wrap,
-    .min_y = 23,.min_x = 80,	/* size of the device window */
-    .driver = &ubx_binary,
+    .min_y = 19,.min_x = 80,	/* size of the device window */
+    .driver = &driver_ubx,
 };
 #endif
