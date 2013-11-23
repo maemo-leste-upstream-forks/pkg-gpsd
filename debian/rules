@@ -210,7 +210,6 @@ binary: install-stamp
 	dh_installdocs 
 	dh_installman 
 	dh_installmenu 
-	dh_installdebconf 
 	dh_systemd_enable
 	dh_installinit  -- start 26 2 3 4 5 . stop 73 0 1 6 .
 	dh_systemd_start

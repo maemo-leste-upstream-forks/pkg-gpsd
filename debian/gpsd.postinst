@@ -3,8 +3,6 @@
 
 set -e
 
-. /usr/share/debconf/confmodule
-
 if [ "$1" = "configure" ] ; then
 
     #remove the old udev rules link
