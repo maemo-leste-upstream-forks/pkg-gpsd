@@ -8,9 +8,9 @@ case "$1" in
 	[ ! -f /etc/default/gpsd ] || rm /etc/default/gpsd
 
         if [ -x "$(command -v deluser)" ]; then
-            deluser --quiet --system _gpsd > /dev/null || true
+            deluser --quiet --system gpsd > /dev/null || true
         else
-            echo >&2 "not removing _gpsd system account because deluser command was not found"
+            echo >&2 "not removing gpsd system account because deluser command was not found"
         fi
 
         rm -rf /run/gpsd
