@@ -1,3 +1,45 @@
+gpsd (3.10-1) experimental; urgency=low
+
+  * [54ddafb7] Install test_* tools for autopkgtest tests.
+  * [3610e162] Use ${binary:Version} for -dev package.
+    It is arch:any due to multiarch requirements.
+  * [6c9a5c07] Add versioned dependencies on libgps20.
+    Due to libgpsd being shipped in the libgps package
+    we need a strict dependency on the package for
+    gpsd and gpsd-clients. Otherwise installing a
+    backported package might result in broken gpsmon/gpsd.
+    Thanks to narcos in #gpsd.
+  * [6269418e] Merge tag 'upstream/3.10'
+    Upstream version 3.10
+  * [d4b81aa9] Removing hurd_path_max_fix, seems to be fixed by upstream.
+  * [d26d1c6f] Get rid of debconf questions.
+    Also provide a sane /etc/default/gpsd and move
+    from using /var/run to /run.
+  * [d267e21c] Run gpsd as user _gpsd in group dialout.
+  * [dc5c4753] Allow half-automatic soname transitions.
+    Change the packaging to rename files and update debian/control
+    automatically when the soname changes.
+    Obviously symbols files and co need to be fixed manually.
+  * [64052c68] Updating debian/control from debian/control.in
+  * [f549c100] Add patch from upstream to stop scons from removing debian/control.
+  * [6d1ab218] Migrate to 3.0 (quilt) source format.
+  * [d3f730da] Updating debian/control from debian/control.in
+  * [61865d72] Add patch to stop scons from linkig everything statically.
+  * [64c4a718] Call scons with distclean instead of -c.
+  * [355d6a7f] Also install test_maidenhead.py in gpsd-dbg.
+  * [4af3d11f] Do not clean test_* binaries after scons check.
+  * [359c3e41] Also run distclean before building the static library.
+  * [410cdb29] Ensure all test tools are being built.
+  * [5cfb0747] Install gps2udp(1) in gpsd-clients.
+  * [8903fd0e] Update library symbols files.
+  * [216b031a] Run dh_python2 for usr/bin and other python script locations.
+  * [1e536270] Remove rpath from all files, including debug files.
+  * [8187c631] Use gpsd instead of _gpsd as user account.
+  * [7e6dc703] Remove some left over traces of debconf.
+  * [c97ea78b] Also change username in debian/rules.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 23 Nov 2013 14:33:46 +0100
+
 gpsd (3.9-3) unstable; urgency=low
 
   * [75fe68f6] Add patch to work around the PATH_MAX issue on hurd.
