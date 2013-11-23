@@ -68,6 +68,8 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  json_read_object@Base 3.3
  json_rtcm2_read@Base 3.3
  json_watch_read@Base 3.3
+ json_pps_read@Base 3.10
+ json_rtcm3_read@Base 3.10
  libgps_debuglevel@Base 3.3
  libgps_dump_state@Base 3.3
  libgps_json_unpack@Base 3.3

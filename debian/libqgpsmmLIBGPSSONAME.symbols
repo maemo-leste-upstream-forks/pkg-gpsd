@@ -36,8 +36,10 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"export_lookup(char const*)@Base" 3.5
  (c++)"gps_dbus_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
  (c++)"gps_dbus_open(gps_data_t*)@Base" 3.5
- (c++|optional)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
- (c++|optional)"gpsd_hexdump(char*, unsigned int)@Base" 3.5
+ (c++|optional)"gpsd_hexdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
+ (c++|optional)"gpsd_hexdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
+#MISSING: 3.10-1# (c++|optional)"gpsd_hexdump(char*, unsigned int)@Base" 3.5
+#MISSING: 3.10-1# (c++|optional)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
  (c++)"gpsd_source_spec(char const*, fixsource_t*)@Base" 3.5
  (c++)"gpsd_units()@Base" 3.5
  (c++|arch=amd64 kfreebsd-amd64)"gps_shm_close(gps_data_t*)@Base" 3.5
@@ -53,8 +55,10 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"netlib_localsocket(char const*, int)@Base" 3.5
  (c++)"netlib_sock2ip(int)@Base" 3.5
  (c++)"true2magnetic(double, double, double)@Base" 3.5
- (c++|optional)"gpsd_packetdump(char*, unsigned long)@Base" 3.9
- (c++|optional)"gpsd_packetdump(char*, unsigned int)@Base" 3.9
+ (c++|optional)"gpsd_packetdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
+ (c++|optional)"gpsd_packetdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
+#MISSING: 3.10-1# (c++|optional)"gpsd_packetdump(char*, unsigned int)@Base" 3.9
+#MISSING: 3.10-1# (c++|optional)"gpsd_packetdump(char*, unsigned long)@Base" 3.9
  (c++)"sbits(signed char*, unsigned int, unsigned int, bool)@Base" 3.9
  (c++)"ubits(unsigned char*, unsigned int, unsigned int, bool)@Base" 3.9
  (c++)"getbed64(char const*, int)@Base" 3.9
@@ -95,9 +99,11 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  json_device_read@Base 3.3
  json_enable_debug@Base 3.3
  json_error_string@Base 3.3
+ json_pps_read@Base 3.10
  json_read_array@Base 3.3
  json_read_object@Base 3.3
  json_rtcm2_read@Base 3.3
+ json_rtcm3_read@Base 3.10
  json_watch_read@Base 3.3
  libgps_debuglevel@Base 3.3
 #MISSING: 3.5-1# libgps_dump_state@Base 3.3
