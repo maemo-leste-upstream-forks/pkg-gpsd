@@ -117,6 +117,8 @@ ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
 	-$(SCONS_ENV) /usr/bin/scons check
 endif
 endif
+	# ensure the test tools are built
+	$(SCONS_ENV) python /usr/bin/scons $(SCONSOPTS) $(shell grep test_ debian/gpsd-dbg.install | grep -v '\.py' | awk '{print $$1}')
 	touch $@
 
 build-static-stamp:
