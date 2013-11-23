@@ -171,12 +171,6 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	mkdir -p debian/tmp/lib/udev
 	cp gpsd.hotplug debian/tmp/lib/udev
 	chmod 755 debian/tmp/lib/udev/gpsd.hotplug
-	# remove rpaths
-	find debian/tmp -type f -exec file {} \; |\
-	    grep ELF |\
-	    grep 'dynamically linked' |\
-	    sed 's,:.*,,' |\
-	    xargs chrpath -d
 	cp INSTALL TROUBLESHOOTING
 	# install systemd files
 	mkdir -p debian/tmp/lib/systemd/system
@@ -197,6 +191,12 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	done
 	# install everything
 	dh_install --fail-missing
+	# remove rpaths
+	find debian -type f -exec file {} \; |\
+	    grep ELF |\
+	    grep 'dynamically linked' |\
+	    sed 's,:.*,,' |\
+	    xargs chrpath -d
 	touch $@
 
 
