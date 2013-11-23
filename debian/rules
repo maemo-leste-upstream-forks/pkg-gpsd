@@ -41,7 +41,7 @@ SCONSOPTS = \
 	dbus_export=yes \
 	docdir=/usr/share/doc/gpsd \
 	libdir=/usr/lib/$(DEB_HOST_MULTIARCH) \
-	gpsd_user=_gpsd \
+	gpsd_user=gpsd \
 	gpsd_group=dialout
 
 
