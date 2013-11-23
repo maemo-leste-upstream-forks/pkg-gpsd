@@ -10,9 +10,6 @@ LIBGPSD_SONAME := $(strip $(shell grep -E '^libgpsd_version_current' SConstruct 
 LIBGPS_DEBIAN_FILE_SOURCES := $(strip $(shell ls -1 debian/*LIBGPSSONAME* ))
 LIBGPS_DEBIAN_FILE_TARGETS := $(strip $(shell echo $(LIBGPS_DEBIAN_FILE_SOURCES) | sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g'))
 
-
-include /usr/share/quilt/quilt.make
-
 #python versions
 PYTHONS := $(shell pyversions -vr)
 PYTHON_DEFAULT := $(strip $(shell pyversions -vd))
@@ -107,7 +104,7 @@ build-indep: build
 build-arch: build
 
 build: build-stamp build-static-stamp
-build-stamp: $(QUILT_STAMPFN)
+build-stamp:
 	set -e; \
 	    for py in $(PYTHONS); do \
 	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS); \
@@ -122,7 +119,7 @@ endif
 endif
 	touch $@
 
-build-static-stamp: $(QUILT_STAMPFN)
+build-static-stamp:
 	mkdir static_lib
 	find . \
 	    -mindepth 1 -maxdepth 1 \
@@ -134,8 +131,7 @@ build-static-stamp: $(QUILT_STAMPFN)
 	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) $(SCONSSTATICOPTS) libgps.a
 	touch $@
 
-clean: clean-patched unpatch
-clean-patched: debian/control
+clean: debian/control
 	dh_testdir
 	dh_testroot
 	set -e; \
@@ -251,5 +247,5 @@ binary-arch: binary
 
 .PHONY: binary binary-indep binary-arch \
 	install install-arch install-indep \
-	clean clean-patched \
+	clean \
 	build debian/control
