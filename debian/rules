@@ -136,8 +136,8 @@ clean: debian/control
 	dh_testroot
 	set -e; \
 	    for py in $(PYTHONS); do \
-	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) -c ; \
-	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) -c ; \
+	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) distclean ; \
+	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) distclean ; \
 	    done
 	rm -rf \
 	    .sconf_temp \
