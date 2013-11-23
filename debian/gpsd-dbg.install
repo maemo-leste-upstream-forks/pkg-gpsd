@@ -5,3 +5,4 @@ test_geoid      usr/lib/gpsd/debug
 test_mkgmtime   usr/lib/gpsd/debug
 test_libgps     usr/lib/gpsd/debug
 test_json       usr/lib/gpsd/debug
+test_maidenhead.py  usr/lib/gpsd/debug
