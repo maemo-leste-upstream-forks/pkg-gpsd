@@ -127,7 +127,7 @@ build-static-stamp:
 	    -prune \
 	    -o -name debian -prune \
 	    -o -exec cp -pr {} static_lib \;
-	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) -c ;\
+	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) distclean ;\
 	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) $(SCONSSTATICOPTS) libgps.a
 	touch $@
 
