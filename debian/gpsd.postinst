@@ -5,25 +5,19 @@ set -e
 
 if [ "$1" = "configure" ] ; then
 
-    #remove the old udev rules link
-    if dpkg --compare-versions "$2" lt "2.37-1"; then
-        [ ! -L /etc/udev/rules.d/025gpsd.rules ] || rm -f /etc/udev/rules.d/025gpsd.rules || true
-    fi
+    if dpkg --compare-versions "$2" lt '3.10-1~' ; then
+        # move config file back
+        if [ -f /etc/default/gpsd.dpkg-pre_3.10 ]; then
+            if [ -f /etc/default/gpsd ]; then
+                cp /etc/default/gpsd /etc/default/gpsd.dpkg-dist
+            fi
+            mv /etc/default/gpsd.dpkg-pre_3.10 /etc/default/gpsd
 
+            sed -i -e '/^# Please do not edit.*/d' \
+                   -e '/^# change the options.*/d' /etc/default/gpsd
 
-   # move rc.d
-    if dpkg --compare-versions "$2" gt "2.39-1"; then
-        if [ -L /etc/rc0.d/K20gpsd -a \
-             -L /etc/rc1.d/K20gpsd -a \
-             -L /etc/rc2.d/S20gpsd -a \
-             -L /etc/rc3.d/S20gpsd -a \
-             -L /etc/rc4.d/S20gpsd -a \
-             -L /etc/rc5.d/S20gpsd -a \
-             -L /etc/rc6.d/K20gpsd ]; then
-            update-rc.d -f gpsd remove
         fi
     fi
-
 
     echo "Creating/updating gpsd user account..."
     adduser --system --ingroup dialout --home /run/gpsd \
