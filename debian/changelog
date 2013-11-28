@@ -1,3 +1,14 @@
+gpsd (3.10-2) experimental; urgency=low
+
+  * [c7326670] Handle new /etc/default/gpsd sanely.
+    Avoid asking users to keep the current config file version in case an
+    older gpsd package was installed before.
+    Also remove all special upgrade handling code for upgrades from versions
+    pre-lenny. So gpsd upgrades from Etch directly to Jessie might fail.
+    Thanks to Andreas Beckmann (Closes: #730680)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 28 Nov 2013 23:43:20 +0100
+
 gpsd (3.10-1) experimental; urgency=low
 
   * [54ddafb7] Install test_* tools for autopkgtest tests.
