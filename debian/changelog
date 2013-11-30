@@ -1,3 +1,13 @@
+gpsd (3.10-3) experimental; urgency=low
+
+  * [0230e47a] Mark shm related symbols as optional.
+    Before we had a fixed list of architectures - too much work to maintain.
+    Marking the shm related symbols as optional is easier - and gpsd should
+    build fine on all architectures again - seems some more got shm support.
+  * [9bb3eafb] Add upstream fix to make gpsd build on hurd again.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 30 Nov 2013 01:51:04 +0100
+
 gpsd (3.10-2) experimental; urgency=low
 
   * [c7326670] Handle new /etc/default/gpsd sanely.
