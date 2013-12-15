@@ -8,14 +8,7 @@ if [ "$1" = "configure" ] ; then
     if dpkg --compare-versions "$2" lt '3.10-1~' ; then
         # move config file back
         if [ -f /etc/default/gpsd.dpkg-pre_3.10 ]; then
-            if [ -f /etc/default/gpsd ]; then
-                cp /etc/default/gpsd /etc/default/gpsd.dpkg-dist
-            fi
-            mv /etc/default/gpsd.dpkg-pre_3.10 /etc/default/gpsd
-
-            sed -i -e '/^# Please do not edit.*/d' \
-                   -e '/^# change the options.*/d' /etc/default/gpsd
-
+            rm -f /etc/default/gpsd.dpkg-pre_3.10
         fi
     fi
 

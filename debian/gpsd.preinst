@@ -11,7 +11,10 @@ case "$1" in
 	if dpkg --compare-versions "$2" lt '3.10-1~' ; then
             # move config file
             if [ -f /etc/default/gpsd ]; then
-                mv /etc/default/gpsd /etc/default/gpsd.dpkg-pre_3.10
+                cp /etc/default/gpsd /etc/default/gpsd.dpkg-pre_3.10
+                if [ "$(md5sum /etc/default/gpsd | awk '{print $1}')" = "5944bab322c2a6df28cf0e64f7f7ec86" ]; then
+                    rm -f /etc/default/gpsd
+                fi
             fi
         fi
     ;;
