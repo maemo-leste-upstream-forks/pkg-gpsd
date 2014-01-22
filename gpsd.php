@@ -1,5 +1,7 @@
 <?php
 
+# DO NOT HAND_HACK! THIS FILE IS GENERATED
+
 # Copyright (c) 2006,2010 Chris Kuethe <chris.kuethe@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software for any

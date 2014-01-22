@@ -44,11 +44,6 @@
 
 #include "gpsd_config.h"
 
-#if defined(HAVE_LIBCAP) && !defined(S_SPLINT_S)
-#include <sys/capability.h>
-#include <sys/prctl.h>
-#endif /* HAVE_LIBCAP */
-
 #include "gpsd.h"
 #include "sockaddr.h"
 #include "gps_json.h"
@@ -335,6 +330,10 @@ static void adjust_max_fd(int fd, bool on)
 }
 
 #ifdef SOCKET_EXPORT_ENABLE
+#ifndef IPTOS_LOWDELAY
+#define IPTOS_LOWDELAY 0x10
+#endif
+
 static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen)
 /* bind a passive command socket for the daemon */
 {
@@ -352,7 +351,7 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
     int type, proto, one = 1;
     in_port_t port;
     char *af_str = "";
-
+    const int dscp = IPTOS_LOWDELAY; /* Prioritize packet */
     INVALIDATE_SOCKET(s);
     if ((pse = getservbyname(service, tcp_or_udp)))
 	port = ntohs((in_port_t) pse->s_port);
@@ -391,6 +390,13 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
 	af_str = "IPv4";
 	/* see PF_INET6 case below */
 	s = socket(PF_INET, type, proto);
+	if (s > -1 ) {
+	/* Set packet priority */
+	  if (setsockopt(s, IPPROTO_IP, IP_TOS, &dscp, sizeof(dscp)) == -1)
+	    gpsd_report(context.debug, LOG_WARN,
+			"Warning: SETSOCKOPT TOS failed\n");
+	}
+
 	break;
 #ifdef IPV6_ENABLE
     case AF_INET6:
@@ -432,6 +438,10 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
 		(void)close(s);
 		return -1;
 	    }
+	    /* Set packet priority */
+	    if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &dscp, sizeof(dscp)) == -1)
+		gpsd_report(context.debug, LOG_WARN,
+			    "Warning: SETSOCKOPT TOS failed\n");
 	}
 #endif /* S_SPLINT_S */
 	break;
@@ -902,7 +912,7 @@ static void handle_control(int sfd, char *buf)
 		ignore_return(write(sfd, "ERROR\n", 6));
 	    }
 	}
-    } else if (strcmp(buf, "?devices")==0) {
+    } else if (strstr(buf, "?devices")==buf) {
 	/* write back devices list followed by OK */
 	for (devp = devices; devp < devices + MAXDEVICES; devp++) {
 	    char *path = devp->gpsdata.dev.path;
@@ -2039,13 +2049,6 @@ int main(int argc, char *argv[])
 	struct passwd *pw;
 	struct stat stb;
 
-#if defined(HAVE_LIBCAP) && !defined(S_SPLINT_S)
- 	/* set flag: keep privileges across setuid() call */
-	if (prctl(PR_SET_KEEPCAPS, 1L, 0L, 0L, 0L) == -1)
-	    gpsd_report(context.debug, LOG_ERR,
-			"prctl(PR_SET_KEEPCAPS, 1L ) failed\n");
-#endif /* HAVE_LIBCAP */
-
 	/* make default devices accessible even after we drop privileges */
 	for (i = optind; i < argc; i++)
 	    /* coverity[toctou] */
@@ -2059,6 +2062,12 @@ int main(int argc, char *argv[])
 	 * of any compromises in the code.  It requires that all GPS
 	 * devices have their group read/write permissions set.
 	 */
+	/*@-nullpass@*/
+	if (setgroups(0, NULL) != 0)
+	    gpsd_report(context.debug, LOG_ERROR,
+			"setgroups() failed, errno %s\n",
+			strerror(errno));
+	/*@+nullpass@*/
 	/*@-type@*/
 #ifdef GPSD_GROUP
 	{
@@ -2087,21 +2096,6 @@ int main(int argc, char *argv[])
 			    "setuid() failed, errno %s\n",
 			    strerror(errno));
 	/*@+type@*/
-
- #if defined(HAVE_LIBCAP) && !defined(S_SPLINT_S)
-	/* drop root capabilities, except CAP_SYS_TIME for 1PPS support */
-	{
-	    cap_t caps = cap_from_text("cap_sys_time=pe");
-
-	    if (!caps)
-		gpsd_report(context.debug, LOG_ERR, "cap_from_text() failed.\n");
-	    else if (cap_set_proc(caps) == -1) {
-		gpsd_report(context.debug, LOG_ERR,
-			    "cap_set_proc() failed to drop root privs\n");
-		cap_free(caps);
-	    }
-	}
-#endif /* HAVE_LIBCAP */
     }
     gpsd_report(context.debug, LOG_INF,
 		"running with effective group ID %d\n", getegid());
@@ -2297,6 +2291,7 @@ int main(int argc, char *argv[])
 		    adjust_max_fd(device->gpsdata.gps_fd, false);
 		    break;
 		case DEVICE_ERROR:
+		case DEVICE_EOF:
 		    deactivate_device(device);
 		    break;
 		default:

@@ -38,7 +38,7 @@ extern "C" {
  *       gps_poll() removed in favor of gps_read().  The raw hook is gone.
  * 5.1 - GPS_PATH_MAX uses system PATH_MAX; split24 flag added. New
  *       model and serial members in part B of AIS type 24, conforming
- *       with ITU-R 1371-4. New timedrift structure.
+ *       with ITU-R 1371-4. New timedrift structure (Nov 2013, release 3.10).
  */
 #define GPSD_API_MAJOR_VERSION	5	/* bump on incompatible changes */
 #define GPSD_API_MINOR_VERSION	1	/* bump on compatible changes */
@@ -1894,7 +1894,8 @@ struct timedrift_t {
 };
 
 /* difference between timespecs in nanoseconds */
-#define timespec_diff_ns(x, y)	(int)(((x).tv_sec-(y).tv_sec)*1e9+(x).tv_nsec-(y).tv_nsec)
+/* int is too small, avoid floats  */
+#define timespec_diff_ns(x, y)	(long)(((x).tv_sec-(y).tv_sec)*1000000000+(x).tv_nsec-(y).tv_nsec)
 
 /*
  * Someday we may support Windows, under which socket_t is a separate type.
@@ -1959,7 +1960,8 @@ struct gps_data_t {
 #define LOGMESSAGE_SET	(1llu<<30)
 #define ERROR_SET	(1llu<<31)
 #define TIMEDRIFT_SET	(1llu<<32)
-#define SET_HIGH_BIT	33
+#define EOF_SET		(1llu<<33)
+#define SET_HIGH_BIT	34
     timestamp_t online;		/* NZ if GPS is on line, 0 if not.
 				 *
 				 * Note: gpsd clears this time when sentences

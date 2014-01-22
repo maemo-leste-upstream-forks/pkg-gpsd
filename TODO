@@ -16,11 +16,39 @@ See the GPSD bug tracker on the project website, but don't be
 surprised if it's empty or very sparse.  Our rate of new defects per
 month is quite low.
 
+*** Documentation
+
+Consider merging the calibration draft into the Time Service HOWTO.
+
+*** Time tracking
+
+Our goal is to be independent of the system clock.
+
+**** Compile the GPS week of the build into the build
+
+The obvious place tp put this is in timebase.h. Not too expensive;
+will typically cause extra work once per seven days.  The benefit is that
+we can compare received week to the compiled in week and if the latter
+is less know that a rollover has occurred.
+
+**** Maybe apply wraparound compensation ****
+
+See <http://www.febo.com/pipermail/time-nuts/2013-August/079271.html>
+
+**** Track gpsd's confidence in the GPS time it's seeing
+
+This would increase when we see a leap-second offset or get GPZDA from
+the device, decrease when we detect a rollover.  Some devices that are
+known to deliver high-quality time (notably u-blox GPSes) would peg the
+confidence measure at a high level.  We'd use the confidence level to
+control (a) whether gpsd ships to NTP, and (b) how it sets time
+uncertainty in output JSON.
+
 *** Client bugs
 
 **** In gpsmon's PPS Offset field
 
-resently PPS Offset is displayed in direct mode for NMEA, SiRF, and
+Presently PPS Offset is displayed in direct mode for NMEA, SiRF, and
 UBX devices.  Others should probably do likewise, notably the
 Motorola Oncore and Garmin drivers.
 
@@ -45,14 +73,20 @@ The second 'n' is losing information that it shouldn't.
 
 Display update should not stop while this is going on.
 
-*** Speed, mode and rate-changes in client-mode gpsmon.
+**** Speed, mode and rate-changes in client-mode gpsmon.
 
 Are not implemented.  In theory they could be.
 
-*** Speed, mode and rate-changes in client-mode gpsctl.
+**** Speed, mode and rate-changes in client-mode gpsctl.
 
 Baud rate and mode changes work in direct mode but are not
 reliable in client mode.
+
+**** Integrate 1PPS into profiling ***
+
+We caw now *really* measure latency from GPS top of second when it has
+1PPS.  Add this capability to gpsprof and revise the "Where's the
+Latency?" white paper.
 
 *** Dispatcher/network issues
 
@@ -88,6 +122,11 @@ message 6 and 8 subtypes - specifically, 6/23, 8/21, 8/22, 8/24, and
 We'd need machinery to shift a byte array 30 bits left...
 
 ** To do:
+
+*** On next API bump ***
+
+In struct gpsdata_t, move the device list out of the union and move
+the tag field to private data.
 
 ***  Make subframe reports available in the C API.
 

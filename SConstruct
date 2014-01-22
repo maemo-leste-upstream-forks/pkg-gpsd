@@ -10,6 +10,7 @@
 # check     - run regression and unit tests.
 # audit     - run code-auditing tools
 # testbuild - test-build the code from a tarball
+# website   - refresh the website
 # release   - ship a release
 #
 # clean     - clean all normal build targets
@@ -23,7 +24,7 @@
 # * Coveraging mode: gcc "-coverage" flag requires a hack for building the python bindings
 
 # Release identification begins here
-gpsd_version = "3.10"
+gpsd_version = "3.11~dev"
 
 # library version
 libgps_version_current   = 21
@@ -56,6 +57,9 @@ gitrepo    = "git://git.savannah.nongnu.org/gpsd.git"
 webform    = "http://www.thyrsus.com/cgi-bin/gps_report.cgi"
 formserver = "www@thyrsus.com"
 devmail    = "gpsd-dev@lists.nongnu.org"
+usermail   = "gpsd-users@lists.nongnu.org"
+annmail    = "gpsd-announce@nongnu.org"
+ircchan    = "irc://chat.freenode.net/#gpsd"
 tiplink    = "<a href='http://gittip.com/esr'>leave a tip at Gittip</a>"
 tipwidget  = "<script data-gittip-username='esr' \
 	data-gittip-widget='button' src='//gttp.co/v1.js'></script>"
@@ -63,7 +67,7 @@ tipwidget  = "<script data-gittip-username='esr' \
 
 EnsureSConsVersion(2,0,1)
 
-import copy, os, sys, glob, re, platform, time, signal
+import copy, os, sys, glob, re, platform, time
 from distutils import sysconfig
 from distutils.util import get_platform
 import SCons
@@ -157,7 +161,7 @@ boolopts = (
     ("profiling",     False, "build with profiling enabled"),
     ("coveraging",    False, "build with code coveraging enabled"),
     ("strip",         True,  "build with stripping of binaries enabled"),
-    ("chrpath",       True,  "use chrpath to edit library load paths"),
+    ("chrpath",       False, "use chrpath to edit library load paths"),
     ("manbuild",      True,  "build help in man and HTML formats"),
     ("leapfetch",     True,  "fetch up-to-date data on leap seconds."),
     )
@@ -174,6 +178,8 @@ nonboolopts = (
     ("gpsd_user",           "nobody",      "privilege revocation user",),
     ("gpsd_group",          def_group,     "privilege revocation group"),
     ("prefix",              "/usr/local",  "installation directory prefix"),
+    ("python_libdir",       sysconfig.get_python_lib(plat_specific=1),
+                                           "Python module directory prefix"),
     ("limited_max_clients", 0,             "maximum allowed clients"),
     ("limited_max_devices", 0,             "maximum allowed devices"),
     ("fixed_port_speed",    0,             "fixed serial port speed"),
@@ -221,6 +227,7 @@ for var in import_env:
     if var in os.environ:
         envs[var] = os.environ[var]
 envs["GPSD_HOME"] = os.getcwd()
+envs["LD_LIBRARY_PATH"] = os.getcwd()
 
 env = Environment(tools=["default", "tar", "textfile"], options=opts, ENV=envs)
 opts.Save('.scons-option-cache', env)
@@ -239,7 +246,7 @@ env['PYTHON'] = sys.executable
 env['STRIP'] = "strip"
 env['PKG_CONFIG'] = "pkg-config"
 env['CHRPATH'] = 'chrpath'
-for i in ["AR", "ARFLAGS", "CCFLAGS", "CFLAGS", "CC", "CXX", "CXXFLAGS", "STRIP", "PKG_CONFIG", "CHRPATH", "LD", "TAR"]:
+for i in ["AR", "ARFLAGS", "CCFLAGS", "CFLAGS", "CC", "CXX", "CXXFLAGS", "LINKFLAGS", "STRIP", "PKG_CONFIG", "CHRPATH", "LD", "TAR"]:
     if os.environ.has_key(i):
         j = i
         if i == "LD":
@@ -248,7 +255,7 @@ for i in ["AR", "ARFLAGS", "CCFLAGS", "CFLAGS", "CC", "CXX", "CXXFLAGS", "STRIP"
             env.Replace(**{j: Split(os.getenv(i))})
         else:
             env.Replace(**{j: os.getenv(i)})
-for flag in ["LDFLAGS", "LINKFLAGS", "SHLINKFLAGS", "CPPFLAGS"]:
+for flag in ["LDFLAGS", "SHLINKFLAGS", "CPPFLAGS"]:
     if os.environ.has_key(flag):
         env.MergeFlags({flag : [os.getenv(flag)]})
 
@@ -287,8 +294,16 @@ def installdir(dir, add_destdir=True):
 # Honor the specified installation prefix in link paths.
 if env["sysroot"]:
     env.Prepend(LIBPATH=[env["sysroot"] + installdir('libdir', add_destdir=False)])
+
+# Don't hack RPATH unless libdir points somewhere that is not on the
+# system default load path. /lib and /usr/lib should always be on
+# this; listing them explicitly is a fail-safe against this ldconfig
+# invocation not doing what we expect.
 if env["shared"]:
-    env.Prepend(RPATH=[installdir('libdir')])
+    sysrpath = Split(_getoutput("ldconfig -v -N -X 2>/dev/null | sed -n -e '/^\//s/://p'"))
+    if env["libdir"] not in ["/usr/lib", "/lib"] + sysrpath:
+        announce("Prepending %s to RPATH." % installdir('libdir', False))
+        env.Prepend(RPATH=[installdir('libdir')])
 
 # Give deheader a way to set compiler flags
 if 'MORECFLAGS' in os.environ:
@@ -373,12 +388,6 @@ def CheckPKG(context, name):
     context.Result( ret )
     return ret
 
-def CheckExecutable(context, testprogram, check_for):
-    context.Message( 'Checking for %s... ' %(check_for,))
-    ret = context.TryAction(testprogram)[0]
-    context.Result( ret )
-    return ret
-
 # Stylesheet URLs for making HTML and man pages from DocBook XML.
 docbook_url_stem = 'http://docbook.sourceforge.net/release/xsl/current/'
 docbook_man_uri = docbook_url_stem + 'manpages/docbook.xsl'
@@ -450,12 +459,14 @@ def CheckCompilerDefines(context, define):
     context.Result(ret)
     return ret
 
+def GetLoadPath(context):
+    context.Message("Getting system load path ...")
+
 if env.GetOption("clean") or env.GetOption("help"):
     dbus_libs = []
     rtlibs = []
     usblibs = []
     bluezlibs = []
-    caplibs = []
     ncurseslibs = []
     confdefs = []
     manbuilder = False
@@ -463,7 +474,6 @@ if env.GetOption("clean") or env.GetOption("help"):
     qt_env = None
 else:
     config = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG,
-                                             'CheckExecutable' : CheckExecutable,
                                              'CheckXsltproc' : CheckXsltproc,
                                              'CheckCompilerOption' : CheckCompilerOption,
                                              'CheckCompilerDefines' : CheckCompilerDefines,
@@ -480,18 +490,20 @@ else:
                    '-Wstrict-prototypes', '-Wpointer-arith', '-Wreturn-type'):
         config.CheckCompilerOption(option)
 
-
     env.Prepend(LIBPATH=[os.path.realpath(os.curdir)])
-    if env["shared"]:
-        if env["chrpath"] and config.CheckExecutable('chrpath -v', 'chrpath'):
-            # Tell generated binaries to look in the current directory for
-            # shared libraries so we can run regression tests without
-            # hassle. Should be handled sanely by scons on all systems.  Not
-            # good to use '.' or a relative path here; it's a security risk.
-            # At install time we use chrpath to edit this out of RPATH.
+    if env["shared"] and env["chrpath"]:
+        if WhereIs('chrpath'):
+            # Tell generated binaries to look in the current directory
+            # for shared libraries so we can run ad-hoc tests without
+            # hassle (the regression tests *don't* need this as
+            # they're run in a controlled environment where we can set
+            # LD_LIBRARY_PATH). Should be handled sanely by scons on
+            # all systems.  Not good to use '.' or a relative path
+            # here; it's a security risk.  At install time we use
+            # chrpath to edit this out of RPATH.
             env.Prepend(RPATH=[os.path.realpath(os.curdir)])
         else:
-            print "chrpath is not available or use of it has been disabled."
+            print "chrpath is not available; please build with chrpath=no."
 
     confdefs = ["/* gpsd_config.h.  Generated by scons, do not hand-hack.  */\n"]
 
@@ -519,9 +531,9 @@ else:
     if env['ncurses']:
         if config.CheckPKG('ncurses'):
             ncurseslibs = pkg_config('ncurses')
-        elif config.CheckExecutable('ncurses5-config --version', 'ncurses5-config'):
+        elif WhereIs('ncurses5-config'):
             ncurseslibs = ['!ncurses5-config --libs --cflags']
-        elif config.CheckExecutable('ncursesw5-config --version', 'ncursesw5-config'):
+        elif WhereIs('ncursesw5-config'):
             ncurseslibs = ['!ncursesw5-config --libs --cflags']
         elif sys.platform.startswith('freebsd'):
             ncurseslibs= [ '-lncurses' ]
@@ -558,14 +570,6 @@ else:
         confdefs.append("/* #undef HAVE_LIBRT */\n")
         rtlibs = []
 
-    if config.CheckLib('libcap'):
-        confdefs.append("#define HAVE_LIBCAP 1\n")
-        # System library - no special flags
-        caplibs = ["-lcap"]
-    else:
-        confdefs.append("/* #undef HAVE_LIBCAP */\n")
-        caplibs = []
-
     if env['dbus_export'] and config.CheckPKG('dbus-1'):
         confdefs.append("#define HAVE_DBUS 1\n")
         dbus_libs = pkg_config('dbus-1')
@@ -581,15 +585,6 @@ else:
         confdefs.append("/* #undef HAVE_BLUEZ */\n")
         bluezlibs = []
         env["bluez"] = False
-
-    # ntpshm is required for pps support
-    if env['pps'] and env['ntpshm'] and config.CheckHeader("sys/timepps.h"):
-        confdefs.append("#define HAVE_SYS_TIMEPPS_H 1\n")
-        announce("You have kernel PPS available.")
-    else:
-        confdefs.append("/* #undef HAVE_SYS_TIMEPPS_H */\n")
-        announce("You do not have kernel PPS available.")
-        # Don't turn off PPS here, we might be using the non-kernel version
 
     if config.CheckHeader(["bits/sockaddr.h", "linux/can.h"]):
         confdefs.append("#define HAVE_LINUX_CAN_H 1\n")
@@ -673,8 +668,15 @@ else:
     else:
         confdefs.append("#define COMPAT_SELECT\n")
 
-    if not config.CheckHeaderDefines("sys/ioctl.h", "TIOCMIWAIT"):
-        announce("Forcing pps=no (TIOCMIWAIT not available)")
+    if config.CheckHeader(["sys/time.h", "sys/timepps.h"]):
+        confdefs.append("#define HAVE_SYS_TIMEPPS_H 1\n")
+        kpps = True
+    else:
+        confdefs.append("/* #undef HAVE_SYS_TIMEPPS_H */\n")
+        kpps = False
+    tiocmiwait = config.CheckHeaderDefines("sys/ioctl.h", "TIOCMIWAIT")
+    if env["pps"] and not tiocmiwait and not kpps:
+        announce("Forcing pps=no (neither TIOCMIWAIT nor RFC2783 API is available)")
         env["pps"] = False
 
     confdefs.append('''\
@@ -957,27 +959,7 @@ if qt_env:
 # The libraries have dependencies on system libraries
 
 gpslibs = ["-lgps", "-lm"]
-gpsdlibs = ["-lgpsd"] + usblibs + bluezlibs + gpslibs + caplibs
-
-
-# We need to be able to make a static client library for ad-hoc testing.
-# Without this, we can't run regression tests in the build directory 
-# without either (a) having installed the GPSD shared libraries in system
-# space (which requires root) or (b) having either '.' or an absolute
-# path in the shared library load path (which is a security hole).
-#
-# None of the normal targets relies on this library.  You can use it
-# with a build command like
-#
-# g++ --static streamtest.cpp libgps.a -lrt -o streamtest
-#
-# When you link with this library you will get warnings that look like this:
-# warning: Using 'getprotobyname' in statically linked applications requires
-#          at runtime the shared libraries from the glibc version used for
-#          linking
-# The final executable will build but not be portable.
-
-env.StaticLibrary(target = 'libgps.a', source = libgps_sources)
+gpsdlibs = ["-lgpsd"] + usblibs + bluezlibs + gpslibs
 
 # Source groups
 
@@ -1145,14 +1127,15 @@ env.Command(target = "packet_names.h", source="packet_states.h", action="""
     sed -e '/^ *\([A-Z][A-Z0-9_]*\),/s//   \"\\1\",/' <$SOURCE >$TARGET &&\
     chmod a-w $TARGET""")
 
-# build timebase.h
+# timebase.h - always built in order to include current GPS week
 def timebase_h(target, source, env):
     from leapsecond import make_leapsecond_include
     f = open(target[0].abspath, 'w')
     f.write(make_leapsecond_include(source[0].abspath))
     f.close()
-env.Command(target="timebase.h", source="leapseconds.cache",
-            action=timebase_h)
+timebase = env.Command(target="timebase.h",
+                       source=["leapseconds.cache"], action=timebase_h)
+env.AlwaysBuild(timebase)
 
 env.Textfile(target="gpsd_config.h", source=confdefs)
 env.Textfile(target="gpsd.h", source=[File("gpsd.h-head"), File("gpsd_config.h"), File("gpsd.h-tail")])
@@ -1184,32 +1167,13 @@ generated_sources = ['packet_names.h', 'timebase.h', 'gpsd.h', "ais_json.i",
 # leapseconds.cache is a local cache for information on leapseconds issued
 # by the U.S. Naval observatory. It gets kept in the repository so we can
 # build without Internet access.
-from leapsecond import save_leapseconds
-
-def timed_save_leapseconds(outfile, env, timeout=15):
-    "Fetch leapsecond data with timeout, in case outside web access is blocked."
-    if not env["leapfetch"]:
-        sys.stdout.write("Leapsecond fetch suppressed by leapfetch=no.\n")
-    else:
-        def handler(signum, frame):
-            raise IOError
-        try:
-            signal.signal(signal.SIGALRM, handler)
-        except ValueError:
-            # Parallel builds trigger this - signal only works in main thread
-            sys.stdout.write("Signal set failed; try building with leapfetch=no.\n")
-            return
-        signal.alarm(timeout)
-        sys.stdout.write("attempting leap-second fetch...")
-        try:
-            save_leapseconds(outfile)
-            sys.stdout.write("succeeded.\n")
-        except IOError:
-            sys.stdout.write("failed; try building with leapfetch=no.\n")
-        signal.alarm(0)
+from leapsecond import conditional_leapsecond_fetch
 
 def leapseconds_cache_rebuild(target, source, env):
-    timed_save_leapseconds(target[0].abspath, env)
+    if not env["leapfetch"]:
+        sys.stdout.write("Leapsecond fetch suppressed by leapfetch=no.\n")
+    elif not conditional_leapsecond_fetch(target[0].abspath, timeout=15):
+        sys.stdout.write("try building with leapfetch=no.\n")
 if 'dev' in gpsd_version or not os.path.exists('leapseconds.cache'):
     leapseconds_cache = env.Command(target="leapseconds.cache",
                                 source="leapsecond.py",
@@ -1228,7 +1192,7 @@ def substituter(target, source, env):
         ('@libdir@',     env['libdir']),
         ('@PYTHON@',     sys.executable),
         ('@DATE@',       time.asctime()),
-        ('@MASTER',      'DO NOT HAND_HACK! THIS FILE IS GENERATED@'),
+        ('@MASTER@',     'DO NOT HAND_HACK! THIS FILE IS GENERATED'),
         ('@SITENAME@',   sitename),
         ('@SITESEARCH@', sitesearch),
         ('@WEBSITE@',    website),
@@ -1245,7 +1209,10 @@ def substituter(target, source, env):
         ('@GITREPO@',    gitrepo),
         ('@WEBFORM@',    webform),
         ('@FORMSERVER@', formserver),
+        ('@USERMAIL@',   usermail),
         ('@DEVMAIL@',    devmail),
+        ('@ANNOUNCE@',   annmail),
+        ('@IRCCHAN@',    ircchan),
         ('@LIBGPSVERSION@', libgps_version),
         ('@TIPLINK@',    tiplink),
         ('@TIPWIDGET@',  tipwidget),
@@ -1263,6 +1230,11 @@ def substituter(target, source, env):
     tfp.close()
 
 templated = glob.glob("*.in") + glob.glob("*/*.in") + glob.glob("*/*/*.in")
+
+# ignore files in subfolder called 'debian' - the Debian packaging
+# tools will handle them.
+templated = [ x for x in templated if not x.startswith('debian/') ]
+
 
 for fn in templated:
     builder = env.Command(source=fn, target=fn[:-3], action=substituter)
@@ -1349,7 +1321,7 @@ if not env['debug'] and not env['profiling'] and env['strip']:
 if not env['python']:
     python_install = []
 else:
-    python_lib_dir = sysconfig.get_python_lib(plat_specific=1)
+    python_lib_dir = env['python_libdir']
     python_module_dir = python_lib_dir + os.sep + 'gps'
     python_extensions_install = python_env.Install( DESTDIR + python_module_dir,
                                                     python_built_extensions)
@@ -1461,7 +1433,7 @@ Utility("scan-build", ["gpsd.h", "packet_names.h"],
 
 # Sanity-check Python code.
 pylint = Utility("pylint", ["jsongen.py", "maskaudit.py", python_built_extensions],
-        ['''pylint --output-format=parseable --reports=n --include-ids=y --disable=F0001,C0103,C0111,C0301,C0302,C0322,C0324,C0323,C0321,R0201,R0801,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0924,W0201,W0401,W0403,W0141,W0142,W0603,W0614,W0621,E1101,E1102,F0401 jsongen.py leapsecond.py maskaudit.py gpsprof.py gpscat.py gpsfake.py gegps.py gps/*.py xgps'''])
+        ['''pylint --output-format=parseable --reports=n --include-ids=y --disable=F0001,C0103,C0111,C0301,C0302,C0322,C0324,C0323,C0321,R0201,R0801,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0924,W0201,W0232,W0401,W0403,W0141,W0142,W0603,W0614,W0621,E1101,E1102,F0401 jsongen.py leapsecond.py maskaudit.py gpsprof.py gpscat.py gpsfake.py gegps.py gps/*.py xgps'''])
 
 # Check the documentation for bogons, too
 Utility("xmllint", glob.glob("*.xml"),
@@ -1736,7 +1708,7 @@ def validation_list(target, source, env):
 Utility("validation-list", [www], validation_list)
 
 # How to update the website
-upload_web = Utility("upload_web", [www],
+upload_web = Utility("website", [www],
                      ['rsync --exclude="*.in" -avz www/ ' + webupload,
                       'scp README TODO NEWS ' + webupload,
                       'chmod ug+w,a+x www/gps_report.cgi',
@@ -1790,10 +1762,10 @@ if env['python']:
 # is plugged in.
 
 Utility('udev-install', 'install', [
-    'mkdir -p ' + env['udevdir'],
-    'cp $SRCDIR/gpsd.rules ' + env['udevdir'] + '/rules.d/25-gpsd.rules',
-    'cp $SRCDIR/gpsd.hotplug ' + env['udevdir'],
-    'chmod a+x ' + env['udevdir'] + '/gpsd.hotplug',
+    'mkdir -p ' + DESTDIR + env['udevdir'] + '/rules.d',
+    'cp $SRCDIR/gpsd.rules ' + DESTDIR + env['udevdir'] + '/rules.d/25-gpsd.rules',
+    'cp $SRCDIR/gpsd.hotplug ' + DESTDIR + env['udevdir'],
+    'chmod a+x ' + DESTDIR + env['udevdir'] + '/gpsd.hotplug',
         ])
 
 Utility('udev-uninstall', '', [
@@ -1809,7 +1781,7 @@ Utility('udev-test', '', [
 
 # Ordinary cleanup
 clean = env.Clean(build,
-          map(glob.glob,("*.[oa]", "*.os", "*.os.*", "*.gcno", "*.pyc", "gps/*.pyc")) + \
+          map(glob.glob,("*.[oa]", "*.os", "*.os.*", "*.gcno", "*.pyc", "gps/*.pyc", "TAGS")) + \
           generated_sources + base_manpages.keys() + \
           map(lambda f: f[:-3], templated))
 
@@ -1818,6 +1790,13 @@ webclean = env.Clean(www, [])
 
 # Clean up to a close approximation of a fresh repository pull
 distclean = env.Alias('distclean', [clean, testclean, webclean])
+
+# Tags for Emacs and vi
+misc_sources = ['cgps.c', 'gpsctl.c', 'gpsdctl.c', 'gpspipe.c',
+                'gps2udp.c', 'gpsdecode.c', 'gpxlogger.c']
+sources = libgpsd_sources + libgps_sources \
+          + gpsd_sources + gpsmon_sources + misc_sources
+env.Command('TAGS', sources, ['etags ' + " ".join(sources)])
 
 # Release machinery begins here
 #
@@ -1900,13 +1879,8 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
                           upload_web])
 
     # Experimental release mechanics using shipper
-    # This will ship a freecode metadata update 
-    ship_release = Utility("ship_release",
-                           [tarball],
-                           ['shipper -u --exclude "login.ibiblio.org:/public/html/catb/esr/" version=' + gpsd_version])
-    env.Alias("ship", [releaseprep,
-                          ship_release,
-                          upload_tags])
+    # This will ship a freecode metadata update
+    Utility("ship", [tarball, "control"], ['shipper version=%s | sh -e -x' % gpsd_version])
 
 # The following sets edit modes for GNU EMACS
 # Local Variables:

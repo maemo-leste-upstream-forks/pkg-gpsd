@@ -4,10 +4,6 @@
 Usage: leapsecond.py [-v] { [-h] | [-f filename] | [-g filename] | [-H filename]
     | [-I isodate] | [-O unixdate] | [-i rfcdate] | [-o unixdate] | [-n MMMYYYY] }
 
-With no option, get the current leap-second value.  This is the offset between
-UTC and GPS time, which changes occasionally due to variations in the Earth's
-rotation.
-
 Options:
 
   -I take a date in ISO8601 format and convert to Unix gmt time
@@ -20,7 +16,7 @@ Options:
 
   -c generate a C initializer listing leap seconds in Unix time.
 
-  -f fetch USNO data and save to local cache file
+  -f fetch leap-second offset data and save to local cache file
 
   -H make leapsecond include
 
@@ -29,7 +25,11 @@ Options:
   -v be verbose
 
   -g generate a plot of the leap-second trend over time. The command you
-     probably want is "leapsecond.py -g leapseconds.cache | gnuplot -persist".
+     probably want is something like (depending on if your gnuplot install
+     does or does not support X11.
+
+     leapsecond.py -g leapseconds.cache | gnuplot --persist
+     leapsecond.py -g leapseconds.cache | gnuplot -e 'set terminal svg' - | display
 
   -n compute Unix gmt time for an IERS leap-second event given as a three-letter
      English Gregorian month abbreviation followed by a 4-digit year.
@@ -37,8 +37,8 @@ Options:
 Public urls and local cache file used:
 
 http://hpiers.obspm.fr/iers/bul/bulc/bulletinc.dat
+http://hpiers.obspm.fr/iers/bul/bulc/UTC-TAI.history
 ftp://maia.usno.navy.mil/ser7/tai-utc.dat
-file:///var/run/leapsecond
 leapseconds.cache
 
 This file is Copyright (c) 2013 by the GPSD project
@@ -46,7 +46,7 @@ BSD terms apply: see the file COPYING in the distribution root for details.
 
 """
 
-import os, urllib, re, random, time, calendar, math, sys
+import os, urllib, re, random, time, calendar, math, sys, signal
 
 # Set a socket timeout for slow servers
 import socket
@@ -74,10 +74,11 @@ __locations = [
     ),
 ]
 
-# File containing cached offset data.
-# Two fields: the offset, and the start of the current six-month span
-# between times it might change, in seconds since Unix epoch GMT (1970-01-01T00:00:00).
-__cachepath = "/var/run/leapsecond"
+GPS_EPOCH	= 315964800		# 6 Jan 1981 00:00:00
+SECS_PER_WEEK	= 60 * 60 * 24 * 7	# Seconds per GPS week
+
+def gps_week(t):
+    return (t - GPS_EPOCH)/SECS_PER_WEEK
 
 def isotime(s):
     "Convert timestamps in ISO8661 format to and from Unix time including optional fractional seconds."
@@ -147,42 +148,6 @@ def last_insertion_time():
     else:
         return jan
 
-def get():
-    "Fetch GPS offset, from local cache file if possible."
-    stale = False
-    offset = None
-    valid_from = None
-    last_insertion = last_insertion_time()
-    if not os.path.exists(__cachepath):
-        stale = True
-    else:
-        try:
-            cfp = open(__cachepath)
-            txt = cfp.read()
-            cfp.close()
-            (offset, valid_from) = map(int, txt.split())
-            if valid_from < last_insertion:
-                stale = True
-        except (IOError, OSError, ValueError):
-            if verbose:
-                print >>sys.stderr, "can't read %s" % __cachepath
-            stale = True
-    # We now know whether the cached data is stale
-    if not stale:
-        return (offset, valid_from)
-    else:
-        current_offset = retrieve()
-        # Try to cache this for later
-        if current_offset != None:
-            try:
-                cfp = open(__cachepath, "w")
-                cfp.write("%d %d\n" % (current_offset, last_insertion))
-                cfp.close()
-            except (IOError, OSError):
-                if verbose:
-                    print >>sys.stderr, "can't write %s" % __cachepath
-        return (current_offset, valid_from)
-
 def save_leapseconds(outfile):
     "Fetch the leap-second history data and make a leap-second list since Unix epoch GMT (1970-01-01T00:00:00)."
     random.shuffle(__locations) # To spread the load
@@ -209,7 +174,7 @@ def save_leapseconds(outfile):
             md = leapbound(fields[0], fields[1])
             if verbose:
                 print >>sys.stderr, "# %s" % md
-            fp.write(repr(iso_to_unix(md)) + "\t# (" + repr(md)  + ")\n")
+            fp.write(repr(iso_to_unix(md)) + "\t# " + str(md)  + "\n")
         fp.close()
         return
     print >>sys.stderr, "%s not updated." % outfile
@@ -222,14 +187,59 @@ def fetch_leapsecs(filename):
     return leapsecs
 
 def make_leapsecond_include(infile):
-    "Get the current leap second count and century from the local cache usable as c preprocessor #define"
+    "Get the current leap second count and century from the local cache usable as C preprocessor #define"
+    # Underscore prefixes avoids warning W0612 from pylint,
+    # which doesn't count substitution through locals() as use.
     leapjumps = fetch_leapsecs(infile)
-    year = time.strftime("%Y", time.gmtime(time.time()))
-    leapsecs = 0
+    now = int(time.time())
+    _year = time.strftime("%Y", time.gmtime(now))
+    _gps_week_now = gps_week(now)
+    _isodate = isotime(now - now % SECS_PER_WEEK)
+    _leapsecs = -1
     for leapjump in leapjumps:
         if leapjump < time.time():
-            leapsecs += 1
-    return ("#define CENTURY_BASE\t%s00\n" % year[:2]) + ("#define LEAPSECOND_NOW\t%d\n" % (leapsecs-1))
+            _leapsecs += 1
+    return """\
+/*
+ * Constants used for GPS time detection and rollover correction.
+ *
+ * Correct for week beginning %(_isodate)s
+ */
+#define CENTURY_BASE\t%(_year)s00
+#define LEAPSECOND_NOW\t%(_leapsecs)d
+#define GPS_WEEK_NOW\t%(_gps_week_now)d
+""" % locals()
+
+def conditional_leapsecond_fetch(outfile, timeout):
+    "Conditionally fetch leapsecond data, w. timeout in case of evil firewalls."
+    if not os.path.exists(outfile):
+        stale = True
+    else:
+        # If there can't have been a leapsecond insertion since the
+        # last time the cache was updated, we don't need to refresh.
+        # This test cuts way down on the frequency with which we fetch.
+        stale = last_insertion_time() > os.path.getmtime(outfile)
+    if not stale:
+        return True
+    else:
+        def handler(_signum, _frame):
+            raise IOError
+        try:
+            signal.signal(signal.SIGALRM, handler)
+        except ValueError:
+            # Parallel builds trigger this - signal only works in main thread
+            sys.stdout.write("Signal set failed; ")
+            return False
+        signal.alarm(timeout)
+        sys.stdout.write("Attempting leap-second fetch...")
+        try:
+            save_leapseconds(outfile)
+            sys.stdout.write("succeeded.\n")
+        except IOError:
+            sys.stdout.write("failed; ")
+            return False
+        signal.alarm(0)
+        return True
 
 def leastsquares(tuples):
     "Generate coefficients for a least-squares fit to the specified data."
@@ -282,8 +292,7 @@ def graph_history(filename):
     fmt += 'set format y "%Y-%m-%d"\n'
     fmt += 'set yrange ["%s":"%s"]\n' % (dates[0], dates[-1])
     fmt += 'set key left top box\n'
-    fmt += 'set data style linespoints\n'
-    fmt += 'plot "-" using 1:3 title "Leap-second trend";\n'
+    fmt += 'plot "-" using 1:3 title "Leap-second trend" with linespoints ;\n'
     for (i, (r, d)) in enumerate(zip(raw, dates)):
         fmt += "%d\t%s\t%s\n" % (i, r, d)
     fmt += 'e\n'
@@ -323,6 +332,8 @@ def leapbound(year, month):
     "Return a leap-second date in RFC822 form."
     # USNO lists JAN and JUL (month following the leap second).
     # IERS lists DEC. and JUN. (month preceding the leap second).
+    # Note: It is also possible for leap seconds to occur in end-Mar and end-Sep
+    #  although none have occurred yet
     if month.upper()[:3] == "JAN":
         tv = "%s-12-31T23:59:60" % (int(year)-1)
     elif month.upper()[:3] in ("JUN", "JUL"):
@@ -369,8 +380,5 @@ if __name__ == '__main__':
         elif (switch == '-O'):  # Compute ISO8601 date from Unix time
             print isotime(float(val))
             raise SystemExit, 0
-
-    (offset, valid_from) = get()
-    print "Current leap second: %d, valid from %s" % (offset, unix_to_iso(valid_from))
 
 # End

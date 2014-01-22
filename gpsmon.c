@@ -24,6 +24,7 @@
 #endif /* S_SPLINT_S */
 
 #include "gpsd.h"
+#include "gps_json.h"
 #include "gpsmon.h"
 #include "revision.h"
 
@@ -35,7 +36,9 @@ extern struct monitor_object_t garmin_mmt, garmin_bin_ser_mmt;
 extern struct monitor_object_t italk_mmt, ubx_mmt, superstar2_mmt;
 extern struct monitor_object_t fv18_mmt, gpsclock_mmt, mtk3301_mmt;
 extern struct monitor_object_t oncore_mmt, tnt_mmt, aivdm_mmt;
+#ifdef NMEA_ENABLE
 extern const struct gps_type_t driver_nmea0183;
+#endif /* NMEA_ENABLE */
 
 /* These are public */
 struct gps_device_t session;
@@ -476,9 +479,11 @@ static void select_packet_monitor(struct gps_device_t *device)
      */
     if (device->packet.type != last_type) {
 	const struct gps_type_t *active_type = device->device_type;
+#ifdef NMEA_ENABLE
 	if (device->packet.type == NMEA_PACKET
 	    && ((device->device_type->flags & DRIVER_STICKY) != 0))
 	    active_type = &driver_nmea0183;
+#endif /* NMEA_ENABLE */
 	if (!switch_type(active_type))
 	    longjmp(terminate, TERM_DRIVER_SWITCH);
 	else {
@@ -631,7 +636,9 @@ ssize_t gpsd_write(struct gps_device_t *session,
 		   const size_t len)
 /* pass low-level data to devices, echoing it to the log window */
 {
+#if defined(CONTROLSEND_ENABLE) || defined(RECONFIGURE_ENABLE)
     monitor_dump_send((const char *)buf, len);
+#endif /* defined(CONTROLSEND_ENABLE) || defined(RECONFIGURE_ENABLE) */
     return gpsd_serial_write(session, buf, len);
 }
 
@@ -652,12 +659,8 @@ bool monitor_control_send( /*@in@*/ unsigned char *buf, size_t len)
 
 static bool monitor_raw_send( /*@in@*/ unsigned char *buf, size_t len)
 {
-    if (!serial)
-	return false;
-    else {
-	ssize_t st = gpsd_write(&session, (char *)buf, len);
-	return (st > 0 && (size_t) st == len);
-    }
+    ssize_t st = gpsd_write(&session, (char *)buf, len);
+    return (st > 0 && (size_t) st == len);
 }
 #endif /* CONTROLSEND_ENABLE */
 
@@ -723,6 +726,17 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
     else
 #endif /* PPS_ENABLE */
     {
+#ifdef __future__
+	if (!serial)
+	{
+	    if (device->packet.type == JSON_PACKET)
+	    {
+		const char *end = NULL;
+		libgps_json_unpack((char *)device->packet.outbuffer, &session.gpsdata, &end);
+	    }
+	}
+#endif /* __future__ */
+
 	if (curses_active)
 	    select_packet_monitor(device);
 
@@ -815,7 +829,9 @@ static bool do_command(const char *line)
 		context.readonly = !context.readonly;
 	    else
 		context.readonly = (atoi(line + 1) == 0);
+#ifdef RECONFIGURE_ENABLE
 	    announce_log("[probing %sabled]", context.readonly ? "dis" : "en");
+#endif /* RECONFIGURE_ENABLE */
 	    if (!context.readonly)
 		/* magic - forces a reconfigure */
 		session.packet.counter = 0;
@@ -1264,6 +1280,9 @@ int main(int argc, char **argv)
 		break;
 	    case DEVICE_ERROR:
 		longjmp(terminate, TERM_READ_ERROR);
+		break;
+	    case DEVICE_EOF:
+		longjmp(terminate, TERM_QUIT);
 		break;
 	    default:
 		break;

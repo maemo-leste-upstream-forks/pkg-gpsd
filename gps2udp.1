@@ -31,7 +31,7 @@
 gps2udp \- feed the take from gpsd to one or more aggregation sites
 .SH "SYNOPSIS"
 .HP \w'\fBgps2udp\fR\ 'u
-\fBgps2udp\fR [\-h] [\-n] [\-j] [\-a] [\-u\ \fIhostname:udpport\fR] [\-c\ \fIcount\fR] [\-d] [\-v] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBgps2udp\fR [\-h] [\-n] [\-j] [\-a] [\-u\ \fIhostname:udpport\fR] [\-c\ \fIcount\fR] [\-d\ \fI1|2\fR] [\-v] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .SH "DESCRIPTION"
 .PP
 gps2udp
@@ -80,11 +80,11 @@ print a usage message and exit\&.
 gps2udp
 to run as a daemon\&.
 .PP
-\-n [count] causes [count] sentences to be output\&.
+\-c [count] causes [count] sentences to be output\&.
 gps2udp
 will then exit gracefully\&.
 .PP
-\-d prints sent packet on stdout\&.
+\-d 1 prints sent packet on stdout\&.
 .PP
 \-v prints the version, then exits\&.
 .SH "EXAMPLE"
@@ -92,11 +92,11 @@ will then exit gracefully\&.
 With a running
 gpsd accessible on the network
 .PP
-\fBgps2udp \-d \-n \-u data\&.aishub\&.net:2222 \fR
+\fBgps2udp \-d 1 \-n \-u data\&.aishub\&.net:2222 \fR
 will collect data from localhost:gpsd display them on stdout and send a copy to test aishub in NMEA format\&.
 .PP
-\fBgps2udp \-a \-n \-b \-u data\&.aishub\&.net 2222 \-u 5\&.9\&.207\&.224 5321 \-u 109\&.200\&.19\&.151 4001 vz\-fulup\&.vpn:2947\fR
-will collect data from a remote gpsd located on vz\-fulup\&.vpn host, will filter AIS messages and send them to 3 destination (aishub, marinetraffic, shipfinder) in NMEA format, command is running in background mode
+\fBgps2udp \-a \-n \-b \-u data\&.aishub\&.net:2222 \-u 5\&.9\&.207\&.224:5321 \-u 109\&.200\&.19\&.151:4001 fridu\&.net:2947\fR
+will collect data from a remote gpsd located on fridu\&.net host, will filter AIS messages and send them to 3 destination (aishub, marinetraffic, shipfinder) in NMEA format, command is running in background mode
 .SH "SEE ALSO"
 .PP
 \fBgpsd\fR(8),
