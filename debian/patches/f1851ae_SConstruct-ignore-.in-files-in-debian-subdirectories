@@ -9,13 +9,11 @@ scons must not mess with them.
  SConstruct | 5 +++++
  1 file changed, 5 insertions(+)
 
-diff --git a/SConstruct b/SConstruct
-index c5120ae..290910b 100644
 --- a/SConstruct
 +++ b/SConstruct
-@@ -1255,6 +1255,11 @@ def substituter(target, source, env):
+@@ -1236,6 +1236,11 @@ templated = glob.glob("*.in") + glob.glo
+ templated = [ x for x in templated if not x.startswith('debian/') ]
  
- templated = glob.glob("*.in") + glob.glob("*/*.in") + glob.glob("*/*/*.in")
  
 +# ignore files in subfolder called 'debian' - the Debian packaging
 +# tools will handle them.
@@ -25,6 +23,3 @@ index c5120ae..290910b 100644
  for fn in templated:
      builder = env.Command(source=fn, target=fn[:-3], action=substituter)
      env.AddPostAction(builder, 'chmod -w $TARGET')
--- 
-1.8.4.rc3
-

@@ -1,4 +1,2 @@
-sconstruct_avoid_static_linking_crap
 f1851ae_SConstruct-ignore-.in-files-in-debian-subdirectories
 sconstruct_do_not_clean_test_tools_during_regression_tests
-a43b971_Use-GPS_PATH_MAX-instead-of-PATH_MAX
