@@ -1,3 +1,12 @@
+gpsd (3.10+dev1~a33bfd44-1) experimental; urgency=medium
+
+  * [00204bd2] Merge tag 'upstream/3.10+dev1_a33bfd44'
+    Upstream version 3.10+dev1~a33bfd44
+  * [8fb0bebf] Refreshing patches.
+  * [8c230112] Updating symbols files.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 22 Jan 2014 23:59:49 +0100
+
 gpsd (3.10-4) experimental; urgency=low
 
   * [fe9286df] Remove /etc/dfault/gpsd if it is the default debconf version.
