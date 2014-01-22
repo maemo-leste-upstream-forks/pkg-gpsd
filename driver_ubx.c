@@ -68,7 +68,9 @@ static gps_mask_t ubx_msg_nav_svinfo(struct gps_device_t *session,
 				     unsigned char *buf, size_t data_len);
 static void ubx_msg_sbas(struct gps_device_t *session, unsigned char *buf);
 static void ubx_msg_inf(unsigned char *buf, size_t data_len, const int debug);
+#ifdef RECONFIGURE_ENABLE
 static void ubx_mode(struct gps_device_t *session, int mode);
+#endif /* RECONFIGURE_ENABLE */
 
 /**
  * Navigation solution message
@@ -105,10 +107,22 @@ ubx_msg_nav_sol(struct gps_device_t *session, unsigned char *buf,
     ecef_to_wgs84fix(&session->newdata, &session->gpsdata.separation,
 		     epx, epy, epz, evx, evy, evz);
     mask |= LATLON_SET | ALTITUDE_SET | SPEED_SET | TRACK_SET | CLIMB_SET;
-    session->newdata.epx = session->newdata.epy =
-	(double)(getles32(buf, 24) / 100.0) / sqrt(2);
+
+    if (session->driver.ubx.last_herr > 0.0) {
+	session->newdata.epx = session->newdata.epy = session->driver.ubx.last_herr;
+	mask |= HERR_SET;
+	session->driver.ubx.last_herr = 0.0;
+    }
+
+    if (session->driver.ubx.last_verr > 0.0) {
+	session->newdata.epv = session->driver.ubx.last_verr;
+	mask |= VERR_SET;
+	session->driver.ubx.last_verr = 0.0;
+    }
+
     session->newdata.eps = (double)(getles32(buf, 40) / 100.0);
-    mask |= HERR_SET | SPEEDERR_SET;
+    mask |= SPEEDERR_SET;
+    
     /* Better to have a single point of truth about DOPs */
     //session->gpsdata.dop.pdop = (double)(getleu16(buf, 44)/100.0);
     session->gpsdata.satellites_used = (int)getub(buf, 47);
@@ -147,6 +161,18 @@ ubx_msg_nav_sol(struct gps_device_t *session, unsigned char *buf,
 		session->gpsdata.status,
 		session->gpsdata.satellites_used);
     return mask;
+}
+
+ /**
+ * Geodetic position solution message
+ */
+static gps_mask_t
+ubx_msg_nav_posllh(struct gps_device_t *session, unsigned char *buf,
+		   size_t data_len UNUSED)
+{
+    session->driver.ubx.last_herr = (double)(getleu32(buf, 20) / 1000.0);
+    session->driver.ubx.last_verr = (double)(getleu32(buf, 24) / 1000.0);
+    return 0;
 }
 
 /**
@@ -362,6 +388,7 @@ gps_mask_t ubx_parse(struct gps_device_t * session, unsigned char *buf,
 	break;
     case UBX_NAV_POSLLH:
 	gpsd_report(session->context->debug, LOG_DATA, "UBX_NAV_POSLLH\n");
+	mask = ubx_msg_nav_posllh(session, &buf[UBX_PREFIX_LEN], data_len);
 	break;
     case UBX_NAV_STATUS:
 	gpsd_report(session->context->debug, LOG_DATA, "UBX_NAV_STATUS\n");
@@ -620,12 +647,14 @@ static void ubx_event_hook(struct gps_device_t *session, event_t event)
 	(void)ubx_write(session, UBX_CLASS_MON, 0x04, msg, 0);
 	/*@ +type @*/
 
+#ifdef RECONFIGURE_ENABLE
 	/* 
 	 * Turn off NMEA output, turn on UBX on this port.
 	 */
 	if (session->mode == O_OPTIMIZE) {
 	    ubx_mode(session, MODE_BINARY);
 	}
+#endif /* RECONFIGURE_ENABLE */
     } else if (event == event_deactivate) {
 	/*@ -type @*/
 	unsigned char msg[4] = {

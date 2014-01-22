@@ -77,10 +77,8 @@ static void merge_ddmmyy(char *ddmmyy, struct gps_device_t *session)
     int year;
 
     /* check for century wrap */
-    if (session->driver.nmea.date.tm_year % 100 == 99 && yy == 0) {
-	session->context->century += 100;
-	gpsd_report(session->context->debug, LOG_WARN, "century rollover detected.\n");
-    }
+    if (session->driver.nmea.date.tm_year % 100 == 99 && yy == 0)
+	gpsd_century_update(session, session->context->century + 100);
     year = (session->context->century + yy);
 
     if ( (1 > mon ) || (12 < mon ) ) {
@@ -767,26 +765,7 @@ static gps_mask_t processGPZDA(int c UNUSED, char *field[],
 	    gpsd_report(session->context->debug, LOG_WARN,
 			"malformed ZDA day: %s\n",  field[2]);
 	} else {
-	    if (century > session->context->century) {
-		/*
-		 * This mismatch is almost certainly not due to a GPS week
-		 * rollover, because that would throw the ZDA report backward
-		 * into the last rollover period instead of forward.  Almost
-		 * certainly it means that a century mark has passed while
-		 * gpsd was running, and we should trust the new ZDA year.
-		 */
-		gpsd_report(session->context->debug, LOG_WARN,
-			    "century rollover detected.\n");
-		session->context->century = century;
-	    } else if (session->context->start_time >= GPS_EPOCH && century < session->context->century) {
-		/*
-		 * This looks like a GPS week-counter rollover.
-		 */
-		gpsd_report(session->context->debug, LOG_WARN, 
-			    "ZDA year %d less than clock year, "
-			    "probable GPS week rollover lossage\n",
-			    year);
-	    }
+	    gpsd_century_update(session, century);
 	    session->driver.nmea.date.tm_year = year - 1900;
 	    session->driver.nmea.date.tm_mon = mon - 1;
 	    session->driver.nmea.date.tm_mday = mday;

@@ -363,7 +363,7 @@ int main(int argc, char **argv)
 	if (gps_open(NULL, NULL, &gpsdata) != 0) {
 	    gpsd_report(context.debug, LOG_ERROR,
 			"no gpsd running or network error: %s.\n",
-			netlib_errstr(errno));
+			gps_errstr(errno));
 	    lowlevel = true;
 	}
     }
@@ -688,6 +688,10 @@ int main(int argc, char **argv)
 		    gpsd_report(context.debug, LOG_WARN,
 				"device error, bailing out.\n");
 		    exit(EXIT_FAILURE);
+		case DEVICE_EOF:
+		    gpsd_report(context.debug, LOG_WARN,
+				"device signed off, bailing out.\n");
+		    exit(EXIT_SUCCESS);
 		default:
 		    break;
 		}

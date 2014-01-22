@@ -77,7 +77,7 @@ typedef unsigned int speed_t;
 #ifdef EARTHMATE_ENABLE
 #define ZODIAC_ENABLE
 #endif
-#if defined(ZODIAC_ENABLE) || defined(SIRF_ENABLE) || defined(GARMIN_ENABLE) || defined(TSIP_ENABLE) || defined(EVERMORE_ENABLE) || defined(ITRAX_ENABLE) || defined(UBLOX_ENABLE) || defined(SUPERSTAR2_ENABLE) || defined(ONCORE_ENABLE) || defined(GEOSTAR_ENABLE) || defined(NAVCOM_ENABLE)
+#if defined(ZODIAC_ENABLE) || defined(SIRF_ENABLE) || defined(GARMIN_ENABLE) || defined(TSIP_ENABLE) || defined(EVERMORE_ENABLE) || defined(ITRAX_ENABLE) || defined(UBLOX_ENABLE) || defined(SUPERSTAR2_ENABLE) || defined(ONCORE_ENABLE) || defined(GEOSTAR_ENABLE) || defined(NAVCOM_ENABLE) || defined(NMEA2000_ENABLE)
 #define BINARY_ENABLE
 #endif
 #if defined(TRIPMATE_ENABLE) || defined(BINARY_ENABLE)
@@ -232,10 +232,11 @@ struct gps_device_t;
 
 struct gps_context_t {
     int valid;				/* member validity flags */
-    int debug;				/* dehug verbosity level */
-    bool readonly;			/* if true, never write to device */
 #define LEAP_SECOND_VALID	0x01	/* we have or don't need correction */
 #define GPS_TIME_VALID  	0x02	/* GPS week/tow is valid */
+#define CENTURY_VALID		0x04	/* have received ZDA or 4-digit year */
+    int debug;				/* dehug verbosity level */
+    bool readonly;			/* if true, never write to device */
     /* DGPS status */
     int fixcnt;				/* count of good fixes seen */
     /* timekeeping */
@@ -474,7 +475,7 @@ struct gps_device_t {
     int shmIndexPPS;
 # endif /* PPS_ENABLE */
 #endif /* NTPSHM_ENABLE */
-    timestamp_t last_fixtime;		/* so updates happen once */
+    volatile timestamp_t last_fixtime;		/* so updates happen once */
 #ifdef PPS_ENABLE
 #if defined(HAVE_SYS_TIMEPPS_H)
     pps_handle_t kernelpps_handle;
@@ -618,6 +619,14 @@ struct gps_device_t {
 	struct {
 	    unsigned char port_id;
 	    unsigned char sbas_in_use;
+	    /*
+	     * NAV-* message order is not defined, thus we handle them isochronously
+	     * and store the latest data into these variables rather than expect
+	     * some messages to arrive in order. NAV-SOL handler picks up these values
+	     * and inserts them into the fix structure in one go.
+	     */
+	    double last_herr;
+	    double last_verr;
     	} ubx;
 #endif /* UBLOX_ENABLE */
 #ifdef NAVCOM_ENABLE
@@ -794,8 +803,9 @@ extern void gpsd_set_century(struct gps_device_t *);
 extern timestamp_t gpsd_gpstime_resolve(/*@in@ */ struct gps_device_t *,
 			      const unsigned short, const double);
 extern timestamp_t gpsd_utc_resolve(/*@in@*/struct gps_device_t *);
+extern void gpsd_century_update(/*@in@*/struct gps_device_t *, int);
 
-extern void gpsd_zero_satellites(/*@out@*/struct gps_data_t *sp)/*@modifies sp@*/;
+extern void gpsd_zero_satellites(/*@out@*/struct gps_data_t *sp);
 extern gps_mask_t gpsd_interpret_subframe(struct gps_device_t *, unsigned int,
 				uint32_t[]);
 extern gps_mask_t gpsd_interpret_subframe_raw(struct gps_device_t *,
@@ -934,6 +944,7 @@ extern int gpsd_await_data(/*@out@*/fd_set *,
 			    /*@in@*/fd_set *,
 			    const int);
 extern gps_mask_t gpsd_poll(struct gps_device_t *);
+#define DEVICE_EOF	-3
 #define DEVICE_ERROR	-2
 #define DEVICE_UNREADY	-1
 #define DEVICE_READY	1

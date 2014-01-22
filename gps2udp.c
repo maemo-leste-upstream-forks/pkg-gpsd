@@ -80,15 +80,15 @@ static bool aisonly = false;
 
 static int send_udp (char *nmeastring, size_t ind)
 {
-    char message[255];
+    char message [255];
     char *buffer;
     int  channel;
 
-    /* if string length is unknown make a copy and compute it */
+    /* if string length is unknow make a copy and compute it */
     if (ind == 0) {
 	/* compute message size and add 0x0a 0x0d */
 	for (ind=0; nmeastring [ind] != '\0'; ind ++) {
-	    if (ind >= sizeof(message) - 3) {
+	    if (ind >= sizeof(message)) {
 		fprintf(stderr, "gps2udp: too big [%s] \n", nmeastring);
 		return -1;
 	    }
@@ -96,7 +96,7 @@ static int send_udp (char *nmeastring, size_t ind)
 	}
 	buffer = message;
     } else {
-	/* use directly nmeastring but change termination */
+	/* use directly nmeastring but change terminition */
 	buffer = nmeastring;
 	ind = ind-1;
     }
@@ -105,16 +105,20 @@ static int send_udp (char *nmeastring, size_t ind)
     buffer[ind] = '\r'; ind++;
     buffer[ind] = '\0';
 
+    if (!(flags & WATCH_JSON) && buffer[0] == '{') {
+	/* do not send JSON when not configured to do so */
+	return 0;
+    }
+
     /* send message on udp channel */
     /*@-type@*/
     for (channel=0; channel < udpchannel; channel ++) {
-	ssize_t status;
-	status = sendto(sock[channel],
-			buffer,
-			ind,
-			0,
-			&remote[channel],
-			(int)sizeof(remote));
+	ssize_t status = sendto(sock[channel],
+				buffer,
+				ind,
+				0,
+				&remote[channel],
+				(int)sizeof(remote));
 	if (status < (ssize_t)ind) {
 	    (void)fprintf(stderr, "gps2udp: failed to send [%s] \n", nmeastring);
 	    return -1;
@@ -129,13 +133,16 @@ static int open_udp(char **hostport)
 /* Open and bind udp socket to host */
 {
    int channel;
-   for (channel=0; channel < udpchannel; channel ++)
+
+   for (channel=0; channel <udpchannel; channel ++)
    {
-       struct hostent *hp;
        char *hostname = NULL;
        char *portname = NULL;
+       char *endptr = '\0';
        int  portnum;
-      /* parse argument */
+       struct hostent *hp;
+
+       /* parse argument */
        /*@-unrecog@*/
        hostname = strsep(&hostport[channel], ":");
        portname = strsep(&hostport[channel], ":");
@@ -145,8 +152,9 @@ static int open_udp(char **hostport)
 	   return (-1);
        }
 
-       portnum = atoi(portname);
-       if (errno != 0) {
+       errno = 0;
+       portnum = strtol(portname, &endptr, 10);
+       if (1 > portnum || 65535 < portnum || '\0' != *endptr || 0 != errno) {
 	   (void)fprintf(stderr, "gps2udp: syntax is [-u hostname:port] [%s] is not a valid port number\n",portname);
 	   return (-1);
        }
@@ -184,6 +192,7 @@ static void usage(void)
 		  "-d [0-2] 1 display sent packets, 2 ignored packets.\n" 
 		  "-v Print version and exit.\n\n"
 		  "You must specify one, or more, of -r, -R, or -w\n"
+                  "example: gps2udp -a -n -c 2 -d 1 -u data.aishub.net:2222 fridu.net\n"
 		  );
 }
 
@@ -290,8 +299,10 @@ static ssize_t read_gpsd(char *message, size_t len)
 		connect2gpsd(true);
 		retry = 0;
 	    }
+	    /*@-sefparams@*/
 	    if (debug > 0)
-		/*@i2@*/ignore_return(write (1, ".", 1));
+		ignore_return(write (1, ".", 1));
+	    /*@+sefparams@*/
 	    break;
 
         default:	/* we lost connection with gpsd */
@@ -299,7 +310,7 @@ static ssize_t read_gpsd(char *message, size_t len)
 	    break;
         }
     }
-    message[ind-1] = '\0';
+    message[ind] = '\0';
     (void)fprintf (stderr,"\n gps2udp: message too big [%s]\n", message);
     return(-1);
 }
@@ -336,7 +347,6 @@ static unsigned int AISGetInt(unsigned char *bitbytes, unsigned int sp, unsigned
     for(i=0 ; i<len ; i++)
     {
 	unsigned int cp, cx, c0;
-
         acc  = acc << 1;
         cp = (s0p + i) / 6;
         cx = (unsigned int)bitbytes[cp];      // what if cp >= byte_length?
@@ -356,11 +366,15 @@ int main(int argc, char **argv)
     char *udphostport[MAX_UDP_DEST];
 
     flags = WATCH_ENABLE;
-    while ((option = getopt(argc, argv, "?habnjcvl:u:d:")) != -1)
+    while ((option = getopt(argc, argv, "?habnjvc:l:u:d:")) != -1)
     {
 	switch (option) {
 	case 'd':
             debug = atoi(optarg);
+            if ((debug <1) || (debug > 2)) {
+                usage();
+	        exit(1);
+            }
 	    break;
 	case 'n':
             if (debug >0)
@@ -393,12 +407,12 @@ int main(int argc, char **argv)
 	case 'v':
 	    (void)fprintf(stderr, "%s: %s (revision %s)\n",
 			  argv[0], VERSION, REVISION);
-	    exit(EXIT_SUCCESS);
+	    exit(0);
 	case '?':
 	case 'h':
 	default:
 	    usage();
-	    exit(EXIT_FAILURE);
+	    exit(1);
 	}
     }
 
@@ -416,8 +430,7 @@ int main(int argc, char **argv)
     /* Open UDP port */
     if (udpchannel > 0) {
         int status = open_udp(udphostport);
-	if (status !=0)
-	 exit(EXIT_FAILURE);
+	if (status !=0) exit (1);
     }
 
     /* Daemonize if the user requested it. */
@@ -484,8 +497,8 @@ int main(int argc, char **argv)
 		if (count-- == 0) {
 		    /* completed count */
 		    (void)fprintf(stderr, 
-				  "gpsd2udp: normal exit after %ld packets\n",count);
-		    exit(EXIT_SUCCESS);
+				  "gpsd2udp: normal exit after counted packets\n");
+		    exit (0);
 		}
 	    }  // end count  
         } // end len > 3
@@ -494,7 +507,7 @@ int main(int argc, char **argv)
     // This is an infinite loop, should never be here
     /*@-unreachable@*/
     fprintf (stderr, "gpsd2udp ERROR abnormal exit\n");
-    exit(EXIT_FAILURE);
+    exit (-1);
 }
 /*@=compdef =usedef@*/
 

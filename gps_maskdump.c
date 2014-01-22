@@ -49,6 +49,7 @@ const char *gps_maskdump(gps_mask_t set)
 	{LOGMESSAGE_SET,	"LOGMESSAGE"},
 	{ERROR_SET,	"ERROR"},
 	{TIMEDRIFT_SET,	"TIMEDRIFT"},
+	{EOF_SET,	"EOF"},
 	{RAW_IS,	"RAW"},
 	{USED_IS,	"USED"},
 	{DRIVER_IS,	"DRIVER"},

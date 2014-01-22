@@ -903,6 +903,9 @@ static void gpsd_error_model(struct gps_device_t *session,
      * expected time error should be half the resolution of
      * the GPS clock, so we put the bound of the error
      * in as a constant pending getting it from each driver.
+     * FIXME: increase this if no keap-second has been seen
+     * and it's less than 750s (one almanac load cycle)
+     * from device powerup.
      */
     if (isnan(fix->time) == 0 && isnan(fix->ept) != 0)
 	fix->ept = 0.005;
@@ -943,7 +946,7 @@ static void gpsd_error_model(struct gps_device_t *session,
 	}
 	if ((fix->mode >= MODE_3D)
 	    && isnan(fix->epc) != 0 && fix->time > oldfix->time) {
-	    if (oldfix->mode > MODE_3D && fix->mode > MODE_3D) {
+	    if (oldfix->mode >= MODE_3D && fix->mode >= MODE_3D) {
 		timestamp_t t = fix->time - oldfix->time;
 		double e = oldfix->epv + fix->epv;
 		/* if vertical uncertainties are zero this will be too */
@@ -1143,9 +1146,9 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 	timestamp_t now = timestamp();
 	if (session->device_type != NULL && session->packet.start_time > 0) {
 #ifdef RECONFIGURE_ENABLE
-	    const time_t min_cycle = session->device_type->min_cycle;
+	    const double min_cycle = session->device_type->min_cycle;
 #else
-	    const time_t min_cycle = 1;
+	    const double min_cycle = 1;
 #endif /* RECONFIGURE_ENABLE */
 	    double quiet_time = (MINIMUM_QUIET_TIME * min_cycle);
 	    double gap = now - session->packet.start_time;
@@ -1211,8 +1214,14 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 		    "packet sniff on %s finds type %d\n",
 		    session->gpsdata.dev.path, session->packet.type);
 	if (session->packet.type == COMMENT_PACKET) {
-	    gpsd_report(session->context->debug, LOG_PROG,
-			"comment, sync lock deferred\n");
+	    if (strcmp((const char *)session->packet.outbuffer, "# EOF\n") == 0) {
+		gpsd_report(session->context->debug, LOG_PROG,
+			    "synthetic EOF\n");
+		return EOF_SET;
+	    }
+	    else
+		gpsd_report(session->context->debug, LOG_PROG,
+			    "comment, sync lock deferred\n");
 	    /* FALL THROUGH */
 	} else if (session->packet.type > COMMENT_PACKET) {
 	    if (session->device_type == NULL)
@@ -1232,8 +1241,12 @@ gps_mask_t gpsd_poll(struct gps_device_t *session)
 		 * previous mode switch to binary succeeded in suppressing
 		 * NMEA).
 		 */
+#ifdef RECONFIGURE_ENABLE
 		bool dependent_nmea = (newtype == NMEA_PACKET
 				       && session->device_type->mode_switcher!=NULL);
+#else
+		bool dependent_nmea = false;
+#endif /* RECONFIGURE_ENABLE */
 
 		/*
 		 * Compute whether to switch drivers.
@@ -1469,7 +1482,12 @@ int gpsd_multipoll(const bool data_ready,
 	for (fragments = 0; ; fragments++) {
 	    gps_mask_t changed = gpsd_poll(device);
 
-	    if (changed == ERROR_SET) {
+	    if (changed == EOF_SET) {
+		gpsd_report(device->context->debug, LOG_WARN,
+			    "device signed off %s\n",
+			    device->gpsdata.dev.path);
+		return DEVICE_EOF;
+	    } else if (changed == ERROR_SET) {
 		gpsd_report(device->context->debug, LOG_WARN,
 			    "device read of %s returned error or packet sniffer failed sync (flags %s)\n",
 			    device->gpsdata.dev.path,
