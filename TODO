@@ -73,6 +73,19 @@ The second 'n' is losing information that it shouldn't.
 
 Display update should not stop while this is going on.
 
+*** Time offset debugging in gpsmon ***
+
+Hall Murray:
+> The gpsmon logging stuff should include time stamps.
+>
+> There should be some way for gpsmon to display the time offset that it would
+> send to NTP via SHM.  I don't see any obvious empty space on the screen.  If
+> nothing else, it could use the PPS space or alternate with the PPS info,
+> perhaps via a keyboard command.
+>
+> Or perhaps a higher level keyboard command to switch into timekeeping
+> debugging mode rather than position debugging mode.
+
 **** Speed, mode and rate-changes in client-mode gpsmon.
 
 Are not implemented.  In theory they could be.
@@ -87,6 +100,28 @@ reliable in client mode.
 We caw now *really* measure latency from GPS top of second when it has
 1PPS.  Add this capability to gpsprof and revise the "Where's the
 Latency?" white paper.
+
+*** Low-pwer autoconfiguration in the uBlox driver ***
+
+Anthony Stirk <upuaut@gmail.com> writes on Wed May 21 06:09:00 2014:
+
+    The low power modes are really good on the ublox modules (especially the
+    MAX7's) however a word of warning.
+
+    We use the 1 sec cyclic mode on our balloon trackers but if the module
+    looses satellites or is jammed out (cheap Chinese cameras do it) the ublox
+    modules seem to hang and become unresponsive. To mitigate against this you
+    need to put the module back in max performance mode as soon as the
+    satellites drops below 4.
+
+    I'm not sure for most applications the low power mode needs to be used at
+    all on the newer ublox modules. The values for the MAX-7Q are 22mA (6Q
+    50mA) under acquire, tracking (i.e locked and in max performance) current
+    at is 17mA  (39mA 6Q) and power saving reduces this to 5mA or less (15mA on
+    the 6Q). We've observed the issue on the 6 and 7 series.
+
+A possibility: drop the chip to low-power mode when it can see > 4
+sats, revert to normal otherwise.
 
 *** Dispatcher/network issues
 
