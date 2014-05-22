@@ -1190,6 +1190,7 @@ def substituter(target, source, env):
         ('@VERSION@',    gpsd_version),
         ('@prefix@',     env['prefix']),
         ('@libdir@',     env['libdir']),
+        ('@udevdir@',    env['udevdir']),
         ('@PYTHON@',     sys.executable),
         ('@DATE@',       time.asctime()),
         ('@MASTER@',     'DO NOT HAND_HACK! THIS FILE IS GENERATED'),
@@ -1282,7 +1283,7 @@ if manbuilder:
 build = env.Alias('build',
                   [libraries, binaries, python_targets,
                    "gpsd.php", manpage_targets,
-                   "libgps.pc", "libgpsd.pc"])
+                   "libgps.pc", "libgpsd.pc", "gpsd.rules"])
 env.Default(*build)
 
 if qt_env:
@@ -1760,6 +1761,9 @@ if env['python']:
 # another window, then run 'scons udev-test', then plug and unplug the
 # GPS ad libitum.  All is well when you get fix reports each time a GPS
 # is plugged in.
+#
+# Note that a udev event can be triggered with an invocation like:
+# udevadm trigger --sysname-match=ttyUSB0 --action add
 
 Utility('udev-install', 'install', [
     'mkdir -p ' + DESTDIR + env['udevdir'] + '/rules.d',
