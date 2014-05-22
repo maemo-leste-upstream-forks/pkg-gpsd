@@ -1,3 +1,11 @@
+gpsd (3.10+dev2~23b0752e-1) experimental; urgency=medium
+
+  * [309428c3] Merge tag 'upstream/3.10+dev2_23b0752e'
+    Upstream version 3.10+dev2~23b0752e
+  * [d8509d0f] Refreshing patches.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 23 May 2014 00:10:24 +0200
+
 gpsd (3.10+dev1~a33bfd44-2) unstable; urgency=medium
 
   * Upload to unstable. 
