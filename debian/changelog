@@ -1,3 +1,11 @@
+gpsd (3.10+dev3~d6b65b48-1) unstable; urgency=medium
+
+  * [4dfc1c93] Merge tag 'upstream/3.10+dev3_d6b65b48'
+    Upstream version 3.10+dev3~d6b65b48
+    Fixes the FTBFS on Hurd (Closes: #738646)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 02 Jun 2014 22:38:47 +0200
+
 gpsd (3.10+dev2~23b0752e-1) experimental; urgency=medium
 
   * [309428c3] Merge tag 'upstream/3.10+dev2_23b0752e'
