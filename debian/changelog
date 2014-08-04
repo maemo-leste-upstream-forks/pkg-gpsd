@@ -1,3 +1,10 @@
+gpsd (3.10+dev3~d6b65b48-2) unstable; urgency=medium
+
+  * [7b5a9811] Set GPSD_SOCKET to the default location.
+    Thanks to Jeremy Laine (Closes: #756488)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 04 Aug 2014 17:19:32 +0200
+
 gpsd (3.10+dev3~d6b65b48-1) unstable; urgency=medium
 
   * [4dfc1c93] Merge tag 'upstream/3.10+dev3_d6b65b48'
