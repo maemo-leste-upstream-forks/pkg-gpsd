@@ -1,4 +1,4 @@
-# Default settings for gpsd.
+# Default settings for the gpsd init script and the hotplug wrapper.
 
 # Start the gpsd daemon automatically at boot time
 START_DAEMON="true"
@@ -11,7 +11,7 @@ USBAUTO="true"
 DEVICES=""
 
 # gpsd control socket location.
-GPSD_SOCKET="/run/gpsd/gpsd.sock"
+GPSD_SOCKET="/var/run/gpsd.sock"
 
 # Other options you want to pass to gpsd
 GPSD_OPTIONS=""
