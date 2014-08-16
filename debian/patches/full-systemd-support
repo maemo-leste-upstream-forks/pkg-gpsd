@@ -77,12 +77,11 @@
  LABEL="gpsd_rules_end"
 --- a/systemd/gpsd.socket
 +++ b/systemd/gpsd.socket
-@@ -3,7 +3,7 @@ Description=GPS (Global Positioning Syst
+@@ -3,6 +3,7 @@ Description=GPS (Global Positioning Syst
  
  [Socket]
  ListenStream=/var/run/gpsd.sock
--ListenStream=127.0.0.1:2947
 +ListenStream=[::1]:2947
+ ListenStream=127.0.0.1:2947
  SocketMode=0600
  
- [Install]
