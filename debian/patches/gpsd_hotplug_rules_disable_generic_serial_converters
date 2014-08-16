@@ -1,0 +1,23 @@
+--- a/gpsd.rules.in
++++ b/gpsd.rules.in
+@@ -22,13 +22,18 @@
+ SUBSYSTEM!="tty", GOTO="gpsd_rules_end"
+ 
+ # Prolific Technology, Inc. PL2303 Serial Port [linux module: pl2303]
+-ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
++# rule disabled in Debian as it matches too many other devices
++#ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
++
+ # ATEN International Co., Ltd UC-232A Serial Port [linux module: pl2303]
+ ATTRS{idVendor}=="0557", ATTRS{idProduct}=="2008", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
+ # PS-360 OEM (GPS sold with MS Street and Trips 2005) [linux module: pl2303]
+ ATTRS{idVendor}=="067b", ATTRS{idProduct}=="aaa0", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
++
+ # FTDI 8U232AM / FT232 [linux module: ftdi_sio]
+-ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
++# rule disabled in Debian as it matches too many other devices
++#ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
++
+ # Cypress M8/CY7C64013 (Delorme uses these) [linux module: cypress_m8]
+ ATTRS{idVendor}=="1163", ATTRS{idProduct}=="0100", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
+ # Cypress M8/CY7C64013 (DeLorme LT-40)
