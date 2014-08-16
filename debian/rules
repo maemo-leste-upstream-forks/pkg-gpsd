@@ -223,7 +223,7 @@ binary: install-stamp
 	dh_installman 
 	dh_installmenu 
 	dh_systemd_enable
-	dh_installinit  -- start 26 2 3 4 5 . stop 73 0 1 6 .
+	dh_installinit
 	dh_systemd_start
 	dh_installexamples 
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/*-packages/gps/gps.py
