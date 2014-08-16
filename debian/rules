@@ -3,6 +3,8 @@
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
 
+DEBIAN_VERSION := $(strip $(shell dpkg-parsechangelog| awk '/Version/{print $$2}'))
+
 LIBGPS_SONAME := $(strip $(shell grep -E '^libgps_version_current' SConstruct | sed 's,.*=[^0-9]*\([0-9]*\).*,\1,'))
 LIBGPSD_SONAME := $(strip $(shell grep -E '^libgpsd_version_current' SConstruct | sed 's,.*=[^0-9]*\([0-9]*\).*,\1,'))
 
@@ -99,12 +101,18 @@ debian/control: debian/control.in
 		fi ;\
 	fi
 
+SConstruct.deb_revision: SConstruct
+	if [ ! -f $@ ]; then \
+		cp $< $@ ;\
+		sed -i '/^revision=/s/%(.*)/%("$(DEBIAN_VERSION)",)/' $< ;\
+	fi
+	touch $@
 
 build-indep: build
 build-arch: build
 
 build: build-stamp build-static-stamp
-build-stamp:
+build-stamp: SConstruct.deb_revision
 	set -e; \
 	    for py in $(PYTHONS); do \
 	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS); \
@@ -121,7 +129,7 @@ endif
 	$(SCONS_ENV) python /usr/bin/scons $(SCONSOPTS) $(shell grep test_ debian/gpsd-dbg.install | grep -v '\.py' | awk '{print $$1}')
 	touch $@
 
-build-static-stamp:
+build-static-stamp: SConstruct.deb_revision
 	mkdir static_lib
 	find . \
 	    -mindepth 1 -maxdepth 1 \
@@ -141,6 +149,10 @@ clean: debian/control
 	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) distclean ; \
 	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) distclean ; \
 	    done
+	# revert revision changes in SConstruct
+	if [ -f SConstruct.deb_revision ]; then \
+	    mv SConstruct.deb_revision SConstruct; \
+	fi
 	rm -rf \
 	    .sconf_temp \
 	    .scons-option-cache \
