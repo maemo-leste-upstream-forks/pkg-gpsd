@@ -1,0 +1,140 @@
+commit f2357b3fbf3b242f3998d2ce6b5e1ecce1f65125
+Author: Miroslav Lichvar <mlichvar@redhat.com>
+Date:   Tue May 27 18:08:19 2014 +0200
+
+    Fix PPS with large offsets.
+    
+    This was broken by commit 575444. The check if the PPS time isn't
+    referenced with an old message time used PPS offset instead of the
+    difference between local PPS time and local time of the last message.
+    The PPS sample was reported via SHM or chrony socket only if the offset
+    was between -1 and 1000001 seconds.
+    
+    Keep the local timestamp of the last fix in struct gps_device_t in
+    addition to the real timestamp and use it to check the PPS delay.
+    Rename the l_offset variable to delay to avoid further confusion.
+
+diff --git a/gpsd.c b/gpsd.c
+index 53d68d1..ffaf680 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -1557,7 +1557,7 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
+ 	//gpsd_report(context.debug, LOG_PROG, "NTP: No time this packet\n");
+     } else if (isnan(device->newdata.time)) {
+ 	//gpsd_report(context.debug, LOG_PROG, "NTP: bad new time\n");
+-    } else if (device->newdata.time == device->last_fixtime) {
++    } else if (device->newdata.time == device->last_fixtime.real) {
+ 	//gpsd_report(context.debug, LOG_PROG, "NTP: Not a new time\n");
+     } else if (!device->ship_to_ntpd) {
+ 	//gpsd_report(context.debug, LOG_PROG, "NTP: No precision time report\n");
+@@ -1588,7 +1588,8 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
+ 	/*@-compdef@*/
+ 	(void)ntpshm_put(device, device->shmIndex, &td);
+ 	/*@+compdef@*/
+-	device->last_fixtime = device->newdata.time;
++	device->last_fixtime.real = device->newdata.time;
++	device->last_fixtime.clock = td.clock.tv_sec + td.clock.tv_nsec / 1e9;
+     }
+ #endif /* NTPSHM_ENABLE */
+ 
+diff --git a/gpsd.h-tail b/gpsd.h-tail
+index 8040094..08e0d59 100644
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -475,7 +475,10 @@ struct gps_device_t {
+     int shmIndexPPS;
+ # endif /* PPS_ENABLE */
+ #endif /* NTPSHM_ENABLE */
+-    volatile timestamp_t last_fixtime;		/* so updates happen once */
++    volatile struct {
++	timestamp_t real;
++	timestamp_t clock;
++    } last_fixtime;	/* so updates happen once */
+ #ifdef PPS_ENABLE
+ #if defined(HAVE_SYS_TIMEPPS_H)
+     pps_handle_t kernelpps_handle;
+diff --git a/gpsmon.c b/gpsmon.c
+index b030979..77b6558 100644
+--- a/gpsmon.c
++++ b/gpsmon.c
+@@ -770,7 +770,7 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
+     report_unlock();
+ 
+     /* Update the last fix time seen for PPS. FIXME: do this here? */
+-    device->last_fixtime = device->newdata.time;
++    device->last_fixtime.real = device->newdata.time;
+ }
+ /*@+observertrans +nullpass +globstate +compdef +uniondef@*/
+ 
+diff --git a/ppsthread.c b/ppsthread.c
+index d9e431e..ed5c7ef 100644
+--- a/ppsthread.c
++++ b/ppsthread.c
+@@ -238,7 +238,7 @@ static int init_kernel_pps(struct gps_device_t *session)
+ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+ {
+     struct gps_device_t *session = (struct gps_device_t *)arg;
+-    double last_fixtime = 0;
++    double last_fixtime_real = 0, last_fixtime_clock = 0;
+ #ifndef HAVE_CLOCK_GETTIME
+     struct timeval  clock_tv = {0, 0};
+ #endif /* HAVE_CLOCK_GETTIME */
+@@ -299,7 +299,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+ 	    break;
+ 	}
+         /* quick, grab a copy of last_fixtime before it changes */
+-	last_fixtime = session->last_fixtime;
++	last_fixtime_real = session->last_fixtime.real;
++	last_fixtime_clock = session->last_fixtime.clock;
+ 
+ /*@-noeffect@*/
+         /* get the time after we just woke up */
+@@ -541,7 +542,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+ 	    log = "Too long for 0.5Hz\n";
+ 	}
+ #endif /* TIOCMIWAIT */
+-	if ( ok && last_second_used >= last_fixtime ) {
++	if ( ok && last_second_used >= last_fixtime_real ) {
+ 		/* uh, oh, this second already handled */
+ 		ok = 0;
+ 		log = "this second already handled\n";
+@@ -550,7 +551,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+ 	if (ok) {
+ 	    /* offset is the skew from expected to observed pulse time */
+ 	    double offset;
+-	    long l_offset;
++	    /* delay after last fix */
++	    double delay;
+ 	    char *log1 = NULL;
+ 	    /* drift.real is the time we think the pulse represents  */
+ 	    struct timedrift_t drift;
+@@ -580,7 +582,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+              */
+ 
+ 	    /*@+relaxtypes@*/
+-	    drift.real.tv_sec = last_fixtime + 1;
++	    drift.real.tv_sec = last_fixtime_real + 1;
+ 	    drift.real.tv_nsec = 0;  /* need to be fixed for 5Hz */
+ 	    drift.clock = clock_ts;
+ 	    /*@-relaxtypes@*/
+@@ -589,15 +591,15 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+ 	     * GPS serial input then use that */
+ 	    offset = (drift.real.tv_sec - drift.clock.tv_sec);
+ 	    offset += ((drift.real.tv_nsec - drift.clock.tv_nsec) / 1e9);
+-	    l_offset = (long) offset;
+-	    if (0 > l_offset || 1000000 < l_offset) {
++	    delay = (drift.clock.tv_sec + drift.clock.tv_nsec / 1e9) - last_fixtime_clock;
++	    if (0.0 > delay || 1.0 < delay) {
+ 		gpsd_report(session->context->debug, LOG_RAW,
+-			    "PPS: no current GPS seconds: %ld\n",
+-			    (long)l_offset);
++			    "PPS: no current GPS seconds: %f\n",
++			    delay);
+ 		log1 = "timestamp out of range";
+ 	    } else {
+ 		/*@-compdef@*/
+-		last_second_used = last_fixtime;
++		last_second_used = last_fixtime_real;
+ 		if (session->thread_report_hook != NULL) 
+ 		    log1 = session->thread_report_hook(session, &drift);
+ 		else

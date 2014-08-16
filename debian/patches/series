@@ -1,1 +1,2 @@
 sconstruct_do_not_clean_test_tools_during_regression_tests
+gpsd-ppsoffset.patch
