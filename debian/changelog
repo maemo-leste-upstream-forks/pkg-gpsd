@@ -1,3 +1,28 @@
+gpsd (3.10+dev3~d6b65b48-3) unstable; urgency=medium
+
+  * [95fcff8b] Add patch to fix PPS with large offsets.
+    Taken from Fedora.
+    Thanks to Miroslav Lichvar <mlichvar@redhat.com>
+  * [27452a76] Use the Debian package version as gpsd revision.
+  * [aca85fbe] Add full systemd hotplug and gpsd options support.
+    gpsdctl.service idea taken from Fedora.
+    Default gpsd.service file enhanced to read options from
+    /etc/default/gpsd.
+    Thanks to Miroslav Lichvar, Eduard Bloch (Closes: #741186)
+  * [72a6a4af] Disable hotplugging of ftdi/pl2302 usb<>serial adapters.
+    These adapters are too common to hit them with the gpsd hotplug script.
+    (Closes: #550964, #696020)
+  * [e60cdd47] Remove start/stop options from dh_installinit.
+    insserv handles boot ordering these days.
+    Thanks to Paul Wise (Closes: #751746)
+  * [5ed9e35e] Run dh_systemd_* on the gpsd package only.
+    Also start gpsd.service only, not gpsdctl.service.
+  * [0e50ca3a] Remove hardening-includes.
+    dpkg-buildflags ships the appropriate hardening flags.
+  * [631b275e] Listen on ipv4 and ipv6.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 16 Aug 2014 21:02:49 +0200
+
 gpsd (3.10+dev3~d6b65b48-2) unstable; urgency=medium
 
   * [7b5a9811] Set GPSD_SOCKET to the default location.
