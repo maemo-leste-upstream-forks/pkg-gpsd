@@ -222,9 +222,9 @@ binary: install-stamp
 	dh_installdocs 
 	dh_installman 
 	dh_installmenu 
-	dh_systemd_enable
+	dh_systemd_enable -pgpsd
 	dh_installinit
-	dh_systemd_start
+	dh_systemd_start -pgpsd --restart-after-upgrade gpsd.service
 	dh_installexamples 
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/*-packages/gps/gps.py
 	dh_python2 -Ngpsd -Ngpsd-clients -Ngpsd-dbg
