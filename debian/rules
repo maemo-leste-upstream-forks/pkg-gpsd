@@ -175,10 +175,6 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	    done
 	# install static lib
 	cp static_lib/libgps.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)
-	# install hotplug wrapper
-	mkdir -p debian/tmp/lib/udev
-	cp gpsd.hotplug debian/tmp/lib/udev
-	chmod 755 debian/tmp/lib/udev/gpsd.hotplug
 	cp INSTALL TROUBLESHOOTING
 	# install systemd files
 	mkdir -p debian/tmp/lib/systemd/system
@@ -220,7 +216,7 @@ binary: install-stamp
 	dh_installmenu 
 	dh_systemd_enable -pgpsd
 	dh_installinit
-	dh_systemd_start -pgpsd --restart-after-upgrade gpsd.service
+	dh_systemd_start -pgpsd --restart-after-upgrade
 	dh_installexamples 
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/*-packages/gps/gps.py
 	dh_python2 -Ngpsd -Ngpsd-clients -Ngpsd-dbg

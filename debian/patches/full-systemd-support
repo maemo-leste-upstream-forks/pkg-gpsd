@@ -11,7 +11,7 @@
  [Install]
  Also=gpsd.socket
 --- /dev/null
-+++ b/systemd/gpsdctl.service
++++ b/systemd/gpsdctl@.service
 @@ -0,0 +1,13 @@
 +[Unit]
 +Description=Manage %I for GPS daemon
