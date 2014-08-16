@@ -1,3 +1,12 @@
+gpsd (3.10+dev3~d6b65b48-4) unstable; urgency=medium
+
+  * [8ae93e0]] Two systemd related changes that were forgotton.
+    - do not install the old hotplug wrapper
+    - don't forget the @ in gpsdctl@.service.
+    Thanks to Jeremy Lainé
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 16 Aug 2014 22:12:33 +0200
+
 gpsd (3.10+dev3~d6b65b48-3) unstable; urgency=medium
 
   * [95fcff8b] Add patch to fix PPS with large offsets.
