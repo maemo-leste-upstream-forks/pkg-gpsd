@@ -248,10 +248,13 @@ static void usage(void)
   -S integer (default %s) = set port for daemon \n\
   -h		     	    = help message \n\
   -V			    = emit version and exit.\n\
-A device may be a local serial device for GPS input, or a URL of the form:\n\
+A device may be a local serial device for GPS input, or a URL in one \n\
+of the following forms:\n\
+     tcp://host[:port]\n\
+     udp://host[:port]\n\
      {dgpsip|ntrip}://[user:passwd@]host[:port][/stream]\n\
      gpsd://host[:port][/device][?protocol]\n\
-in which case it specifies an input source for GPSD, DGPS or ntrip data.\n\
+in which case it specifies an input source for device, DGPS or ntrip data.\n\
 \n\
 The following driver types are compiled into this gpsd instance:\n",
 		 DEFAULT_GPSD_PORT);
@@ -399,11 +402,13 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
 	/* see PF_INET6 case below */
 	s = socket(PF_INET, type, proto);
 	if (s > -1 ) {
+	/*@-unrecog@*/
 	/* Set packet priority */
-	  if (setsockopt(s, IPPROTO_IP, IP_TOS, &dscp, sizeof(dscp)) == -1)
+	if (setsockopt(s, IPPROTO_IP, IP_TOS, &dscp, sizeof(dscp)) == -1)
 	    gpsd_report(context.debug, LOG_WARN,
 			"Warning: SETSOCKOPT TOS failed\n");
 	}
+	/*@+unrecog@*/
 
 	break;
 #ifdef IPV6_ENABLE
@@ -1557,38 +1562,16 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
 	//gpsd_report(context.debug, LOG_PROG, "NTP: No time this packet\n");
     } else if (isnan(device->newdata.time)) {
 	//gpsd_report(context.debug, LOG_PROG, "NTP: bad new time\n");
-    } else if (device->newdata.time == device->last_fixtime) {
+    } else if (device->newdata.time == device->last_fixtime.real) {
 	//gpsd_report(context.debug, LOG_PROG, "NTP: Not a new time\n");
     } else if (!device->ship_to_ntpd) {
 	//gpsd_report(context.debug, LOG_PROG, "NTP: No precision time report\n");
     } else {
-	double fix_time, integral, fractional;
-	struct timedrift_t td;
-
-#ifdef HAVE_CLOCK_GETTIME
-	/*@i2@*/(void)clock_gettime(CLOCK_REALTIME, &td.clock);
-#else
-	struct timeval clock_tv;
-	(void)gettimeofday(&clock_tv, NULL);
-	TVTOTS(&td.clock, &clock_tv);
-#endif /* HAVE_CLOCK_GETTIME */
-	fix_time = device->newdata.time;
-	/* assume zero when there's no offset method */
-	if (device->device_type == NULL
-	    || device->device_type->time_offset == NULL)
-	    fix_time += 0.0;
-	else
-	    fix_time += device->device_type->time_offset(device);
-	/* it's ugly but timestamp_t is double */
-	fractional = modf(fix_time, &integral);
-	/*@-type@*/ /* splint is confused about struct timespec */
-	td.real.tv_sec = (time_t)integral;
-	td.real.tv_nsec = (long)(fractional * 1e+9);
-	/*@+type@*/
 	/*@-compdef@*/
+	struct timedrift_t td;
+	ntpshm_latch(device, &td);
 	(void)ntpshm_put(device, device->shmIndex, &td);
 	/*@+compdef@*/
-	device->last_fixtime = device->newdata.time;
     }
 #endif /* NTPSHM_ENABLE */
 
@@ -1847,7 +1830,7 @@ int main(int argc, char *argv[])
     int i, option;
     int msocks[2] = {-1, -1};
     bool go_background = true;
-    bool in_restart;
+    volatile bool in_restart;
 
     context.debug = 0;
     gps_context_init(&context);
@@ -1912,7 +1895,7 @@ int main(int argc, char *argv[])
 
 #ifdef SYSTEMD_ENABLE
     sd_socket_count = sd_get_socket_count();
-    if (sd_socket_count > 0 && control_socket) {
+    if (sd_socket_count > 0 && control_socket != NULL) {
         gpsd_report(context.debug, LOG_WARN,
                     "control socket passed on command line ignored\n");
         control_socket = NULL;
@@ -2128,7 +2111,9 @@ int main(int argc, char *argv[])
 #ifdef SOCKET_EXPORT_ENABLE
     for (i = 0; i < NITEMS(subscribers); i++) {
 	subscribers[i].fd = UNALLOCATED_FD;
+#ifndef S_SPLINT_S
 	(void)pthread_mutex_init(&subscribers[i].mutex, NULL);
+#endif /* S_SPLINT_S */
     }
 #endif /* SOCKET_EXPORT_ENABLE*/
 
@@ -2191,11 +2176,21 @@ int main(int argc, char *argv[])
 	}
 
     while (0 == signalled) {
+#ifdef EFDS
+	fd_set efds;
+#endif /* EFDS */
 	switch(gpsd_await_data(&rfds, maxfd, &all_fds, context.debug))
 	{
 	case AWAIT_GOT_INPUT:
 	    break;
 	case AWAIT_NOT_READY:
+#ifdef EFDS
+	    for (device = devices; device < devices + MAXDEVICES; device++)
+		if (FD_ISSET(device->gpsdata.gps_fd, &efds)) {
+		    deactivate_device(device);
+		    free_device(device);
+		}
+#endif /* EFDS*/
 	    continue;
 	case AWAIT_FAILED:
 	    exit(EXIT_FAILURE);

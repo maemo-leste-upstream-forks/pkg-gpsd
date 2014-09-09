@@ -48,9 +48,29 @@ accepts an \-h option that displays a usage message, or a \-V option to dump the
 .PP
 This program may be run in either of two modes, as a client for the
 gpsd
-daemon (and its associated control socket) or directly connected to a specified serial device\&. When run with no argument, it attempts to connect to the daemon\&. If the argument looks like a server:port specification it will also attempt to connect to the daemon\&. If the argument looks like a bare server name it will attempt to connect to a daemon running on the default gpsd port on that server\&. Only if the device argument contains slashes but no colons will it be treated as a serial device for direct connection\&. In direct\-connect mode
+daemon (and its associated control socket) or directly connected to a specified serial device\&. When run with no argument, it attempts to connect to the daemon\&. If the argument begins with a server:port specification it will also attempt to connect to the daemon\&. If the argument looks like a bare server name it will attempt to connect to a daemon running on the default gpsd port on that server\&. Only if the device argument contains slashes but no colons will it be treated as a serial device for direct connection\&. In direct\-connect mode
 gpsmon
-will hunt for a correct baud rate and lock on to it automatically\&.
+will hunt for a correct baud rate and lock on to it automatically\&. Possible cases look like this:
+.PP
+localhost:/dev/ttyS1
+.RS 4
+Look at the default port of localhost, trying both IPv4 and IPv6 and watching output from serial device 1\&.
+.RE
+.PP
+example\&.com:2317
+.RS 4
+Look at port 2317 on example\&.com, trying both IPv4 and IPv6\&.
+.RE
+.PP
+71\&.162\&.241\&.5:2317:/dev/ttyS3
+.RS 4
+Look at port 2317 at the specified IPv4 address, collecting data from attached serial device 3\&.
+.RE
+.PP
+[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:2317:/dev/ttyS5
+.RS 4
+Look at port 2317 at the specified IPv6 address, collecting data from attached serial device 5\&.
+.RE
 .PP
 Unlike
 gpsd,
