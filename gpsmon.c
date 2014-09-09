@@ -18,6 +18,7 @@
 #include <sys/time.h>		/* expected to declare select(2) a la SuS */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <fcntl.h>
 #ifndef S_SPLINT_S
 #include <unistd.h>
@@ -26,6 +27,7 @@
 #include "gpsd.h"
 #include "gps_json.h"
 #include "gpsmon.h"
+#include "gpsdclient.h"
 #include "revision.h"
 
 #define BUFLEN		2048
@@ -54,6 +56,7 @@ static WINDOW *statwin, *cmdwin;
 static char *type_name;
 static size_t promptlen = 0;
 struct termios cooked, rare;
+struct fixsource_t source;
 
 #ifdef PASSTHROUGH_ENABLE
 /* no methods, it's all device window */
@@ -340,8 +343,13 @@ static /*@observer@*/ const char *promptgen(void)
 		       9 - session.gpsdata.dev.stopbits,
 		       session.gpsdata.dev.parity,
 		       session.gpsdata.dev.stopbits);
-    else
+    else {
 	(void)strlcpy(buf, session.gpsdata.dev.path, sizeof(buf));
+	if (source.device != NULL) {
+	    (void) strlcat(buf, ":", sizeof(buf));
+	    (void) strlcat(buf, source.device, sizeof(buf));
+	}
+    }
     return buf;
 }
 
@@ -690,6 +698,7 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 /* per-packet hook */
 {
     char buf[BUFSIZ];
+    struct timedrift_t td;
 
 #ifdef PPS_ENABLE
     if (!serial && strncmp((char*)device->packet.outbuffer, "{\"class\":\"PPS\",", 13) == 0)
@@ -770,7 +779,7 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
     report_unlock();
 
     /* Update the last fix time seen for PPS. FIXME: do this here? */
-    device->last_fixtime = device->newdata.time;
+    ntpshm_latch(device, &td);
 }
 /*@+observertrans +nullpass +globstate +compdef +uniondef@*/
 
@@ -1069,7 +1078,7 @@ static const char *cmdline;
 int main(int argc, char **argv)
 {
     int option;
-    char *explanation, *devicename;
+    char *explanation;
     int bailout = 0, matches = 0;
     bool nmea = false;
     fd_set all_fds;
@@ -1179,19 +1188,32 @@ int main(int argc, char **argv)
     gpsd_time_init(&context, time(NULL));
     gpsd_init(&session, &context, NULL);
 
-    if (optind >= argc)
-	devicename = "gpsd://localhost:" DEFAULT_GPSD_PORT;
-    else 
-	devicename = argv[optind];
+    /* Grok the server, port, and device. */
+    if (optind < argc) {
+	serial = (strncmp(argv[optind], "/dev", 4) == 0);
+	gpsd_source_spec(argv[optind], &source);
+    } else {
+	serial = false;
+	gpsd_source_spec(NULL, &source);
+    }
 
-    /* backward compatibilty: accept a bare server name */
-    if (strchr(devicename, ':') == NULL && devicename[0] != '/')
+    if (serial) {
+	assert(source.device != NULL);	/* clue to splint */
 	(void) strlcpy(session.gpsdata.dev.path, 
-		       "tcp://", sizeof(session.gpsdata.dev.path));
-    else
-	session.gpsdata.dev.path[0] = '\0';
-    (void)strlcat(session.gpsdata.dev.path, devicename,
-		  sizeof(session.gpsdata.dev.path));
+		       source.device, 
+		       sizeof(session.gpsdata.dev.path));
+    } else {
+	assert(source.server != NULL);	/* clue to splint */
+	if (strstr(source.server, "//") == 0)
+	    (void) strlcpy(session.gpsdata.dev.path, 
+			   "tcp://",
+			   sizeof(session.gpsdata.dev.path));
+	else
+	    session.gpsdata.dev.path[0] = '\0';
+	(void)snprintf(session.gpsdata.dev.path + strlen(session.gpsdata.dev.path),
+		       sizeof(session.gpsdata.dev.path) - strlen(session.gpsdata.dev.path),
+		       "%s:%s", source.server, source.port);
+    }
 
     if (gpsd_activate(&session, O_PROBEONLY) == -1) {
 	(void)fprintf(stderr,
@@ -1200,7 +1222,6 @@ int main(int argc, char **argv)
 	exit(EXIT_FAILURE);
     }
 
-    serial = (strncmp(devicename, "/dev", 4) == 0);
 
     if (serial) {
 #ifdef PPS_ENABLE
@@ -1209,8 +1230,10 @@ int main(int argc, char **argv)
 #endif /* PPS_ENABLE */
     }
     else {
-	/* FIXME: Also use WATCH*DEVICE here someday */
-	(void)gps_send(&session.gpsdata, nmea ? WATCHNMEA : WATCHRAW);
+	if (source.device != NULL)
+	    (void)gps_send(&session.gpsdata, nmea ? WATCHNMEADEVICE : WATCHRAWDEVICE, source.device);
+	else
+	    (void)gps_send(&session.gpsdata, nmea ? WATCHNMEA : WATCHRAW);
     }
 
     /*
@@ -1258,11 +1281,19 @@ int main(int argc, char **argv)
 
 	for (;;) 
 	{
+#ifdef EFDS
+	    fd_set efds;
+#endif /* EFDS */
 	    switch(gpsd_await_data(&rfds, maxfd, &all_fds, context.debug))
 	    {
 	    case AWAIT_GOT_INPUT:
 		break;
 	    case AWAIT_NOT_READY:
+#ifdef EFDS
+		/* no recovery from bad fd is possible */
+		if (FD_ISSET(session.gpsdata.gps_fd, &efds))
+		    longjmp(terminate, TERM_SELECT_FAILED);
+#endif /* EFDS */
 		continue;
 	    case AWAIT_FAILED:
 		longjmp(terminate, TERM_SELECT_FAILED);

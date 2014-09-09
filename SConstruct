@@ -24,7 +24,7 @@
 # * Coveraging mode: gcc "-coverage" flag requires a hack for building the python bindings
 
 # Release identification begins here
-gpsd_version = "3.11~dev"
+gpsd_version = "3.11"
 
 # library version
 libgps_version_current   = 21
@@ -90,7 +90,8 @@ def _getoutput(cmd, input=None, cwd=None, env=None):
 # Start by reading configuration variables from the cache
 opts = Variables('.scons-option-cache')
 
-systemd = os.path.exists("/usr/share/systemd/system")
+systemd_dir = '/lib/systemd/system'
+systemd = os.path.exists(systemd_dir)
 
 # Set distribution-specific defaults here
 imloads = True
@@ -146,7 +147,8 @@ boolopts = (
     ("clientdebug",   True,  "client debugging support"),
     ("oldstyle",      True,  "oldstyle (pre-JSON) protocol support"),
     ("libgpsmm",      True,  "build C++ bindings"),
-    ("libQgpsmm",     True,  "build QT bindings"),
+    ("libQgpsmm",     True,  "build QT bindings (deprecated alias)"),
+    ("qt",            True,  "build QT bindings"),
     # Daemon options
     ("reconfigure",   True,  "allow gpsd to change device settings"),
     ("controlsend",   True,  "allow gpsctl/gpsmon to change device settings"),
@@ -289,6 +291,7 @@ def installdir(dir, add_destdir=True):
     if add_destdir:
         wrapped = os.path.normpath(DESTDIR + os.path.sep + wrapped)
     wrapped.replace("/usr/etc", "/etc")
+    wrapped.replace("/usr/lib/systemd", "/lib/systemd")
     return wrapped
 
 # Honor the specified installation prefix in link paths.
@@ -296,13 +299,9 @@ if env["sysroot"]:
     env.Prepend(LIBPATH=[env["sysroot"] + installdir('libdir', add_destdir=False)])
 
 # Don't hack RPATH unless libdir points somewhere that is not on the
-# system default load path. /lib and /usr/lib should always be on
-# this; listing them explicitly is a fail-safe against this ldconfig
-# invocation not doing what we expect.
+# minimum default load path.
 if env["shared"]:
-    sysrpath = Split(_getoutput("ldconfig -v -N -X 2>/dev/null | sed -n -e '/^\//s/://p'"))
-    if env["libdir"] not in ["/usr/lib", "/lib"] + sysrpath:
-        announce("Prepending %s to RPATH." % installdir('libdir', False))
+    if env["libdir"] not in ["/usr/lib", "/lib"]:
         env.Prepend(RPATH=[installdir('libdir')])
 
 # Give deheader a way to set compiler flags
@@ -586,6 +585,18 @@ else:
         bluezlibs = []
         env["bluez"] = False
 
+    #in_port_t is not defined on Android
+    if not config.CheckType("in_port_t","#include <netinet/in.h>"):
+        announce("Did not find in_port_t typedef, assuming unsigned short int")
+        confdefs.append("typedef unsigned short int in_port_t;\n")
+
+    #SUN_LEN is not defined on Android
+    if not config.CheckDeclaration("SUN_LEN", "#include <sys/un.h>") and not config.CheckDeclaration("SUN_LEN", "#include <linux/un.h>"):
+        announce("SUN_LEN is not system-defined, using local definition")
+        confdefs.append("#ifndef SUN_LEN\n")
+        confdefs.append("#define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) + strlen((ptr)->sun_path))\n")
+        confdefs.append("#endif /* SUN_LEN */\n")
+
     if config.CheckHeader(["bits/sockaddr.h", "linux/can.h"]):
         confdefs.append("#define HAVE_LINUX_CAN_H 1\n")
         announce("You have kernel CANbus available.")
@@ -626,7 +637,7 @@ else:
 
     # check function after libraries, because some function require library
     # for example clock_gettime() require librt on Linux
-    for f in ("daemon", "strlcpy", "strlcat", "clock_gettime"):
+    for f in ("daemon", "strlcpy", "strlcat", "clock_gettime","getsid"):
         if config.CheckFunc(f):
             confdefs.append("#define HAVE_%s 1\n" % f.upper())
         else:
@@ -685,6 +696,7 @@ else:
 # ifdef __cplusplus
 extern "C" {
 # endif
+#include <string.h>
 size_t strlcat(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
 # ifdef __cplusplus
 }
@@ -694,11 +706,23 @@ size_t strlcat(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
 # ifdef __cplusplus
 extern "C" {
 # endif
+#include <string.h>
 size_t strlcpy(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
 # ifdef __cplusplus
 }
 # endif
 #endif
+#ifndef HAVE_GETSID
+# ifdef __cplusplus
+extern "C" {
+# endif
+#include <unistd.h>
+pid_t getsid(pid_t pid);
+# ifdef __cplusplus
+}
+# endif
+#endif
+
 
 #define GPSD_CONFIG_H
 ''')
@@ -725,7 +749,7 @@ size_t strlcpy(/*@out@*/char *dst, /*@in@*/const char *src, size_t size);
         env['BUILDERS']["HTML"] = Builder(action=htmlbuilder,
                                           src_suffix=".xml", suffix=".html")
 
-    qt_network = env['libQgpsmm'] and config.CheckPKG('QtNetwork')
+    qt_network = env['qt'] and env['libQgpsmm'] and config.CheckPKG('QtNetwork')
 
     env = config.Finish()
 
@@ -783,6 +807,7 @@ libgps_sources = [
     "rtcm3_json.c",
     "shared_json.c",
     "strl.c",
+    "getsid.c",
 ]
 
 if env['libgpsmm']:
@@ -1017,7 +1042,7 @@ cgps = env.Program('cgps', ['cgps.c'], parse_flags=gpslibs + ncurseslibs)
 env.Depends(cgps, compiled_gpslib)
 
 binaries = [gpsd, gpsdecode, gpsctl, gpsdctl, gpspipe, gps2udp, gpxlogger, lcdgps]
-if ncurseslibs:
+if env["ncurses"]:
     binaries += [cgps, gpsmon]
 
 # Test programs
@@ -1183,6 +1208,12 @@ if 'dev' in gpsd_version or not os.path.exists('leapseconds.cache'):
     env.Precious(leapseconds_cache)
     env.AlwaysBuild(leapseconds_cache)
 
+if env['systemd']:
+    udevcommand = 'TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"'
+else:
+    udevcommand = 'RUN+="%s/gpsd.hotplug"' %(env['udevdir'], )
+
+
 # Instantiate some file templates.  We'd like to use the Substfile builtin
 # but it doesn't seem to work in scons 1.20
 def substituter(target, source, env):
@@ -1190,7 +1221,7 @@ def substituter(target, source, env):
         ('@VERSION@',    gpsd_version),
         ('@prefix@',     env['prefix']),
         ('@libdir@',     env['libdir']),
-        ('@udevdir@',    env['udevdir']),
+        ('@udevcommand@',    udevcommand),
         ('@PYTHON@',     sys.executable),
         ('@DATE@',       time.asctime()),
         ('@MASTER@',     'DO NOT HAND_HACK! THIS FILE IS GENERATED'),
@@ -1305,7 +1336,7 @@ headerinstall = [ env.Install(installdir('includedir'), x) for x in ("libgpsmm.h
 binaryinstall = []
 binaryinstall.append(env.Install(installdir('sbindir'), [gpsd, gpsdctl]))
 binaryinstall.append(env.Install(installdir('bindir'),  [gpsdecode, gpsctl, gpspipe, gps2udp, gpxlogger, lcdgps]))
-if ncurseslibs:
+if env["ncurses"]:
     binaryinstall.append(env.Install(installdir('bindir'), [cgps, gpsmon]))
 binaryinstall.append(LibraryInstall(env, installdir('libdir'), compiled_gpslib))
 binaryinstall.append(LibraryInstall(env, installdir('libdir'), compiled_gpsdlib))
@@ -1345,6 +1376,7 @@ pc_install = [ env.Install(installdir('pkgconfig'), x) for x in ("libgps.pc", "l
 if qt_env:
     pc_install.append(qt_env.Install(installdir('pkgconfig'), 'Qgpsmm.pc'))
     pc_install.append(qt_env.Install(installdir('libdir'), 'libQgpsmm.prl'))
+
 
 
 maninstall = []
@@ -1426,7 +1458,7 @@ for (target,sources,description,params) in splint_table:
 # Putting in all these -U flags speeds up cppcheck and allows it to look
 # at configurations we actually care about.
 Utility("cppcheck", ["gpsd.h", "packet_names.h"],
-        "cppcheck -U__UNUSED__ -US_SPLINT_S -U__COVERITY__ -U__future__ -ULIMITED_MAX_CLIENTS -ULIMITED_MAX_DEVICES -UAF_UNSPEC -UINADDR_ANY -UFIXED_PORT_SPEED -UFIXED_STOP_BITS -U_WIN32 -U__CYGWIN__ -UPATH_MAX -UHAVE_STRLCAT -UHAVE_STRLCPY --template gcc --enable=all --inline-suppr --suppress='*:driver_proto.c' --force $SRCDIR")
+        "cppcheck -U__UNUSED__ -UUSE_QT -US_SPLINT_S -U__COVERITY__ -U__future__ -ULIMITED_MAX_CLIENTS -ULIMITED_MAX_DEVICES -UAF_UNSPEC -UINADDR_ANY -UFIXED_PORT_SPEED -UFIXED_STOP_BITS -U_WIN32 -U__CYGWIN__ -UPATH_MAX -UHAVE_STRLCAT -UHAVE_STRLCPY -UIPTOS_LOWDELAY -UIPV6_TCLASS -UTCP_NODELAY -UTIOCMIWAIT --template gcc --enable=all --inline-suppr --suppress='*:driver_proto.c' --force $SRCDIR")
 
 # Experimental check with clang analyzer
 Utility("scan-build", ["gpsd.h", "packet_names.h"],
@@ -1434,7 +1466,7 @@ Utility("scan-build", ["gpsd.h", "packet_names.h"],
 
 # Sanity-check Python code.
 pylint = Utility("pylint", ["jsongen.py", "maskaudit.py", python_built_extensions],
-        ['''pylint --output-format=parseable --reports=n --include-ids=y --disable=F0001,C0103,C0111,C0301,C0302,C0322,C0324,C0323,C0321,R0201,R0801,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0924,W0201,W0232,W0401,W0403,W0141,W0142,W0603,W0614,W0621,E1101,E1102,F0401 jsongen.py leapsecond.py maskaudit.py gpsprof.py gpscat.py gpsfake.py gegps.py gps/*.py xgps'''])
+        ['''pylint --rcfile=/dev/null --dummy-variables-rgx='^_' --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" --reports=n --disable=F0001,C0103,C0111,C1001,C0301,C0302,C0322,C0324,C0323,C0321,R0201,R0801,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,W0110,W0201,W0121,W0232,W0234,W0401,W0403,W0141,W0142,W0603,W0614,W0621,E1101,E1102,F0401 jsongen.py leapsecond.py maskaudit.py gpsprof.py gpscat.py gpsfake.py gegps.py gps/*.py xgps'''])
 
 # Check the documentation for bogons, too
 Utility("xmllint", glob.glob("*.xml"),
@@ -1762,15 +1794,43 @@ if env['python']:
 # GPS ad libitum.  All is well when you get fix reports each time a GPS
 # is plugged in.
 #
+# In case you are a systemd user you might also need to watch the
+# journalctl output. Instead of the hotplug script the gpsdctl@.service
+# unit will handle hotplugging together with the udev rules.
+#
 # Note that a udev event can be triggered with an invocation like:
 # udevadm trigger --sysname-match=ttyUSB0 --action add
 
-Utility('udev-install', 'install', [
+if env['systemd']:
+    systemdinstall_target = [ env.Install(DESTDIR + systemd_dir, "systemd/%s" %(x,)) for x in ("gpsdctl@.service", "gpsd.service", "gpsd.socket") ]
+    systemd_install = env.Alias('systemd_install', systemdinstall_target)
+    systemd_uninstall = env.Command('systemd_uninstall', '', Flatten(Uninstall(Alias("systemd_install"))) or "")
+
+    env.AlwaysBuild(systemd_uninstall)
+    env.Precious(systemd_uninstall)
+
+
+if env['systemd']:
+    hotplug_wrapper_install = []
+else:
+    hotplug_wrapper_install = [
+        'cp $SRCDIR/gpsd.hotplug ' + DESTDIR + env['udevdir'],
+        'chmod a+x ' + DESTDIR + env['udevdir'] + '/gpsd.hotplug'
+    ]
+
+udev_install = Utility('udev-install', 'install', [
     'mkdir -p ' + DESTDIR + env['udevdir'] + '/rules.d',
     'cp $SRCDIR/gpsd.rules ' + DESTDIR + env['udevdir'] + '/rules.d/25-gpsd.rules',
-    'cp $SRCDIR/gpsd.hotplug ' + DESTDIR + env['udevdir'],
-    'chmod a+x ' + DESTDIR + env['udevdir'] + '/gpsd.hotplug',
-        ])
+    ] + hotplug_wrapper_install)
+
+if env['systemd']:
+    systemctl_daemon_reload = Utility('systemctl-daemon-reload', '', [ 'systemctl daemon-reload || true'])
+    env.AlwaysBuild(systemctl_daemon_reload)
+    env.Precious(systemctl_daemon_reload)
+    env.Requires(udev_install, systemd_install)
+    env.Requires(systemctl_daemon_reload, systemd_install)
+    env.Requires(udev_install, systemctl_daemon_reload)
+
 
 Utility('udev-uninstall', '', [
     'rm -f %s/gpsd.hotplug' % env['udevdir'],
@@ -1785,7 +1845,7 @@ Utility('udev-test', '', [
 
 # Ordinary cleanup
 clean = env.Clean(build,
-          map(glob.glob,("*.[oa]", "*.os", "*.os.*", "*.gcno", "*.pyc", "gps/*.pyc", "TAGS")) + \
+          map(glob.glob,("*.[oa]", "*.[1358]", "*.os", "*.os.*", "*.gcno", "*.pyc", "gps/*.pyc", "TAGS")) + testprogs + \
           generated_sources + base_manpages.keys() + \
           map(lambda f: f[:-3], templated))
 
