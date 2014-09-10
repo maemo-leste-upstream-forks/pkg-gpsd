@@ -1,3 +1,12 @@
+gpsd (3.11-1) unstable; urgency=medium
+
+  * [325d1900] Merge tag 'upstream/3.11'
+    Upstream version 3.11
+  * [8d86b938] Refreshing patches.
+  * [877cbcf3] Update symbols file.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 10 Sep 2014 21:59:28 +0200
+
 gpsd (3.10+dev3~d6b65b48-4) unstable; urgency=medium
 
   * [8ae93e0]] Two systemd related changes that were forgotton.
