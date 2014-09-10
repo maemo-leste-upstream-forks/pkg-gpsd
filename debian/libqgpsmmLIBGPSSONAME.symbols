@@ -37,10 +37,11 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"export_lookup(char const*)@Base" 3.5
  (c++)"gps_dbus_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
  (c++)"gps_dbus_open(gps_data_t*)@Base" 3.5
- (c++|optional)"gpsd_hexdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
- (c++|optional)"gpsd_hexdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
+#MISSING: 3.11-1# (c++|optional)"gpsd_hexdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
+#MISSING: 3.11-1# (c++|optional)"gpsd_hexdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
 #MISSING: 3.10-1# (c++|optional)"gpsd_hexdump(char*, unsigned int)@Base" 3.5
 #MISSING: 3.10-1# (c++|optional)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
+ gpsd_hexdump@Base 3.11
  (c++)"gpsd_source_spec(char const*, fixsource_t*)@Base" 3.5
  (c++)"gpsd_units()@Base" 3.5
  (c++|optional)"gps_shm_close(gps_data_t*)@Base" 3.5
@@ -48,18 +49,15 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++|optional)"gps_shm_open(gps_data_t*)@Base" 3.5
  (c++|optional)"gps_shm_read(gps_data_t*)@Base" 3.5
  (c++|optional)"gps_shm_waiting(gps_data_t const*, int)@Base" 3.5
- (c++)"hex_escapes(char*, char const*)@Base" 3.5
- (c++)"libgps_dump_state(gps_data_t*)@Base" 3.5
+#MISSING: 3.11-1# (c++)"libgps_dump_state(gps_data_t*)@Base" 3.5
+ libgps_dump_state@Base 3.11
  (c++)"maidenhead(double, double)@Base" 3.5
- (c++)"netlib_connectsock(int, char const*, char const*, char const*)@Base" 3.5
- (c++)"netlib_errstr(int)@Base" 3.5
- (c++)"netlib_localsocket(char const*, int)@Base" 3.5
- (c++)"netlib_sock2ip(int)@Base" 3.5
  (c++)"true2magnetic(double, double, double)@Base" 3.5
- (c++|optional)"gpsd_packetdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
- (c++|optional)"gpsd_packetdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
+#MISSING: 3.11-1# (c++|optional)"gpsd_packetdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
+#MISSING: 3.11-1#  (c++|optional)"gpsd_packetdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
 #MISSING: 3.10-1# (c++|optional)"gpsd_packetdump(char*, unsigned int)@Base" 3.9
 #MISSING: 3.10-1# (c++|optional)"gpsd_packetdump(char*, unsigned long)@Base" 3.9
+ gpsd_packetdump@Base 3.11
  (c++)"sbits(signed char*, unsigned int, unsigned int, bool)@Base" 3.9
  (c++)"ubits(unsigned char*, unsigned int, unsigned int, bool)@Base" 3.9
  (c++)"getbed64(char const*, int)@Base" 3.9
@@ -94,7 +92,8 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  gpsd_hexpack@Base 3.3
 #MISSING: 3.5-1# gpsd_source_spec@Base 3.3
 #MISSING: 3.5-1# gpsd_units@Base 3.3
-#MISSING: 3.5-1# hex_escapes@Base 3.3
+#MISSING: 3.11-1# (c++)"hex_escapes(char*, char const*)@Base" 3.5
+ hex_escapes@Base 3.11
  iso8601_to_unix@Base 3.3
  json_ais_read@Base 3.3
  json_device_read@Base 3.3
@@ -107,15 +106,18 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  json_rtcm3_read@Base 3.10
  json_watch_read@Base 3.3
  libgps_debuglevel@Base 3.3
-#MISSING: 3.5-1# libgps_dump_state@Base 3.3
  libgps_json_unpack@Base 3.3
  libgps_trace@Base 3.3
 #MISSING: 3.5-1# maidenhead@Base 3.3
  mkgmtime@Base 3.3
-#MISSING: 3.5-1# netlib_connectsock@Base 3.3
-#MISSING: 3.5-1# netlib_errstr@Base 3.3
-#MISSING: 3.5-1# netlib_localsocket@Base 3.3
-#MISSING: 3.5-1# netlib_sock2ip@Base 3.3
+ netlib_connectsock@Base 3.11
+ netlib_errstr@Base 3.11
+ netlib_localsocket@Base 3.11
+ netlib_sock2ip@Base 3.11
+#MISSING: 3.11-1# (c++)"netlib_connectsock(int, char const*, char const*, char const*)@Base" 3.5
+#MISSING: 3.11-1# (c++)"netlib_errstr(int)@Base" 3.5
+#MISSING: 3.11-1# (c++)"netlib_localsocket(char const*, int)@Base" 3.5
+#MISSING: 3.11-1# (c++)"netlib_sock2ip(int)@Base" 3.5
  safe_atof@Base 3.3
  strlcat@Base 3.3
  strlcpy@Base 3.3
