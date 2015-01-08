@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/bash
 # preinst script for gpsd
 #
 # see: dh_installdeb(1)
@@ -12,9 +12,13 @@ case "$1" in
             # move config file
             if [ -f /etc/default/gpsd ]; then
                 cp /etc/default/gpsd /etc/default/gpsd.dpkg-pre_3.10
-                if [ "$(md5sum /etc/default/gpsd | awk '{print $1}')" = "5944bab322c2a6df28cf0e64f7f7ec86" ]; then
-                    rm -f /etc/default/gpsd
-                fi
+                gpsd_hashsum="$(md5sum /etc/default/gpsd | awk '{print $1}')"
+                # handle upgrades from squeeze -> wheeze -> jessie
+                case ${gpsd_hashsum} in
+                    5944bab322c2a6df28cf0e64f7f7ec86|4d3f8665963201dc74721ef06bf27989)
+                        rm -f /etc/default/gpsd
+                    ;;
+                esac
             fi
         fi
     ;;
