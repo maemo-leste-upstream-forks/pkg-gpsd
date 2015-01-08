@@ -1,3 +1,10 @@
+gpsd (3.11-2) unstable; urgency=medium
+
+  * [a759614c] Avoid prompting due to modified squeeze conffiles.
+    Thanks to Andreas Beckmann (Closes: #774872)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 08 Jan 2015 21:35:30 +0100
+
 gpsd (3.11-1) unstable; urgency=medium
 
   * [325d1900] Merge tag 'upstream/3.11'
