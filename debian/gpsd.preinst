@@ -13,9 +13,10 @@ case "$1" in
             if [ -f /etc/default/gpsd ]; then
                 cp /etc/default/gpsd /etc/default/gpsd.dpkg-pre_3.10
                 gpsd_hashsum="$(md5sum /etc/default/gpsd | awk '{print $1}')"
-                # handle upgrades from squeeze -> wheeze -> jessie
+                # handle upgrades from lenny -> squeeze -> wheeze -> jessie
                 case ${gpsd_hashsum} in
-                    5944bab322c2a6df28cf0e64f7f7ec86|4d3f8665963201dc74721ef06bf27989)
+                    # wheezy                         # squeeze                        # lenny                          # lenny -> squeeze -> wheezy
+                    5944bab322c2a6df28cf0e64f7f7ec86|4d3f8665963201dc74721ef06bf27989|d19811464c448c0852ad541be3f7fdc3|370942c4da267af152f6c3178137e60f)
                         rm -f /etc/default/gpsd
                     ;;
                 esac
