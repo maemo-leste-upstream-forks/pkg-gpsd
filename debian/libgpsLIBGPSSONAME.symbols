@@ -86,6 +86,8 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  sbits@Base 3.5-4~
  strlcat@Base 3.3
  strlcpy@Base 3.3
+ shiftleft@Base 3.12
+ timespec_str@Base 3.12
  timestamp@Base 3.3
  true2magnetic@Base 3.3
  ubits@Base 3.5-4~
