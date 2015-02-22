@@ -1,6 +1,6 @@
 --- a/SConstruct
 +++ b/SConstruct
-@@ -1685,7 +1685,6 @@ check = env.Alias('check', [
+@@ -1746,7 +1746,6 @@ check = env.Alias('check', [
      time_regress,
      unpack_regress,
      json_regress,
