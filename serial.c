@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #endif /* S_SPLINT_S */
+#include <sys/param.h>	/* defines BSD */
 
 #include "gpsd_config.h"
 #ifdef HAVE_BLUEZ
@@ -47,11 +48,19 @@ static sourcetype_t gpsd_classify(const char *path)
     /* this assumes we won't get UDP from a filesystem socket */
     else if (S_ISSOCK(sb.st_mode))
 	return source_tcp;
+    /* OS-independent check for ptys using Unix98 naming convention */
+    else if (strncmp(path, "/dev/pts/", 9) == 0)
+	return source_pty;
     else if (S_ISCHR(sb.st_mode)) {
 	sourcetype_t devtype = source_rs232;
 #ifdef __linux__
 	/* Linux major device numbers live here
+	 *
 	 * https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devices.txt
+	 *
+	 * Note: This code works because Linux major device numbers are
+	 * stable and architecture-independent.  It is *not* a good model
+	 * for other Unixes where either or both assumptions may break.
 	 */
 	int devmajor = major(sb.st_rdev);
         /* 207 are Freescale i.MX UARTs (ttymxc*) */
@@ -64,6 +73,43 @@ static sourcetype_t gpsd_classify(const char *path)
 	else if (devmajor == 3 || (devmajor >= 136 && devmajor <= 143))
 	    devtype = source_pty;
 #endif /* __linux__ */
+	/*
+	 * See http://nadeausoftware.com/articles/2012/01/c_c_tip_how_use_compiler_predefined_macros_detect_operating_system
+	 * for discussion how this works.  Key graphs:
+	 *
+	 * Compilers for the old BSD base for these distributions
+	 * defined the __bsdi__ macro, but none of these distributions
+	 * define it now. This leaves no generic "BSD" macro defined
+	 * by the compiler itself, but all UNIX-style OSes provide a
+	 * <sys/param.h> file. On BSD distributions, and only on BSD
+	 * distributions, this file defines a BSD macro that's set to
+	 * the OS version. Checking for this generic macro is more
+	 * robust than looking for known BSD distributions with
+	 * __DragonFly__, __FreeBSD__, __NetBSD__, and __OpenBSD__
+	 * macros.
+	 *
+	 * Apple's OSX for the Mac and iOS for iPhones and iPads are
+	 * based in part on a fork of FreeBSD distributed as
+	 * Darwin. As such, OSX and iOS also define the BSD macro
+	 * within <sys/param.h>. However, compilers for OSX, iOS, and
+	 * Darwin do not define __unix__. To detect all BSD OSes,
+	 * including OSX, iOS, and Darwin, use an #if/#endif that
+	 * checks for __unix__ along with __APPLE__ and __MACH__ (see
+	 * the later section on OSX and iOS).
+	 */
+#ifdef BSD
+	/*
+	 * Hacky check for pty, which is what really matters for avoiding
+	 * adaptive delay.
+	 */
+	if (strncmp(path, "/dev/ttyp", 9) == 0 ||
+	    strncmp(path, "/dev/ttyq", 9) == 0)
+	    devtype = source_pty;
+	else if (strncmp(path, "/dev/ttyU", 9) == 0 ||
+	    strncmp(path, "/dev/dtyU", 9) == 0)
+	    devtype = source_usb;
+	/* XXX bluetooth */
+#endif /* BSD */
 	return devtype;
     } else
 	return source_unknown;
@@ -195,7 +241,7 @@ bool gpsd_set_raw(struct gps_device_t * session)
 {
     (void)cfmakeraw(&session->ttyset);
     if (tcsetattr(session->gpsdata.gps_fd, TCIOFLUSH, &session->ttyset) == -1) {
-	gpsd_report(session->context->debug, LOG_ERROR,
+	gpsd_report(&session->context->errout, LOG_ERROR,
 		    "error changing port attributes: %s\n", strerror(errno));
 	return false;
     }
@@ -328,7 +374,7 @@ void gpsd_set_speed(struct gps_device_t *session,
 	(void)usleep(200000);
 	(void)tcflush(session->gpsdata.gps_fd, TCIOFLUSH);
     }
-    gpsd_report(session->context->debug, LOG_INF,
+    gpsd_report(&session->context->errout, LOG_INF,
 		"speed %u, %d%c%d\n",
 		gpsd_get_speed(session), 9 - stopbits, parity,
 		stopbits);
@@ -359,7 +405,7 @@ void gpsd_set_speed(struct gps_device_t *session,
 		session->device_type->event_hook(session, event_wakeup);
 	}
     }
-    packet_reset(&session->packet);
+    packet_reset(&session->lexer);
 }
 
 int gpsd_serial_open(struct gps_device_t *session)
@@ -374,11 +420,11 @@ int gpsd_serial_open(struct gps_device_t *session)
     if (session->context->readonly
 	|| (session->sourcetype <= source_blockdev)) {
 	mode = (mode_t) O_RDONLY;
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "opening read-only GPS data source type %d and at '%s'\n",
 		    (int)session->sourcetype, session->gpsdata.dev.path);
     } else {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "opening GPS data source type %d at '%s'\n",
 		    (int)session->sourcetype, session->gpsdata.dev.path);
     }
@@ -395,37 +441,40 @@ int gpsd_serial_open(struct gps_device_t *session)
         if (connect(session->gpsdata.gps_fd, (struct sockaddr *) &addr, sizeof (addr)) == -1) {
 	    if (errno != EINPROGRESS && errno != EAGAIN) {
 		(void)close(session->gpsdata.gps_fd);
-		gpsd_report(session->context->debug, LOG_ERROR,
+		gpsd_report(&session->context->errout, LOG_ERROR,
 			    "bluetooth socket connect failed: %s\n",
 			    strerror(errno));
 		return -1;
 	    }
-	    gpsd_report(session->context->debug, LOG_ERROR,
+	    gpsd_report(&session->context->errout, LOG_ERROR,
 			"bluetooth socket connect in progress or again : %s\n",
 			strerror(errno));
         }
-	(void)fcntl(session->gpsdata.gps_fd, F_SETFL, (int)mode | O_NONBLOCK);
-	gpsd_report(session->context->debug, LOG_PROG,
+	(void)fcntl(session->gpsdata.gps_fd, F_SETFL, (int)mode);
+	gpsd_report(&session->context->errout, LOG_PROG,
 		    "bluez device open success: %s %s\n",
 		    session->gpsdata.dev.path, strerror(errno));
     } else
 #endif /* BLUEZ */
     {
+	/*
+	 * We open with O_NONBLOCK because we want to now get hung if
+	 * the clocal flag is off, but we don't want to stay in that mode.
+	 */
         if ((session->gpsdata.gps_fd =
-	     open(session->gpsdata.dev.path,
-		      (int)(mode | O_NONBLOCK | O_NOCTTY))) == -1) {
-            gpsd_report(session->context->debug, LOG_ERROR,
+	     open(session->gpsdata.dev.path, (int)(mode | O_NONBLOCK | O_NOCTTY))) == -1) {
+            gpsd_report(&session->context->errout, LOG_ERROR,
 			    "device open failed: %s - retrying read-only\n",
 			    strerror(errno));
 	    if ((session->gpsdata.gps_fd =
-		 open(session->gpsdata.dev.path,
-			  O_RDONLY | O_NONBLOCK | O_NOCTTY)) == -1) {
-		gpsd_report(session->context->debug, LOG_ERROR,
+		 open(session->gpsdata.dev.path, O_RDONLY | O_NONBLOCK | O_NOCTTY)) == -1) {
+		gpsd_report(&session->context->errout, LOG_ERROR,
 			    "read-only device open failed: %s\n",
 			    strerror(errno));
 		return -1;
 	    }
-	    gpsd_report(session->context->debug, LOG_PROG,
+
+	    gpsd_report(&session->context->errout, LOG_PROG,
 			"file device open success: %s\n",
 			strerror(errno));
 	}
@@ -443,19 +492,21 @@ int gpsd_serial_open(struct gps_device_t *session)
      * We also exclude bluetooth device because the bluetooth daemon opens them.
      */
     if (!(session->sourcetype == source_pty || session->sourcetype == source_bluetooth)) {
+#ifdef TIOCEXCL
 	/*
 	 * Try to block other processes from using this device while we
 	 * have it open (later opens should return EBUSY).  Won't work
 	 * against anything with root privileges, alas.
 	 */
 	(void)ioctl(session->gpsdata.gps_fd, (unsigned long)TIOCEXCL);
+#endif /* TIOCEXCL */
 
 #ifdef __linux__
 	/*
 	 * Don't touch devices already opened by another process.
 	 */
 	if (fusercount(session->gpsdata.dev.path) > 1) {
-            gpsd_report(session->context->debug, LOG_ERROR,
+            gpsd_report(&session->context->errout, LOG_ERROR,
 			"%s already opened by another process\n",
 			session->gpsdata.dev.path);
 	    (void)close(session->gpsdata.gps_fd);
@@ -478,20 +529,16 @@ int gpsd_serial_open(struct gps_device_t *session)
 	(void)tcflush(session->gpsdata.gps_fd, TCIOFLUSH);
     }
 
-    session->packet.type = BAD_PACKET;
+    session->lexer.type = BAD_PACKET;
     if (isatty(session->gpsdata.gps_fd) != 0) {
 	/* Save original terminal parameters */
 	if (tcgetattr(session->gpsdata.gps_fd, &session->ttyset_old) != 0)
 	    return -1;
 	(void)memcpy(&session->ttyset,
 		     &session->ttyset_old, sizeof(session->ttyset));
-	/*
-	 * Only block until we get at least one character, whatever the
-	 * third arg of read(2) says.
-	 */
 	/*@ ignore @*/
 	memset(session->ttyset.c_cc, 0, sizeof(session->ttyset.c_cc));
-	session->ttyset.c_cc[VMIN] = 1;
+	//session->ttyset.c_cc[VTIME] = 1;
 	/*@ end @*/
 	/*
 	 * Tip from Chris Kuethe: the FIDI chip used in the Trip-Nav
@@ -527,13 +574,21 @@ int gpsd_serial_open(struct gps_device_t *session)
 	    );
     }
 
+    /* Switch back to blocking I/O now that CLOCAL is set. */
+    {
+	int oldfl = fcntl(session->gpsdata.gps_fd, F_GETFL);
+	if (oldfl != -1)
+	    (void)fcntl(session->gpsdata.gps_fd, F_SETFL, oldfl & ~O_NONBLOCK);
+    }
+
+
     /* required so parity field won't be '\0' if saved speed matches */
     if (session->sourcetype <= source_blockdev) {
 	session->gpsdata.dev.parity = 'N';
 	session->gpsdata.dev.stopbits = 1;
     }
 
-    gpsd_report(session->context->debug, LOG_SPIN,
+    gpsd_report(&session->context->errout, LOG_SPIN,
 		"open(%s) -> %d in gpsd_serial_open()\n",
 		session->gpsdata.dev.path, session->gpsdata.gps_fd);
     return session->gpsdata.gps_fd;
@@ -551,9 +606,9 @@ ssize_t gpsd_serial_write(struct gps_device_t * session,
     ok = (status == (ssize_t) len);
     (void)tcdrain(session->gpsdata.gps_fd);
     /* extra guard prevents expensive hexdump calls */
-    if (session->context->debug >= LOG_IO) {
+    if (session->context->errout.debug >= LOG_IO) {
 	char scratchbuf[MAX_PACKET_LENGTH*2+1];
-	gpsd_report(session->context->debug, LOG_IO,
+	gpsd_report(&session->context->errout, LOG_IO,
 		    "=> GPS: %s%s\n",
 		    gpsd_packetdump(scratchbuf, sizeof(scratchbuf),
 				    (char *)buf, len), ok ? "" : " FAILED");
@@ -576,7 +631,7 @@ bool gpsd_next_hunt_setting(struct gps_device_t * session)
     if (isatty(session->gpsdata.gps_fd) == 0)
 	return false;
 
-    if (session->packet.retry_counter++ >= SNIFF_RETRIES) {
+    if (session->lexer.retry_counter++ >= SNIFF_RETRIES) {
 #ifdef FIXED_PORT_SPEED
 	return false;
 #else
@@ -609,7 +664,7 @@ bool gpsd_next_hunt_setting(struct gps_device_t * session)
 		       session->gpsdata.dev.stopbits
 #endif /* FIXED_STOP_BITS */
 	    );
-	session->packet.retry_counter = 0;
+	session->lexer.retry_counter = 0;
     }
 
     return true;		/* keep hunting */
@@ -631,7 +686,9 @@ void gpsd_assert_sync(struct gps_device_t *session)
 void gpsd_close(struct gps_device_t *session)
 {
     if (!BAD_SOCKET(session->gpsdata.gps_fd)) {
+#ifdef TIOCNXCL
 	(void)ioctl(session->gpsdata.gps_fd, (unsigned long)TIOCNXCL);
+#endif /* TIOCNXCL */
 	(void)tcdrain(session->gpsdata.gps_fd);
 	if (isatty(session->gpsdata.gps_fd) != 0) {
 	    /* force hangup on close on systems that don't do HUPCL properly */
@@ -664,7 +721,7 @@ void gpsd_close(struct gps_device_t *session)
 	    (void)tcsetattr(session->gpsdata.gps_fd, TCSANOW,
 			    &session->ttyset_old);
 	}
-	gpsd_report(session->context->debug, LOG_SPIN,
+	gpsd_report(&session->context->errout, LOG_SPIN,
 		    "close(%d) in gpsd_close(%s)\n",
 		    session->gpsdata.gps_fd, session->gpsdata.dev.path);
 	(void)close(session->gpsdata.gps_fd);

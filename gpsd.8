@@ -413,12 +413,18 @@ Sending SIGHUP to a running
 gpsd
 forces it to close all GPSes and all client connections\&. It will then attempt to reconnect to any GPSes on its device list and resume listening for client connections\&. This may be useful if your GPS enters a wedged or confused state but can be soft\-reset by pulling down DTR\&.
 .PP
+When
+gpsd
+is called with no initial devices (thus, expecting devices to be passed to it by notifications to the control socket), and reaches a state where there are no devices connected and no subscribers
+\fIafter\fR
+after some devices have been seen, it shuts down gracefully\&. It is expected that future device hotplug events will reactivate it\&.
+.PP
 To point
 gpsd
 at a device that may be a GPS, write to the control socket a plus sign (\*(Aq+\*(Aq) followed by the device name followed by LF or CR\-LF\&. Thus, to point the daemon at
 /dev/foo\&. send "+/dev/foo\en"\&. To tell the daemon that a device has been disconnected and is no longer available, send a minus sign (\*(Aq\-\*(Aq) followed by the device name followed by LF or CR\-LF\&. Thus, to remove
 /dev/foo
-from the search list\&. send "\-/dev/foo\en"\&.
+from the search list, send "\-/dev/foo\en"\&.
 .PP
 To send a control string to a specified device, write to the control socket a \*(Aq!\*(Aq, followed by the device name, followed by \*(Aq=\*(Aq, followed by the control string\&.
 .PP
@@ -530,7 +536,7 @@ GPSD presently fully recognizes only the 2\&.1 level of RTCM2 (message types 1, 
 .PP
 The ISGPS used for RTCM2 and subframes decoder logic is sufficiently convoluted to confuse some compiler optimizers, notably in GCC 3\&.x at \-O2, into generating bad code\&.
 .PP
-Devices meant to to use PPS for high\-precision timekeeping may fail if they are specified after startup by a control\-socket command, as opposed to on the daemon\*(Aqs original command line\&. Root privileges are dropped early, and some Unix variants require them in order to set the PPS line discipline\&. Under Linux the POSIX capability to set the line discipline is retained, but other platforms cannot use this code\&.
+Devices meant to use PPS for high\-precision timekeeping may fail if they are specified after startup by a control\-socket command, as opposed to on the daemon\*(Aqs original command line\&. Root privileges are dropped early, and some Unix variants require them in order to set the PPS line discipline\&. Under Linux the POSIX capability to set the line discipline is retained, but other platforms cannot use this code\&.
 .PP
 USB GPS devices often do not identify themselves through the USB subsystem; they typically present as the class 00h (undefined) or class FFh (vendor\-specific) of USB\-to\-serial adapters\&. Because of this, the Linux hotplug scripts must tell
 gpsd
@@ -552,6 +558,12 @@ Optional file containing the device activation/deactivation script\&. Note that 
 /etc/gpsd
 is the default system configuration directory, it is possible to build the GPSD source code with different assumptions\&.
 .RE
+.SH "ENVIRONMENT VARIABLES"
+.PP
+By setting the environment variable
+\fBGPSD_SHM_KEY\fR, you can control the key value used to create the shared\-memory segment used for communication with the client library\&. This will be useful mainly when isolating test instances of
+gpsd
+from production ones\&.
 .SH "APPLICABLE STANDARDS"
 .PP
 The official NMEA protocol standards for NMEA0183 and NMEA2000 are available from the National Marine Electronics Association, but are proprietary and expensive; the maintainers of
@@ -559,7 +571,7 @@ gpsd
 have made a point of not looking at them\&. The GPSD project website links to several documents that collect publicly disclosed information about the protocol\&.
 .PP
 gpsd
-parses the following NMEA sentences: RMC, GGA, GLL, GSA, GSV, VTG, ZDA, GBS, HDT, DBT\&. It recognizes these with either the normal GP talker\-ID prefix, or with the GN prefix used by GLONASS, or with the II prefix emitted by Seahawk Autohelm marine navigation systems, or with the IN prefix emitted by some Garmin units, or with the EC prefix emitted by ECDIS units, or with the SD prefix emitted by depth sounders\&. It recognizes some vendor extensions: the PGRME emitted by some Garmin GPS models, the OHPR emitted by Oceanserver digital compasses, the PTNTHTM emitted by True North digital compasses, and the PASHR sentences emitted by some Ashtech GPSes\&.
+parses the following NMEA sentences: RMC, GGA, GLL, GSA, GSV, VTG, ZDA, GBS, HDT, DBT, GST\&. It recognizes these with either the normal GP talker\-ID prefix, or with the GN prefix used by GLONASS, or with the II prefix emitted by Seahawk Autohelm marine navigation systems, or with the IN prefix emitted by some Garmin units, or with the EC prefix emitted by ECDIS units, or with the SD prefix emitted by depth sounders, or with the HC and TI prefix emitted by some Airmar equipment\&. It recognizes some vendor extensions: the PGRME emitted by some Garmin GPS models, the OHPR emitted by Oceanserver digital compasses, the PTNTHTM emitted by True North digital compasses, the PMTK omitted by some San Jose Navigation GPSes, and the PASHR sentences emitted by some Ashtech GPSes\&.
 .PP
 Note that
 gpsd

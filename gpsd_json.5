@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-gpsd_json \- gpsd request/response protol
+gpsd_json \- gpsd request/response protocol
 .SH "OVERVIEW"
 .PP
 gpsd
@@ -97,7 +97,6 @@ l l l l
 l l l l
 l l l l
 l l l l
-l l l l
 l l l l.
 T{
 class
@@ -107,16 +106,6 @@ T}:T{
 string
 T}:T{
 Fixed: "TPV"
-T}
-T{
-tag
-T}:T{
-No
-T}:T{
-string
-T}:T{
-Type tag associated with this GPS sentence; from an NMEA
-	device this is just the NMEA sentence type\&.
 T}
 T{
 device
@@ -284,7 +273,7 @@ Here\*(Aqs an example:
 .RS 4
 .\}
 .nf
-{"class":"TPV","tag":"MID2","device":"/dev/pts/1",
+{"class":"TPV","device":"/dev/pts/1",
     "time":"2005\-06\-08T10:34:48\&.283Z","ept":0\&.005,
     "lat":46\&.498293369,"lon":7\&.567411672,"alt":1343\&.127,
     "eph":36\&.000,"epv":32\&.321,
@@ -327,7 +316,6 @@ l l l l
 l l l l
 l l l l
 l l l l
-l l l l
 l l l l.
 T{
 class
@@ -337,16 +325,6 @@ T}:T{
 string
 T}:T{
 Fixed: "SKY"
-T}
-T{
-tag
-T}:T{
-No
-T}:T{
-string
-T}:T{
-Type tag associated with this GPS sentence; from an NMEA
-	device this is just the NMEA sentence type\&.
 T}
 T{
 device
@@ -544,7 +522,7 @@ Here\*(Aqs an example:
 .RS 4
 .\}
 .nf
-{"class":"SKY","tag":"MID2","device":"/dev/pts/1",
+{"class":"SKY","device":"/dev/pts/1",
     "time":"2005\-07\-08T11:28:07\&.114Z",
     "xdop":1\&.55,"hdop":1\&.24,"pdop":1\&.99,
     "satellites":[
@@ -593,7 +571,6 @@ l l l l
 l l l l
 l l l l
 l l l l
-l l l l
 l l l l.
 T{
 class
@@ -603,16 +580,6 @@ T}:T{
 string
 T}:T{
 Fixed: "GST"
-T}
-T{
-tag
-T}:T{
-No
-T}:T{
-string
-T}:T{
-Type tag associated with this GPS sentence; from an NMEA
-device this is just the NMEA sentence type\&.
 T}
 T{
 device
@@ -706,7 +673,7 @@ Here\*(Aqs an example:
 .RS 4
 .\}
 .nf
-{"class":"GST","tag":"GST","device":"/dev/ttyUSB0",
+{"class":"GST","device":"/dev/ttyUSB0",
         "time":"2010\-12\-07T10:23:07\&.096Z","rms":2\&.440,
         "major":1\&.660,"minor":1\&.120,"orient":68\&.989,
         "lat":1\&.600,"lon":1\&.200,"alt":2\&.520}
@@ -720,7 +687,7 @@ ATT
 .RS 4
 An ATT object is a vehicle\-attitude report\&. It is returned by digital\-compass and gyroscope sensors; depending on device, it may include: heading, pitch, roll, yaw, gyroscope, and magnetic\-field readings\&. Because such sensors are often bundled as part of marine\-navigation systems, the ATT response may also include water depth\&.
 .sp
-The "class", "mode", and "tag" fields will reliably be present\&. Others may be reported or not depending on the specific device type\&.
+The "class" and "mode" fields will reliably be present\&. Others may be reported or not depending on the specific device type\&.
 .sp
 .it 1 an-trap
 .nr an-no-space-flag 1
@@ -763,7 +730,6 @@ l l l l
 l l l l
 l l l l
 l l l l
-l l l l
 l l l l.
 T{
 class
@@ -773,16 +739,6 @@ T}:T{
 string
 T}:T{
 Fixed: "ATT"
-T}
-T{
-tag
-T}:T{
-Yes
-T}:T{
-string
-T}:T{
-Type tag associated with this GPS sentence; from an NMEA
-	device this is just the NMEA sentence type\&.
 T}
 T{
 device
@@ -1063,7 +1019,7 @@ Here\*(Aqs an example:
 .RS 4
 .\}
 .nf
-{"class":"ATT","tag":"PTNTHTM","time":1270938096\&.843,
+{"class":"ATT","time":1270938096\&.843,
     "heading":14223\&.00,"mag_st":"N",
     "pitch":169\&.00,"pitch_st":"N", "roll":\-43\&.00,"roll_st":"N",
     "dip":13641\&.000,"mag_x":2454\&.000}
@@ -1374,10 +1330,7 @@ T}:T{
 boolean
 T}:T{
 If true, emit a PPS JSON message when the device issues
-        1PPS\&.  Intended to be used with the "nmea" and "raw" modes\&.
-        Default is false\&. \fBNote: this is an
-        unstable experimental feature which may change or be removed
-        without notice\&.\fR
+        1PPS\&. Default is false\&.
 T}
 T{
 device
@@ -1508,11 +1461,11 @@ Here\*(Aqs an example of a POLL response:
 .\}
 .nf
 {"class":"POLL","time":"2010\-06\-04T10:31:00\&.289Z","active":1,
-    "tpv":[{"class":"TPV","tag":"MID41","device":"/dev/ttyUSB0",
+    "tpv":[{"class":"TPV","device":"/dev/ttyUSB0",
             "time":"2010\-09\-08T13:33:06\&.095Z",
 	    "ept":0\&.005,"lat":40\&.035093060,
             "lon":\-75\&.519748733,"track":99\&.4319,"speed":0\&.123,"mode":2}],
-    "sky":[{"class":"SKY","tag":"MID41","device":"/dev/ttyUSB0",
+    "sky":[{"class":"SKY","device":"/dev/ttyUSB0",
             "time":1270517264\&.240,"hdop":9\&.20,
             "satellites":[{"PRN":16,"el":55,"az":42,"ss":36,"used":true},
                           {"PRN":19,"el":25,"az":177,"ss":0,"used":false},

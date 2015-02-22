@@ -19,11 +19,10 @@ representations to libgps structures.
 #include "gps.h"
 #include "json.h"
 #ifdef SOCKET_EXPORT_ENABLE
+#include "libgps.h"
 
-/* FIXME: kluges because we don't want to include gpsd.h here */
+/* kluge because we don't want to include gpsd.h here */
 extern int gpsd_hexpack(/*@in@*/const char *, /*@out@*/char *, size_t);
-int json_ais_read(const char *, char *, size_t, struct ais_t *,
-		  /*@null@*/const char **);
 
 /*@ -mustdefine @*/
 static void lenhex_unpack(const char *from,
@@ -268,6 +267,7 @@ int json_ais_read(const char *buf,
 		lenhex_unpack(data, &ais->type6.bitcount,
 			      ais->type6.bitdata, sizeof(ais->type6.bitdata));
 	}
+	ais->type6.structured = structured;
     } else if (strstr(buf, "\"type\":7,") != NULL
 	       || strstr(buf, "\"type\":13,") != NULL) {
 	status = json_read_object(buf, json_ais7, endptr);
@@ -413,6 +413,7 @@ int json_ais_read(const char *buf,
 		lenhex_unpack(data, &ais->type8.bitcount,
 			      ais->type8.bitdata, sizeof(ais->type8.bitdata));
 	}
+	ais->type8.structured = structured;
     } else if (strstr(buf, "\"type\":9,") != NULL) {
 	status = json_read_object(buf, json_ais9, endptr);
     } else if (strstr(buf, "\"type\":10,") != NULL) {

@@ -12,39 +12,25 @@
 #endif /* S_SPLINT_S */
 
 #include "gpsd.h"
+#include "bits.h"
 #include "gps_json.h"
+#include "strfuncs.h"
 
 static int verbose = 0;
 static bool scaled = true;
 static bool json = true;
+static bool pseudonmea = false;
 static bool split24 = false;
+static bool minlength = false;
 static unsigned int ntypes = 0;
 static unsigned int typelist[32];
+static struct gps_context_t context;
 
 /**************************************************************************
  *
  * Generic machinery
  *
  **************************************************************************/
-
-ssize_t gpsd_write(struct gps_device_t *session,
-		   const char *buf,
-		   const size_t len)
-/* pass low-level data to devices straight through */
-{
-    return gpsd_serial_write(session, buf, len);
-}
-
-void gpsd_report(const int debuglevel, const int errlevel,
-		 const char *fmt, ...)
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-    gpsd_labeled_report(debuglevel, errlevel, "gpsdecode:", fmt, ap);
-    va_end(ap);
-			
-}
 
 #ifdef AIVDM_ENABLE
 static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
@@ -59,7 +45,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
     case 1:			/* Position Report */
     case 2:
     case 3:
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%d|%u|%u|%d|%d|%u|%u|%u|0x%x|%u|0x%x",
 		       ais->type1.status,
 		       ais->type1.turn,
@@ -75,7 +61,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	break;
     case 4:			/* Base Station Report */
     case 11:			/* UTC/Date Response */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%04u-%02u-%02uT%02u:%02u:%02uZ|%u|%d|%d|%u|%u|0x%x",
 		       ais->type4.year,
 		       ais->type4.month,
@@ -90,7 +76,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       (uint) ais->type4.raim, ais->type4.radio);
 	break;
     case 5:			/* Ship static and voyage related data */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%s|%s|%u|%u|%u|%u|%u|%u|%02u-%02uT%02u:%02uZ|%u|%s|%u",
 		       ais->type5.imo,
 		       ais->type5.ais_version,
@@ -110,7 +96,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type5.destination, ais->type5.dte);
 	break;
     case 6:			/* Binary Message */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%u|%u",
 		       ais->type6.seqno,
 		       ais->type6.dest_mmsi,
@@ -122,7 +108,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	case 250:			/* Rep. Of Ireland */
 	    switch(ais->type6.fid) {
 	    case 10:		/* GLA - AtoN monitoring */
-		(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+		str_appendf(buf, buflen,
 			       "|%u|%u|%u|%u|%u|%u|%u|%u",
 			       ais->type6.dac235fid10.ana_int,
 			       ais->type6.dac235fid10.ana_ext1,
@@ -138,30 +124,27 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	    break;
 	}
 	if (!imo)
-	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	    str_appendf(buf, buflen,
 			   "|%zd:%s",
 			   ais->type6.bitcount,
 			   gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
 					ais->type6.bitdata,
-					(ais->type6.bitcount + 7) / 8));
+					BITS_TO_BYTES(ais->type6.bitcount)));
 	break;
     case 7:			/* Binary Acknowledge */
     case 13:			/* Safety Related Acknowledge */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%u",
 		       ais->type7.mmsi1,
 		       ais->type7.mmsi2, ais->type7.mmsi3, ais->type7.mmsi4);
 	break;
     case 8:			/* Binary Broadcast Message */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u|%u",
-		       ais->type8.dac,
-		       ais->type8.fid);
+	str_appendf(buf, buflen, "%u|%u", ais->type8.dac, ais->type8.fid);
 	switch(ais->type8.dac) {
 	case 1:			/* International */
 	    switch(ais->type8.fid) {
 	    case 11:		/* IMO236 - Met/Hydro message */
-		(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+		str_appendf(buf, buflen,
 			       "|%d|%d|%02uT%02u:%02uZ|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%d|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u",
 			       ais->type8.dac1fid11.lon,
 			       ais->type8.dac1fid11.lat,
@@ -202,7 +185,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		imo = true;
 		break;
 	    case 31:		/* IMO289 - Met/Hydro message */
-		(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+		str_appendf(buf, buflen,
 			       "|%d|%d|%02uT%02u:%02uZ|%u|%u|%u|%u|%d|%u|%d|%u|%u|%u|%d|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%d|%u|%u|%u",
 			       ais->type8.dac1fid31.lon,
 			       ais->type8.dac1fid31.lat,
@@ -246,15 +229,15 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	    break;
 	}
 	if (!imo)
-	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	    str_appendf(buf, buflen,
 			   "|%zd:%s",
 			   ais->type8.bitcount,
 			   gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
 					ais->type8.bitdata,
-					(ais->type8.bitcount + 7) / 8));
+					BITS_TO_BYTES(ais->type8.bitcount)));
 	break;
     case 9:
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%d|%d|%u|%u|0x%x|%u|%u|0x%x",
 		       ais->type9.alt,
 		       ais->type9.speed,
@@ -268,22 +251,20 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       (uint) ais->type9.raim, ais->type9.radio);
 	break;
     case 10:			/* UTC/Date Inquiry */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u", ais->type10.dest_mmsi);
+	str_appendf(buf, buflen, "%u", ais->type10.dest_mmsi);
 	break;
     case 12:			/* Safety Related Message */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%s",
 		       ais->type12.seqno,
 		       ais->type12.dest_mmsi,
 		       (uint) ais->type12.retransmit, ais->type12.text);
 	break;
     case 14:			/* Safety Related Broadcast Message */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%s", ais->type14.text);
+	str_appendf(buf, buflen, "%s", ais->type14.text);
 	break;
     case 15:
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%u|%u|%u|%u|%u",
 		       ais->type15.mmsi1,
 		       ais->type15.type1_1,
@@ -294,7 +275,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type15.type2_1, ais->type15.offset2_1);
 	break;
     case 16:
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%u|%u|%u",
 		       ais->type16.mmsi1,
 		       ais->type16.offset1,
@@ -303,17 +284,17 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type16.offset2, ais->type16.increment2);
 	break;
     case 17:
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%d|%d|%zd:%s",
 		       ais->type17.lon,
 		       ais->type17.lat,
 		       ais->type17.bitcount,
 		       gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
 				    ais->type17.bitdata,
-				    (ais->type17.bitcount + 7) / 8));
+				    BITS_TO_BYTES(ais->type17.bitcount)));
 	break;
     case 18:
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%d|%d|%u|%u|%u|0x%x|%u|%u|%u|%u|%u|%u|0x%x",
 		       ais->type18.reserved,
 		       ais->type18.speed,
@@ -332,7 +313,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       (uint) ais->type18.raim, ais->type18.radio);
 	break;
     case 19:
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%d|%d|%u|%u|%u|0x%x|%s|%u|%u|%u|%u|%u|%u|%u|%u|%u",
 		       ais->type19.reserved,
 		       ais->type19.speed,
@@ -354,7 +335,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type19.dte, (uint) ais->type19.assigned);
 	break;
     case 20:			/* Data Link Management Message */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u",
 		       ais->type20.offset1,
 		       ais->type20.number1,
@@ -373,7 +354,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type20.timeout4, ais->type20.increment4);
 	break;
     case 21:			/* Aid to Navigation */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%s|%u|%d|%d|%u|%u|%u|%u|%u|%u|%u|0x%x|%u|%u",
 		       ais->type21.aid_type,
 		       ais->type21.name,
@@ -393,7 +374,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	break;
     case 22:			/* Channel Management */
 	if (!ais->type22.addressed)
-	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	    str_appendf(buf, buflen,
 			   "%u|%u|%u|%u|%d|%d|%d|%d|%u|%u|%u|%u",
 			   ais->type22.channel_a,
 			   ais->type22.channel_b,
@@ -407,7 +388,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 			   (uint) ais->type22.band_a,
 			   (uint) ais->type22.band_b, ais->type22.zonesize);
 	else
-	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	    str_appendf(buf, buflen,
 			   "%u|%u|%u|%u|%u|%u|%u|%u|%u|%u",
 			   ais->type22.channel_a,
 			   ais->type22.channel_b,
@@ -420,7 +401,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 			   (uint) ais->type22.band_b, ais->type22.zonesize);
 	break;
     case 23:			/* Group Management Command */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%d|%d|%d|%d|%u|%u|%u|%u|%u",
 		       ais->type23.ne_lon,
 		       ais->type23.ne_lat,
@@ -432,23 +413,16 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type23.interval, ais->type23.quiet);
 	break;
     case 24:			/* Class B CS Static Data Report */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%s|", ais->type24.shipname);
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u|", ais->type24.shiptype);
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%s|", ais->type24.vendorid);
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u|", ais->type24.model);
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%u|", ais->type24.serial);
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-		       "%s|", ais->type24.callsign);
+	str_appendf(buf, buflen, "%s|", ais->type24.shipname);
+	str_appendf(buf, buflen, "%u|", ais->type24.shiptype);
+	str_appendf(buf, buflen, "%s|", ais->type24.vendorid);
+	str_appendf(buf, buflen, "%u|", ais->type24.model);
+	str_appendf(buf, buflen, "%u|", ais->type24.serial);
+	str_appendf(buf, buflen, "%s|", ais->type24.callsign);
 	if (AIS_AUXILIARY_MMSI(ais->mmsi)) {
-	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
-			   "%u", ais->type24.mothership_mmsi);
+	    str_appendf(buf, buflen, "%u", ais->type24.mothership_mmsi);
 	} else {
-	    (void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	    str_appendf(buf, buflen,
 			   "%u|%u|%u|%u",
 			   ais->type24.dim.to_bow,
 			   ais->type24.dim.to_stern,
@@ -457,7 +431,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 	}
 	break;
     case 25:			/* Binary Message, Single Slot */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%u|%zd:%s",
 		       (uint) ais->type25.addressed,
 		       (uint) ais->type25.structured,
@@ -466,10 +440,10 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type25.bitcount,
 		       gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
 				    ais->type25.bitdata,
-				    (ais->type25.bitcount + 7) / 8));
+				    BITS_TO_BYTES(ais->type25.bitcount)));
 	break;
     case 26:			/* Binary Message, Multiple Slot */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%u|%u|%zd:%s:%u",
 		       (uint) ais->type26.addressed,
 		       (uint) ais->type26.structured,
@@ -478,11 +452,11 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       ais->type26.bitcount,
 		       gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
 				    ais->type26.bitdata,
-				    (ais->type26.bitcount + 7) / 8),
+				    BITS_TO_BYTES(ais->type26.bitcount)),
 		       ais->type26.radio);
 	break;
     case 27:			/* Long Range AIS Broadcast message */
-	(void)snprintf(buf + strlen(buf), buflen - strlen(buf),
+	str_appendf(buf, buflen,
 		       "%u|%u|%d|%d|%u|%u|%u|%u",
 		       ais->type27.status,
 		       (uint)ais->type27.accuracy,
@@ -494,9 +468,7 @@ static void aivdm_csv_dump(struct ais_t *ais, char *buf, size_t buflen)
 		       (uint)ais->type27.gnss);
 	break;
     default:
-	(void)snprintf(buf + strlen(buf),
-		       buflen - strlen(buf),
-		       "unknown AIVDM message content.");
+	str_appendf(buf, buflen, "unknown AIVDM message content.");
 	break;
     }
     /*@ +formatcode @*/
@@ -527,22 +499,55 @@ static bool filter(gps_mask_t changed, struct gps_device_t *session)
     return false;
 }
 
-/*@ -compdestroy -compdef -usedef -uniondef @*/
+static void pseudonmea_report(gps_mask_t changed, struct gps_device_t *device)
+/* report pseudo-NMEA in appropriate circumstances */
+{
+    if (GPS_PACKET_TYPE(device->lexer.type)
+	&& !TEXTUAL_PACKET_TYPE(device->lexer.type)) {
+	char buf[MAX_PACKET_LENGTH * 3 + 2];
+
+	if ((changed & REPORT_IS) != 0) {
+	    nmea_tpv_dump(device, buf, sizeof(buf));
+	    (void)fputs(buf, stdout);
+	}
+
+	if ((changed & SATELLITE_SET) != 0) {
+	    nmea_sky_dump(device, buf, sizeof(buf));
+	    (void)fputs(buf, stdout);
+	}
+
+	if ((changed & SUBFRAME_SET) != 0) {
+	    nmea_subframe_dump(device, buf, sizeof(buf));
+	    (void)fputs(buf, stdout);
+	}
+#ifdef AIVDM_ENABLE
+	if ((changed & AIS_SET) != 0) {
+	    nmea_ais_dump(device, buf, sizeof(buf));
+	    (void)fputs(buf, stdout);
+	}
+#endif /* AIVDM_ENABLE */
+    }
+}
+
+/*@ -mustfreeonly -compdestroy -compdef -usedef -uniondef -immediatetrans -observertrans -statictrans @*/
 static void decode(FILE *fpin, FILE*fpout)
 /* sensor data on fpin to dump format on fpout */
 {
     struct gps_device_t session;
-    struct gps_context_t context;
     struct policy_t policy;
+    size_t minima[PACKET_TYPES+1];
+#if defined(SOCKET_EXPORT_ENABLE) || defined(AIVDM_ENABLE)
     char buf[GPS_JSON_RESPONSE_MAX * 4];
+#endif
+    int i;
 
     //This looks like a good idea, but it breaks regression tests
     //(void)strlcpy(session.gpsdata.dev.path, "stdin", sizeof(session.gpsdata.dev.path));
     memset(&policy, '\0', sizeof(policy));
     policy.json = json;
     policy.scaled = scaled;
+    policy.nmea = pseudonmea;
 
-    gps_context_init(&context);
     gpsd_time_init(&context, time(NULL));
     context.readonly = true;
     gpsd_init(&session, &context, NULL);
@@ -552,6 +557,8 @@ static void decode(FILE *fpin, FILE*fpout)
     (void)strlcpy(session.gpsdata.dev.path,
 		  "stdin",
 		  sizeof(session.gpsdata.dev.path));
+    for (i = 0; i < (int)(sizeof(minima)/sizeof(minima[0])); i++)
+	minima[i] = MAX_PACKET_LENGTH+1;
 
     for (;;)
     {
@@ -559,17 +566,20 @@ static void decode(FILE *fpin, FILE*fpout)
 
 	if (changed == ERROR_SET || changed == NODATA_IS)
 	    break;
-	if (session.packet.type == COMMENT_PACKET)
+	if (session.lexer.type == COMMENT_PACKET)
 	    gpsd_set_century(&session);
-	if (verbose >= 1 && TEXTUAL_PACKET_TYPE(session.packet.type))
-	    (void)fputs((char *)session.packet.outbuffer, fpout);
-	if ((changed & (REPORT_IS|SUBFRAME_SET|AIS_SET|RTCM2_SET|RTCM3_SET|PASSTHROUGH_IS)) == 0)
+	if (verbose >= 1 && TEXTUAL_PACKET_TYPE(session.lexer.type))
+	    (void)fputs((char *)session.lexer.outbuffer, fpout);
+	if (session.lexer.outbuflen < minima[session.lexer.type+1])
+	    minima[session.lexer.type+1] = session.lexer.outbuflen;
+	/* mask should match what's in report_data() */
+	if ((changed & (REPORT_IS|GST_SET|SATELLITE_SET|SUBFRAME_SET|ATTITUDE_SET|RTCM2_SET|RTCM3_SET|AIS_SET|PASSTHROUGH_IS)) == 0)
 	    continue;
 	if (!filter(changed, &session))
 	    continue;
 	else if (json) {
 	    if ((changed & PASSTHROUGH_IS) != 0) {
-		(void)fputs((char *)session.packet.outbuffer, fpout);
+		(void)fputs((char *)session.lexer.outbuffer, fpout);
 		(void)fputs("\n", fpout);
 	    }
 #ifdef SOCKET_EXPORT_ENABLE
@@ -585,7 +595,7 @@ static void decode(FILE *fpin, FILE*fpout)
 	    }
 #endif /* SOCKET_EXPORT_ENABLE */
 #ifdef AIVDM_ENABLE
-	} else if (session.packet.type == AIVDM_PACKET) {
+	} else if (session.lexer.type == AIVDM_PACKET) {
 	    if ((changed & AIS_SET)!=0) {
 		if (session.gpsdata.ais.type == 24 && session.gpsdata.ais.type24.part != both && !split24)
 		    continue;
@@ -593,6 +603,26 @@ static void decode(FILE *fpin, FILE*fpout)
 		(void)fputs(buf, fpout);
 	    }
 #endif /* AIVDM_ENABLE */
+	}
+	if (policy.nmea)
+	    pseudonmea_report(changed, &session);
+    }
+
+    if (minlength)
+    {
+	for (i = 0; i < (int)(sizeof(minima)/sizeof(minima[0])); i++) {
+	    /* dump all minima, ignoring comments */
+	    if (i != 1 && minima[i] < MAX_PACKET_LENGTH+1) {
+		const struct gps_type_t **dp;
+		char *np = "Unknown";
+		for (dp = gpsd_drivers; *dp; dp++) {
+		    if ((*dp)->packet_type == i-1) {
+			np = (*dp)->type_name;
+			break;
+		    }
+		}
+		printf("%s (%d): %u\n", np, i-1, (unsigned int)minima[i]);
+	    }
 	}
     }
 }
@@ -608,10 +638,14 @@ static void encode(FILE *fpin, FILE *fpout)
 
     memset(&policy, '\0', sizeof(policy));
     memset(&session, '\0', sizeof(session));
+    session.context = &context;
+    context.errout.debug = 0;
+    context.errout.label = "gpsdecode";
     (void)strlcpy(session.gpsdata.dev.path,
 		  "stdin",
 		  sizeof(session.gpsdata.dev.path));
     policy.json = true;
+    policy.nmea = pseudonmea;
     /* Parsing is always made in unscaled mode,
      * this policy applies to the dumping */
     policy.scaled = scaled;
@@ -635,16 +669,17 @@ static void encode(FILE *fpin, FILE *fpout)
 	(void)fputs(inbuf, fpout);
     }
 }
-/*@ +compdestroy +compdef +usedef @*/
+/*@ +mustfreeonly +compdestroy +compdef +usedef +immediatetrans +observertrans @ +statictrans*/
 #endif /* SOCKET_EXPORT_ENABLE */
 
 int main(int argc, char **argv)
 {
     int c;
-    enum
-    { doencode, dodecode } mode = dodecode;
+    enum { doencode, dodecode } mode = dodecode;
 
-    while ((c = getopt(argc, argv, "cdejpst:uvVD:")) != EOF) {
+    gps_context_init(&context, "gpsdecode");
+
+    while ((c = getopt(argc, argv, "cdejmnpst:uvVD:")) != EOF) {
 	switch (c) {
 	case 'c':
 	    json = false;
@@ -660,6 +695,15 @@ int main(int argc, char **argv)
 
 	case 'j':
 	    json = true;
+	    break;
+
+	case 'm':
+	    minlength = true;
+	    json = false;
+	    break;
+
+	case 'n':
+	    pseudonmea = true;
 	    break;
 
 	case 's':
@@ -687,7 +731,7 @@ int main(int argc, char **argv)
 	    break;
 
 	case 'D':
-	    verbose = atoi(optarg);
+	    context.errout.debug = verbose = atoi(optarg);
 #if defined(CLIENTDEBUG_ENABLE) && defined(SOCKET_EXPORT_ENABLE)
 	    json_enable_debug(verbose - 2, stderr);
 #endif

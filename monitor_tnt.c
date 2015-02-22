@@ -45,17 +45,17 @@ static void tnt_update(void)
      * We have to do our own field parsing because the way this
      * gets called, nmea_parse() is never called on the sentence.
      */
-    (void)nmea_parse((char *)session.packet.outbuffer, &session);
+    (void)nmea_parse((char *)session.lexer.outbuffer, &session);
 
-    (void)mvwaddstr(thtmwin, 1, 19, session.driver.nmea.field[1]);
-    (void)mvwaddstr(thtmwin, 2, 19, session.driver.nmea.field[3]);
-    (void)mvwaddstr(thtmwin, 3, 19, session.driver.nmea.field[5]);
-    (void)mvwaddstr(thtmwin, 4, 19, session.driver.nmea.field[7]);
+    (void)mvwaddstr(thtmwin, 1, 19, session.nmea.field[1]);
+    (void)mvwaddstr(thtmwin, 2, 19, session.nmea.field[3]);
+    (void)mvwaddstr(thtmwin, 3, 19, session.nmea.field[5]);
+    (void)mvwaddstr(thtmwin, 4, 19, session.nmea.field[7]);
 
-    (void)mvwaddstr(thtmwin, 1, 61, session.driver.nmea.field[2]);
-    (void)mvwaddstr(thtmwin, 2, 61, session.driver.nmea.field[4]);
-    (void)mvwaddstr(thtmwin, 3, 61, session.driver.nmea.field[6]);
-    (void)mvwaddstr(thtmwin, 4, 61, session.driver.nmea.field[8]);
+    (void)mvwaddstr(thtmwin, 1, 61, session.nmea.field[2]);
+    (void)mvwaddstr(thtmwin, 2, 61, session.nmea.field[4]);
+    (void)mvwaddstr(thtmwin, 3, 61, session.nmea.field[6]);
+    (void)mvwaddstr(thtmwin, 4, 61, session.nmea.field[8]);
 }
 
 static int tnt_command(char line[] UNUSED)

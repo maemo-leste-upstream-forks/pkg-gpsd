@@ -31,7 +31,7 @@
 gpsdecode \- decode GPS, RTCM or AIS streams into a readable format
 .SH "SYNOPSIS"
 .HP \w'\fBgpsdecode\fR\ 'u
-\fBgpsdecode\fR [\-c] [\-d] [\-e] [\-j] [\-s] [\-t\ \fItypelist\fR] [\-u] [\-v] [\-D\ \fIdebuglevel\fR] [\-V]
+\fBgpsdecode\fR [\-c] [\-d] [\-e] [\-j] [\-m] [\-n] [\-s] [\-t\ \fItypelist\fR] [\-u] [\-v] [\-D\ \fIdebuglevel\fR] [\-V]
 .SH "DESCRIPTION"
 .PP
 This tool is a batch\-mode decoder for NMEA and various binary packet formats associated with GPS, AIS, and differential\-correction services\&. It produces a JSON dump on standard output from binary on standard input\&. The JSON is the same format documented in
@@ -53,6 +53,14 @@ option tells the program to decode packets presented on standard input to standa
 The
 \fB\-j\fR
 explicitly sets the output dump format to JSON (the default behavior)\&.
+.PP
+With the
+\fB\-m\fR
+option, dump minimum lengths for each packet type in the input (ignoring comment packets)\&. This is probably of interest only to GSD developers\&.
+.PP
+The
+\fB\-n\fR
+enables dumping in generated pseudo\-NME0183\&.
 .PP
 The
 \fB\-e\fR

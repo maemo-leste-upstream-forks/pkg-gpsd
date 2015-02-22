@@ -14,6 +14,7 @@
 #endif /* S_SPLINT_S */
 
 #include "gpsd.h"
+#include "strfuncs.h"
 
 #define NETGNSS_DGPSIP	"dgpsip://"
 #define NETGNSS_NTRIP	"ntrip://"
@@ -22,8 +23,8 @@ bool netgnss_uri_check(char *name)
 /* is given string a valid URI for GNSS/DGPS service? */
 {
     return
-	strncmp(name, NETGNSS_NTRIP, strlen(NETGNSS_NTRIP)) == 0
-	|| strncmp(name, NETGNSS_DGPSIP, strlen(NETGNSS_DGPSIP)) == 0;
+	str_starts_with(name, NETGNSS_NTRIP)
+	|| str_starts_with(name, NETGNSS_DGPSIP);
 }
 
 
@@ -32,19 +33,19 @@ int netgnss_uri_open(struct gps_device_t *dev, char *netgnss_service)
 /* open a connection to a DGNSS service */
 {
 #ifdef NTRIP_ENABLE
-    if (strncmp(netgnss_service, NETGNSS_NTRIP, strlen(NETGNSS_NTRIP)) == 0) {
+    if (str_starts_with(netgnss_service, NETGNSS_NTRIP)) {
 	dev->ntrip.conn_state = ntrip_conn_init;
 	return ntrip_open(dev, netgnss_service + strlen(NETGNSS_NTRIP));
     }
 #endif
 
-    if (strncmp(netgnss_service, NETGNSS_DGPSIP, strlen(NETGNSS_DGPSIP)) == 0)
+    if (str_starts_with(netgnss_service, NETGNSS_DGPSIP))
 	return dgpsip_open(dev, netgnss_service + strlen(NETGNSS_DGPSIP));
 
 #ifndef REQUIRE_DGNSS_PROTO
     return dgpsip_open(dev, netgnss_service);
 #else
-    gpsd_report(dev->context, LOG_ERROR,
+    gpsd_report(&dev->context.errout, LOG_ERROR,
 		"Unknown or unspecified DGNSS protocol for service %s\n",
 		netgnss_service);
     return -1;

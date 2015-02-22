@@ -87,7 +87,7 @@ double safe_atof(const char *string)
      */
 
     p = string;
-    while (isspace(*p)) {
+    while (isspace((unsigned char) *p)) {
 	p += 1;
     }
     if (*p == '-') {
@@ -185,7 +185,7 @@ double safe_atof(const char *string)
 	    }
 	    expSign = false;
 	}
-	while (isdigit(*p)) {
+	while (isdigit((unsigned char) *p)) {
 	    exp = exp * 10 + (*p - '0');
 	    p += 1;
 	}
@@ -295,6 +295,8 @@ void gps_merge_fix( /*@ out @*/ struct gps_fix_t *to,
 	to->eps = from->eps;
 }
 
+/* NOTE: timestamp_t is a double, so this is only precise to
+ * near microSec.  Do not use near PPS which is nanoSec precise */
 timestamp_t timestamp(void)
 {
 #ifdef HAVE_CLOCK_GETTIME
@@ -332,23 +334,33 @@ time_t mkgmtime(register struct tm * t)
     result += t->tm_min;
     result *= 60;
     result += t->tm_sec;
+    if (t->tm_isdst == 1)
+	result -= 3600;
     /*@ -matchanyintegral @*/
     return (result);
 }
 
 timestamp_t iso8601_to_unix( /*@in@*/ char *isotime)
-/* ISO8601 UTC to Unix UTC */
+/* ISO8601 UTC to Unix UTC, no leapsecond correction. */
 {
 #ifndef USE_QT
     char *dp = NULL;
     double usec;
     struct tm tm;
+    memset(&tm,0,sizeof(tm));
 
     /*@i1@*/ dp = strptime(isotime, "%Y-%m-%dT%H:%M:%S", &tm);
     if (dp != NULL && *dp == '.')
 	usec = strtod(dp, NULL);
     else
 	usec = 0;
+    /*
+     * It would be nice if we could say mktime(&tm) - timezone + usec instead,
+     * but timezone is not available at all on some BSDs. Besides, when working
+     * with historical dates the value of timezone after an ordinary tzset(3)
+     * can be wrong; you have to do a redirect through the IANA historical
+     * timezone database to get it right.
+     */
     return (timestamp_t)mkgmtime(&tm) + usec;
 #else
     double usec = 0;
@@ -473,3 +485,32 @@ double earth_distance(double lat1, double lon1, double lat2, double lon2)
 	return earth_distance_and_bearings(lat1, lon1, lat2, lon2, NULL, NULL);
 }
 
+/* Convert a normailized timespec to a nice string 
+ * put in it *buf, buf should be at least 22 bytes
+ *
+ * the returned buffer will look like, shortest case:
+ *    sign character ' ' or '-'
+ *    one digit of seconds
+ *    decmal point '.'
+ *    9 digits of nanoSec
+ *
+ * So 12 chars, like this: "-0.123456789"
+ *
+ * Absolute worst case is 10 digits of seconds.  
+ * So 21 digits like this: "-2147483647.123456789"
+ *
+*/
+void timespec_str(const struct timespec *ts, /*@out@*/char *buf, int buf_size)
+{
+    char sign = ' ';
+
+    /*@-type@*//* splint is confused about timespec*/
+    if ( (0 > ts->tv_nsec ) || ( 0 > ts->tv_sec ) ) {
+	sign = '-';
+    }
+    (void) snprintf( buf, buf_size, "%c%ld.%09ld",
+			  sign,
+			  (long)labs(ts->tv_sec),
+			  (long)labs(ts->tv_nsec));
+    /*@+type@*/
+}

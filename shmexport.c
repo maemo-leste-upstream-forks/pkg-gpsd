@@ -21,6 +21,7 @@ PERMISSIONS
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -33,25 +34,32 @@ PERMISSIONS
 bool shm_acquire(struct gps_context_t *context)
 /* initialize the shared-memory segment to be used for export */
 {
-    int shmid;
+    /*@-nullpass@*/
+    long shmkey = getenv("GPSD_SHM_KEY") ? strtol(getenv("GPSD_SHM_KEY"), NULL, 0) : GPSD_SHM_KEY;
+    /*@+nullpass@*/
 
-    shmid = shmget((key_t)GPSD_KEY, sizeof(struct gps_data_t), (int)(IPC_CREAT|0666));
+    int shmid = shmget((key_t)shmkey, sizeof(struct gps_data_t), (int)(IPC_CREAT|0666));
     if (shmid == -1) {
-	gpsd_report(context->debug, LOG_ERROR,
-		    "shmget(%ld, %zd, 0666) failed: %s\n",
-		    (long int)GPSD_KEY,
+	gpsd_report(&context->errout, LOG_ERROR,
+		    "shmget(0x%lx, %zd, 0666) for SHM export failed: %s\n",
+		    shmkey,
 		    sizeof(struct gps_data_t),
 		    strerror(errno));
 	return false;
-    }
-    context->shmexport = (char *)shmat(shmid, 0, 0);
+    } else
+	gpsd_report(&context->errout, LOG_PROG,
+		    "shmget(0x%lx, %zd, 0666) for SHM export succeeded\n",
+		    shmkey,
+		    sizeof(struct gps_data_t));
+
+    context->shmexport = (void *)shmat(shmid, 0, 0);
     if ((int)(long)context->shmexport == -1) {
-	gpsd_report(context->debug, LOG_ERROR, "shmat failed: %s\n", strerror(errno));
+	gpsd_report(&context->errout, LOG_ERROR, "shmat failed: %s\n", strerror(errno));
 	context->shmexport = NULL;
 	return false;
     }
-    gpsd_report(context->debug, LOG_PROG,
-		"shmat() succeeded, segment %d\n", shmid);
+    gpsd_report(&context->errout, LOG_PROG,
+		"shmat() for SHM export succeeded, segment %d\n", shmid);
     return true;
 }
 
@@ -83,7 +91,7 @@ void shm_update(struct gps_context_t *context, struct gps_data_t *gpsdata)
 	 */
 	shared->bookend2 = tick;
 	memory_barrier();
-	memcpy((void *)(context->shmexport + offsetof(struct shmexport_t, gpsdata)),
+	memcpy((void *)((char *)context->shmexport + offsetof(struct shmexport_t, gpsdata)),
 	       (void *)gpsdata,
 	       sizeof(struct gps_data_t));
 	memory_barrier();

@@ -480,6 +480,13 @@ listening for client connections.  This may be useful if your GPS
 enters a wedged or confused state but can be soft-reset by pulling
 down DTR.</para>
 
+<para>When <application>gpsd</application> is called with no initial
+devices (thus, expecting devices to be passed to it by notifications to
+the control socket), and reaches a state where there are no devices
+connected and no subscribers <emphasis>after</emphasis> after some
+devices have been seen, it shuts down gracefully. It is expected that
+future device hotplug events will reactivate it.</para>
+
 <para>To point <application>gpsd</application> at a device that may be
 a GPS, write to the control socket a plus sign ('+') followed by the
 device name followed by LF or CR-LF.  Thus, to point the daemon at
@@ -487,7 +494,7 @@ device name followed by LF or CR-LF.  Thus, to point the daemon at
 that a device has been disconnected and is no longer available, send a
 minus sign ('-') followed by the device name followed by LF or
 CR-LF. Thus, to remove <filename>/dev/foo</filename> from the search
-list. send "-/dev/foo\n".</para>
+list, send "-/dev/foo\n".</para>
 
 <para>To send a control string to a specified device, write to the
 control socket a '!', followed by the device name, followed by '=',
@@ -704,7 +711,7 @@ supported.</para>
 sufficiently convoluted to confuse some compiler optimizers, notably
 in GCC 3.x at -O2, into generating bad code.</para>
 
-<para>Devices meant to to use PPS for high-precision timekeeping may
+<para>Devices meant to use PPS for high-precision timekeeping may
 fail if they are specified after startup by a control-socket command,
 as opposed to on the daemon's original command line. Root privileges
 are dropped early, and some Unix variants require them in order to set
@@ -765,6 +772,15 @@ Text following # on a line is ignored.  Blank lines are ignored.</para>
 </variablelist>
 
 </refsect1>
+<refsect1 id='environment'><title>ENVIRONMENT VARIABLES</title>
+
+<para>By setting the environment variable <envar>GPSD_SHM_KEY</envar>,
+you can control the key value used to create the shared-memory segment
+used for communication with the client library.  This will be useful
+mainly when isolating test instances of
+<application>gpsd</application> from production ones.</para>
+
+</refsect1>
 <refsect1 id='standards'><title>APPLICABLE STANDARDS</title>
 
 <para>The official NMEA protocol standards for NMEA0183 and NMEA2000
@@ -775,17 +791,18 @@ them.  The GPSD project website links to several documents that collect
 publicly disclosed information about the protocol.</para>
 
 <para><application>gpsd</application> parses the following NMEA
-sentences: 
-RMC, GGA, GLL, GSA, GSV, VTG, ZDA, GBS, HDT, DBT.  
-It recognizes these with either the normal GP talker-ID prefix, or
-with the GN prefix used by GLONASS, or with the II prefix emitted by
+sentences: RMC, GGA, GLL, GSA, GSV, VTG, ZDA, GBS, HDT, DBT, GST.  It
+recognizes these with either the normal GP talker-ID prefix, or with
+the GN prefix used by GLONASS, or with the II prefix emitted by
 Seahawk Autohelm marine navigation systems, or with the IN prefix
 emitted by some Garmin units, or with the EC prefix emitted by ECDIS
-units, or with the SD prefix emitted by depth sounders.  It recognizes
-some vendor extensions: the PGRME emitted by some Garmin GPS models,
-the OHPR emitted by Oceanserver digital compasses, the PTNTHTM emitted
-by True North digital compasses, and the PASHR sentences emitted by
-some Ashtech GPSes.</para>
+units, or with the SD prefix emitted by depth sounders, or with the HC
+and TI prefix emitted by some Airmar equipment.  It recognizes some
+vendor extensions: the PGRME emitted by some Garmin GPS models, the
+OHPR emitted by Oceanserver digital compasses, the PTNTHTM emitted by
+True North digital compasses, the PMTK omitted by some San Jose
+Navigation GPSes, and the PASHR sentences emitted by some Ashtech
+GPSes.</para>
 
 <para>Note that <application>gpsd</application> JSON returns pure decimal
 degrees, not the hybrid degree/minute format described in the NMEA

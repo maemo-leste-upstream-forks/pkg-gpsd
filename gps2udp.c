@@ -11,6 +11,9 @@
  * BSD terms apply: see the file COPYING in the distribution root for details.
  *
  */
+
+#include "gpsd_config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -18,7 +21,9 @@
 #include <string.h>
 #include <strings.h>
 #include <fcntl.h>
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#endif /* HAVE_TERMIOS_H */
 #include <time.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -33,6 +38,7 @@
 #include "gpsd.h"
 #include "gpsdclient.h"
 #include "revision.h"
+#include "strfuncs.h"
 
 #ifndef S_SPLINT_S
 #include <sys/socket.h>
@@ -73,7 +79,7 @@ static bool aisonly = false;
    loctime = localtime (&curtime);
      
    /* Print it out in a nice format. */
-   (void)strftime (buffer, MAX_TIME_LEN, "%H:%M:%S", loctime);
+   (void)strftime (buffer, sizeof(buffer), "%H:%M:%S", loctime);
      
    return (buffer);
 }
@@ -89,7 +95,7 @@ static int send_udp (char *nmeastring, size_t ind)
     if (ind == 0) {
 	/* compute message size and add 0x0a 0x0d */
 	for (ind=0; nmeastring [ind] != '\0'; ind ++) {
-	    if (ind >= sizeof(message)) {
+	    if (ind >= sizeof(message) - 3) {
 		fprintf(stderr, "gps2udp: too big [%s] \n", nmeastring);
 		return -1;
 	    }
@@ -102,8 +108,8 @@ static int send_udp (char *nmeastring, size_t ind)
 	ind = ind-1;
     }
     /* Add termination to NMEA feed for AISHUB */
-    buffer[ind] = '\n'; ind++;
     buffer[ind] = '\r'; ind++;
+    buffer[ind] = '\n'; ind++;
     buffer[ind] = '\0';
 
     if ((flags & WATCH_JSON)==0 && buffer[0] == '{') {
@@ -118,7 +124,7 @@ static int send_udp (char *nmeastring, size_t ind)
 				buffer,
 				ind,
 				0,
-				&remote[channel],
+				(const struct sockaddr *)&remote[channel],
 				(int)sizeof(remote));
 	if (status < (ssize_t)ind) {
 	    (void)fprintf(stderr, "gps2udp: failed to send [%s] \n", nmeastring);
@@ -462,7 +468,7 @@ int main(int argc, char **argv)
 		(void)fprintf (stdout,"---> [%s] -- %s",time2string(),buffer);
 
 		// Try to extract MMSI from AIS payload
-		if (strncmp (buffer,"!AIVDM",6) == 0)
+		if (str_starts_with(buffer, "!AIVDM"))
 		{
 #define MAX_INFO 6
 		    int  i,j;
@@ -473,7 +479,7 @@ int main(int argc, char **argv)
 		    unsigned char bitstrings [255];
 
 		    // strtok break original string
-		    (void)strncpy((char *)packet, buffer, sizeof(packet));
+		    (void)strlcpy((char *)packet, buffer, sizeof(packet));
 		    for (j=0; j<MAX_INFO; j++) {
 			info[j] = (unsigned char *)strsep((char **)&adrpkt, ",");
 		    }

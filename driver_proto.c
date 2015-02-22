@@ -72,7 +72,7 @@ _proto__msg_navsol(struct gps_device_t *session, unsigned char *buf, size_t data
     if (data_len != _PROTO__NAVSOL_MSG_LEN)
 	return 0;
 
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"_proto_ NAVSOL - navigation data\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -121,7 +121,7 @@ _proto__msg_navsol(struct gps_device_t *session, unsigned char *buf, size_t data
      * the fields it potentially set and the transfer mask. Doing this
      * makes it relatively easy to track down data-management problems.
      */
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"NAVSOL: time=%.2f, lat=%.2f lon=%.2f alt=%.2f mode=%d status=%d\n",
 		session->newdata.time,
 		session->newdata.latitude,
@@ -144,7 +144,7 @@ _proto__msg_utctime(struct gps_device_t *session, unsigned char *buf, size_t dat
     if (data_len != UTCTIME_MSG_LEN)
 	return 0;
 
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"_proto_ UTCTIME - navigation data\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -171,7 +171,7 @@ _proto__msg_svinfo(struct gps_device_t *session, unsigned char *buf, size_t data
     if (data_len != SVINFO_MSG_LEN )
 	return 0;
 
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"_proto_ SVINFO - navigation data\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -187,7 +187,7 @@ _proto__msg_svinfo(struct gps_device_t *session, unsigned char *buf, size_t data
      */
     nchan = GET_NUMBER_OF_CHANNELS();
     if ((nchan < 1) || (nchan > MAXCHANNELS)) {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "too many channels reported\n");
 	return 0;
     }
@@ -212,7 +212,7 @@ _proto__msg_svinfo(struct gps_device_t *session, unsigned char *buf, size_t data
     session->gpsdata.skyview_time = NaN;
     session->gpsdata.satellites_used = nsv;
     session->gpsdata.satellites_visible = st;
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"SVINFO: visible=%d used=%d mask={SATELLITE|USED}\n",
 		session->gpsdata.satellites_visible,
 		session->gpsdata.satellites_used);
@@ -231,7 +231,7 @@ _proto__msg_raw(struct gps_device_t *session, unsigned char *buf, size_t data_le
     if (data_len != RAW_MSG_LEN )
 	return 0;
 
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"_proto_ RAW - raw measurements\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -247,7 +247,7 @@ _proto__msg_raw(struct gps_device_t *session, unsigned char *buf, size_t data_le
      */
     nchan = GET_NUMBER_OF_CHANNELS();
     if ((nchan < 1) || (nchan > MAXCHANNELS)) {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "too many channels reported\n");
 	return 0;
     }
@@ -292,22 +292,15 @@ gps_mask_t _proto__dispatch(struct gps_device_t *session, unsigned char *buf, si
     type = GET_MESSAGE_TYPE();
 
     /* we may need to dump the raw packet */
-    gpsd_report(session->context->debug, LOG_RAW,
+    gpsd_report(&session->context->errout, LOG_RAW,
 		"raw _proto_ packet type 0x%02x\n", type);
-
-   /*
-    * The tag field is only 8 bytes; be careful you do not overflow.
-    * Using an abbreviation (eg. "italk" -> "itk") may be useful.
-    */
-    (void)snprintf(session->gpsdata.tag, sizeof(session->gpsdata.tag),
-	"_PROTO_%02x", type);
 
     switch (type)
     {
 	/* Deliver message to specific decoder based on message type */
 
     default:
-	gpsd_report(session->context->debug, LOG_WARN,
+	gpsd_report(&session->context->errout, LOG_WARN,
 		    "unknown packet id %d length %d\n", type, len);
 	return 0;
     }
@@ -358,7 +351,7 @@ static ssize_t _proto__control_send(struct gps_device_t *session,
 
    /* we may need to dump the message */
     return gpsd_write(session, session->msgbuf, session->msgbuflen);
-   gpsd_report(session->context->debug, LOG_PROG,
+   gpsd_report(&session->context->errout, LOG_PROG,
 	       "writing _proto_ control type %02x\n");
    return gpsd_write(session, session->msgbuf, session->msgbuflen);
 }
@@ -382,7 +375,7 @@ static void _proto__event_hook(struct gps_device_t *session, event_t event)
     if (event == event_identified) {
 	/*
 	 * Fires when the first full packet is recognized from a
-	 * previously unidentified device.  The session packet counter
+	 * previously unidentified device.  The session.lexer counter
 	 * is zeroed.  If your device has a default cycle time other
 	 * than 1 second, set session->device->gpsdata.cycle here. If
 	 * possible, get the software version and store it in
@@ -395,9 +388,9 @@ static void _proto__event_hook(struct gps_device_t *session, event_t event)
 	 * Called immediately after event_identified fires, then just
 	 * after every packet received thereafter, but you probably
 	 * only want to take actions on the first few packets after
-	 * the session packet counter has been zeroed,
+	 * the session.lexer counter has been zeroed,
 	 *
-	 * Remember that session->packet.counter is available when you
+	 * Remember that session->lexer.counter is available when you
 	 * write this hook; you can use this fact to interleave configuration
 	 * sends with the first few packet reads, which is useful for
 	 * devices with small receive buffers.
@@ -429,11 +422,11 @@ static void _proto__event_hook(struct gps_device_t *session, event_t event)
  */
 static gps_mask_t _proto__parse_input(struct gps_device_t *session)
 {
-    if (session->packet.type == _PROTO__PACKET) {
-	return _proto__dispatch(session, session->packet.outbuffer, session->packet.outbuflen);
+    if (session->lexer.type == _PROTO__PACKET) {
+	return _proto__dispatch(session, session->lexer.outbuffer, session->lexer.outbuflen);
 #ifdef NMEA_ENABLE
-    } else if (session->packet.type == NMEA_PACKET) {
-	return nmea_parse((char *)session->packet.outbuffer, session);
+    } else if (session->lexer.type == NMEA_PACKET) {
+	return nmea_parse((char *)session->lexer.outbuffer, session);
 #endif /* NMEA_ENABLE */
     } else
 	return 0;
@@ -519,6 +512,8 @@ const struct gps_type_t driver__proto__binary = {
     .parse_packet     = _proto__parse_input,
     /* RTCM handler (using default routine) */
     .rtcm_writer      = pass_rtcm,
+    /* non-perturbing initial query (e.g. for version) */
+    .init_query        = NULL,
     /* fire on various lifetime events */
     .event_hook       = _proto__event_hook,
 #ifdef RECONFIGURE_ENABLE

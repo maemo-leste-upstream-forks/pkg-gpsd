@@ -1,8 +1,9 @@
 /*
  * Constants used for GPS time detection and rollover correction.
  *
- * Correct for week beginning 2014-08-21T00:00:00
+ * Correct for week beginning 2015-02-19T00:00:00
  */
-#define CENTURY_BASE	201400
-#define LEAPSECOND_NOW	16
-#define GPS_WEEK_NOW	1806
+#define BUILD_CENTURY	2000
+#define BUILD_WEEK	809		# Assumes 10-bit week counter
+#define BUILD_LEAPSECONDS	16
+#define BUILD_ROLLOVERS	1		# Assumes 10-bit week counter

@@ -7,6 +7,7 @@
 #include <time.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "gpsd.h"
 
@@ -37,7 +38,9 @@ static gps_mask_t superstar2_msg_ephemeris(struct gps_device_t *,
 /*
  * These methods may be called elsewhere in gpsd
  */
+#ifdef CONTROLSEND_ENABLE
 static ssize_t superstar2_control_send(struct gps_device_t *, char *, size_t);
+#endif /* CONTROLSEND_ENABLE */
 static void superstar2_event_hook(struct gps_device_t *, event_t);
 static ssize_t superstar2_write(struct gps_device_t *, char *, size_t);
 #ifdef RECONFIGURE_ENABLE
@@ -54,7 +57,7 @@ superstar2_msg_ack(struct gps_device_t *session,
 		   unsigned char *buf, size_t data_len)
 {
     if (data_len == 11)
-	gpsd_report(session->context->debug, LOG_PROG,
+	gpsd_report(&session->context->errout, LOG_PROG,
 		    "superstar2 #126 - "
 		    "ACK %d %d %d %d %d\n",
 		    buf[5], buf[6], buf[7], buf[8], buf[9]);
@@ -80,7 +83,7 @@ superstar2_msg_navsol_lla(struct gps_device_t *session,
     if (data_len != 77)
 	return 0;
 
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"superstar2 #20 - user navigation data\n");
     mask = 0;
 
@@ -99,7 +102,8 @@ superstar2_msg_navsol_lla(struct gps_device_t *session,
     tm.tm_mday = (int)getub(buf, 14);
     tm.tm_mon = (int)getub(buf, 15) - 1;
     tm.tm_year = (int)getleu16(buf, 16) - 1900;
-    session->newdata.time = (timestamp_t)timegm(&tm) + (d - tm.tm_sec);
+    tm.tm_isdst = 0;
+    session->newdata.time = (timestamp_t)mkgmtime(&tm) + (d - tm.tm_sec);
     mask |= TIME_SET | PPSTIME_IS;
 
     /* extract the local tangential plane (ENU) solution */
@@ -142,7 +146,7 @@ superstar2_msg_navsol_lla(struct gps_device_t *session,
     }
 
     mask |= MODE_SET | STATUS_SET;
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"NAVSOL_LLA: time=%.2f lat=%.2f lon=%.2f alt=%.2f track=%.2f speed=%.2f climb=%.2f mode=%d status=%d hdop=%.2f hdop=%.2f used=%d\n",
 		session->newdata.time,
 		session->newdata.latitude,
@@ -159,7 +163,7 @@ superstar2_msg_navsol_lla(struct gps_device_t *session,
     return mask;
 }
 
-/**
+/*
  * GPS Satellite Info
  */
 static gps_mask_t
@@ -171,7 +175,7 @@ superstar2_msg_svinfo(struct gps_device_t *session,
     if (data_len != 67)
 	return 0;
 
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"superstar2 #33 - satellite data\n");
 
     nchan = 12;
@@ -181,27 +185,28 @@ superstar2_msg_svinfo(struct gps_device_t *session,
 	/* get info for one channel/satellite */
 	int off = i * 5 + 5;
 	unsigned int porn;
+	bool used = (getub(buf, off) & 0x60) == 0x60;
 	if ((porn = (unsigned int)getub(buf, off) & 0x1f) == 0)
 	    porn = (unsigned int)(getub(buf, off + 3) >> 1) + 87;
 
-	session->gpsdata.PRN[i] = (int)porn;
-	session->gpsdata.ss[i] = (float)getub(buf, off + 4);
-	session->gpsdata.elevation[i] = (int)getsb(buf, off + 1);
-	session->gpsdata.azimuth[i] = (unsigned short)getub(buf, off + 2) +
-	    ((unsigned short)(getub(buf, off + 3) & 0x1) << 1);
-
+	session->gpsdata.skyview[i].PRN = (short)porn;
+	session->gpsdata.skyview[i].ss = (float)getub(buf, off + 4);
+	session->gpsdata.skyview[i].elevation = (short)getsb(buf, off + 1);
+	session->gpsdata.skyview[i].azimuth = (short)getub(buf, off + 2) +
+	    (short)((unsigned short)(getub(buf, off + 3) & 0x1) << 1);
+	session->gpsdata.skyview[i].used = used;
 	/*@ +charint @*/
-	if ((getub(buf, off) & 0x60) == 0x60)
-	    session->gpsdata.used[nsv++] = session->gpsdata.PRN[i];
+	if (used)
+	    nsv++;
 	/*@ -charint @*/
 
-	if (session->gpsdata.PRN[i])
+	if (session->gpsdata.skyview[i].PRN)
 	    st++;
     }
     session->gpsdata.skyview_time = NAN;
     session->gpsdata.satellites_used = nsv;
     session->gpsdata.satellites_visible = st;
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"SVINFO: visible=%d used=%d mask={SATELLITE|USED}\n",
 		session->gpsdata.satellites_visible,
 		session->gpsdata.satellites_used);
@@ -226,12 +231,12 @@ superstar2_msg_version(struct gps_device_t *session,
     (void)snprintf(boot_sw, 15, "%s", (char *)buf + 36);
     (void)snprintf(ser_num, 14, "%s", (char *)buf + 73);
 
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"superstar2 #45 - "
 		"hw part %s boot sw %s main sw %s ser num %s\n",
 		hw_part, boot_sw, main_sw, ser_num);
     (void)strlcpy(session->subtype, main_sw, sizeof(session->subtype));
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"VERSION: subtype='%s' mask={DEVEICEID}\n",
 		session->subtype);
     return DEVICEID_SET;
@@ -250,7 +255,7 @@ superstar2_msg_timing(struct gps_device_t *session, unsigned char *buf,
     if (data_len != 65)
 	return 0;
 
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"superstar2 #113 - timing status\n");
     /*@ +charint @*/
     if ((getub(buf, 55) & 0x30) != 0)
@@ -268,11 +273,12 @@ superstar2_msg_timing(struct gps_device_t *session, unsigned char *buf,
 	tm.tm_min = (int)getsb(buf, 42);
 	d = getled64((char *)buf, 43);
 	tm.tm_sec = (int)d;
-	session->newdata.time = (timestamp_t)timegm(&tm);
+	tm.tm_isdst = 0;
+	session->newdata.time = (timestamp_t)mkgmtime(&tm);
 	session->context->leap_seconds = (int)getsb(buf, 20);
 	mask = TIME_SET | PPSTIME_IS;
     }
-    gpsd_report(session->context->debug, LOG_DATA,
+    gpsd_report(&session->context->errout, LOG_DATA,
 		"TIMING: time=%.2f mask={TIME}\n",
 		session->newdata.time);
     return mask;
@@ -289,12 +295,12 @@ superstar2_msg_measurement(struct gps_device_t *session, unsigned char *buf,
     int i, n;
     double t;
 
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"superstar2 #23 - measurement block\n");
 
     n = (int)getub(buf, 6);	/* number of measurements */
     if ((n < 1) || (n > MAXCHANNELS)) {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "too many measurements\n");
 	return 0;
     }
@@ -302,8 +308,8 @@ superstar2_msg_measurement(struct gps_device_t *session, unsigned char *buf,
     for (i = 0; i < n; i++) {
 	unsigned long ul;
 	session->gpsdata.raw.mtime[i] = t;
-	session->gpsdata.PRN[i] = (int)getub(buf, 11 * i + 15) & 0x1f;
-	session->gpsdata.ss[i] = (double)getub(buf, 11 * i * 15 + 1) / 4.0;
+	session->gpsdata.skyview[i].PRN = (short)(getub(buf, 11 * i + 15) & 0x1f);
+	session->gpsdata.skyview[i].ss = (double)getub(buf, 11 * i * 15 + 1) / 4.0;
 	session->gpsdata.raw.codephase[i] =
 	    (double)getleu32(buf, 11 * i * 15 + 2);
 	ul = (unsigned long)getleu32(buf, 11 * i * 15 + 6);
@@ -335,7 +341,7 @@ superstar2_msg_iono_utc(struct gps_device_t *session, unsigned char *buf,
 
     i = (unsigned int)getub(buf, 12);
     u = (unsigned int)getub(buf, 21);
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"superstar2 #75 - ionospheric & utc data: iono %s utc %s\n",
 		i ? "ok" : "bad", u ? "ok" : "bad");
     session->driver.superstar2.last_iono = time(NULL);
@@ -353,7 +359,7 @@ superstar2_msg_ephemeris(struct gps_device_t *session, unsigned char *buf,
 {
     unsigned int prn;
     prn = (unsigned int)(getub(buf, 4) & 0x1f);
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"superstar2 #22 - ephemeris data - prn %u\n", prn);
 
     /* ephemeris data updates fairly slowly, but when it does, poll UTC */
@@ -376,7 +382,7 @@ superstar2_write(struct gps_device_t *session, char *msg, size_t msglen)
     c += 0x100;
     msg[(int)msg[3] + 4] = (char)((c >> 8) & 0xff);
     msg[(int)msg[3] + 5] = (char)(c & 0xff);
-    gpsd_report(session->context->debug, LOG_PROG,
+    gpsd_report(&session->context->errout, LOG_PROG,
 		"writing superstar2 control type %d len %zu\n",
 		(int)msg[1] & 0x7f, msglen);
     return gpsd_write(session, msg, msglen);
@@ -395,9 +401,6 @@ superstar2_dispatch(struct gps_device_t * session, unsigned char *buf,
 	return 0;
 
     type = (int)buf[SUPERSTAR2_TYPE_OFFSET];
-    (void)snprintf(session->gpsdata.tag,
-		   sizeof(session->gpsdata.tag), "SS2-%d", type);
-
     session->cycle_end_reliable = true;
 
     switch (type) {
@@ -420,7 +423,7 @@ superstar2_dispatch(struct gps_device_t * session, unsigned char *buf,
 	return superstar2_msg_ephemeris(session, buf, len);
 
     default:
-	gpsd_report(session->context->debug, LOG_WARN,
+	gpsd_report(&session->context->errout, LOG_WARN,
 		    "unknown superstar2 packet id 0x%02x length %zd\n",
 		    type, len);
 	return 0;
@@ -432,6 +435,8 @@ superstar2_dispatch(struct gps_device_t * session, unsigned char *buf,
  * Externally called routines below here
  *
  **********************************************************/
+
+/* FIXME: factor out Superstar init_query for version */
 
 static void superstar2_event_hook(struct gps_device_t *session, event_t event)
 {
@@ -474,12 +479,12 @@ static void superstar2_event_hook(struct gps_device_t *session, event_t event)
  */
 static gps_mask_t superstar2_parse_input(struct gps_device_t *session)
 {
-    if (session->packet.type == SUPERSTAR2_PACKET) {
-	return superstar2_dispatch(session, session->packet.outbuffer,
-				   session->packet.length);;
+    if (session->lexer.type == SUPERSTAR2_PACKET) {
+	return superstar2_dispatch(session, session->lexer.outbuffer,
+				   session->lexer.length);;
 #ifdef NMEA_ENABLE
-    } else if (session->packet.type == NMEA_PACKET) {
-	return nmea_parse((char *)session->packet.outbuffer, session);
+    } else if (session->lexer.type == NMEA_PACKET) {
+	return nmea_parse((char *)session->lexer.outbuffer, session);
 #endif /* NMEA_ENABLE */
     } else
 	return 0;
@@ -559,6 +564,8 @@ const struct gps_type_t driver_superstar2 = {
     .parse_packet	= superstar2_parse_input,
     /* RTCM handler (using default routine) */
     .rtcm_writer	= gpsd_write,
+    /* non-perturbing initial query */
+    .init_query         = NULL,
     /* Fire on various lifetime events */
     .event_hook		= superstar2_event_hook,
 #ifdef RECONFIGURE_ENABLE

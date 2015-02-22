@@ -24,10 +24,10 @@
 # * Coveraging mode: gcc "-coverage" flag requires a hack for building the python bindings
 
 # Release identification begins here
-gpsd_version = "3.11"
+gpsd_version = "3.12"
 
 # library version
-libgps_version_current   = 21
+libgps_version_current   = 22
 libgps_version_revision  = 0
 libgps_version_age       = 0
 libgpsd_version_current  = 22
@@ -60,9 +60,9 @@ devmail    = "gpsd-dev@lists.nongnu.org"
 usermail   = "gpsd-users@lists.nongnu.org"
 annmail    = "gpsd-announce@nongnu.org"
 ircchan    = "irc://chat.freenode.net/#gpsd"
-tiplink    = "<a href='http://gittip.com/esr'>leave a tip at Gittip</a>"
-tipwidget  = "<script data-gittip-username='esr' \
-	data-gittip-widget='button' src='//gttp.co/v1.js'></script>"
+tiplink    = "<a href='http://gratipay.com/esr'>leave a tip at Gratipay</a>"
+tipwidget  = "<script data-gratipay-username='esr' \
+	data-gratipay-widget='button' src='//gttp.co/v1.js'></script>"
 # Hosting information ends here
 
 EnsureSConsVersion(2,0,1)
@@ -98,7 +98,7 @@ imloads = True
 
 boolopts = (
     # GPS protocols
-    ("nmea",          True,  "NMEA support"),
+    ("nmea0183",      True,  "NMEA0183 support"),
     ("ashtech",       True,  "Ashtech support"),
     ("earthmate",     True,  "DeLorme EarthMate Zodiac support"),
     ("evermore",      True,  "EverMore binary support"),
@@ -108,7 +108,7 @@ boolopts = (
     ("geostar",       True,  "Geostar Protocol support"),
     ("itrax",         True,  "iTrax hardware support"),
     ("mtk3301",       True,  "MTK-3301 support"),
-    ("navcom",        True,  "Navcom support"),
+    ("navcom",        True,  "Navcom NCT support"),
     ("oncore",        True,  "Motorola OnCore chipset support"),
     ("sirf",          True,  "SiRF chipset support"),
     ("superstar2",    True,  "Novatel SuperStarII chipset support"),
@@ -125,19 +125,19 @@ boolopts = (
     ("oceanserver",   True,  "OceanServer support"),
     ("rtcm104v2",     True,  "rtcm104v2 support"),
     ("rtcm104v3",     True,  "rtcm104v3 support"),
+    ("passthrough",   True,  "build support for passing through JSON"),
     # Time service
     ("ntpshm",        True,  "NTP time hinting support"),
     ("pps",           True,  "PPS time syncing support"),
     # Export methods
     ("socket_export", True,  "data export over sockets"),
-    ("dbus_export",   False, "enable DBUS export support"),
+    ("dbus_export",   True,  "enable DBUS export support"),
     ("shm_export",    True,  "export via shared memory"),
     # Communication
     ('usb',           True,  "libusb support for USB devices"),
     ("bluez",         True,  "BlueZ support for Bluetooth devices"),
     ("ipv6",          True,  "build IPv6 support"),
     ("netfeed",       True,  "build support for handling TCP/IP data sources"),
-    ("passthrough",   True,  "build support for passing through JSON"),
     # Other daemon options
     ("force_global",  False, "force daemon to listen on all addressses"),
     ("timing",        False, "latency timing support"),
@@ -145,16 +145,14 @@ boolopts = (
     ("systemd",       systemd, "systemd socket activation"),
     # Client-side options
     ("clientdebug",   True,  "client debugging support"),
-    ("oldstyle",      True,  "oldstyle (pre-JSON) protocol support"),
+    ("ncurses",       True,  "build with ncurses"),
     ("libgpsmm",      True,  "build C++ bindings"),
-    ("libQgpsmm",     True,  "build QT bindings (deprecated alias)"),
     ("qt",            True,  "build QT bindings"),
     # Daemon options
     ("reconfigure",   True,  "allow gpsd to change device settings"),
     ("controlsend",   True,  "allow gpsctl/gpsmon to change device settings"),
-    ("cheapfloats",   True,  "float ops are cheap, compute error estimates"),
+    ("nofloats",      False, "float ops are expensive, suppress error estimates"),
     ("squelch",       False, "squelch gpsd_report/gpsd_hexdump to save cpu"),
-    ("ncurses",       True,  "build with ncurses"),
     # Build control
     ("shared",        True,  "build shared libraries, not static"),
     ("implicit_link", imloads,"implicit linkage is supported in shared libs"),
@@ -162,10 +160,13 @@ boolopts = (
     ("debug",         False, "include debug information in build"),
     ("profiling",     False, "build with profiling enabled"),
     ("coveraging",    False, "build with code coveraging enabled"),
-    ("strip",         True,  "build with stripping of binaries enabled"),
+    ("nostrip",       False, "don't symbol-strip binaries at link time"),
     ("chrpath",       False, "use chrpath to edit library load paths"),
     ("manbuild",      True,  "build help in man and HTML formats"),
     ("leapfetch",     True,  "fetch up-to-date data on leap seconds."),
+    ("minimal",       False, "turn off every option not set on the command line"), 
+    # Test control
+    ("slow",          False, "run tests with realistic (slow) delays"),
     )
 for (name, default, help) in boolopts:
     opts.Add(BoolVariable(name, help, default))
@@ -182,14 +183,13 @@ nonboolopts = (
     ("prefix",              "/usr/local",  "installation directory prefix"),
     ("python_libdir",       sysconfig.get_python_lib(plat_specific=1),
                                            "Python module directory prefix"),
-    ("limited_max_clients", 0,             "maximum allowed clients"),
-    ("limited_max_devices", 0,             "maximum allowed devices"),
+    ("max_clients",         '64',          "maximum allowed clients"),
+    ("max_devices",         '4',           "maximum allowed devices"),
     ("fixed_port_speed",    0,             "fixed serial port speed"),
     ("fixed_stop_bits",     0,             "fixed serial port stop bits"),
     ("target",              "",            "cross-development target"),
     ("sysroot",             "",            "cross-development system root"),
     )
-
 for (name, default, help) in nonboolopts:
     opts.Add(name, help, default)
 
@@ -207,7 +207,6 @@ pathopts = (
 for (name, default, help) in pathopts:
     opts.Add(PathVariable(name, help, default, PathVariable.PathAccept))
 
-
 #
 # Environment creation
 #
@@ -223,6 +222,7 @@ import_env = (
     'PKG_CONFIG_LIBDIR',      # Pass more environment variables to pkg-config (required for crossbuilds)
     'STAGING_DIR',     # Required by the OpenWRT and CeroWrt builds.
     'STAGING_PREFIX',  # Required by the OpenWRT and CeroWrt builds.
+    'WRITE_PAD',       # So we can test WRITE_PAD values on the fly.
     )
 envs = {}
 for var in import_env:
@@ -234,6 +234,12 @@ envs["LD_LIBRARY_PATH"] = os.getcwd()
 env = Environment(tools=["default", "tar", "textfile"], options=opts, ENV=envs)
 opts.Save('.scons-option-cache', env)
 env.SConsignFile(".sconsign.dblite")
+
+#  Minimal build turns off every option not set on the command line,
+if env['minimal']:
+    for (name, default, help) in boolopts:
+        if default == True and not ARGUMENTS.get(name):
+            env[name] = False
 
 for (name, default, help) in pathopts:
     env[name] = env.subst(env[name])
@@ -271,16 +277,16 @@ for key, value in os.environ.iteritems():
 # $SRCDIR replaces occurrences for $(srcdir) in the autotools build.
 env['SRCDIR'] = '.'
 
+# We may need to force slow regression tests to get around race
+# conditions in the pty layer, especially on a loaded machine.
+if env["slow"]:
+    env['REGRESSOPTS'] = "-S"
+else:
+    env['REGRESSOPTS'] = ""
+
 def announce(msg):
     if not env.GetOption("silent"):
         print msg
-
-# We need to define -D_GNU_SOURCE
-env.Append(CFLAGS='-D_GNU_SOURCE')
-
-# And we need some libraries
-env.MergeFlags("-lm")
-env.MergeFlags("-pthread")
 
 # DESTDIR environment variable means user wants to prefix the installation root.
 DESTDIR = os.environ.get('DESTDIR', '')
@@ -308,9 +314,13 @@ if env["shared"]:
 if 'MORECFLAGS' in os.environ:
     env.Append(CFLAGS=Split(os.environ['MORECFLAGS']))
 
+# Don't change CFLAGS if already set by environment.
+if not 'CFLAGS' in os.environ:
+    if '-Wmissing-prototypes' not in env['CFLAGS']:
+        env.Append(CFLAGS=['-Wmissing-prototypes'])
+
 # Don't change CCFLAGS if already set by environment.
 if not 'CCFLAGS' in os.environ:
-    env.Append(CCFLAGS=['-Wmissing-prototypes'])
     env.Append(CCFLAGS=['-Wmissing-declarations'])
     # Should we build with profiling?
     if env['profiling']:
@@ -487,7 +497,11 @@ else:
     for option in ('-Wextra','-Wall', '-Wno-uninitialized','-Wno-missing-field-initializers',
                    '-Wcast-align','-Wmissing-declarations', '-Wmissing-prototypes',
                    '-Wstrict-prototypes', '-Wpointer-arith', '-Wreturn-type'):
-        config.CheckCompilerOption(option)
+        if option not in config.env['CFLAGS']:
+            config.CheckCompilerOption(option)
+
+    if config.CheckCompilerOption("-pthread"):
+        env.MergeFlags("-pthread")
 
     env.Prepend(LIBPATH=[os.path.realpath(os.curdir)])
     if env["shared"] and env["chrpath"]:
@@ -571,10 +585,13 @@ else:
 
     if env['dbus_export'] and config.CheckPKG('dbus-1'):
         confdefs.append("#define HAVE_DBUS 1\n")
-        dbus_libs = pkg_config('dbus-1')
+        dbus_libs = ["-ldbus-1"]
+        env.MergeFlags(pkg_config("dbus-1"))
     else:
         confdefs.append("/* #undef HAVE_DBUS */\n")
         dbus_libs = []
+        if env["dbus_export"]:
+            announce("Turning off dbus-export support, library not found.")
         env["dbus_export"] = False
 
     if env['bluez'] and config.CheckPKG('bluez'):
@@ -583,6 +600,8 @@ else:
     else:
         confdefs.append("/* #undef HAVE_BLUEZ */\n")
         bluezlibs = []
+        if env["bluez"]:
+            announce("Turning off Bluetooth support, library not found.")
         env["bluez"] = False
 
     #in_port_t is not defined on Android
@@ -604,6 +623,11 @@ else:
         confdefs.append("/* #undef HAVE_LINUX_CAN_H */\n")
         announce("You do not have kernel CANbus available.")
         env["nmea2000"] = False
+
+    if config.CheckHeader("termios.h"):
+        confdefs.append("#define HAVE_TERMIOS_H 1\n")
+    else:
+        confdefs.append("/* #undef HAVE_TERMIOS_H */\n")
 
     # endian.h is required for rtcm104v2 unless the compiler defines
     # __ORDER_BIG_ENDIAN__, __ORDER_LITTLE_ENDIAN__ and __BYTE_ORDER__
@@ -679,7 +703,7 @@ else:
     else:
         confdefs.append("#define COMPAT_SELECT\n")
 
-    if config.CheckHeader(["sys/time.h", "sys/timepps.h"]):
+    if config.CheckHeader(["sys/types.h", "sys/time.h", "sys/timepps.h"]):
         confdefs.append("#define HAVE_SYS_TIMEPPS_H 1\n")
         kpps = True
     else:
@@ -749,7 +773,10 @@ pid_t getsid(pid_t pid);
         env['BUILDERS']["HTML"] = Builder(action=htmlbuilder,
                                           src_suffix=".xml", suffix=".html")
 
-    qt_network = env['qt'] and env['libQgpsmm'] and config.CheckPKG('QtNetwork')
+    # Determine if Qt network libraries are present, and if not, force qt to off
+    qt_network = config.CheckPKG('QtNetwork')
+    if not qt_network:
+        env["qt"] = False
 
     env = config.Finish()
 
@@ -770,7 +797,7 @@ pid_t getsid(pid_t pid);
         announce("Adjust your PYTHONPATH to see library directories under /usr/local/lib")
 
     # Should we build the Qt binding?
-    if qt_network:
+    if env["qt"]:
         qt_env = env.Clone()
         qt_env.MergeFlags('-DUSE_QT')
         try:
@@ -820,6 +847,7 @@ libgpsd_sources = [
     "geoid.c",
     "isgps.c",
     "libgpsd_core.c",
+    "matrix.c",
     "net_dgpsip.c",
     "net_gnss_dispatch.c",
     "net_ntrip.c",
@@ -923,7 +951,7 @@ def VersionedSharedLibraryInstall(env, destination, libs):
             for linksuffix in [shlib_suffix, major_name, minor_name]:
                 linkname = re.sub(suffix_re, linksuffix, lib)
                 env.AddPostAction(ilibs, 'cd %s; rm -f %s; ln -s %s %s' % (destination, linkname, lib, linkname))
-            env.Clean(lib, linkname)
+                env.Clean(lib, linkname)
     return ilibs
 
 if not env["shared"]:
@@ -946,14 +974,14 @@ compiled_gpslib = Library(env=env,
                           target="gps",
                           sources=libgps_sources,
                           version=libgps_version,
-                          parse_flags=dbus_libs + rtlibs)
+                          parse_flags=rtlibs)
 env.Clean(compiled_gpslib, "gps_maskdump.c")
 
 compiled_gpsdlib = Library(env=env,
                            target="gpsd",
                            sources=libgpsd_sources,
                            version=libgpsd_version,
-                           parse_flags=usblibs + rtlibs + bluezlibs)
+                           parse_flags=usblibs + rtlibs + bluezlibs + ["-lgps"])
 
 libraries = [compiled_gpslib, compiled_gpsdlib]
 
@@ -976,14 +1004,14 @@ if qt_env:
             compile_flags = qt_env['CFLAGS']
         qtobjects.append(qt_env.SharedObject(src.split(".")[0] + '-qt', src,
                                              CC=compile_with,
-                                             CFLAGS=compile_flags,
-                                             parse_flags=dbus_libs))
+                                             CFLAGS=compile_flags))
     compiled_qgpsmmlib = Library(qt_env, "Qgpsmm", qtobjects, libgps_version)
     libraries.append(compiled_qgpsmmlib)
 
 # The libraries have dependencies on system libraries
+# libdbus appears multiple times because the linker only does one pass.
 
-gpslibs = ["-lgps", "-lm"]
+gpslibs = ["-lgps", "-lm"] + dbus_libs
 gpsdlibs = ["-lgpsd"] + usblibs + bluezlibs + gpslibs
 
 # Source groups
@@ -996,7 +1024,7 @@ if env['systemd']:
 gpsmon_sources = [
     'gpsmon.c',
     'monitor_italk.c',
-    'monitor_nmea.c',
+    'monitor_nmea0183.c',
     'monitor_oncore.c',
     'monitor_sirf.c',
     'monitor_superstar2.c',
@@ -1009,8 +1037,7 @@ gpsmon_sources = [
 
 gpsd_env = env.Clone()
 
-gpsd = gpsd_env.Program('gpsd', gpsd_sources,
-                        parse_flags = gpsdlibs + dbus_libs)
+gpsd = gpsd_env.Program('gpsd', gpsd_sources, parse_flags = gpsdlibs)
 env.Depends(gpsd, [compiled_gpsdlib, compiled_gpslib])
 
 gpsdecode = env.Program('gpsdecode', ['gpsdecode.c'], parse_flags=gpsdlibs)
@@ -1048,22 +1075,23 @@ if env["ncurses"]:
 # Test programs
 test_float = env.Program('test_float', ['test_float.c'])
 test_geoid = env.Program('test_geoid', ['test_geoid.c'], parse_flags=gpsdlibs)
-env.Depends(test_geoid, [compiled_gpsdlib, compiled_gpslib])
 test_json = env.Program('test_json', ['test_json.c'], parse_flags=gpslibs)
 env.Depends(test_json, compiled_gpslib)
-test_mkgmtime = env.Program('test_mkgmtime', ['test_mkgmtime.c'], parse_flags=gpslibs)
-env.Depends(test_mkgmtime, compiled_gpslib)
+test_mktime = env.Program('test_mktime', ['test_mktime.c'], parse_flags=gpslibs)
+env.Depends(test_mktime, compiled_gpslib)
 test_trig = env.Program('test_trig', ['test_trig.c'], parse_flags=["-lm"])
 test_packet = env.Program('test_packet', ['test_packet.c'], parse_flags=gpsdlibs)
 env.Depends(test_packet, [compiled_gpsdlib, compiled_gpslib])
 test_bits = env.Program('test_bits', ['test_bits.c'], parse_flags=gpslibs)
 env.Depends(test_bits, [compiled_gpsdlib, compiled_gpslib])
+test_matrix = env.Program('test_matrix', ['test_matrix.c'], parse_flags=gpsdlibs)
+env.Depends(test_matrix, [compiled_gpsdlib, compiled_gpslib])
 test_gpsmm = env.Program('test_gpsmm', ['test_gpsmm.cpp'], parse_flags=gpslibs)
 env.Depends(test_gpsmm, compiled_gpslib)
 test_libgps = env.Program('test_libgps', ['test_libgps.c'], parse_flags=gpslibs)
 env.Depends(test_libgps, compiled_gpslib)
-testprogs = [test_float, test_trig, test_bits, test_packet,
-             test_mkgmtime, test_geoid, test_libgps]
+testprogs = [test_float, test_trig, test_bits, test_matrix, test_packet,
+             test_mktime, test_geoid, test_libgps]
 if env['socket_export']:
     testprogs.append(test_json)
 if env["libgpsmm"]:
@@ -1073,6 +1101,7 @@ if env["libgpsmm"]:
 if not env['python']:
     python_built_extensions = []
     python_targets = []
+    python_progs = []
 else:
     python_progs = ["gpscat", "gpsfake", "gpsprof", "xgps", "xgpsspeed", "gegps"]
     python_modules = Glob('gps/*.py') 
@@ -1347,7 +1376,7 @@ if env["shared"] and env["chrpath"]:
     env.AddPostAction(binaryinstall, '$CHRPATH -r "%s" "$TARGET"' \
                       % (installdir('libdir', False), ))
 
-if not env['debug'] and not env['profiling'] and env['strip']:
+if not env['debug'] and not env['profiling'] and not env['nostrip']:
     env.AddPostAction(binaryinstall, '$STRIP $TARGET')
 
 if not env['python']:
@@ -1357,7 +1386,7 @@ else:
     python_module_dir = python_lib_dir + os.sep + 'gps'
     python_extensions_install = python_env.Install( DESTDIR + python_module_dir,
                                                     python_built_extensions)
-    if not env['debug'] and not env['profiling'] and env['strip']:
+    if not env['debug'] and not env['profiling'] and not env['nostrip']:
         python_env.AddPostAction(python_extensions_install, '$STRIP $TARGET')
 
     python_modules_install = python_env.Install( DESTDIR + python_module_dir,
@@ -1447,7 +1476,7 @@ splint_table = [
     ('splint-gpsdecode',['gpsdecode.c'],'gpsdecode', ['']),
     ('splint-gpxlogger',['gpxlogger.c'],'gpxlogger', ['']),
     ('splint-test_packet',['test_packet.c'],'test_packet test harness', ['']),
-    ('splint-test_mkgmtime',['test_mkgmtime.c'],'test_mkgmtime test harness', ['']),
+    ('splint-test_mktime',['test_mktime.c'],'test_mktime test harness', ['']),
     ('splint-test_geoid',['test_geoid.c'],'test_geoid test harness', ['']),
     ('splint-test_json',['test_json.c'],'test_json test harness', ['']),
     ]
@@ -1466,7 +1495,16 @@ Utility("scan-build", ["gpsd.h", "packet_names.h"],
 
 # Sanity-check Python code.
 pylint = Utility("pylint", ["jsongen.py", "maskaudit.py", python_built_extensions],
-        ['''pylint --rcfile=/dev/null --dummy-variables-rgx='^_' --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" --reports=n --disable=F0001,C0103,C0111,C1001,C0301,C0302,C0322,C0324,C0323,C0321,R0201,R0801,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,W0110,W0201,W0121,W0232,W0234,W0401,W0403,W0141,W0142,W0603,W0614,W0621,E1101,E1102,F0401 jsongen.py leapsecond.py maskaudit.py gpsprof.py gpscat.py gpsfake.py gegps.py gps/*.py xgps'''])
+        ['''pylint --rcfile=/dev/null --dummy-variables-rgx='^_' --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" --reports=n --disable=F0001,C0103,C0111,C1001,C0301,C0302,C0322,C0324,C0323,C0321,C0330,R0201,R0801,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,W0110,W0201,W0121,W0123,W0232,W0234,W0401,W0403,W0141,W0142,W0603,W0614,W0640,W0621,E1101,E1102,E1103,F0401 gps/*.py *.py ''' + " ".join(python_progs)])
+
+# Additional Python readablity style checks
+pep8 = Utility("pep8", ["jsongen.py", "maskaudit.py", python_built_extensions],
+        ['''pep8 --ignore=E501,W602,E122 {} gps/[a-zA-Z]*.py *.py'''.format(" ".join(python_progs))])
+
+# Additional Python readablity style checks
+flake8 = Utility("flake8", ["jsongen.py", "maskaudit.py", python_built_extensions],
+        ['''flake8 --ignore=E501,W602,E122 {} gps/[a-zA-Z]*.py *.py'''.format(" ".join(python_progs))])
+
 
 # Check the documentation for bogons, too
 Utility("xmllint", glob.glob("*.xml"),
@@ -1498,6 +1536,11 @@ bits_regress = Utility('bits-regress', [test_bits], [
     '$SRCDIR/test_bits --quiet'
     ])
 
+# Unit-test the bitfield extractor
+matrix_regress = Utility('matrix-regress', [test_matrix], [
+    '$SRCDIR/test_matrix --quiet'
+    ])
+
 # Check that all Python modules compile properly 
 if env['python']:
     def check_compile(target, source, env):
@@ -1511,38 +1554,51 @@ else:
     python_compilation_regress = None
 
 # using regress-drivers requires socket_export being enabled.
-if env['socket_export']:
-    # Regression-test the daemon
-    gps_regress = Utility("gps-regress", [gpsd, python_built_extensions],
-            '$SRCDIR/regress-driver test/daemon/*.log')
+if not env['socket_export']:
+    announce("GPS regression tests suppressed because socket_export is off.")
+    gps_regress = None
+else:
+    # Regression-test the daemon. But first:
+    # (1) Clear GPSD's SHM segment in case a previous abort didn't.  This
+    # prevents spurious error messages.
+    # (2) Dump the platform and its delay parameters.
+    # The ":;" in this production and the next one forestalls an attempt by
+    # SCons to install up to date versions of gpsfake and gpsctl if it can
+    # find older versions of them in a directory on your $PATH.
+    gps_regress = Utility("gps-regress", [gpsd, gpsctl, python_built_extensions],
+            ':; $SRCDIR/gpsfake -T; $SRCDIR/regress-driver $REGRESSOPTS test/daemon/*.log')
 
     # Build the regression tests for the daemon.
     # Note: You'll have to do this whenever the default leap second
     # changes in timebase.h.  The problem is in the SiRF tests;
     # that driver relies on the default until it gets the current
     # offset from subframe data.
-    Utility('gps-makeregress', [gpsd, python_built_extensions],
-        '$SRCDIR/regress-driver -b test/daemon/*.log')
+    Utility('gps-makeregress', [gpsd, gpsctl, python_built_extensions],
+        ':; $SRCDIR/gpsfake -T; $SRCDIR/regress-driver -b $REGRESSOPTS test/daemon/*.log')
 
 # To build an individual test for a load named foo.log, put it in
 # test/daemon and do this:
 #    regress-driver -b test/daemon/foo.log
 
 # Regression-test the RTCM decoder.
-rtcm_regress = Utility('rtcm-regress', [gpsdecode], [
-    '@echo "Testing RTCM decoding..."',
-    '@for f in $SRCDIR/test/*.rtcm2; do '
-        'echo "Testing $${f}..."; '
-        'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
-        '$SRCDIR/gpsdecode -u -j <$${f} >$${TMPFILE}; '
-        'diff -ub $${f}.chk $${TMPFILE}; '
-        'rm -f $${TMPFILE}; '
-    'done;',
-    '@echo "Testing idempotency of JSON dump/decode for RTCM2"',
-    '@TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
-    '$SRCDIR/gpsdecode -u -e -j <test/synthetic-rtcm2.json >$${TMPFILE}; '
-        'grep -v "^#" test/synthetic-rtcm2.json | diff -ub - $${TMPFILE}; '
-        'rm -f $${TMPFILE}; ',
+if not env["rtcm104v2"]:
+    announce("RTCM2 regression tests suppressed because rtcm104v2 is off.")
+    rtcm_regress = None
+else:
+    rtcm_regress = Utility('rtcm-regress', [gpsdecode], [
+        '@echo "Testing RTCM decoding..."',
+        '@for f in $SRCDIR/test/*.rtcm2; do '
+            'echo "Testing $${f}..."; '
+            'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
+            '$SRCDIR/gpsdecode -u -j <$${f} >$${TMPFILE}; '
+            'diff -ub $${f}.chk $${TMPFILE}; '
+            'rm -f $${TMPFILE}; '
+        'done;',
+        '@echo "Testing idempotency of JSON dump/decode for RTCM2"',
+        '@TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
+        '$SRCDIR/gpsdecode -u -e -j <test/synthetic-rtcm2.json >$${TMPFILE}; '
+            'grep -v "^#" test/synthetic-rtcm2.json | diff -ub - $${TMPFILE}; '
+            'rm -f $${TMPFILE}; ',
         ])
 
 # Rebuild the RTCM regression tests.
@@ -1553,43 +1609,47 @@ Utility('rtcm-makeregress', [gpsdecode], [
         ])
 
 # Regression-test the AIVDM decoder.
-aivdm_regress = Utility('aivdm-regress', [gpsdecode], [
-    '@echo "Testing AIVDM decoding w/ CSV format..."',
-    '@for f in $SRCDIR/test/*.aivdm; do '
-        'echo "Testing $${f}..."; '
-        'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
-        '$SRCDIR/gpsdecode -u -c <$${f} >$${TMPFILE}; '
-        'diff -ub $${f}.chk $${TMPFILE} || echo "Test FAILED!"; '
-        'rm -f $${TMPFILE}; '
-    'done;',
-    '@echo "Testing AIVDM decoding w/ JSON unscaled format..."',
-    '@for f in $SRCDIR/test/*.aivdm; do '
-        'echo "  Testing $${f}..."; '
-        'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
-        '$SRCDIR/gpsdecode -u -j <$${f} >$${TMPFILE}; '
-        'diff -ub $${f}.ju.chk $${TMPFILE} || echo "Test FAILED!"; '
-        'rm -f $${TMPFILE}; '
-    'done;',
-    '@echo "Testing AIVDM decoding w/ JSON scaled format..."',
-    '@for f in $SRCDIR/test/*.aivdm; do '
-        'echo "  Testing $${f}..."; '
-        'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
-        '$SRCDIR/gpsdecode -j <$${f} >$${TMPFILE}; '
-        'diff -ub $${f}.js.chk $${TMPFILE} || echo "Test FAILED!"; '
-        'rm -f $${TMPFILE}; '
-    'done;',
-    '@echo "Testing idempotency of unscaled JSON dump/decode for AIS"',
-    '@TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
-    '$SRCDIR/gpsdecode -u -e -j <$SRCDIR/test/sample.aivdm.ju.chk >$${TMPFILE}; '
-        'grep -v "^#" $SRCDIR/test/sample.aivdm.ju.chk | diff -ub - $${TMPFILE}; '
-        'rm -f $${TMPFILE}; ',
-    # Parse the unscaled json reference, dump it as scaled json, 
-    # and finally compare it with the scaled json reference
-    '@echo "Testing idempotency of scaled JSON dump/decode for AIS"',
-    '@TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
-    '$SRCDIR/gpsdecode -e -j <$SRCDIR/test/sample.aivdm.ju.chk >$${TMPFILE}; '
-        'grep -v "^#" $SRCDIR/test/sample.aivdm.js.chk | diff -ub - $${TMPFILE}; '
-        'rm -f $${TMPFILE}; ',
+if not env["aivdm"]:
+    announce("AIVDM regression tests suppressed because aivdm is off.")
+    aivdm_regress = None
+else:
+    aivdm_regress = Utility('aivdm-regress', [gpsdecode], [
+        '@echo "Testing AIVDM decoding w/ CSV format..."',
+        '@for f in $SRCDIR/test/*.aivdm; do '
+            'echo "Testing $${f}..."; '
+            'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
+            '$SRCDIR/gpsdecode -u -c <$${f} >$${TMPFILE}; '
+            'diff -ub $${f}.chk $${TMPFILE} || echo "Test FAILED!"; '
+            'rm -f $${TMPFILE}; '
+        'done;',
+        '@echo "Testing AIVDM decoding w/ JSON unscaled format..."',
+        '@for f in $SRCDIR/test/*.aivdm; do '
+            'echo "  Testing $${f}..."; '
+            'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
+            '$SRCDIR/gpsdecode -u -j <$${f} >$${TMPFILE}; '
+            'diff -ub $${f}.ju.chk $${TMPFILE} || echo "Test FAILED!"; '
+            'rm -f $${TMPFILE}; '
+        'done;',
+        '@echo "Testing AIVDM decoding w/ JSON scaled format..."',
+        '@for f in $SRCDIR/test/*.aivdm; do '
+            'echo "  Testing $${f}..."; '
+            'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
+            '$SRCDIR/gpsdecode -j <$${f} >$${TMPFILE}; '
+            'diff -ub $${f}.js.chk $${TMPFILE} || echo "Test FAILED!"; '
+            'rm -f $${TMPFILE}; '
+        'done;',
+        '@echo "Testing idempotency of unscaled JSON dump/decode for AIS"',
+        '@TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
+        '$SRCDIR/gpsdecode -u -e -j <$SRCDIR/test/sample.aivdm.ju.chk >$${TMPFILE}; '
+            'grep -v "^#" $SRCDIR/test/sample.aivdm.ju.chk | diff -ub - $${TMPFILE}; '
+            'rm -f $${TMPFILE}; ',
+        # Parse the unscaled json reference, dump it as scaled json, 
+        # and finally compare it with the scaled json reference
+        '@echo "Testing idempotency of scaled JSON dump/decode for AIS"',
+        '@TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
+        '$SRCDIR/gpsdecode -e -j <$SRCDIR/test/sample.aivdm.ju.chk >$${TMPFILE}; '
+            'grep -v "^#" $SRCDIR/test/sample.aivdm.js.chk | diff -ub - $${TMPFILE}; '
+            'rm -f $${TMPFILE}; ',
         ])
 
 # Rebuild the AIVDM regression tests.
@@ -1629,8 +1689,8 @@ maidenhead_locator_regress = Utility('maidenhead-locator-regress', [python_built
     ])
 
 # Regression-test the calendar functions
-time_regress = Utility('time-regress', [test_mkgmtime], [
-    '$SRCDIR/test_mkgmtime'
+time_regress = Utility('time-regress', [test_mktime], [
+    '$SRCDIR/test_mktime'
     ])
 
 # Regression test the unpacking code in libgps
@@ -1670,12 +1730,13 @@ flocktest = Utility("flocktest", [], "cd devtools; ./flocktest " + gitrepo)
 describe = Utility('describe', [],
                    ['@echo "Run normal regression tests for %s..."' %(rev.strip(),)])
 testclean = Utility('test_cleanup', [],
-                    'rm -f test_bits test_geoid test_json test_libgps test_mkgmtime test_packet')
+                    'rm -f test_bits test_matrix test_geoid test_json test_libgps test_mktime test_packet')
 check = env.Alias('check', [
     describe,
     python_compilation_regress,
     method_regress,
     bits_regress,
+    matrix_regress,
     gps_regress,
     rtcm_regress,
     aivdm_regress,
@@ -1701,7 +1762,6 @@ if env.WhereIs('asciidoc'):
                 'protocol-evolution',
                 'protocol-transition',
                 'gpsd-time-service-howto',
-                'calibrate-gpsd-ntpd-howto',
                 'client-howto']
     asciidocs = ["www/" + stem + ".html" for stem in txtfiles] \
                 + ["www/installation.html"]
@@ -1845,7 +1905,7 @@ Utility('udev-test', '', [
 
 # Ordinary cleanup
 clean = env.Clean(build,
-          map(glob.glob,("*.[oa]", "*.[1358]", "*.os", "*.os.*", "*.gcno", "*.pyc", "gps/*.pyc", "TAGS")) + testprogs + \
+          map(glob.glob,("*.[oa]", "*.[1358]", "*.os", "*.os.*", "*.gcno", "*.pyc", "gps/*.pyc", "TAGS", "config.log")) + testprogs + \
           generated_sources + base_manpages.keys() + \
           map(lambda f: f[:-3], templated))
 

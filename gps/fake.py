@@ -72,55 +72,38 @@ import exceptions, threading, socket, select
 import gps
 import packet as sniffer
 
-# The two magic numbers below have to be derived from observation.  If
-# they're too high you'll slow the tests down a lot.  If they're too low
-# you'll get random spurious regression failures that usually look
-# like lines missing from the end of the test output relative to the
-# check file.  The need for them may be symptomatic of race conditions
-# in the pty layer or elsewhere.
+# The magic number below has to be derived from observation.  If
+# it's too high you'll slow the tests down a lot.  If it's too low
+# you'll get regression tests timing out.
 
 # WRITE_PAD: Define a per-line delay on writes so we won't spam the
 # buffers in the pty layer or gpsd itself. Values smaller than the
-# system timer tick don't make any difference here.
-
-# CLOSE_DELAY: We delay briefly after a GPS source is exhausted before
-# removing it.  This should give its subscribers time to get gpsd's
-# response before we call the cleanup code. Note that using fractional
-# seconds in CLOSE_DELAY may have no effect; Python time.time()
-# returns a float value, but it is not guaranteed by Python that the C
-# implementation underneath will return with precision finer than 1
-# second. (Linux and *BSD return full precision.)
-
-# Field reports:
-#
-# Eric Raymond  on Linux 3.11.0 under an Intel Core Duo at 2.66GHz.
-#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.1    Works, 112s real
-#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.05   Fails
-#
-# Michael Tatarinov on a Raspberry Pi:
-#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.05    Works, 344s real
-#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.0     Fails, 339s real
-#
-# From Hal Murray on NetBSD 6.1.2 on an Intel(R) Celeron(R) CPU 2.80GHz
-#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.4    Works, takes 688.69s real
-#  WRITE_PAD = 0.0 / CLOSE_DELAY = 0.3    Fails tcp-torture.log, 677.53s real
-#
-# Greg Troxel running NetBSD 6 on a core i5 (i386, 4 cpus) 2.90GHz.
-#  WRITE_PAD = 0.001 / CLOSE_DELAY = 0.2 had failures (645s)
-#  WRITE_PAD = 0.001 / CLOSE_DELAY = 0.4 had failures (662s)
-#  WRITE_PAD = 0.004 / CLOSE_DELAY = 0.8 all tests passed
-#  WRITE_PAD = 0.001 / CLOSE_DELAY = 0.8 all tests passed (697s)
-#
+# system timer tick don't make any difference here. Can be set from
+# WRITE_PAD in the environment.
 
 if sys.platform.startswith("linux"):
     WRITE_PAD = 0.0
-    CLOSE_DELAY = 0.1
 elif sys.platform.startswith("freebsd"):
-    WRITE_PAD = 0.001
-    CLOSE_DELAY = 0.4
+    WRITE_PAD = 0.01
+elif sys.platform.startswith("netbsd5"):
+    WRITE_PAD = 0.200
+elif sys.platform.startswith("netbsd"):
+    WRITE_PAD = 0.004
+elif sys.platform.startswith("darwin"):
+    # darwin Darwin-13.4.0-x86_64-i386-64bit
+    WRITE_PAD = 0.03
 else:
     WRITE_PAD = 0.004
-    CLOSE_DELAY = 0.8
+
+# Make it easier to test pad values
+if os.getenv("WRITE_PAD"):
+    WRITE_PAD = eval(os.getenv("WRITE_PAD"))
+
+# Additional delays in slow mode
+WRITE_PAD_SLOWDOWN = 0.01
+
+# If a test takes longer than this, we deem it to have timed out
+TEST_TIMEOUT = 60
 
 class TestLoadError(exceptions.Exception):
     def __init__(self, msg):
@@ -129,7 +112,7 @@ class TestLoadError(exceptions.Exception):
 
 class TestLoad:
     "Digest a logfile into a list of sentences we can cycle through."
-    def __init__(self, logfp, predump=False):
+    def __init__(self, logfp, predump=False, slow=False, oneshot=False):
         self.sentences = []	# This is the interesting part
         if type(logfp) == type(""):
             logfp = open(logfp, "r")
@@ -140,6 +123,8 @@ class TestLoad:
         self.sourcetype = "pty"
         self.serial = None
         self.delay = WRITE_PAD
+        if slow:
+            self.delay += WRITE_PAD_SLOWDOWN
         self.delimiter = None
         # Stash away a copy in case we need to resplit
         text = logfp.read()
@@ -210,6 +195,9 @@ class TestLoad:
         # Maybe this needs to be split on different delimiters?
         if self.delimiter is not None:
             self.sentences = text[commentlen:].split(self.delimiter)
+        # Do we want single-shot operation?
+        if oneshot:
+            self.sentences.append("# EOF\n")
 
 class PacketError(exceptions.Exception):
     def __init__(self, msg):
@@ -238,8 +226,6 @@ class FakeGPS:
             time.sleep(int(delay))
         # self.write has to be set by the derived class
         self.write(line)
-        if self.progress:
-            self.progress("gpsfake: %s feeds %d=%s\n" % (self.testload.name, len(line), repr(line)))
         time.sleep(self.testload.delay)
         self.index += 1
 
@@ -317,11 +303,21 @@ class FakePTY(FakeGPS):
         #    pass
 
     def write(self, line):
+        self.progress("gpsfake: %s writes %d=%s\n" % (self.testload.name, len(line), repr(line)))
         os.write(self.fd, line)
 
     def drain(self):
         "Wait for the associated device to drain (e.g. before closing)."
         termios.tcdrain(self.fd)
+
+def cleansocket(host, port):
+    "Get a socket that we can re-use cleanly after it's closed."
+    cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # This magic prevents "Address already in use" errors after
+    # we release the socket.
+    cs.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    cs.bind((host, port))
+    return cs
 
 class FakeTCP(FakeGPS):
     "A TCP serverlet with a test log ready to be cycled to it."
@@ -332,11 +328,7 @@ class FakeTCP(FakeGPS):
         self.host = host
         self.port = int(port)
         self.byname = "tcp://" + host + ":" + str(port)
-        self.dispatcher = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # This magic prevents "Address already in use" errors after
-        # we release the socket.
-        self.dispatcher.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.dispatcher.bind((self.host, self.port))
+        self.dispatcher = cleansocket(self.host, self.port)
         self.dispatcher.listen(5)
         self.readables = [self.dispatcher]
 
@@ -356,6 +348,7 @@ class FakeTCP(FakeGPS):
 
     def write(self, line):
         "Send the next log packet to everybody connected."
+        self.progress("gpsfake: %s writes %d=%s\n" % (self.testload.name, len(line), repr(line)))
         for s in self.readables:
             if s != self.dispatcher:
                 s.send(line)
@@ -382,6 +375,7 @@ class FakeUDP(FakeGPS):
         pass
 
     def write(self, line):
+        self.progress("gpsfake: %s writes %d=%s\n" % (self.testload.name, len(line), repr(line)))
         self.sock.sendto(line, (self.ipaddr, int(self.port)))
 
     def drain(self):
@@ -509,7 +503,7 @@ class TestSessionError(exceptions.Exception):
 
 class TestSession:
     "Manage a session including a daemon with fake GPSes and clients."
-    def __init__(self, prefix=None, port=None, options=None, verbose=0, predump=False, udp=False, tcp=False):
+    def __init__(self, prefix=None, port=None, options=None, verbose=0, predump=False, udp=False, tcp=False, slow=False):
         "Initialize the test session by launching the daemon."
         self.prefix = prefix
         self.port = port
@@ -518,6 +512,7 @@ class TestSession:
         self.predump = predump
         self.udp = udp
         self.tcp = tcp
+        self.slow = slow
         self.daemon = DaemonInstance()
         self.fakegpslist = {}
         self.client_id = 0
@@ -529,7 +524,10 @@ class TestSession:
         if port:
             self.port = port
         else:
-            self.port = gps.GPSD_PORT
+            # Magic way to get a socket with an unused port number
+            s = cleansocket("localhost", 0)
+            self.port = s.getsockname()[1]
+            s.close()
         self.progress = lambda x: None
         self.reporter = lambda x: None
         self.default_predicate = None
@@ -543,11 +541,11 @@ class TestSession:
     def set_predicate(self, pred):
         "Set a default go predicate for the session."
         self.default_predicate = pred
-    def gps_add(self, logfile, speed=19200, pred=None):
+    def gps_add(self, logfile, speed=19200, pred=None, oneshot=False):
         "Add a simulated GPS being fed by the specified logfile."
         self.progress("gpsfake: gps_add(%s, %d)\n" % (logfile, speed))
         if logfile not in self.fakegpslist:
-            testload = TestLoad(logfile, predump=self.predump)
+            testload = TestLoad(logfile, predump=self.predump, slow=self.slow, oneshot=oneshot)
             if testload.sourcetype == "UDP" or self.udp:
                 newgps = FakeUDP(testload, ipaddr="127.0.0.1",
                                  port=self.baseport,
@@ -625,14 +623,13 @@ class TestSession:
                 had_output = False
                 chosen = self.choose()
                 if isinstance(chosen, FakeGPS):
-                    if chosen.exhausted and (time.time() - chosen.exhausted > CLOSE_DELAY) and chosen.byname in self.fakegpslist:
-                        self.gps_remove(chosen.byname)
-                        self.progress("gpsfake: GPS %s removed (timeout)\n" % chosen.byname)
+                    if chosen.exhausted and (time.time() - chosen.exhausted > TEST_TIMEOUT) and chosen.byname in self.fakegpslist:
+                        sys.stderr.write("Test timed out: increase WRITE_PAD = %s\n" % WRITE_PAD)
+                        raise SystemExit, 1
                     elif not chosen.go_predicate(chosen.index, chosen):
                         if chosen.exhausted == 0:
                             chosen.exhausted = time.time()
                             self.progress("gpsfake: GPS %s ran out of input\n" % chosen.byname)
-                            chosen.write("# EOF\n")
                     else:
                         chosen.feed()
                 elif isinstance(chosen, gps.gps):
@@ -643,11 +640,6 @@ class TestSession:
                         chosen.read()
                         if chosen.valid & gps.PACKET_SET:
                             self.reporter(chosen.response)
-                            # If we're lucky, this close notification reaches
-                            # us before the device timeout.  It would be nice
-                            # if this were the only logic for device closing
-                            # and we could get rid of CLOSE_DELAY, but this
-                            # sometimes fails on binary logfiles.
                             if chosen.data["class"] == "DEVICE" and chosen.data["activated"] == 0 and chosen.data["path"] in self.fakegpslist:
                                 self.gps_remove(chosen.data["path"])
                                 self.progress("gpsfake: GPS %s removed (notification)\n" % chosen.data["path"])
