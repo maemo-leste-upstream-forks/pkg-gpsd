@@ -1,8 +1,12 @@
 usr/lib/python*/*-packages/gps/*_d.so
-test_bits       usr/lib/gpsd/debug
-test_packet     usr/lib/gpsd/debug
-test_geoid      usr/lib/gpsd/debug
-test_mkgmtime   usr/lib/gpsd/debug
-test_libgps     usr/lib/gpsd/debug
-test_json       usr/lib/gpsd/debug
+test_float    	usr/lib/gpsd/debug
+test_geoid	usr/lib/gpsd/debug
+test_json	usr/lib/gpsd/debug
+test_mktime	usr/lib/gpsd/debug
+test_trig	usr/lib/gpsd/debug
+test_packet	usr/lib/gpsd/debug
+test_bits	usr/lib/gpsd/debug
+test_matrix	usr/lib/gpsd/debug
+test_gpsmm	usr/lib/gpsd/debug
+test_libgps	usr/lib/gpsd/debug
 test_maidenhead.py  usr/lib/gpsd/debug
