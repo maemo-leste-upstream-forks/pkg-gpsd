@@ -17,31 +17,6 @@
 
 static int verbose = 0;
 
-ssize_t gpsd_write(struct gps_device_t *session,
-		   const char *buf,
-		   const size_t len)
-/* pass low-level data to devices straight through */
-{
-    return gpsd_serial_write(session, buf, len);
-}
-
-void gpsd_report(int debuglevel, int errlevel, const char *fmt, ...)
-/* assemble command in printf(3) style, use stderr or syslog */
-{
-    if (errlevel <= debuglevel) {
-	char buf[BUFSIZ];
-	va_list ap;
-
-	buf[0] = '\0';
-	va_start(ap, fmt);
-	(void)vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt,
-			ap);
-	va_end(ap);
-
-	(void)fputs(buf, stderr);
-    }
-}
-
 struct map
 {
     char *legend;
@@ -280,21 +255,22 @@ static struct map runontests[] = {
 
 static int packet_test(struct map *mp)
 {
-    struct gps_packet_t packet;
+    /*@-compdestroy@*/
+    struct gps_lexer_t lexer;
     int failure = 0;
 
-    packet_init(&packet);
-    packet.debug = verbose;
-    /*@i@*/ memcpy(packet.inbufptr = packet.inbuffer, mp->test, mp->testlen);
-    packet.inbuflen = mp->testlen;
+    lexer_init(&lexer);
+    lexer.errout.debug = verbose;
+    /*@i@*/ memcpy(lexer.inbufptr = lexer.inbuffer, mp->test, mp->testlen);
+    lexer.inbuflen = mp->testlen;
     /*@ -compdef -uniondef -usedef -formatcode @*/
-    packet_parse(&packet);
-    if (packet.type != mp->type)
+    packet_parse(&lexer);
+    if (lexer.type != mp->type)
 	printf("%2zi: %s test FAILED (packet type %d wrong).\n",
-	       mp - singletests + 1, mp->legend, packet.type);
+	       mp - singletests + 1, mp->legend, lexer.type);
     else if (memcmp
-	     (mp->test + mp->garbage_offset, packet.outbuffer,
-	      packet.outbuflen)) {
+	     (mp->test + mp->garbage_offset, lexer.outbuffer,
+	      lexer.outbuflen)) {
 	printf("%2zi: %s test FAILED (data garbled).\n", mp - singletests + 1,
 	       mp->legend);
 	++failure;
@@ -303,26 +279,27 @@ static int packet_test(struct map *mp)
 	       mp->legend);    /*@ +compdef +uniondef +usedef +formatcode @*/
 
     return failure;
+    /*@+compdestroy@*/
 }
 
+/*@ -compdef -uniondef -usedef -formatcode -compdestroy @*/
 static void runon_test(struct map *mp)
 {
-    struct gps_packet_t packet;
+    struct gps_lexer_t lexer;
     int nullfd = open("/dev/null", O_RDONLY);
     ssize_t st;
 
-    packet_init(&packet);
-    packet.debug = verbose;
-    /*@i@*/ memcpy(packet.inbufptr = packet.inbuffer, mp->test, mp->testlen);
-    packet.inbuflen = mp->testlen;
-    /*@ -compdef -uniondef -usedef -formatcode @*/
-    (void)fputs(mp->test, stdout);
+    lexer_init(&lexer);
+    lexer.errout.debug = verbose;
+    /*@i@*/ memcpy(lexer.inbufptr = lexer.inbuffer, mp->test, mp->testlen);
+    lexer.inbuflen = mp->testlen;
+     (void)fputs(mp->test, stdout);
     do {
-	st = packet_get(nullfd, &packet);
+	st = packet_get(nullfd, &lexer);
 	//printf("packet_parse() returned %zd\n", st);
     } while (st > 0);
-    /*@ +compdef +uniondef +usedef +formatcode @*/
 }
+/*@ +compdef +uniondef +usedef +formatcode +compdestroy@*/
 
 static int property_check(void)
 {

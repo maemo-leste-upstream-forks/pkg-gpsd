@@ -8,6 +8,16 @@ the "Hacking Guide" on the project website.
 The list of bugs exposed by gpsd in other software has moved to
 the "Upstream Bugs" page on the project website.
 
+** Documentation **
+
+We now have two different calibration procedures in the Tine Service
+HOWTO. One was written by Gary and is based on peerstats; the other by
+Sanjeev Gupta and is based on loopstats.
+
+Can these be merged? How do we know which is appropriate to use when?
+What could we build in the way of tools and visualization aids to make
+the calibration process less annoying?
+
 ** Bugs in gpsd and its clients:
 
 *** Tracker bugs
@@ -16,20 +26,61 @@ See the GPSD bug tracker on the project website, but don't be
 surprised if it's empty or very sparse.  Our rate of new defects per
 month is quite low.
 
-*** Documentation
+*** RFC2783 bugs
 
-Consider merging the calibration draft into the Time Service HOWTO.
+**** detangle TIOCMIWAIT and RFC2783
+
+Currently, the code for RFC2783 seems to depend (logically) on
+TIOCMIWAIT support.  However, RFC2783 (and really, no standard)
+defines TIOCMIWAIT, and NetBSD (and probably FreeBSD) do not implement
+it.  So, there really should be two separate implementations, one that
+works with TIOCMIWAIT (and thus only on Linux and OpenBSD) and one
+that assumes only RFC2783 (and thus works on Linux, FreeBSD and
+NetBSD, as well as any future system that complies with RFC2783 and
+uses the serial port for time_pps_init).
+
+*** Client bugs
+
+**** In gpsmon's PPS Offset field
+
+Presently PPS Offset is displayed in direct mode for NMEA, SiRF, and
+UBX devices.  Others should probably do likewise, notably the
+Motorola Oncore and Garmin drivers.
+
+*** Dispatcher/network issues
+
+**** Reading AISHub data via UDP confuses xgps with short writes
+
+To reproduce, "gpsd -D 5 -N -n udp://192.168.1.3:12346" (only
+works inside thyrsus.com) and run xgps. Probably some kind of
+packet aggregation issue as it doesn't happen with test logs.
+
+*** Driver issues
+
+**** RTCM3 analysis is incomplete
+
+We can presently decode RTCM3 messages of type 1001-1014, 1029, and
+1033.  This is not the complete set. We need more test data with
+different types in them, and a copy of the RTCM3 standard at latest
+revision (all we have is revision 3).
+
+The support for unpacking RTCM3 sentences in the client library is
+limited to 1001, 1002, 1007, 1008, 1009, 1010, 1014, and 1033. There
+are some design issues with the baby JSON parser that are going to 
+make extending this set difficult.
+
+**** Reporting code for specialized Type 6 and 8 AIS messages is incomplete.
+
+This one is mine and Kurt Schwehr's. Support is currently nearly
+complete; the only missing cases are a handful of IMO 236 and IMO 289
+message 6 and 8 subtypes - specifically, 6/23, 8/21, 8/22, 8/24, and
+8/26.
+
+** New features **
 
 *** Time tracking
 
 Our goal is to be independent of the system clock.
-
-**** Compile the GPS week of the build into the build
-
-The obvious place tp put this is in timebase.h. Not too expensive;
-will typically cause extra work once per seven days.  The benefit is that
-we can compare received week to the compiled in week and if the latter
-is less know that a rollover has occurred.
 
 **** Maybe apply wraparound compensation ****
 
@@ -44,34 +95,41 @@ confidence measure at a high level.  We'd use the confidence level to
 control (a) whether gpsd ships to NTP, and (b) how it sets time
 uncertainty in output JSON.
 
-*** Client bugs
+*** Optionally use tag blocks in NMEA output
 
-**** In gpsmon's PPS Offset field
+Ed W. writes:
+>Feature request: I would like to see an option to get the NMEA data
+>out of gpsd, but augmented with a timestamp on each sentence and
+>details of which input fed in the data. TAG blocks appear to solve
+>that problem perfectly.  So the feature request is simply an option
+>that inserts a TAG block for each emitted sentence from GPSd with a
+>timestamp and some handle which references the input method for the
+>sentence.
+>
+>I think all this is effectively emitted with the JSON output (?), so
+>really this is just adding it to the NMEA sentence output options via
+>the TAG structure
 
-Presently PPS Offset is displayed in direct mode for NMEA, SiRF, and
-UBX devices.  Others should probably do likewise, notably the
-Motorola Oncore and Garmin drivers.
+However, Iván Sánchez Ortega notes:
 
-**** gpsmon driver switching and blocking on error
-
-Hal Murray reports:
-
-   If I run .gpsmon /dev/ttyUSB0
-
-   It starts up in NMEA0183 mode as I expect.
-   "i" switches to SiRF, again, as I expect.
-
-   "n" switches the display to NMEA layout, but the header still says SiRF.
-   Another "n" now says: Device type has no mode switcher.
-   At this point, "i" doesn't do anything.  (no pause either)
-
-The second 'n' is losing information that it shouldn't.
-
-   If I start over and feed it an "f", it starts blinking "Unknown command "f"
-   The logging and display update stops.  After I type another character,  it
-   clears the blinking error message and stars logging/updating again.
-
-Display update should not stop while this is going on.
+>There is one *big* problem with using TAG blocks to timestamp the sentences.
+>The standards (as far as I/we know) say that the timestamp is **either** the
+>number of seconds **or** milliseconds since the UNIX epoch, but we do **not**
+>know if the initial state should be secs, msecs, or nothing. We do not know
+>how clients reading that TAGblocked NMEA stream should ask GPSD to switch the
+>timestamp units (or enable/disable them).
+>
+>There are a few sentences introduced in NMEA 4.00 that supposedly allow that -
+>the client sends a sentence to the server, and then the server starts
+>TAGblocking sentences. But, alas, there are no examples anywhere.
+>
+>>From my personal experience, the way to know if a TAGblocked timestamp is in
+>seconds or milliseconds is ask the people in charge of setting up the
+>device/service. Perhaps some devices output only secs/msecs, and some other
+>accept the NMEA 4.00 TAGblock configuration sentences.
+>
+>I, for one, would like to see the secs/msecs problem solved before GPSD
+>embarks on the enterprise of writing TAGblocks.
 
 *** Time offset debugging in gpsmon ***
 
@@ -85,6 +143,8 @@ Hall Murray:
 >
 > Or perhaps a higher level keyboard command to switch into timekeeping
 > debugging mode rather than position debugging mode.
+
+Add PPS offset to each PPS bar.
 
 **** Speed, mode and rate-changes in client-mode gpsmon.
 
@@ -122,61 +182,6 @@ Anthony Stirk <upuaut@gmail.com> writes on Wed May 21 06:09:00 2014:
 
 A possibility: drop the chip to low-power mode when it can see > 4
 sats, revert to normal otherwise.
-
-*** Dispatcher/network issues
-
-**** Reading AISHub data via UDP confuses xgps with short writes
-
-To reproduce, "gpsd -D 5 -N -n udp://192.168.1.3:12346" (only
-works inside thyrsus.com) and run xgps. Probably some kind of
-packet aggregation issue as it doesn't happen with test logs.
-
-*** Driver issues
-
-**** RTCM3 analysis is incomplete
-
-We can presently decode RTCM3 messages of type 1001-1014, 1029, and
-1033.  This is not the complete set. We need more test data with
-different types in them, and a copy of the RTCM3 standard at latest
-revision (all we have is revision 3).
-
-The support for unpacking RTCM3 sentences in the client library is
-limited to 1001, 1002, 1007, 1008, 1009, 1010, 1014, and 1033. There
-are some design issues with the baby JSON parser that are going to 
-make extending this set difficult.
-
-**** Reporting code for specialized Type 6 and 8 AIS messages is incomplete.
-
-This one is mine and Kurt Schwehr's. Support is currently nearly
-complete; the only missing cases are a handful of IMO 236 and IMO 289
-message 6 and 8 subtypes - specifically, 6/23, 8/21, 8/22, 8/24, and
-8/26.
-
-**** Addressed case of AIS Types 25 and 26 is not handled.
-
-We'd need machinery to shift a byte array 30 bits left...
-
-**** AIS struct needs a 'structured' bit detected by the driver ****
-
-Turns out that dispatching JSON dump on Types 6 and 8 by DAC/FID 
-isn't reliable, because sometimes unstructured Type 8s can
-false-match with a structured type.  Observed in the wild with 
-an unstructured Type 8 misconstrued as an Inland AIS Type 10.
-To fix this, the driver needs to store the 'structured' bit in
-the AIS structure.  Will require a library bump, but afterwards
-some code can be removed from the JSON dumper. 
-
-When this happens, also dump AIS text fields unconditionally (not on
-"scaled"). xgps may need changes.
-
-Also, in gps.h, move the tag field to privdata.
-
-** To do:
-
-*** On next API bump ***
-
-In struct gpsdata_t, move the device list out of the union and move
-the tag field to private data.
 
 ***  Make subframe reports available in the C API.
 

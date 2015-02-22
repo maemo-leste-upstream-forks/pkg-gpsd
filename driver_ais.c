@@ -59,20 +59,17 @@ static void from_sixbit(unsigned char *bitvec, uint start, int count, char *to)
 }
 
 /*@ +charint @*/
-bool ais_binary_decode(const int debug,
+bool ais_binary_decode(const struct gpsd_errout_t *errout,
 		       struct ais_t *ais,
 		       const unsigned char *bits, size_t bitlen,
 		       struct ais_type24_queue_t *type24_queue)
 /* decode an AIS binary packet */
 {
-    bool structured;
-    unsigned int u;
-    int i;
+    unsigned int u; int i;
 
 #ifdef S_SPLINT_S
     assert(type24_queue != NULL);
 #endif /* S_SPLINT_S */
-#define BITS_PER_BYTE	8
 #define UBITS(s, l)	ubits((unsigned char *)bits, s, l, false)
 #define SBITS(s, l)	sbits((signed char *)bits, s, l, false)
 #define UCHARS(s, to)	from_sixbit((unsigned char *)bits, s, sizeof(to)-1, to)
@@ -80,24 +77,24 @@ bool ais_binary_decode(const int debug,
     ais->type = UBITS(0, 6);
     ais->repeat = UBITS(6, 2);
     ais->mmsi = UBITS(8, 30);
-    gpsd_report(debug, LOG_INF,
+    gpsd_report(errout, LOG_INF,
 		"AIVDM message type %d, MMSI %09d:\n",
 		ais->type, ais->mmsi);
 
 #define PERMISSIVE_LENGTH_CHECK(correct) \
 	if (bitlen < correct) { \
-	    gpsd_report(debug, LOG_ERROR, \
+	    gpsd_report(errout, LOG_ERROR, \
 			"AIVDM message type %d size < %d bits (%zd).\n", \
 			ais->type, correct, bitlen); \
 	    return false; \
 	} else if (bitlen > correct) { \
-	    gpsd_report(debug, LOG_WARN, \
+	    gpsd_report(errout, LOG_WARN, \
 			"AIVDM message type %d size > %d bits (%zd).\n", \
 			ais->type, correct, bitlen); \
 	}
 #define RANGE_CHECK(min, max) \
 	if (bitlen < min || bitlen > max) { \
-	    gpsd_report(debug, LOG_ERROR, \
+	    gpsd_report(errout, LOG_ERROR, \
 			"AIVDM message type %d size is out of range (%zd).\n", \
 			ais->type, bitlen); \
 	    return false; \
@@ -147,7 +144,7 @@ bool ais_binary_decode(const int debug,
 	break;
     case 5: /* Ship static and voyage related data */
 	if (bitlen != 424) {
-	    gpsd_report(debug, LOG_WARN,
+	    gpsd_report(errout, LOG_WARN,
 			"AIVDM message type 5 size not 424 bits (%zd).\n",
 			bitlen);
 	    /*
@@ -188,7 +185,7 @@ bool ais_binary_decode(const int debug,
 	ais->type6.bitcount       = bitlen - 88;
 	/* not strictly required - helps stability in testing */ 
 	(void)memset(ais->type6.bitdata, '\0', sizeof(ais->type6.bitdata));
-	structured = false;
+	ais->type6.structured = false;
 	/* Inland AIS */
 	if (ais->type6.dac == 200) {
 	    switch (ais->type6.fid) {
@@ -207,7 +204,7 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac200fid21.tugs	= UBITS(228, 3);
 		ais->type6.dac200fid21.airdraught	= UBITS(231, 12);
 		/* skip 5 bits */
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 22:	/* RTA at lock/bridge/terminal */
 		if (bitlen != 232)
@@ -223,7 +220,7 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac200fid22.minute	= UBITS(222, 6);
 		ais->type6.dac200fid22.status	= UBITS(228, 2);
 		/* skip 2 bits */
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 55:	/* Number of Persons On Board */
 		if (bitlen != 168)
@@ -232,7 +229,7 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac200fid55.passengers	= UBITS(96, 13);
 		ais->type6.dac200fid55.personnel	= UBITS(109, 8);
 		/* skip 51 bits */
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    }
 	    break;
@@ -252,7 +249,7 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac235fid10.stat_ext	= UBITS(123, 8);
 		ais->type6.dac235fid10.off_pos  = UBITS(131, 1);
 		/* skip 4 bits */
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    }
 	    break;
@@ -277,7 +274,7 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac1fid12.amount		= UBITS(345, 10);
 		ais->type6.dac1fid12.unit		= UBITS(355, 2);
 		/* skip 3 bits */
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 14:	/* IMO236 - Tidal Window */
 		ais->type6.dac1fid32.month	= UBITS(88, 4);
@@ -299,18 +296,18 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac1fid32.ntidals = u;
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 15:	/* IMO236 - Extended Ship Static and Voyage Related Data */
 		ais->type6.dac1fid15.airdraught	= UBITS(56, 11);
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 16:	/* IMO236 - Number of persons on board */
 		if (ais->type6.bitcount == 136)
 		    ais->type6.dac1fid16.persons = UBITS(88, 13);/* 289 */
 		else
 		    ais->type6.dac1fid16.persons = UBITS(55, 13);/* 236 */
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 18:	/* IMO289 - Clearance time to enter port */
 		ais->type6.dac1fid18.linkage	= UBITS(88, 10);
@@ -323,7 +320,7 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac1fid18.lon	= SBITS(268, 25);
 		ais->type6.dac1fid18.lat	= SBITS(293, 24);
 		/* skip 43 bits */
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 20:	/* IMO289 - Berthing data - addressed */
 		ais->type6.dac1fid20.linkage	= UBITS(88, 10);
@@ -364,7 +361,7 @@ bool ais_binary_decode(const int debug,
 		UCHARS(191, ais->type6.dac1fid20.berth_name);
 		ais->type6.dac1fid20.berth_lon	= SBITS(311, 25);
 		ais->type6.dac1fid20.berth_lat	= SBITS(336, 24);
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 23:        /* IMO289 - Area notice - addressed */
 		break;
@@ -376,7 +373,7 @@ bool ais_binary_decode(const int debug,
 		    ais->type6.dac1fid25.cargos[u].subtype = UBITS(104+u*17,13);
 		}
 		ais->type6.dac1fid25.ncargos = u;
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 28:	/* IMO289 - Route info - addressed */
 		ais->type6.dac1fid28.linkage	= UBITS(88, 10);
@@ -397,12 +394,12 @@ bool ais_binary_decode(const int debug,
 		}
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 30:	/* IMO289 - Text description - addressed */
 		ais->type6.dac1fid30.linkage   = UBITS(88, 10);
 		ENDCHARS(98, ais->type6.dac1fid30.text);
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    case 32:	/* IMO289 - Tidal Window */
 		ais->type6.dac1fid32.month	= UBITS(88, 4);
@@ -424,13 +421,13 @@ bool ais_binary_decode(const int debug,
 		ais->type6.dac1fid32.ntidals = u;
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
-		structured = true;
+		ais->type6.structured = true;
 		break;
 	    }
-	if (!structured)
+	if (!ais->type6.structured)
 	    (void)memcpy(ais->type6.bitdata,
-			 (char *)bits + (88 / BITS_PER_BYTE),
-			 (ais->type6.bitcount + 7) / 8);
+			 (char *)bits + (88 / CHAR_BIT),
+			 BITS_TO_BYTES(ais->type6.bitcount));
 	break;
     case 7: /* Binary acknowledge */
     case 13: /* Safety Related Acknowledge */
@@ -458,7 +455,7 @@ bool ais_binary_decode(const int debug,
 	ais->type8.bitcount       = bitlen - 56;
 	/* not strictly required - helps stability in testing */ 
 	(void)memset(ais->type8.bitdata, '\0', sizeof(ais->type8.bitdata));
-	structured = false;
+	ais->type8.structured = false;
 	if (ais->type8.dac == 1)
 	    switch (ais->type8.fid) {
 	    case 11:        /* IMO236 - Meteorological/Hydrological data */
@@ -499,7 +496,7 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac1fid11.preciptype	= UBITS(332, 3);
 		ais->type8.dac1fid11.salinity	= UBITS(335, 9);
 		ais->type8.dac1fid11.ice		= UBITS(344, 2);
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 13:        /* IMO236 - Fairway closed */
 		UCHARS(56, ais->type8.dac1fid13.reason);
@@ -516,19 +513,19 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac1fid13.thour  	= UBITS(457, 5);
 		ais->type8.dac1fid13.tminute	= UBITS(462, 6);
 		/* skip 4 bits */
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 15:        /* IMO236 - Extended ship and voyage */
 		ais->type8.dac1fid15.airdraught	= UBITS(56, 11);
 		/* skip 5 bits */
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 16:	    /* Number of Persons On Board */
 		if (ais->type8.bitcount == 136)
 		    ais->type8.dac1fid16.persons = UBITS(88, 13);/* 289 */
 		else
 		    ais->type8.dac1fid16.persons = UBITS(55, 13);/* 236 */
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 17:        /* IMO289 - VTS-generated/synthetic targets */
 #define ARRAY_BASE 56
@@ -561,7 +558,7 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac1fid17.ntargets = u;
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 19:        /* IMO289 - Marine Traffic Signal */
 		ais->type8.dac1fid19.linkage	= UBITS(56, 10);
@@ -574,7 +571,7 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac1fid19.minute	= UBITS(247, 6);
 		ais->type8.dac1fid19.nextsignal	= UBITS(253, 5);
 		/* skip 102 bits */
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 21:        /* IMO289 - Weather obs. report from ship */
 		break;
@@ -603,12 +600,12 @@ bool ais_binary_decode(const int debug,
 		}
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 29:        /* IMO289 - Text Description - broadcast */
 		ais->type8.dac1fid29.linkage   = UBITS(56, 10);
 		ENDCHARS(66, ais->type8.dac1fid29.text);
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 31:        /* IMO289 - Meteorological/Hydrological data */
 		ais->type8.dac1fid31.lon		= SBITS(56, 25);
@@ -649,7 +646,7 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac1fid31.preciptype	= UBITS(336, 3);
 		ais->type8.dac1fid31.salinity	= UBITS(339, 9);
 		ais->type8.dac1fid31.ice		= UBITS(348, 2);
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    }
 	else if (ais->type8.dac == 200) {
@@ -668,7 +665,15 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac200fid10.course_q	= (bool)UBITS(158, 1);
 		ais->type8.dac200fid10.heading_q	= (bool)UBITS(159, 1);
 		/* skip 8 bits */
-		structured = true;
+		/*
+		 * Attempt to prevent false matches with this message type 
+		 * by range-checking certain fields.
+		 */
+		if (ais->type8.dac200fid10.hazard > DAC200FID10_HAZARD_MAX
+		    || !isascii((int)ais->type8.dac200fid10.vin[0]))
+		    ais->type8.structured = false;
+		else
+		    ais->type8.structured = true;
 		break;
 	    case 23:	/* EMMA warning */
 		if (bitlen != 256)
@@ -693,7 +698,7 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac200fid23.intensity	= UBITS(244, 2);
 		ais->type8.dac200fid23.wind	= UBITS(246, 4);
 		/* skip 6 bits */
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 24:	/* Water level */
 		if (bitlen != 168)
@@ -710,7 +715,7 @@ bool ais_binary_decode(const int debug,
 #undef ARRAY_BASE
 #undef ELEMENT_SIZE
 		/* skip 6 bits */
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    case 40:	/* Signal status */
 		if (bitlen != 168)
@@ -722,15 +727,15 @@ bool ais_binary_decode(const int debug,
 		ais->type8.dac200fid40.direction	= UBITS(124, 3);
 		ais->type8.dac200fid40.status	= UBITS(127, 30);
 		/* skip 11 bits */
-		structured = true;
+		ais->type8.structured = true;
 		break;
 	    }
 	}
 	/* land here if we failed to match a known DAC/FID */
-	if (!structured)
+	if (!ais->type8.structured)
 	    (void)memcpy(ais->type8.bitdata,
-			 (char *)bits + (56 / BITS_PER_BYTE),
-			 (ais->type8.bitcount + 7) / 8);
+			 (char *)bits + (56 / CHAR_BIT),
+			 BITS_TO_BYTES(ais->type8.bitcount));
 	break;
     case 9: /* Standard SAR Aircraft Position Report */
 	PERMISSIVE_LENGTH_CHECK(168);
@@ -746,7 +751,7 @@ bool ais_binary_decode(const int debug,
 	//ais->type9.spare		= UBITS(143, 3);
 	ais->type9.assigned		= UBITS(146, 1)!=0;
 	ais->type9.raim		= UBITS(147, 1)!=0;
-	ais->type9.radio		= UBITS(148, 19);
+	ais->type9.radio		= UBITS(148, 20);
 	break;
     case 10: /* UTC/Date inquiry */
 	PERMISSIVE_LENGTH_CHECK(72);
@@ -809,8 +814,8 @@ bool ais_binary_decode(const int debug,
 	//ais->type17.spare	        = UBITS(75, 4);
 	ais->type17.bitcount        = bitlen - 80;
 	(void)memcpy(ais->type17.bitdata,
-		     (char *)bits + (80 / BITS_PER_BYTE),
-		     (ais->type17.bitcount + 7) / 8);
+		     (char *)bits + (80 / CHAR_BIT),
+		     BITS_TO_BYTES(ais->type17.bitcount));
 	break;
     case 18:	/* Standard Class B CS Position Report */
 	PERMISSIVE_LENGTH_CHECK(168)
@@ -938,7 +943,7 @@ bool ais_binary_decode(const int debug,
 	    {
 		struct ais_type24a_t *saveptr = &type24_queue->ships[type24_queue->index];
 
-		gpsd_report(debug, LOG_PROG,
+		gpsd_report(errout, LOG_PROG,
 			    "AIVDM: 24A from %09u stashed.\n",
 			    ais->mmsi);
 		saveptr->mmsi = ais->mmsi;
@@ -984,8 +989,8 @@ bool ais_binary_decode(const int debug,
 		if (type24_queue->ships[i].mmsi == ais->mmsi) {
 		    (void)strlcpy(ais->type24.shipname,
 				  type24_queue->ships[i].shipname,
-				  sizeof(type24_queue->ships[i].shipname));
-		    gpsd_report(debug, LOG_PROG,
+				  sizeof(ais->type24.shipname));
+		    gpsd_report(errout, LOG_PROG,
 				"AIVDM 24B from %09u matches a 24A.\n",
 				ais->mmsi);
 		    /* prevent false match if a 24B is repeated */
@@ -999,7 +1004,7 @@ bool ais_binary_decode(const int debug,
 	    ais->type24.part = part_b;
 	    return true;
 	default:
-	    gpsd_report(debug, LOG_WARN,
+	    gpsd_report(errout, LOG_WARN,
 			"AIVDM message type 24 of subtype unknown.\n");
 	    return false;
 	}
@@ -1007,7 +1012,7 @@ bool ais_binary_decode(const int debug,
     case 25:	/* Binary Message, Single Slot */
 	/* this check and the following one reject line noise */
 	if (bitlen < 40 || bitlen > 168) {
-	    gpsd_report(debug, LOG_WARN,
+	    gpsd_report(errout, LOG_WARN,
 			"AIVDM message type 25 size not between 40 to 168 bits (%zd).\n",
 			bitlen);
 	    return false;
@@ -1015,7 +1020,7 @@ bool ais_binary_decode(const int debug,
 	ais->type25.addressed	= (bool)UBITS(38, 1);
 	ais->type25.structured	= (bool)UBITS(39, 1);
 	if (bitlen < (unsigned)(40 + (16*ais->type25.structured) + (30*ais->type25.addressed))) {
-	    gpsd_report(debug, LOG_WARN,
+	    gpsd_report(errout, LOG_WARN,
 			"AIVDM message type 25 too short for mode.\n");
 	    return false;
 	}
@@ -1023,27 +1028,23 @@ bool ais_binary_decode(const int debug,
 	    ais->type25.dest_mmsi   = UBITS(40, 30);
 	if (ais->type25.structured)
 	    ais->type25.app_id      = UBITS(40+ais->type25.addressed*30,16);
-	/*
-	 * Not possible to do this right without machinery we
-	 * don't yet have.  The problem is that if the addressed
-	 * bit is on, the bitfield start won't be on a byte
-	 * boundary. Thus the formulas below (and in message type 26)
-	 * will work perfectly for broadcast messages, but for addressed
-	 * messages the retrieved data will be led by the 30 bits of
-	 * the destination MMSI
-	 */
 	ais->type25.bitcount       = bitlen - 40 - 16*ais->type25.structured;
 	/* bit 40 is exactly 5 bytes in; 2 bytes is 16 bits */
 	(void)memcpy(ais->type25.bitdata,
 		     (char *)bits+5 + 2 * ais->type25.structured,
-		     (ais->type25.bitcount + 7) / 8);
+		     BITS_TO_BYTES(ais->type25.bitcount));
+	/* discard MMSI if addressed */
+	if (ais->type25.addressed) {
+	    shiftleft((unsigned char *)ais->type25.bitdata, ais->type25.bitcount, 30);
+	    ais->type25.bitcount -= 30;
+	}
 	break;
     case 26:	/* Binary Message, Multiple Slot */
 	RANGE_CHECK(60, 1004);
 	ais->type26.addressed	= (bool)UBITS(38, 1);
 	ais->type26.structured	= (bool)UBITS(39, 1);
 	if ((signed)bitlen < 40 + 16*ais->type26.structured + 30*ais->type26.addressed + 20) {
-	    gpsd_report(debug, LOG_WARN,
+	    gpsd_report(errout, LOG_WARN,
 			"AIVDM message type 26 too short for mode.\n");
 	    return false;
 	}
@@ -1053,12 +1054,17 @@ bool ais_binary_decode(const int debug,
 	    ais->type26.app_id      = UBITS(40+ais->type26.addressed*30,16);
 	ais->type26.bitcount        = bitlen - 60 - 16*ais->type26.structured;
 	(void)memcpy(ais->type26.bitdata,
-		     (char *)bits+5 + 2 * ais->type26.structured,
-		     (ais->type26.bitcount + 7) / 8);
+		     (unsigned char *)bits+5 + 2 * ais->type26.structured,
+		     BITS_TO_BYTES(ais->type26.bitcount));
+	/* discard MMSI if addressed */
+	if (ais->type26.addressed) {
+	    shiftleft((unsigned char *)ais->type26.bitdata, ais->type26.bitcount, 30);
+	    ais->type26.bitcount -= 30;
+	}
 	break;
     case 27:	/* Long Range AIS Broadcast message */
 	if (bitlen != 96 && bitlen != 168) {
-	    gpsd_report(debug, LOG_WARN,
+	    gpsd_report(errout, LOG_WARN,
 			"unexpected AIVDM message type 27 (%zd).\n",
 			bitlen);
 	    return false;
@@ -1067,7 +1073,7 @@ bool ais_binary_decode(const int debug,
 	     * This is an implementation error observed in the wild,
 	     * sending a full 168-bit slot rather than just 96 bits.
 	     */
-	    gpsd_report(debug, LOG_WARN,
+	    gpsd_report(errout, LOG_WARN,
 			"oversized 169=8-bit AIVDM message type 27.\n");
 	}
 	ais->type27.accuracy        = (bool)UBITS(38, 1);
@@ -1080,7 +1086,7 @@ bool ais_binary_decode(const int debug,
 	ais->type27.gnss            = (bool)UBITS(94, 1);
 	break;
     default:
-	gpsd_report(debug, LOG_ERROR,
+	gpsd_report(errout, LOG_ERROR,
 		    "Unparsed AIVDM message type %d.\n",ais->type);
 	return false;
     }
@@ -1088,7 +1094,6 @@ bool ais_binary_decode(const int debug,
 #undef UCHARS
 #undef SBITS
 #undef UBITS
-#undef BITS_PER_BYTE
 
     /* data is fully decoded */
     return true;

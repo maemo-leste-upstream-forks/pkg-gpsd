@@ -2,6 +2,9 @@
  * ppsthread.c - manage PPS watcher threads
  *
  * If you are not good at threads do not touch this file!
+ * For example: errno is thread safe; strerror() is not.
+ *
+ * FIXME: find a portable and thread safe replacement for strerror().
  *
  * It helps to know that there are two PPS measurement methods in
  * play.  One is defined by RFC2783 and typically implemented in the
@@ -32,6 +35,13 @@
  * the context structure.  Then you can call pps_thread_activate() and
  * the thread will launch.  It is OK to do this before the device is
  * open, the thread will wait on that.
+ * 
+ * WARNING!  Loss of precision
+ * UNIX time to nanoSec precision is 62 significant bits
+ * UNIX time to nanoSec precision after 2038 is 63 bits
+ * a double is only 53 significant bits.
+ * 
+ * You cannot do PPS math with doubles
  *
  * This file is Copyright (c) 2013 by the GPSD project. BSD terms
  * apply: see the file COPYING in the distribution root for details.
@@ -40,6 +50,7 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include <math.h>
 #ifndef S_SPLINT_S
 #include <sys/socket.h>
 #include <unistd.h>
@@ -74,6 +85,21 @@
 
 static pthread_mutex_t ppslast_mutex;
 
+void pps_early_init( struct gps_context_t * context ) {
+    int err;
+
+    /*@ -unrecog  (splint has no pthread declarations as yet) @*/
+    /*@ -nullpass @*/
+    err = pthread_mutex_init(&ppslast_mutex, NULL);
+    /*@ +nullpass@ */
+    /*@ +unrecog @*/
+    if ( 0 != err ) {
+	gpsd_report(&context->errout, LOG_ERROR,
+		"PPS: pthread_mutex_init() : %s\n",
+		strerror(errno));
+    }
+}
+
 #if defined(HAVE_SYS_TIMEPPS_H)
 /*@-compdestroy -nullpass -unrecog@*/
 static int init_kernel_pps(struct gps_device_t *session)
@@ -94,7 +120,7 @@ static int init_kernel_pps(struct gps_device_t *session)
 
     session->kernelpps_handle = -1;
     if ( isatty(session->gpsdata.gps_fd) == 0 ) {
-	gpsd_report(session->context->debug, LOG_INF, "KPPS gps_fd not a tty\n");
+	gpsd_report(&session->context->errout, LOG_INF, "KPPS gps_fd not a tty\n");
     	return -1;
     }
 
@@ -114,9 +140,9 @@ static int init_kernel_pps(struct gps_device_t *session)
     /* This activates the magic /dev/pps0 device */
     /* Note: this ioctl() requires root */
     if ( 0 > ioctl(session->gpsdata.gps_fd, TIOCSETD, &ldisc)) {
-	gpsd_report(session->context->debug, LOG_INF,
-		    "KPPS cannot set PPS line discipline: %s\n",
-		    strerror(errno));
+	gpsd_report(&session->context->errout, LOG_INF,
+		    "KPPS cannot set PPS line discipline on %s : %s\n",
+		    session->gpsdata.dev.path, strerror(errno));
     	return -1;
     }
     /*@-ignoresigns@*/
@@ -143,7 +169,7 @@ static int init_kernel_pps(struct gps_device_t *session)
 	    }
 	    (void)close(fd);
 	}
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "KPPS checking %s, %s\n",
 		    globbuf.gl_pathv[i], path);
 	if ( 0 == strncmp( path, session->gpsdata.dev.path, sizeof(path))) {
@@ -158,7 +184,7 @@ static int init_kernel_pps(struct gps_device_t *session)
     globfree(&globbuf);
 
     if ( 0 == (int)pps_num ) {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "KPPS device not found.\n");
     	return -1;
     }
@@ -167,13 +193,13 @@ static int init_kernel_pps(struct gps_device_t *session)
 
     /* root privs are required for this device open */
     if ( 0 != getuid() ) {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "KPPS only works as root \n");
     	return -1;
     }
     ret = open(path, O_RDWR);
     if ( 0 > ret ) {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "KPPS cannot open %s: %s\n", path, strerror(errno));
     	return -1;
     }
@@ -186,14 +212,14 @@ static int init_kernel_pps(struct gps_device_t *session)
     ret  = session->gpsdata.gps_fd;
 #endif
     /* assert(ret >= 0); */
-    gpsd_report(session->context->debug, LOG_INF,
+    gpsd_report(&session->context->errout, LOG_INF,
 		"KPPS RFC2783 fd is %d\n",
 		ret);
 
     /* RFC 2783 implies the time_pps_setcap() needs priviledges *
      * keep root a tad longer just in case */
     if ( 0 > time_pps_create(ret, &session->kernelpps_handle )) {
-	gpsd_report(session->context->debug, LOG_INF,
+	gpsd_report(&session->context->errout, LOG_INF,
 		    "KPPS time_pps_create(%d) failed: %s\n",
 		    ret, strerror(errno));
     	return -1;
@@ -203,10 +229,10 @@ static int init_kernel_pps(struct gps_device_t *session)
         int caps;
 	/* get features  supported */
         if ( 0 > time_pps_getcap(session->kernelpps_handle, &caps)) {
-	    gpsd_report(session->context->debug, LOG_ERROR,
+	    gpsd_report(&session->context->errout, LOG_ERROR,
 			"KPPS time_pps_getcap() failed\n");
         } else {
-	    gpsd_report(session->context->debug,
+	    gpsd_report(&session->context->errout,
 			LOG_INF, "KPPS caps %0x\n", caps);
         }
 
@@ -223,7 +249,7 @@ static int init_kernel_pps(struct gps_device_t *session)
 #endif /* S_SPLINT_S */
 
         if ( 0 > time_pps_setparams(session->kernelpps_handle, &pp)) {
-	    gpsd_report(session->context->debug, LOG_ERROR,
+	    gpsd_report(&session->context->errout, LOG_ERROR,
 		"KPPS time_pps_setparams() failed: %s\n", strerror(errno));
 	    time_pps_destroy(session->kernelpps_handle);
 	    return -1;
@@ -237,8 +263,12 @@ static int init_kernel_pps(struct gps_device_t *session)
 /*@-mustfreefresh -type -unrecog -branchstate@*/
 static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 {
+    char ts_str1[TIMESPEC_LEN], ts_str2[TIMESPEC_LEN];
     struct gps_device_t *session = (struct gps_device_t *)arg;
-    double last_fixtime_real = 0, last_fixtime_clock = 0;
+    double last_fixtime_real = 0; 
+    /* the system clock ime, to the nSec, when the last fix received */
+    /* using a double would cause loss of precision */
+    struct timespec last_fixtime_clock = {0, 0};
 #ifndef HAVE_CLOCK_GETTIME
     struct timeval  clock_tv = {0, 0};
 #endif /* HAVE_CLOCK_GETTIME */
@@ -256,8 +286,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
     int edge = 0;       /* 0 = clear edge, 1 = assert edge */
 #endif /* TIOCMIWAIT */
 #if defined(HAVE_SYS_TIMEPPS_H)
-    int edge_kpps = 0;       /* 0 = clear edge, 1 = assert edge */
 #ifndef S_SPLINT_S
+    int edge_kpps = 0;       /* 0 = clear edge, 1 = assert edge */
     int cycle_kpps, duration_kpps;
     /* kpps_pulse stores the time of the last two edges */
     struct timespec pulse_kpps[2] = { {0, 0}, {0, 0} };
@@ -267,6 +297,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
     memset( (void *)&pi, 0, sizeof(pps_info_t));
 #endif /* S_SPLINT_S */
 #endif /* defined(HAVE_SYS_TIMEPPS_H) */
+    /* pthread error return */
+    int pthread_err; 
 
     /*
      * Wait for status change on any handshake line.  Just one edge,
@@ -283,24 +315,47 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
     while (session->thread_report_hook != NULL 
            || session->context->pps_hook != NULL) {
 	bool ok = false;
+#ifndef S_SPLINT_S
 #if defined(HAVE_SYS_TIMEPPS_H)
 	// cppcheck-suppress variableScope
 	bool ok_kpps = false;
 #endif /* HAVE_SYS_TIMEPPS_H */
+#endif /* S_SPLINT_S */
 	char *log = NULL;
 
 #if defined(TIOCMIWAIT)
         /* we are lucky to have TIOCMIWAIT, so wait for next edge */
 #define PPS_LINE_TIOC (TIOCM_CD|TIOCM_CAR|TIOCM_RI|TIOCM_CTS)
         if (ioctl(session->gpsdata.gps_fd, TIOCMIWAIT, PPS_LINE_TIOC) != 0) {
-	    gpsd_report(session->context->debug, LOG_ERROR,
-			"PPS ioctl(TIOCMIWAIT) failed: %d %.40s\n",
-			errno, strerror(errno));
+	    gpsd_report(&session->context->errout, LOG_WARN,
+			"PPS ioctl(TIOCMIWAIT) on %s failed: %d %.40s\n",
+			session->gpsdata.dev.path, errno, strerror(errno));
 	    break;
 	}
-        /* quick, grab a copy of last_fixtime before it changes */
+        /*
+	 * Start of time critical section 
+         * Only error reporting, not success reporting in critical section
+	 */
+
+	/* quick, grab a copy of last_fixtime before it changes */
+	/*@ -unrecog  (splint has no pthread declarations as yet) @*/
+	pthread_err = pthread_mutex_lock(&ppslast_mutex);
+	if ( 0 != pthread_err ) {
+	    gpsd_report(&session->context->errout, LOG_ERROR,
+		    "PPS: pthread_mutex_lock() : %s\n",
+		    strerror(errno));
+	}
+	/*@ +unrecog @*/
 	last_fixtime_real = session->last_fixtime.real;
 	last_fixtime_clock = session->last_fixtime.clock;
+	/*@ -unrecog (splint has no pthread declarations as yet) @*/
+	pthread_err = pthread_mutex_unlock(&ppslast_mutex);
+	if ( 0 != pthread_err ) {
+	    gpsd_report(&session->context->errout, LOG_ERROR,
+		    "PPS: pthread_mutex_unlock() : %s\n",
+		    strerror(errno));
+	}
+	/*@ +unrecog @*/
 
 /*@-noeffect@*/
         /* get the time after we just woke up */
@@ -309,30 +364,44 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	 * not uSec like gettimeofday */
 	if ( 0 > clock_gettime(CLOCK_REALTIME, &clock_ts) ) {
 	    /* uh, oh, can not get time! */
-	    gpsd_report(session->context->debug, LOG_ERROR,
+	    gpsd_report(&session->context->errout, LOG_ERROR,
 			"PPS clock_gettime() failed\n");
 	    break;
 	}
 #else
 	if ( 0 > gettimeofday(&clock_tv, NULL) ) {
 	    /* uh, oh, can not get time! */
-	    gpsd_report(session->context->debug, LOG_ERROR,
+	    gpsd_report(&session->context->errout, LOG_ERROR,
 			"PPS gettimeofday() failed\n");
 	    break;
 	}
 	TVTOTS( &clock_ts, &clock_tv);
 #endif /* HAVE_CLOCK_GETTIME */
 /*@+noeffect@*/
-
+     
         /* got the edge, got the time just after the edge, now quickly
          * get the edge state */
 	/*@ +ignoresigns */
 	if (ioctl(session->gpsdata.gps_fd, TIOCMGET, &state) != 0) {
-	    gpsd_report(session->context->debug, LOG_ERROR,
-			"PPS ioctl(TIOCMGET) failed\n");
+	    gpsd_report(&session->context->errout, LOG_ERROR,
+			"PPS ioctl(TIOCMGET) on %s failed\n",
+			session->gpsdata.dev.path);
 	    break;
 	}
 	/*@ -ignoresigns */
+        /* end of time critical section */
+	gpsd_report(&session->context->errout, LOG_PROG,
+		    "PPS ioctl(TIOCMIWAIT) on %s succeeded\n",
+		    session->gpsdata.dev.path);
+
+	/*
+	 * If there was no valid time from the GPS when the PPS event was
+	 * asserted, we can do nothing further.  It will be strange if
+	 * this ever actually happens, since we expect PPS to be asserted
+	 * only after a valid fix - which should yield time.
+	 */
+        if (isnan(last_fixtime_real))
+	    continue;
 
 	/* mask for monitored lines */
 	state &= PPS_LINE_TIOC;
@@ -371,7 +440,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 #endif
 	    if ( 0 > time_pps_fetch(session->kernelpps_handle, PPS_TSFMT_TSPEC
 	        , &pi, &kernelpps_tv)) {
-		gpsd_report(session->context->debug, LOG_ERROR,
+		gpsd_report(&session->context->errout, LOG_ERROR,
 			    "KPPS kernel PPS failed\n");
 	    } else {
 		// find the last edge
@@ -395,26 +464,27 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		 * unsigned long as a wider-or-equal type to
 		 * accomodate Linux's type.
 		 */
-		gpsd_report(session->context->debug, LOG_PROG,
-			    "KPPS assert %ld.%09ld, sequence: %ld - "
-			    "clear  %ld.%09ld, sequence: %ld\n",
-			    pi.assert_timestamp.tv_sec,
-			    pi.assert_timestamp.tv_nsec,
+		timespec_str( &pi.assert_timestamp, ts_str1, sizeof(ts_str1) );
+		timespec_str( &pi.clear_timestamp, ts_str2, sizeof(ts_str2) );
+		gpsd_report(&session->context->errout, LOG_PROG,
+			    "KPPS assert %s, sequence: %ld - "
+			    "clear  %s, sequence: %ld\n",
+			    ts_str1,
 			    (unsigned long) pi.assert_sequence,
-			    pi.clear_timestamp.tv_sec,
-			    pi.clear_timestamp.tv_nsec,
+			    ts_str2,
 			    (unsigned long) pi.clear_sequence);
-		gpsd_report(session->context->debug, LOG_PROG,
+		gpsd_report(&session->context->errout, LOG_PROG,
 			    "KPPS data: using %s\n",
 			    edge_kpps ? "assert" : "clear");
 
+		/* WARNING! this will fail if delta more than a few seconds,
+                  that should not be the case here */
 	        cycle_kpps = timespec_diff_ns(ts_kpps, pulse_kpps[edge_kpps])/1000;
 	        duration_kpps = timespec_diff_ns(ts_kpps, pulse_kpps[(int)(edge_kpps == 0)])/1000;
-	        gpsd_report(session->context->debug, LOG_PROG,
-		    "KPPS cycle: %7d uSec, duration: %7d uSec @ %lu.%09lu\n",
-		    cycle_kpps, duration_kpps,
-		    (unsigned long)ts_kpps.tv_sec,
-		    (unsigned long)ts_kpps.tv_nsec);
+		timespec_str( &ts_kpps, ts_str1, sizeof(ts_str1) );
+	        gpsd_report(&session->context->errout, LOG_PROG,
+		    "KPPS cycle: %7d uSec, duration: %7d uSec @ %s\n",
+		    cycle_kpps, duration_kpps, ts_str1);
 		pulse_kpps[edge_kpps] = ts_kpps;
 		if (990000 < cycle_kpps && 1010000 > cycle_kpps) {
 		    /* KPPS passes a basic sanity check */
@@ -435,18 +505,18 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	    if (999000 < cycle && 1001000 > cycle) {
 		duration = 0;
 		unchanged = 0;
-		gpsd_report(session->context->debug, LOG_RAW,
+		gpsd_report(&session->context->errout, LOG_RAW,
 			    "PPS pps-detect on %s invisible pulse\n",
 			    session->gpsdata.dev.path);
 	    } else if (++unchanged == 10) {
                 /* not really unchanged, just out of bounds */
 		unchanged = 1;
-		gpsd_report(session->context->debug, LOG_WARN,
+		gpsd_report(&session->context->errout, LOG_WARN,
 			    "PPS TIOCMIWAIT returns unchanged state, ppsmonitor sleeps 10\n");
 		(void)sleep(10);
 	    }
 	} else {
-	    gpsd_report(session->context->debug, LOG_RAW,
+	    gpsd_report(&session->context->errout, LOG_RAW,
 			"PPS pps-detect on %s changed to %d\n",
 			session->gpsdata.dev.path, state);
 	    unchanged = 0;
@@ -454,11 +524,10 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	state_last = state;
         /* save this edge so we know next cycle time */
 	pulse[edge] = clock_ts;
-	gpsd_report(session->context->debug, LOG_PROG,
-		    "PPS edge: %d, cycle: %7d uSec, duration: %7d uSec @ %lu.%09lu\n",
-		    edge, cycle, duration,
-		    (unsigned long)clock_ts.tv_sec,
-		    (unsigned long)clock_ts.tv_nsec);
+	timespec_str( &clock_ts, ts_str1, sizeof(ts_str1) );
+	gpsd_report(&session->context->errout, LOG_PROG,
+		    "PPS edge: %d, cycle: %7d uSec, duration: %7d uSec @ %s\n",
+		    edge, cycle, duration, ts_str1);
 	if (unchanged) {
 	    // strange, try again
 	    continue;
@@ -504,9 +573,14 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		ok = true;
 		log = "5Hz PPS pulse\n";
 	    }
-	} else if (999000 > cycle) {
+	} else if (900000 > cycle) {
+            /* Yes, 10% window.  The Rasberry Pi clock is very coarse
+             * when it starts and chronyd may be doing a fast slew. 
+             * chronyd by default will slew up to 8.334% !
+             * Don't worry, ntpd and chronyd will do further sanitizing.*/
 	    log = "Too long for 5Hz, too short for 1Hz\n";
-	} else if (1001000 > cycle) {
+	} else if (1100000 > cycle) {
+            /* Yes, 10% window.  */
 	    /* looks like PPS pulse or square wave */
 	    if (0 == duration) {
 		ok = true;
@@ -557,11 +631,14 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	    char *log1 = NULL;
 	    /* drift.real is the time we think the pulse represents  */
 	    struct timedrift_t drift;
-	    gpsd_report(session->context->debug, LOG_RAW,
+	    gpsd_report(&session->context->errout, LOG_RAW,
 			"PPS edge accepted %.100s", log);
+#ifndef S_SPLINT_S
 #if defined(HAVE_SYS_TIMEPPS_H)
             if ( 0 <= session->kernelpps_handle && ok_kpps) {
 		/* use KPPS time */
+		gpsd_report(&session->context->errout, LOG_RAW,
+			    "KPPS using edge %d", edge_kpps );
 		/* pick the right edge */
 		if ( edge_kpps ) {
 		    clock_ts = pi.assert_timestamp; /* structure copy */
@@ -570,6 +647,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		}
 	    } 
 #endif /* defined(HAVE_SYS_TIMEPPS_H) */
+#endif /* S_SPLINT_S */
 	    /* else, use plain PPS */
 
             /* This innocuous-looking "+ 1" embodies a significant
@@ -579,11 +657,12 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
              * previous cycle and we must increment. 
              *
              * FIXME! The GR-601W at 38,400 or faster can send the
-             * serial fix before PPS by about 10 mSec!
+             * serial fix before the interrupt event carrying the PPS 
+	     * line assertion by about 10 mSec!
              */
 
 	    /*@+relaxtypes@*/
-	    drift.real.tv_sec = last_fixtime_real + 1;
+	    drift.real.tv_sec = (time_t)trunc(last_fixtime_real) + 1;
 	    drift.real.tv_nsec = 0;  /* need to be fixed for 5Hz */
 	    drift.clock = clock_ts;
 	    /*@-relaxtypes@*/
@@ -592,9 +671,10 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 	     * GPS serial input then use that */
 	    offset = (drift.real.tv_sec - drift.clock.tv_sec);
 	    offset += ((drift.real.tv_nsec - drift.clock.tv_nsec) / 1e9);
-	    delay = (drift.clock.tv_sec + drift.clock.tv_nsec / 1e9) - last_fixtime_clock;
+	    delay = (drift.clock.tv_sec - last_fixtime_clock.tv_sec);
+	    delay += ((drift.clock.tv_nsec - last_fixtime_clock.tv_nsec) / 1e9);
 	    if (0.0 > delay || 1.0 < delay) {
-		gpsd_report(session->context->debug, LOG_RAW,
+		gpsd_report(&session->context->errout, LOG_RAW,
 			    "PPS: no current GPS seconds: %f\n",
 			    delay);
 		log1 = "timestamp out of range";
@@ -608,48 +688,55 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
 		if (session->context->pps_hook != NULL)
 		    session->context->pps_hook(session, &drift);
 		/*@ -unrecog  (splint has no pthread declarations as yet) @*/
-		(void)pthread_mutex_lock(&ppslast_mutex);
+		pthread_err = pthread_mutex_lock(&ppslast_mutex);
+                if ( 0 != pthread_err ) {
+		    gpsd_report(&session->context->errout, LOG_ERROR,
+			    "PPS: pthread_mutex_lock() : %s\n",
+			    strerror(errno));
+		}
 		/*@ +unrecog @*/
 		/*@-type@*/ /* splint is confused about struct timespec */
 		session->ppslast = drift;
 		/*@+type@*/
 		session->ppscount++;
 		/*@ -unrecog (splint has no pthread declarations as yet) @*/
-		(void)pthread_mutex_unlock(&ppslast_mutex);
+		pthread_err = pthread_mutex_unlock(&ppslast_mutex);
+                if ( 0 != pthread_err ) {
+		    gpsd_report(&session->context->errout, LOG_ERROR,
+			    "PPS: pthread_mutex_unlock() : %s\n",
+			    strerror(errno));
+		}
 		/*@ +unrecog @*/
-		/*@+compdef@*/
 		/*@-type@*/ /* splint is confused about struct timespec */
-		gpsd_report(session->context->debug, LOG_INF,
-			    "PPS hooks called with %.20s %lu.%09lu offset %.9f\n",
-			    log1,
-			    (unsigned long)clock_ts.tv_sec,
-			    (unsigned long)clock_ts.tv_nsec,
-			    offset);
+		timespec_str( &drift.clock, ts_str1, sizeof(ts_str1) );
+		timespec_str( &drift.real, ts_str2, sizeof(ts_str2) );
+		gpsd_report(&session->context->errout, LOG_INF,
+			    "PPS hooks called with %.20s clock: %s real: %s\n",
+			    log1, ts_str1, ts_str2);
 		/*@+type@*/
+		/*@+compdef@*/
             }
 	    /*@-type@*/ /* splint is confused about struct timespec */
-	    gpsd_report(session->context->debug, LOG_PROG,
-		    "PPS edge %.20s %lu.%09lu offset %.9f\n",
-		    log1,
-		    (unsigned long)clock_ts.tv_sec,
-		    (unsigned long)clock_ts.tv_nsec,
-		    offset);
+	    timespec_str( &clock_ts, ts_str1, sizeof(ts_str1) );
+	    gpsd_report(&session->context->errout, LOG_PROG,
+		    "PPS edge %.20s @ %s offset %.9f\n",
+		    log1, ts_str1, offset);
 	    /*@+type@*/
 	} else {
-	    gpsd_report(session->context->debug, LOG_RAW,
+	    gpsd_report(&session->context->errout, LOG_RAW,
 			"PPS edge rejected %.100s", log);
 	}
     }
 #if defined(HAVE_SYS_TIMEPPS_H)
     if (session->kernelpps_handle > 0) {
-	gpsd_report(session->context->debug, LOG_PROG, 
+	gpsd_report(&session->context->errout, LOG_PROG, 
             "PPS descriptor cleaned up\n");
 	(void)time_pps_destroy(session->kernelpps_handle);
     }
 #endif
     if (session->thread_wrap_hook != NULL)
 	session->thread_wrap_hook(session);
-    gpsd_report(session->context->debug, LOG_PROG, 
+    gpsd_report(&session->context->errout, LOG_PROG, 
          "PPS gpsd_ppsmonitor exited.\n");
     return NULL;
 }
@@ -668,14 +755,14 @@ void pps_thread_activate(struct gps_device_t *session)
     /* some operations in init_kernel_pps() require root privs */
     (void)init_kernel_pps( session );
     if ( 0 <= session->kernelpps_handle ) {
-	gpsd_report(session->context->debug, LOG_WARN,
+	gpsd_report(&session->context->errout, LOG_WARN,
 		    "KPPS kernel PPS will be used\n");
     }
 #endif
     /*@-compdef -nullpass@*/
     retval = pthread_create(&pt, NULL, gpsd_ppsmonitor, (void *)session);
     /*@+compdef +nullpass@*/
-    gpsd_report(session->context->debug, LOG_PROG, "PPS thread %s\n",
+    gpsd_report(&session->context->errout, LOG_PROG, "PPS thread %s\n",
 		(retval==0) ? "launched" : "FAILED");
 }
 
@@ -688,18 +775,54 @@ void pps_thread_deactivate(struct gps_device_t *session)
     /*@+nullstate +mustfreeonly@*/
 }
 
+void pps_thread_stash_fixtime(struct gps_device_t *session, 
+		   timestamp_t realtime, struct timespec clocktime)
+/* thread-safe update of last fix time - only way we pass data in */
+{
+    /*@ -unrecog  (splint has no pthread declarations as yet) @*/
+    int pthread_err = pthread_mutex_lock(&ppslast_mutex);
+    if ( 0 != pthread_err ) {
+	gpsd_report(&session->context->errout, LOG_ERROR,
+		"PPS: pthread_mutex_lock() : %s\n",
+		strerror(errno));
+    }
+    /*@ +unrecog @*/
+    session->last_fixtime.real = realtime;
+    session->last_fixtime.clock = clocktime;
+    /*@ -unrecog (splint has no pthread declarations as yet) @*/
+    pthread_err = pthread_mutex_unlock(&ppslast_mutex);
+    if ( 0 != pthread_err ) {
+	gpsd_report(&session->context->errout, LOG_ERROR,
+		"PPS: pthread_mutex_unlock() : %s\n",
+		strerror(errno));
+    }
+    /*@ +unrecog @*/
+}
+
 int pps_thread_lastpps(struct gps_device_t *session, struct timedrift_t *td)
-/* return a copy of the drift at the time of the last PPS */
+/* return the drift at the time of the last PPS - only way we pass data out */
 {
     volatile int ret;
+    /* pthread error return */
+    int pthread_err; 
 
     /*@ -unrecog  (splint has no pthread declarations as yet) @*/
-    (void)pthread_mutex_lock(&ppslast_mutex);
+    pthread_err = pthread_mutex_lock(&ppslast_mutex);
+    if ( 0 != pthread_err ) {
+	gpsd_report(&session->context->errout, LOG_ERROR,
+		"PPS: pthread_mutex_lock() : %s\n",
+		strerror(errno));
+    }
     /*@ +unrecog @*/
     *td = session->ppslast;
     ret = session->ppscount;
     /*@ -unrecog (splint has no pthread declarations as yet) @*/
-    (void)pthread_mutex_unlock(&ppslast_mutex);
+    pthread_err = pthread_mutex_unlock(&ppslast_mutex);
+    if ( 0 != pthread_err ) {
+	gpsd_report(&session->context->errout, LOG_ERROR,
+		"PPS: pthread_mutex_unlock() : %s\n",
+		strerror(errno));
+    }
     /*@ +unrecog @*/
 
     return ret;

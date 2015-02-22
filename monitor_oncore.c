@@ -183,7 +183,7 @@ static void oncore_update(void)
     unsigned int type;
 
     assert(Eawin != NULL);
-    buf = session.packet.outbuffer;
+    buf = session.lexer.outbuffer;
     type = ONCTYPE(buf[2], buf[3]);
     switch (type) {
     case ONCTYPE('E', 'a'):
@@ -397,6 +397,8 @@ static void oncore_update(void)
     {
 	double pps_offset;
 
+        /* note this is the GPS calc'ed offset
+         * not a PPS offset gpsmon calculated */
 	pps_offset = (double)getbes32(buf, 4) / 1000000.0;
 
 	(void)mvwprintw(Aywin, 2, 2, " %7.3f ms", pps_offset);

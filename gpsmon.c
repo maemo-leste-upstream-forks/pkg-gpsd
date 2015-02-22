@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <time.h>
+#include <math.h>
 #include <sys/time.h>		/* expected to declare select(2) a la SuS */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -29,6 +30,7 @@
 #include "gpsmon.h"
 #include "gpsdclient.h"
 #include "revision.h"
+#include "strfuncs.h"
 
 #define BUFLEN		2048
 
@@ -170,7 +172,7 @@ static void visibilize(/*@out@*/char *buf2, size_t len2, const char *buf)
 
     buf2[0] = '\0';
     for (sp = buf; *sp != '\0' && strlen(buf2)+4 < len2; sp++)
-	if (isprint(*sp) || (sp[0] == '\n' && sp[1] == '\0')
+	if (isprint((unsigned char) *sp) || (sp[0] == '\n' && sp[1] == '\0')
 	  || (sp[0] == '\r' && sp[2] == '\0'))
 	    (void)snprintf(buf2 + strlen(buf2), 2, "%c", *sp);
 	else
@@ -186,12 +188,12 @@ static void cond_hexdump(/*@out@*/char *buf2, size_t len2,
     size_t i;
     bool printable = true;
     for (i = 0; i < len; i++)
-	if (!isprint(buf[i]) && !isspace(buf[i]))
+	if (!isprint((unsigned char) buf[i]) && !isspace((unsigned char) buf[i]))
 	    printable = false;
     if (printable) {
 	size_t j;
 	for (i = j = 0; i < len && j < len2 - 1; i++)
-	    if (isprint(buf[i])) {
+	    if (isprint((unsigned char) buf[i])) {
 		buf2[j++] = buf[i];
 		buf2[j] = '\0';
 	    }
@@ -202,8 +204,7 @@ static void cond_hexdump(/*@out@*/char *buf2, size_t len2,
     } else {
 	buf2[0] = '\0';
 	for (i = 0; i < len; i++)
-	    (void)snprintf(buf2 + strlen(buf2), len2 - strlen(buf2),
-			   "%02x", (unsigned int)(buf[i] & 0xff));
+	    str_appendf(buf2, len2, "%02x", (unsigned int)(buf[i] & 0xff));
     }
 }
 /*@+compdef +mustdefine@*/
@@ -225,6 +226,7 @@ void monitor_fixframe(WINDOW * win)
     (void)mvwaddch(win, ycur, xmax - 1, ACS_VLINE);
 }
 
+#if defined(CONTROLSEND_ENABLE) || defined(RECONFIGURE_ENABLE)
 static void packet_dump(const char *buf, size_t buflen)
 {
     if (packetwin != NULL) {
@@ -235,7 +237,6 @@ static void packet_dump(const char *buf, size_t buflen)
     }
 }
 
-#if defined(CONTROLSEND_ENABLE) || defined(RECONFIGURE_ENABLE)
 static void monitor_dump_send(/*@in@*/ const char *buf, size_t len)
 {
     if (packetwin != NULL) {
@@ -250,11 +251,10 @@ static void monitor_dump_send(/*@in@*/ const char *buf, size_t len)
 #endif /* defined(CONTROLSEND_ENABLE) || defined(RECONFIGURE_ENABLE) */
 
 /*@-compdef@*/
-static void packet_vlog(/*@out@*/char *buf, size_t len, const char *fmt, va_list ap)
+static void gpsmon_report(const char *buf)
 {
     char buf2[BUFSIZ];
 
-    (void)vsnprintf(buf + strlen(buf), len, fmt, ap);
     visibilize(buf2, sizeof(buf2), buf);
 
     report_lock();
@@ -267,6 +267,16 @@ static void packet_vlog(/*@out@*/char *buf, size_t len, const char *fmt, va_list
     report_unlock();
 }
 /*@+compdef@*/
+
+#ifdef PPS_ENABLE
+/*@-compdef@*/
+static void packet_vlog(/*@out@*/char *buf, size_t len, const char *fmt, va_list ap)
+{
+    (void)vsnprintf(buf + strlen(buf), len, fmt, ap);
+    gpsmon_report(buf);
+}
+/*@+compdef@*/
+#endif
 
 #ifdef RECONFIGURE_ENABLE
 static void announce_log(/*@in@*/ const char *fmt, ...)
@@ -443,6 +453,9 @@ static bool switch_type(const struct gps_type_t *devtype)
 	    }
 	    active = newobject;
 	    devicewin = newwin((*active)->min_y, (*active)->min_x, 1, 0);
+	    /* screen might have JSOM on it from the init sequence */
+	    (void)clearok(stdscr, true);
+	    (void)clear();
 	    if ((devicewin == NULL) || ((*active)->initialize != NULL && !(*active)->initialize())) {
 		monitor_complain("Internal initialization failure - screen "
 				 "must be at least 80x24. Aborting.");
@@ -485,10 +498,10 @@ static void select_packet_monitor(struct gps_device_t *device)
      * change the selection of the current device driver; that's done
      * within gpsd_multipoll() before this hook is called.
      */
-    if (device->packet.type != last_type) {
+    if (device->lexer.type != last_type) {
 	const struct gps_type_t *active_type = device->device_type;
 #ifdef NMEA_ENABLE
-	if (device->packet.type == NMEA_PACKET
+	if (device->lexer.type == NMEA_PACKET
 	    && ((device->device_type->flags & DRIVER_STICKY) != 0))
 	    active_type = &driver_nmea0183;
 #endif /* NMEA_ENABLE */
@@ -498,11 +511,11 @@ static void select_packet_monitor(struct gps_device_t *device)
 	    refresh_statwin();
 	    refresh_cmdwin();
 	}
-	last_type = device->packet.type;
+	last_type = device->lexer.type;
     }
 
     if (active != NULL
-	&& device->packet.outbuflen > 0
+	&& device->lexer.outbuflen > 0
 	&& (*active)->update != NULL)
 	(*active)->update();
     if (devicewin != NULL)
@@ -588,58 +601,7 @@ static void packet_log(const char *fmt, ...)
 }
 #endif /* PPS_ENABLE */
 
-void gpsd_report(const int debuglevel, const int errlevel, const char *fmt, ...)
-/* our version of the logger */
-{
-    char buf[BUFSIZ]; 
-    char *err_str;
-
-    switch ( errlevel ) {
-    case LOG_ERROR:
-	err_str = "ERROR: ";
-	break;
-    case LOG_SHOUT:
-	err_str = "SHOUT: ";
-	break;
-    case LOG_WARN:
-	err_str = "WARN: ";
-	break;
-    case LOG_CLIENT:
-	err_str = "CLIENT: ";
-	break;
-    case LOG_INF:
-	err_str = "INFO: ";
-	break;
-    case LOG_PROG:
-	err_str = "PROG: ";
-	break;
-    case LOG_IO:
-	err_str = "IO: ";
-	break;
-    case LOG_DATA:
-	err_str = "DATA: ";
-	break;
-    case LOG_SPIN:
-	err_str = "SPIN: ";
-	break;
-    case LOG_RAW:
-	err_str = "RAW: ";
-	break;
-    default:
-	err_str = "UNK: ";
-    }
-
-    (void)strlcpy(buf, "gpsmon:", BUFSIZ);
-    (void)strncat(buf, err_str, BUFSIZ - strlen(buf));
-    if (errlevel <= debuglevel) {
-	va_list ap;
-	va_start(ap, fmt);
-	packet_vlog(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-    }
-}
-
-ssize_t gpsd_write(struct gps_device_t *session,
+static ssize_t gpsmon_serial_write(struct gps_device_t *session,
 		   const char *buf,
 		   const size_t len)
 /* pass low-level data to devices, echoing it to the log window */
@@ -698,14 +660,16 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 /* per-packet hook */
 {
     char buf[BUFSIZ];
+#ifdef NTPSHM_ENABLE
     struct timedrift_t td;
+#endif /* NTPSHM_ENABLE */
 
-#ifdef PPS_ENABLE
-    if (!serial && strncmp((char*)device->packet.outbuffer, "{\"class\":\"PPS\",", 13) == 0)
+#if defined(SOCKET_EXPORT_ENABLE) && defined(PPS_ENABLE) && defined(CONTROL_SOCKET_ENABLE)
+    if (!serial && str_starts_with((char*)device->lexer.outbuffer, "{\"class\":\"PPS\","))
     {
 	const char *end = NULL;
 	struct gps_data_t noclobber;
-	int status = json_pps_read((const char *)device->packet.outbuffer,
+	int status = json_pps_read((const char *)device->lexer.outbuffer,
 				   &noclobber,
 				   &end);
 	if (status != 0) {
@@ -713,20 +677,24 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 	    complain("Ill-formed PPS packet: %d", status);
 	    buf[0] = '\0';
 	} else {
-	    /*@-type@*/ /* splint is confused about struct timespec */
-	    double timedelta = timespec_diff_ns(noclobber.timedrift.real, 
-						noclobber.timedrift.clock) * 1e-9;
+	    /*@-type -noeffect@*/ /* splint is confused about struct timespec */
+	    struct timespec timedelta;
+	    TS_SUB( &timedelta, &noclobber.timedrift.real, 
+		&noclobber.timedrift.clock);
+
 	    if (!curses_active)
 		(void)fprintf(stderr,
-			      "Drift clock=%lu.%09lu clock=%lu.%09lu offset=%.9f\n",
-			      (unsigned long)noclobber.timedrift.clock.tv_sec,
-			      (unsigned long)noclobber.timedrift.clock.tv_nsec,
-			      (unsigned long)noclobber.timedrift.real.tv_sec,
-			      (unsigned long)noclobber.timedrift.real.tv_nsec,
-			      timedelta);
-	    /*@+type@*/
+			      "Drift clock=%ld.%09ld clock=%ld.%09ld offset=%ld.%09ld\n",
+			      (long)noclobber.timedrift.clock.tv_sec,
+			      (long)noclobber.timedrift.clock.tv_nsec,
+			      (long)noclobber.timedrift.real.tv_sec,
+			      (long)noclobber.timedrift.real.tv_nsec,
+			      (long)timedelta.tv_sec,
+                              (long)timedelta.tv_nsec);
+	    /*@+type +noeffect@*/
 
-	    (void)strlcpy(buf, PPSBAR, BUFSIZ);
+	    (void)strlcpy(buf, PPSBAR, sizeof(buf));
+	    /* coverity[missing_lock] */
 	    session.ppslast = noclobber.timedrift;
 	    /* coverity[missing_lock] */
 	    session.ppscount++;
@@ -738,10 +706,10 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 #ifdef __future__
 	if (!serial)
 	{
-	    if (device->packet.type == JSON_PACKET)
+	    if (device->lexer.type == JSON_PACKET)
 	    {
 		const char *end = NULL;
-		libgps_json_unpack((char *)device->packet.outbuffer, &session.gpsdata, &end);
+		libgps_json_unpack((char *)device->lexer.outbuffer, &session.gpsdata, &end);
 	    }
 	}
 #endif /* __future__ */
@@ -750,10 +718,10 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 	    select_packet_monitor(device);
 
 	(void)snprintf(buf, sizeof(buf), "(%d) ",
-		       (int)device->packet.outbuflen);
+		       (int)device->lexer.outbuflen);
 	cond_hexdump(buf + strlen(buf), sizeof(buf) - strlen(buf),
-		     (char *)device->packet.outbuffer,device->packet.outbuflen);
-	(void)strlcat(buf, "\n", sizeof(buf) - strlen(buf));
+		     (char *)device->lexer.outbuffer,device->lexer.outbuflen);
+	(void)strlcat(buf, "\n", sizeof(buf));
     }
 
     report_lock();
@@ -768,18 +736,27 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 	(void)doupdate();
     }
 
-    if (logfile != NULL && device->packet.outbuflen > 0) {
+    if (logfile != NULL && device->lexer.outbuflen > 0) {
         /*@ -shiftimplementation -sefparams +charint @*/
-        assert(fwrite
-               (device->packet.outbuffer, sizeof(char),
-                device->packet.outbuflen, logfile) >= 1);
+        size_t written_count = fwrite
+               (device->lexer.outbuffer, sizeof(char),
+                device->lexer.outbuflen, logfile);
+        assert(written_count >= 1);
         /*@ +shiftimplementation +sefparams -charint @*/
     }
 
     report_unlock();
 
-    /* Update the last fix time seen for PPS. FIXME: do this here? */
-    ntpshm_latch(device, &td);
+#ifdef NTPSHM_ENABLE
+    /* Update the last fix time seen for PPS if we've actually seen one,
+     * and it is a new second. */
+    if ( 0 != isnan(device->newdata.time)) {
+	// "NTP: bad new time
+    } else if (device->newdata.time == device->last_fixtime.real) {
+	// "NTP: Not a new time
+    } else 
+	ntpshm_latch(device, &td);
+#endif /* NTPSHM_ENABLE */
 }
 /*@+observertrans +nullpass +globstate +compdef +uniondef@*/
 
@@ -789,11 +766,13 @@ static bool do_command(const char *line)
 #ifdef RECONFIGURE_ENABLE
     unsigned int v;
 #endif /* RECONFIGURE_ENABLE */
+#ifdef CONTROLSEND_ENABLE
     unsigned char buf[BUFLEN];
+#endif /* CONTROLSEND_ENABLE */
     const char *arg;
 
-    if (isspace(line[1])) {
-	for (arg = line + 2; *arg != '\0' && isspace(*arg); arg++)
+    if (isspace((unsigned char) line[1])) {
+	for (arg = line + 2; *arg != '\0' && isspace((unsigned char) *arg); arg++)
 	    arg++;
 	arg++;
     } else
@@ -843,7 +822,7 @@ static bool do_command(const char *line)
 #endif /* RECONFIGURE_ENABLE */
 	    if (!context.readonly)
 		/* magic - forces a reconfigure */
-		session.packet.counter = 0;
+		session.lexer.counter = 0;
 	}
 	break;
 
@@ -869,7 +848,7 @@ static bool do_command(const char *line)
 	if (strcspn(line, "01") == strlen(line)) {
 	    /* *INDENT-OFF* */
 	    v = (unsigned int)TEXTUAL_PACKET_TYPE(
-		session.packet.type);
+		session.lexer.type);
 	    /* *INDENT-ON* */
 	} else
 	    v = (unsigned)atoi(line + 1);
@@ -889,6 +868,15 @@ static bool do_command(const char *line)
 		context.readonly = true;
 		(void)tcdrain(session.gpsdata.gps_fd);
 		(void)usleep(50000);
+		/*
+		 * Session device change will be set to NMEA when
+		 * gpsmon resyncs.  So stash the current type to
+		 * be restored if we do 'n' from NMEA mode.
+		 */
+		/*@-onlytrans@*/
+		if (v == 0)
+		    fallback = switcher;
+		/*@+onlytrans@*/
 	    } else
 		complain
 		    ("Device type %s has no mode switcher", 
@@ -1002,7 +990,6 @@ static bool do_command(const char *line)
 	    }
 	}
 	break;
-
 #ifdef CONTROLSEND_ENABLE
     case 'x':	/* send control packet */
 	if (session.device_type == NULL)
@@ -1083,21 +1070,26 @@ int main(int argc, char **argv)
     bool nmea = false;
     fd_set all_fds;
     fd_set rfds;
-    int maxfd = 0;
+    volatile int maxfd = 0;
     char inbuf[80];
     volatile bool nocurses = false;
 
     /*@ -observertrans @*/
     (void)putenv("TZ=UTC");	// for ctime()
     /*@ +observertrans @*/
-    gps_context_init(&context);	// initialize the report mutex
+    gps_context_init(&context, "gsmon");	// initialize the report mutex
+    context.serial_write = gpsmon_serial_write;
+    context.errout.report = gpsmon_report;
     while ((option = getopt(argc, argv, "aD:LVhl:nt:?")) != -1) {
 	switch (option) {
 	case 'a':
 	    nocurses = true;
 	    break;
 	case 'D':
-	    context.debug = atoi(optarg);
+	    context.errout.debug = atoi(optarg);
+#if defined(CLIENTDEBUG_ENABLE) && defined(SOCKET_EXPORT_ENABLE)
+	    json_enable_debug(context.errout.debug - 2, stderr);
+#endif
 	    break;
 	case 'L':		/* list known device types */
 	    (void)
@@ -1154,7 +1146,7 @@ int main(int argc, char **argv)
         case 't':
 	    fallback = NULL;
 	    for (active = monitor_objects; *active; active++) {
-		if (strncmp((*active)->driver->type_name, optarg, strlen(optarg)) == 0)
+		if (str_starts_with((*active)->driver->type_name, optarg))
 		{
 		    fallback = (*active)->driver;
 		    matches++;
@@ -1190,7 +1182,7 @@ int main(int argc, char **argv)
 
     /* Grok the server, port, and device. */
     if (optind < argc) {
-	serial = (strncmp(argv[optind], "/dev", 4) == 0);
+	serial = str_starts_with(argv[optind], "/dev");
 	gpsd_source_spec(argv[optind], &source);
     } else {
 	serial = false;
@@ -1210,8 +1202,7 @@ int main(int argc, char **argv)
 			   sizeof(session.gpsdata.dev.path));
 	else
 	    session.gpsdata.dev.path[0] = '\0';
-	(void)snprintf(session.gpsdata.dev.path + strlen(session.gpsdata.dev.path),
-		       sizeof(session.gpsdata.dev.path) - strlen(session.gpsdata.dev.path),
+	str_appendf(session.gpsdata.dev.path, sizeof(session.gpsdata.dev.path),
 		       "%s:%s", source.server, source.port);
     }
 
@@ -1225,8 +1216,14 @@ int main(int argc, char **argv)
 
     if (serial) {
 #ifdef PPS_ENABLE
-	session.thread_report_hook = pps_report;
-	pps_thread_activate(&session);
+	/* init the pps mutex */
+	pps_early_init( &context);
+
+	/* this guard suppresses a warning on Bluetooth devices */
+	if (session.sourcetype == source_rs232 || session.sourcetype == source_usb) {
+	    session.thread_report_hook = pps_report;
+	    pps_thread_activate(&session);
+	}
 #endif /* PPS_ENABLE */
     }
     else {
@@ -1281,19 +1278,15 @@ int main(int argc, char **argv)
 
 	for (;;) 
 	{
-#ifdef EFDS
 	    fd_set efds;
-#endif /* EFDS */
-	    switch(gpsd_await_data(&rfds, maxfd, &all_fds, context.debug))
+	    switch(gpsd_await_data(&rfds, &efds, maxfd, &all_fds, &context.errout))
 	    {
 	    case AWAIT_GOT_INPUT:
 		break;
 	    case AWAIT_NOT_READY:
-#ifdef EFDS
 		/* no recovery from bad fd is possible */
 		if (FD_ISSET(session.gpsdata.gps_fd, &efds))
 		    longjmp(terminate, TERM_SELECT_FAILED);
-#endif /* EFDS */
 		continue;
 	    case AWAIT_FAILED:
 		longjmp(terminate, TERM_SELECT_FAILED);
@@ -1324,7 +1317,7 @@ int main(int argc, char **argv)
 		    cmdline = curses_get_command();
 		else
 		{
-		    /* coverity[string_null] */
+		    /* coverity[string_null_argument] */
 		    ssize_t st = read(0, &inbuf, 1);
 
 		    if (st == 1) {

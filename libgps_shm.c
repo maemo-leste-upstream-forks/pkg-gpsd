@@ -43,10 +43,14 @@ int gps_shm_open(/*@out@*/struct gps_data_t *gpsdata)
 {
     int shmid;
 
+    /*@-nullpass@*/
+    long shmkey = getenv("GPSD_SHM_KEY") ? strtol(getenv("GPSD_SHM_KEY"), NULL, 0) : GPSD_SHM_KEY;
+    /*@+nullpass@*/
+
     libgps_debug_trace((DEBUG_CALLS, "gps_shm_open()\n"));
 
     gpsdata->privdata = NULL;
-    shmid = shmget((key_t)GPSD_KEY, sizeof(struct gps_data_t), 0);
+    shmid = shmget((key_t)shmkey, sizeof(struct gps_data_t), 0);
     if (shmid == -1) {
 	/* daemon isn't running or failed to create shared segment */
 	return -1;

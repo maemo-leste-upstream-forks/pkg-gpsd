@@ -31,7 +31,7 @@
 gpsctl \- control the modes of a GPS
 .SH "SYNOPSIS"
 .HP \w'\fBgpsctl\fR\ 'u
-\fBgpsctl\fR [\-h] [\-b | \-n] [\-x\ \fIcontrol\fR] [\-e] [\-f] [\-l] [\-s\ \fIspeed\fR] [\-t\ \fIdevicetype\fR] [\-D\ \fIdebuglevel\fR] [\-V] [\fIserial\-port\fR]
+\fBgpsctl\fR [\-h] [\-b | \-n] [\-x\ \fIcontrol\fR] [\-e] [\-f] [\-l] [\-s\ \fIspeed\fR] [\-t\ \fIdevicetype\fR] [\-R] [\-D\ \fIdebuglevel\fR] [\-V] [\fIserial\-port\fR]
 .SH "DESCRIPTION"
 .PP
 gpsctl
@@ -105,6 +105,11 @@ will provide packet headers and trailers and checksum as appropriate for binary 
 Change the sampling timeout\&. Defaults to 8 seconds, which should always be sufficient to get an identifying packet from a device emitting at the normal rate of 1 per second\&.
 .RE
 .PP
+\-R
+.RS 4
+Remove the GPSD shared\-memory segment used for SHM export\&. This option will normally only be of interest to GPSD developers\&.
+.RE
+.PP
 \-h
 .RS 4
 Display program usage and exit\&.
@@ -133,6 +138,12 @@ In low\-level mode, if the device identifies as a Generic NMEA, use the selected
 If no options are given, the program will display a message identifying the GPS type of the selected device and exit\&.
 .PP
 Reset (\-r) operations must stand alone; others can be combined\&. Multiple options will be executed in this order: mode changes (\-b and \-n) first, speed changes (\-s) second, and control\-string sends (\-c) last\&.
+.SH "ENVIRONMENT VARIABLES"
+.PP
+By setting the environment variable
+\fBGPSD_SHM_KEY\fR, you can control the key value used to designate the shared\-memory segment removed with the \-R option\&. This will be useful mainly when isolating test instances of
+gpsd
+from production ones\&.
 .SH "EXAMPLES"
 .PP
 \fBgpsctl /dev/ttyUSB0\fR

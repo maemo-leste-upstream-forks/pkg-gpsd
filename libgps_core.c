@@ -17,6 +17,7 @@
 #include "gpsd.h"
 #include "libgps.h"
 #include "gps_json.h"
+#include "strfuncs.h"
 
 #ifdef LIBGPS_DEBUG
 int libgps_debuglevel = 0;
@@ -40,10 +41,9 @@ void libgps_trace(int errlevel, const char *fmt, ...)
 	char buf[BUFSIZ];
 	va_list ap;
 
-	(void)strlcpy(buf, "libgps: ", BUFSIZ);
+	(void)strlcpy(buf, "libgps: ", sizeof(buf));
 	va_start(ap, fmt);
-	(void)vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt,
-			ap);
+	str_vappendf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
 	(void)fputs(buf, debugfp);
@@ -75,22 +75,29 @@ int gps_open(/*@null@*/const char *host,
 	else if (status == -2)
 	    status = SHM_NOATTACH;
     }
+#define USES_HOST
 #endif /* SHM_EXPORT_ENABLE */
 
 #ifdef DBUS_EXPORT_ENABLE
     if (host != NULL && strcmp(host, GPSD_DBUS_EXPORT) == 0) {
 	/*@i@*/status = gps_dbus_open(gpsdata);
 	if (status != 0)
-	    /* FIXME: it would be better not to throw away information here */
 	    status = DBUS_FAILURE;
     }
+#define USES_HOST
 #endif /* DBUS_EXPORT_ENABLE */
 
 #ifdef SOCKET_EXPORT_ENABLE
     if (status == -1) {
         status = gps_sock_open(host, port, gpsdata);
     }
+#define USES_HOST
 #endif /* SOCKET_EXPORT_ENABLE */
+
+#ifndef USES_HOST
+    fprintf(stderr, "No methods available for connnecting to %s!\n", host);
+#endif /* USES_HOST */
+#undef USES_HOST
 
     gpsdata->set = 0;
     gpsdata->status = STATUS_NO_FIX;
@@ -102,7 +109,13 @@ int gps_open(/*@null@*/const char *host,
     /*@ +branchstate +compdef @*/
 }
 
-int gps_close(struct gps_data_t *gpsdata)
+#if defined(SHM_EXPORT_ENABLE) || defined(SOCKET_EXPORT_ENABLE)
+#define CONDITIONALLY_UNUSED
+#else
+#define CONDITIONALLY_UNUSED	UNUSED
+#endif
+
+int gps_close(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED)
 /* close a gpsd connection */
 {
     int status = -1;
@@ -125,7 +138,7 @@ int gps_close(struct gps_data_t *gpsdata)
 	return status;
 }
 
-int gps_read(struct gps_data_t *gpsdata)
+int gps_read(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED)
 /* read from a gpsd connection */
 {
     int status = -1;
@@ -146,8 +159,10 @@ int gps_read(struct gps_data_t *gpsdata)
 #endif /* SOCKET_EXPORT_ENABLE */
     /*@ +usedef +compdef +uniondef @*/
 
+    /*@-usedef@*/
     libgps_debug_trace((DEBUG_CALLS, "gps_read() -> %d (%s)\n",
 			status, gps_maskdump(gpsdata->set)));
+    /*@+usedef@*/
 
     return status;
 }
@@ -163,7 +178,7 @@ int gps_send(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED, const char *fmt CO
     (void)vsnprintf(buf, sizeof(buf) - 2, fmt, ap);
     va_end(ap);
     if (buf[strlen(buf) - 1] != '\n')
-	(void)strlcat(buf, "\n", BUFSIZ);
+	(void)strlcat(buf, "\n", sizeof(buf));
 
 #ifdef SOCKET_EXPORT_ENABLE
     status = gps_sock_send(gpsdata, buf);
@@ -220,8 +235,9 @@ bool gps_waiting(const struct gps_data_t *gpsdata CONDITIONALLY_UNUSED, int time
     return waiting;
 }
 
-int gps_mainloop(struct gps_data_t *gpsdata, int timeout,
-		 void (*hook)(struct gps_data_t *gpsdata))
+int gps_mainloop(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED, 
+		 int timeout CONDITIONALLY_UNUSED, 
+		 void (*hook)(struct gps_data_t *gpsdata) CONDITIONALLY_UNUSED)
 {
     int status = -1;
 
@@ -331,29 +347,22 @@ void libgps_dump_state(struct gps_data_t *collect)
 		      collect->policy.pps ? "true" : "false",
 		      collect->policy.devpath);
     if (collect->set & SATELLITE_SET) {
-	int i;
+	struct satellite_t *sp;
 
 	(void)fprintf(debugfp, "SKY: satellites in view: %d\n",
 		      collect->satellites_visible);
-	for (i = 0; i < collect->satellites_visible; i++) {
-	    bool used_in_solution = false;
-	    int j;
-	    for (j = 0; j < MAXCHANNELS; j++)
-		if (collect->used[j] == i)
-		    used_in_solution = true;
+	for (sp = collect->skyview;
+	     sp < collect->skyview + collect->satellites_visible;
+	     sp++) {
 	    (void)fprintf(debugfp, "    %2.2d: %2.2d %3.3d %3.0f %c\n",
-			  collect->PRN[i], collect->elevation[i],
-			  collect->azimuth[i], collect->ss[i],
-			  used_in_solution ? 'Y' : 'N');
+			  sp->PRN, sp->elevation,
+			  sp->azimuth, sp->ss,
+			  sp->used ? 'Y' : 'N');
 	}
     }
     if (collect->set & DEVICE_SET)
 	(void)fprintf(debugfp, "DEVICE: Device is '%s', driver is '%s'\n",
 		      collect->dev.path, collect->dev.driver);
-#ifdef OLDSTYLE_ENABLE
-    if (collect->set & DEVICEID_SET)
-	(void)fprintf(debugfp, "GPSD ID is %s\n", collect->dev.subtype);
-#endif /* OLDSTYLE_ENABLE */
     if (collect->set & DEVICELIST_SET) {
 	int i;
 	(void)fprintf(debugfp, "DEVICELIST:%d devices:\n",

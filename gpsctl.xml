@@ -33,6 +33,7 @@ BSD terms apply: see the file COPYING in the distribution root for details.
       <arg choice='opt'>-l </arg>
       <arg choice='opt'>-s <replaceable>speed</replaceable></arg>
       <arg choice='opt'>-t <replaceable>devicetype</replaceable></arg>
+      <arg choice='opt'>-R </arg>
       <arg choice='opt'>-D <replaceable>debuglevel</replaceable></arg>
       <arg choice='opt'>-V </arg>
       <arg choice='opt'><replaceable>serial-port</replaceable></arg>
@@ -162,6 +163,14 @@ emitting at the normal rate of 1 per second.</para>
 </varlistentry>
 
 <varlistentry>
+<term>-R</term>
+<listitem>
+<para>Remove the GPSD shared-memory segment used for SHM export. This
+option will normally only be of interest to GPSD developers.</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
 <term>-h</term>
 <listitem>
 <para>Display program usage and exit.</para>
@@ -207,6 +216,16 @@ identifying the GPS type of the selected device and exit.</para>
 Multiple options will be executed in this order: mode changes (-b and
 -n) first, speed changes (-s) second, and control-string sends (-c)
 last.</para>
+
+</refsect1>
+
+<refsect1 id='environment'><title>ENVIRONMENT VARIABLES</title>
+
+<para>By setting the environment variable <envar>GPSD_SHM_KEY</envar>,
+you can control the key value used to designate the shared-memory
+segment removed with the -R option.  This will be useful mainly when
+isolating test instances of <application>gpsd</application> from
+production ones.</para>
 
 </refsect1>
 

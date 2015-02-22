@@ -15,6 +15,10 @@
 #define _GPSD_BITS_H_
 
 #include <stdint.h>
+#include <limits.h>
+
+/* number of bytes requited to contain a bit array of specified length */
+#define BITS_TO_BYTES(bitlen)	(((bitlen) + CHAR_BIT - 1) / CHAR_BIT)
 
 /* these are independent of byte order */
 #define getsb(buf, off)	((int8_t)buf[off])
@@ -49,6 +53,8 @@ extern double getbed64(const char *, int);
 
 extern void putbef32(char *, int, float);
 extern void putbed64(char *, int, double);
+
+extern void shiftleft(unsigned char *, int, unsigned short);
 
 /* bitfield extraction */
 extern uint64_t ubits(unsigned char buf[], unsigned int, unsigned int, bool);

@@ -211,6 +211,13 @@ to learn more about the data members and associated timestamps\&. Note that info
 The Python implementation supports the same facilities as the socket\-export calls in the C library; there is no shared\-memory interface\&.
 \fBgps_open()\fR
 is replaced by the initialization of a gps session object; the other calls are methods of that object, and have the same names as the corresponding C functions\&. However, it is simpler just to use the session object as an iterator, as in the example given below\&. Resources within the session object will be properly released when it is garbage\-collected\&.
+.SH "ENVIRONMENT VARIABLES"
+.PP
+By setting the environment variable
+\fBGPSD_SHM_KEY\fR, you can control the key value used to create shared\-memory segment used for communication with
+gpsd\&. This will be useful mainly when isolating test instances of
+gpsd
+from production ones\&.
 .SH "CODE EXAMPLE"
 .PP
 The following is an excerpted and simplified version of the libgps interface code from

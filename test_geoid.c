@@ -10,25 +10,6 @@
 
 #include "gpsd.h"
 
-ssize_t gpsd_write(struct gps_device_t *session,
-		   const char *buf,
-		   const size_t len)
-/* pass low-level data to devices straight through */
-{
-    return gpsd_serial_write(session, buf, len);
-}
-
-void gpsd_report(const int debuglevel, const int errlevel,
-		 const char *fmt, ...)
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-    gpsd_labeled_report(debuglevel, errlevel, "geoid:", fmt, ap);
-    va_end(ap);
-			
-}
-
 int main(int argc, char **argv)
 {
     double lat, lon;
@@ -38,8 +19,8 @@ int main(int argc, char **argv)
 	return 1;
     }
 
-    lat = safe_atof(argv[1]);
-    lon = safe_atof(argv[2]);
+    lat = atof(argv[1]);
+    lon = atof(argv[2]);
 
     if (lat > 90. || lat < -90.) {
 	fprintf(stderr, " -90 <= lat=%s(%.f) <= 90 ?\n", argv[1], lat);

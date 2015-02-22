@@ -26,7 +26,7 @@ static WINDOW *miscwin, *mid51win, *mid114win;
 
 #pragma pack(1)
 /* Satellite Data Record */
-typedef struct
+typedef struct __attribute__((__packed__))
 {
     uint8_t svid;
     uint16_t snr;
@@ -36,7 +36,7 @@ typedef struct
 } cpo_sat_data;
 
 /* Position Record */
-typedef struct
+typedef struct __attribute__((__packed__))
 {
     float alt;
     float epe;
@@ -55,22 +55,30 @@ typedef struct
 } cpo_pvt_data;
 
 /* Receiver Measurement Record */
-typedef struct
+typedef struct __attribute__((__packed__))
 {
+    // cppcheck-suppress unusedStructMember
     uint32_t cycles;
     // cppcheck-suppress unusedStructMember
     double pr;
+    // cppcheck-suppress unusedStructMember
     uint16_t phase;
+    // cppcheck-suppress unusedStructMember
     int8_t slp_dtct;
+    // cppcheck-suppress unusedStructMember
     uint8_t snr_dbhz;
     uint8_t svid;
+    // cppcheck-suppress unusedStructMember
     int8_t valid;
 } cpo_rcv_sv_data;
-typedef struct
+
+typedef struct __attribute__((__packed__))
 {
     // cppcheck-suppress unusedStructMember
     double rcvr_tow;
+    // cppcheck-suppress unusedStructMember
     int16_t rcvr_wn;
+    // cppcheck-suppress unusedStructMember
     cpo_rcv_sv_data sv[GARMIN_CHANNELS];
 } cpo_rcv_data;
 
@@ -223,8 +231,8 @@ static void garmin_bin_ser_update(void)
    unsigned char chksum;
    bool pkt_good = false, got_dle = false;
 
-   buf = session.packet.outbuffer;
-   len = session.packet.outbuflen;
+   buf = session.lexer.outbuffer;
+   len = session.lexer.outbuflen;
 
    if (!(buf[0] == (unsigned char)0x10 &&		/* DLE */
 		buf[len-2] == (unsigned char)0x10 &&	/* DLE */

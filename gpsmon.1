@@ -93,7 +93,7 @@ The \-t option sets up a fallback type\&. Give it a string that is a distinguish
 .PP
 The \-a option enables a special debugging mode that does not use screen painting\&. Packets are dumped normally; any character typed suspends packet dumping and brings up a command prompt\&. This feature will mainly be of interest to GPSD developers\&.
 .PP
-After startup (without \-a), the top part of the screen reports the contents of several especially interesting packet types\&. The "PPS offset" field, if nonempty, is the delta between the last 1PPS top of second and the system clock at that time\&.
+After startup (without \-a), the top part of the screen reports the contents of several especially interesting packet types\&. The "PPS" field, if nonempty, is the delta between the last 1PPS top of second and the system clock at that time\&.
 .PP
 The bottom half of the screen is a scrolling hex dump of all packets the GPS is issuing\&. Dump lines beginning >>> represent control packets sent to the GPS\&. Lines consisting of "PPS" surrounded by dashes, if present, indicate 1PPS and the start of the reporting cycle\&.
 .SH "COMMANDS"
@@ -113,6 +113,8 @@ would\&. The command \*(Aqi0\*(Aq turns off probing; \*(Aqi\*(Aq alone toggles t
 Note that enabling probing might flip the device into another mode; in particular, it will flip a SiRF chip into binary mode as if you had used the
 \(lqn\(rq
 command\&. This is due to a limitation in the SiRF firmware that we can\*(Aqt fix\&.
+.sp
+This command will generally do nothing after the first time you use it, because the device type will already have been discovered\&.
 .RE
 .PP
 c
@@ -128,6 +130,8 @@ Toggle packet logging\&. If packet logging is on, it will be turned off and the 
 n
 .RS 4
 (Direct mode only\&.) With an argument of 0, switch device to NMEA mode at current speed; with an argument of 1, change to binary (native) mode\&. With no argument, toggle the setting\&. Will show an error if the device doesn\*(Aqt have such modes\&.
+.sp
+After you switch a dual\-protocol GPS to NMEA mode wityh this command, it retains the information about the original type and its control capabilities\&. That is why the device type listed before the prompt doesn\*(Aqt change\&.
 .RE
 .PP
 q

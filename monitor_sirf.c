@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h> /* for labs() */
 #include <assert.h>
 #include <time.h>
 #include <sys/time.h>
@@ -16,6 +17,7 @@
 #include "gpsd.h"
 #include "bits.h"
 #include "gpsmon.h"
+#include "strfuncs.h"
 
 #if defined(SIRF_ENABLE) && defined(BINARY_ENABLE)
 extern const struct gps_type_t driver_sirf;
@@ -169,8 +171,8 @@ static bool sirf_initialize(void)
     display(mid7win, 1, 1, "SVs: ");
     display(mid7win, 1, 9, "Drift: ");
     display(mid7win, 1, 23, "Bias: ");
-    display(mid7win, 2, 1, "Est. GPS Time: ");
-    display(mid7win, 2, 27, "PPS offset: ");
+    display(mid7win, 2, 1, "GPS Time: ");
+    display(mid7win, 2, 23, "PPS: ");
 #ifndef PPS_ENABLE
     (void)mvwaddstr(mid7win, 2, 40, "N/A");
 #endif /* PPS_ENABLE */
@@ -287,8 +289,8 @@ static void sirf_update(void)
     /* splint pacification */
     assert(mid2win!=NULL && mid27win != NULL);
 
-    buf = session.packet.outbuffer + 4;
-    len = session.packet.outbuflen - 8;
+    buf = session.lexer.outbuffer + 4;
+    len = session.lexer.outbuflen - 8;
     switch (buf[0]) {
     case 0x02:			/* Measured Navigation Data */
 	(void)wmove(mid2win, 1, 6);	/* ECEF position */
@@ -390,7 +392,7 @@ static void sirf_update(void)
 	display(mid7win, 1, 5, "%2d", getub(buf, 7));	/* SVs */
 	display(mid7win, 1, 16, "%lu", getbeu32(buf, 8));	/* Clock drift */
 	display(mid7win, 1, 29, "%lu", getbeu32(buf, 12));	/* Clock Bias */
-	display(mid7win, 2, 16, "%lu", getbeu32(buf, 16));	/* Estimated Time */
+	display(mid7win, 2, 11, "%lu", getbeu32(buf, 16));	/* Estimated Time */
 	monitor_log("CSD 0x07=");
 	break;
 
@@ -551,8 +553,7 @@ static void sirf_update(void)
 	buf[len] = '\0';
 	j = 1;
 	for (i = 0; verbpat[i] != NULL; i++)
-	    if (strncmp((char *)(buf + 1), verbpat[i], strlen(verbpat[i])) ==
-		0) {
+	    if (str_starts_with((char *)(buf + 1), verbpat[i])) {
 		j = 0;
 		break;
 	    }
@@ -588,13 +589,23 @@ static void sirf_update(void)
 
 #ifdef PPS_ENABLE
     /*@-compdef@*/
-    /*@-type@*/ /* splint is confused about struct timespec */
+    /*@-type -noeffect@*/ /* splint is confused about struct timespec */
     if (pps_thread_lastpps(&session, &drift) > 0) {
-	double timedelta = timespec_diff_ns(drift.real, drift.clock) * 1e-9;
-	display(mid7win, 2, 39, "%.9f", timedelta);	/* PPS offset */
+	/* NOTE: cannot use double here due to precision requirements */
+	struct timespec timedelta;
+	TS_SUB( &timedelta, &drift.clock, &drift.real);
+        if ( 86400 < (long)labs(timedelta.tv_sec) ) {
+	    /* more than one day off, overflow */
+            /* need a bigger field to show it */
+	    (void)mvwprintw(mid7win, 2, 28, "> 1 day");
+        } else {
+	    char buf2[TIMESPEC_LEN];
+	    timespec_str( &timedelta, buf2, sizeof(buf2) );
+	    (void)mvwprintw(mid7win, 2, 32, "%s", buf2);
+        }
 	(void)wnoutrefresh(mid7win);
     }
-    /*@+type@*/
+    /*@+type +noeffect@*/
     /*@+compdef@*/
 #endif /* PPS_ENABLE */
 }

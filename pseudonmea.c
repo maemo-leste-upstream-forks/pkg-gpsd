@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include "gpsd.h"
+#include "strfuncs.h"
 
 /*
  * Support for generic binary drivers.  These functions dump NMEA for passing
@@ -52,24 +53,19 @@ void gpsd_position_fix_dump(struct gps_device_t *session,
 	if (isnan(session->gpsdata.dop.hdop))
 	    (void)strlcat(bufp, ",", len);
 	else
-	    (void)snprintf(bufp + strlen(bufp), len - strlen(bufp),
-			   "%.2f,", session->gpsdata.dop.hdop);
+	    str_appendf(bufp, len, "%.2f,", session->gpsdata.dop.hdop);
 	if (isnan(session->gpsdata.fix.altitude))
 	    (void)strlcat(bufp, ",", len);
 	else
-	    (void)snprintf(bufp + strlen(bufp), len - strlen(bufp),
-			   "%.2f,M,", session->gpsdata.fix.altitude);
+	    str_appendf(bufp, len, "%.2f,M,", session->gpsdata.fix.altitude);
 	if (isnan(session->gpsdata.separation))
 	    (void)strlcat(bufp, ",", len);
 	else
-	    (void)snprintf(bufp + strlen(bufp), len - strlen(bufp),
-			   "%.3f,M,", session->gpsdata.separation);
+	    str_appendf(bufp, len, "%.3f,M,", session->gpsdata.separation);
 	if (isnan(session->mag_var))
 	    (void)strlcat(bufp, ",", len);
 	else {
-	    (void)snprintf(bufp + strlen(bufp),
-			   len - strlen(bufp),
-			   "%3.2f,", fabs(session->mag_var));
+	    str_appendf(bufp, len, "%3.2f,", fabs(session->mag_var));
 	    (void)strlcat(bufp, (session->mag_var > 0) ? "E" : "W", len);
 	}
 	nmea_add_checksum(bufp);
@@ -121,36 +117,32 @@ static void gpsd_binary_satellite_dump(struct gps_device_t *session,
 
     for (i = 0; i < session->gpsdata.satellites_visible; i++) {
 	if (i % 4 == 0) {
-	    bufp += strlen(bufp);
-	    bufp2 = bufp;
-	    len -= snprintf(bufp, len,
+	    bufp2 = bufp + strlen(bufp);
+	    str_appendf(bufp, len,
 			    "$GPGSV,%d,%d,%02d",
 			    ((session->gpsdata.satellites_visible - 1) / 4) +
 			    1, (i / 4) + 1,
 			    session->gpsdata.satellites_visible);
 	}
-	bufp += strlen(bufp);
 	if (i < session->gpsdata.satellites_visible)
-	    len -= snprintf(bufp, len,
+	    str_appendf(bufp, len,
 			    ",%02d,%02d,%03d,%02.0f",
-			    session->gpsdata.PRN[i],
-			    session->gpsdata.elevation[i],
-			    session->gpsdata.azimuth[i],
-			    session->gpsdata.ss[i]);
+			    session->gpsdata.skyview[i].PRN,
+			    session->gpsdata.skyview[i].elevation,
+			    session->gpsdata.skyview[i].azimuth,
+			    session->gpsdata.skyview[i].ss);
 	if (i % 4 == 3 || i == session->gpsdata.satellites_visible - 1) {
 	    nmea_add_checksum(bufp2);
-	    len -= 5;
 	}
     }
 
 #ifdef ZODIAC_ENABLE
-    if (session->packet.type == ZODIAC_PACKET
+    if (session->lexer.type == ZODIAC_PACKET
 	&& session->driver.zodiac.Zs[0] != 0) {
-	bufp += strlen(bufp);
-	bufp2 = bufp;
-	(void)strlcpy(bufp, "$PRWIZCH", len);
+	bufp2 = bufp + strlen(bufp);
+	str_appendf(bufp, len, "$PRWIZCH");
 	for (i = 0; i < ZODIAC_CHANNELS; i++) {
-	    len -= snprintf(bufp + strlen(bufp), len,
+	    str_appendf(bufp, len,
 			    ",%02u,%X",
 			    session->driver.zodiac.Zs[i],
 			    session->driver.zodiac.Zv[i] & 0x0f);
@@ -163,40 +155,37 @@ static void gpsd_binary_satellite_dump(struct gps_device_t *session,
 static void gpsd_binary_quality_dump(struct gps_device_t *session,
 				     char bufp[], size_t len)
 {
-    char *bufp2 = bufp;
-    bool used_valid = (session->gpsdata.set & USED_IS) != 0;
+    char *bufp2;
+    bufp[0] = '\0';
 
     if (session->device_type != NULL && (session->gpsdata.set & MODE_SET) != 0) {
 	int i, j;
 
-	(void)snprintf(bufp, len - strlen(bufp),
+	bufp2 = bufp + strlen(bufp);
+	(void)snprintf(bufp, len,
 		       "$GPGSA,%c,%d,", 'A', session->gpsdata.fix.mode);
 	j = 0;
 	for (i = 0; i < session->device_type->channels; i++) {
-	    if (session->gpsdata.used[i]) {
-		bufp += strlen(bufp);
-		(void)snprintf(bufp, len - strlen(bufp),
-			       "%02d,",
-			       used_valid ? session->gpsdata.used[i] : 0);
-		j++;
+	    if (session->gpsdata.skyview[i].used == true){
+		str_appendf(bufp, len,
+			       "%d,",
+			       session->gpsdata.skyview[i].PRN);
+	        j++;
 	    }
 	}
 	for (i = j; i < session->device_type->channels; i++) {
-	    bufp += strlen(bufp);
-	    (void)strlcpy(bufp, ",", len);
+	    (void)strlcat(bufp, ",", len);
 	}
-	bufp += strlen(bufp);
 #define ZEROIZE(x)	(isnan(x)!=0 ? 0.0 : x)
 	if (session->gpsdata.fix.mode == MODE_NO_FIX)
 	    (void)strlcat(bufp, ",,,", len);
 	else
-	    (void)snprintf(bufp, len - strlen(bufp),
+	    str_appendf(bufp, len,
 			   "%.1f,%.1f,%.1f*",
 			   ZEROIZE(session->gpsdata.dop.pdop),
 			   ZEROIZE(session->gpsdata.dop.hdop),
 			   ZEROIZE(session->gpsdata.dop.vdop));
 	nmea_add_checksum(bufp2);
-	bufp += strlen(bufp);
     }
     if (isfinite(session->gpsdata.fix.epx)!=0
 	&& isfinite(session->gpsdata.fix.epy)!=0
@@ -210,13 +199,14 @@ static void gpsd_binary_quality_dump(struct gps_device_t *session,
 	    intfixtime = (time_t) session->gpsdata.fix.time;
 	    (void)gmtime_r(&intfixtime, &tm);
 	}
-	(void)snprintf(bufp, len - strlen(bufp),
+	bufp2 = bufp + strlen(bufp);
+	str_appendf(bufp, len,
 		       "$GPGBS,%02d%02d%02d,%.2f,M,%.2f,M,%.2f,M",
 		       tm.tm_hour, tm.tm_min, tm.tm_sec,
 		       ZEROIZE(session->gpsdata.fix.epx),
 		       ZEROIZE(session->gpsdata.fix.epy),
 		       ZEROIZE(session->gpsdata.fix.epv));
-	nmea_add_checksum(bufp);
+	nmea_add_checksum(bufp2);
     }
 #undef ZEROIZE
 }
@@ -344,7 +334,7 @@ static void gpsd_binary_ais_dump(struct gps_device_t *session,
 	    }
 	    offset = (unsigned int) strlen(bufp);
 	}
-    } else {
+    } else if (datalen > 0) {
         msg1 = 1;
 	msg2 = 1;
 	numc[0] = '\0';
@@ -369,18 +359,20 @@ static void gpsd_binary_ais_dump(struct gps_device_t *session,
 
         memset(data, 0, sizeof(data));
 	datalen = ais_binary_encode(&session->gpsdata.ais, &data[0], 1);
-	left = GETLEFT(datalen);
-	offset = (unsigned int)strlen(bufp);
-	(void)snprintf(&bufp[offset], len-offset,
-		       "%s,%u,%u,%s,%c,%s,%u",
-		       type,
-		       msg1,
-		       msg2,
-		       numc,
-		       channel,
-		       (char *)data,
-		       left);
+	if (datalen > 0) {
+	    left = GETLEFT(datalen);
+	    offset = (unsigned int)strlen(bufp);
+	    (void)snprintf(&bufp[offset], len-offset,
+		           "%s,%u,%u,%s,%c,%s,%u",
+		           type,
+		           msg1,
+		           msg2,
+		           numc,
+		           channel,
+		           (char *)data,
+		           left);
 	nmea_add_checksum(bufp+offset);
+	}
     }
 }
 #endif /* AIVDM_ENABLE */

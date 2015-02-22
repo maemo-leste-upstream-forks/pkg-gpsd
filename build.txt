@@ -1,7 +1,7 @@
 = Building GPSD from source =
 
 This is a guide to building GPSD from a bare source tree.  It includes
-guidance on how to cross-build the package. 
+guidance on how to cross-build the package.
 
 Some hints for people building binary packages are in packaging/readme.txt.
 
@@ -12,9 +12,34 @@ Some hints for people building binary packages are in packaging/readme.txt.
 Under Linux, assuming you have all your build prerequisites in place,
 this line will do:
 
-   scons && scons check && sudo scons udev-install 
+   scons && scons check && sudo scons udev-install
 
 If you get any errors, you need to read the detailed instructions that follow.
+
+== Supported platforms ==
+
+Native-build success should be expected on the following platforms,
+provided you have the prerequisites listed in the next section
+installed:
+
+* Any desktop or server Linux distribution.
+* OpenWRT and derivatives such as CeroWRT.
+* FreeBSD, NetBSD, OpenBSD
+* Android, using the official Google toolchain from the NDK
+
+We consider failure to build and function on any of these platforms
+a serious bug; if you encounter it, please complain on the
+development list.
+
+Macintosh OS X has been dropped from the list of supported platforms
+due to serial-layer flakiness that has persisted through 10.9 and
+10.10.
+
+A Cygwin port is in progress but not complete.
+
+Cross-compilation to embedded Linuxes (in addition to the OpenWRT family)
+is usually fairly straightforward. An illustrative build transcript
+is included at the end of this file.
 
 == Check your build prerequisites ==
 
@@ -22,9 +47,13 @@ Necessary components for any build:
 
 |============================================================================
 |C compiler         | gpsd and client library are written in C
-|Python             | some code is generated from python scripts
-|scons              | for executing the build recipe 
+|Python 2.x, x >= 6 | some code is generated from python scripts
+|scons              | for executing the build recipe
 |============================================================================
+
+Note: There must be a Python 2 interpreter named 'python' in your path,
+or the regression tests will fail.  On some systems you might need to
+arrange this by putting symlink in a local directory on $PATH.
 
 === C compiler ===
 
@@ -39,7 +68,7 @@ older than 4.1.1; there are several known issues with older versions,
 including (a) non-standards-conformant floating-point generation that
 messes up regression testing, (b) a compiler bug affecting RTCM2 code
 generation, (c)  the option -Wno-missing-field-initializers is
-unavailable, leading to a flood of warnings (this is due to generated 
+unavailable, leading to a flood of warnings (this is due to generated
 code and cannot be fixed).
 
 The shared-memory interface relies on one GCCism, but the code is
@@ -53,12 +82,12 @@ You will need Python 2.5 or later for the build.
 While Python is required to build GPSD from source (the build uses
 some code generators in Python), it is not required to run the service
 daemon.  In particular, you can cross-compile onto an embedded system
-without having to take Python with you.  
+without having to take Python with you.
 
 You will need both basic Python and (if your package system makes the
 distinction) the Python development package used for building C
 extensions.  Usually these are called "python" and "python-dev". You
-will know you are missing the latter if your compilation fails 
+will know you are missing the latter if your compilation fails
 because of a missing Python.h.
 
 The xgps test client requires the following Python extensions:
@@ -79,7 +108,7 @@ Having the following optional components on your system will enable
 various additional capabilities and extensions:
 
 |============================================================================
-|C++ compiler	  | allows building libgpsmm C++ wrapper for client library
+|C++ compiler     | allows building libgpsmm C++ wrapper for client library
 |Qt 4.53+         | allows building libQgpsmm C++ wrapper for client library
 |libcap           | Capabilities library, allows 1PPS support under Linux
 |curses           | curses screen-painting library, allows building cgps
@@ -90,10 +119,10 @@ this and use it to discover Garmin USB GPSes, rather than groveling
 through /proc/bus/usb/devices (which has been deprecated by the
 Linux kernel team).
 
-You can build libQgpsmm if you have Qt (specifically the (specifically
-QtCore and QtNetwork modules) version 4.5.3 or higher.  You will also
-need a C++ compiler supported by Qt (tested on GCC 4.4.0/mingw on
-Windows and GCC 4.1.2 on linux). Please refer to Qt's documentation at
+You can build libQgpsmm if you have Qt (specifically QtCore and
+QtNetwork modules) version 4.5.3 or higher.  You will also need a C++
+compiler supported by Qt (tested on GCC 4.4.0/mingw on Windows and GCC
+4.1.2 on linux). Please refer to Qt's documentation at
 http://qt.nokia.com/doc/4.6/platform-specific.html for platform
 specific building documentation
 
@@ -106,12 +135,12 @@ Fedora, it's ncurses-devel.  Depending on how your distribution
 packages ncurses you may also require libtinfo5, a separate terminfo
 library.
 
-On some recent versions of Ubuntu (notably 11.10) there is a packaging
+On some older versions of Ubuntu (notably 11.10) there is a packaging
 defect that may cause your build to blow up in SCons. It's a missing
 package info file for the tinfo library. To fix this, install the file
 packaging/tinfo.pc in /usr/lib/pkgconfig/tinfo.pc. 13.10 fixed this.
 
-We've seen a report that compiling on the Raspberry Pi fails with 
+We've seen a report that compiling on the Raspberry Pi fails with
 a complaint about curses.h not being found.  You need to install
 Raspbian's curses development library if this happens.
 
@@ -149,6 +178,11 @@ These are listed in rough order of devices covered as of 2013; the
 PL23203 by itself accounts for over 70% of deployed USB mice.  We
 recommend building with pl2303, ftdi_sio, cypress_m8, and cp210x.
 
+We've receive a bug report that suggests the Python test framework
+requires legacy PTY support (CONFIG_LEGACY_PTYS) from the Linux
+kernel.  You should make sure you're in the 'dialout' group in order
+to have permission to use these devices.
+
 == How to build the software from source ==
 
 To build gpsd for your host platform from source, simply call 'scons'
@@ -157,7 +191,7 @@ section.)
 
 You can specify the installation prefix, as for an autotools build, by
 running "scons prefix=<installation_root>". The default value is
-"/usr/local".  The envoronment variable DESTDIR also works in the 
+"/usr/local".  The environment variable DESTDIR also works in the
 usual way.
 
 If your scons fails with the complaint "No tool named 'textfile'",
@@ -173,14 +207,14 @@ to the GPSD maintainers.
 If, while building, you see a complaint that looks like this:
 
 --------------------------------------------------------------------
-I/O error : Attempt to load network entity http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd 
+I/O error : Attempt to load network entity http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd
 --------------------------------------------------------------------
 
 it means the xmlto document formatter is failing to fetch a stylesheet it
-needs over the network. Probably this means you are doing a source 
+needs over the network. Probably this means you are doing a source
 build on a machine without live Internet access.  The workaround
 for this is to temporarily remove xmlto from your command path so GPSD
-won't try building the documentation.  The actual fix is to install 
+won't try building the documentation.  The actual fix is to install
 DocBook on your machine so there will be a local copy of the
 stylesheet where xmlto can find it.
 
@@ -190,7 +224,7 @@ required for regression tests. If any of the tests fail, you probably
 have a toolchain issue.  The most common such problem is failures of
 strict C99 conformance in floating-point libraries.
 
-Once you have verified that the code is working, "scons install" 
+Once you have verified that the code is working, "scons install"
 will install it it in the system directories. "scons uninstall" will
 undo this. Note: because scons is a single-phase build system, this
 may recompile everything. If you want feature-configuration options,
@@ -226,11 +260,11 @@ export LD_LIBRARY_PATH=${PWD}
 The other is to install the chrpath utility and do your builds with
 chrpath=yes.
 
-The reason one of these required is because of some details
+The reason one of these is required is because of some details
 about dynamic linking.  The search path for dynamic linking that is
 compiled into your binaries as you build them is set by the
-environment variable RPATH, if it exists.  At runtime, when a 
-dynamically-linked executable is called, that patch is extended
+environment variable RPATH, if it exists.  At runtime, when a
+dynamically-linked executable is called, that path is prepended
 with $LD_LIBRARY_PATH
 
 Ideally, during development, we want to build build binaries that (a)
@@ -254,7 +288,7 @@ and (c), choosing dynamic linking without chrpath we get (a) and (b).
 
 chrpath is a tool for editing RPATH in object files.
 
-Ubuntu users can do 'apt-get install chrpath' 
+Ubuntu users can do 'apt-get install chrpath'
 CentOS users can do 'yum install chrpath' from extras.
 
 == The leapseconds cache ==
@@ -287,13 +321,13 @@ are:
 Note that the same failure can occur with any GPSD installation.  But
 by refreshing leapseconds.cache you reduce the error window for
 leap-second offset bumps to affect your installation so that it begins
-as late as possible, at your build time rather than from when the 
+as late as possible, at your build time rather than from when the
 source tree was copied.
 
 == Optional features ==
 
 By giving command-line options to scons you can configure certain rarely-used
-optional features in, or compile standard features out to reduce gpsd's 
+optional features in, or compile standard features out to reduce gpsd's
 footprint. "scons --help" will tell the story; look under "Local Options"
 and consult the source code if in doubt.
 
@@ -305,15 +339,28 @@ it is possible to build gpsd without thread support if you build
 with pps=no.  You'll lose support for updating the clock from PPS
 pulses.
 
-dbus=no: for systems using DBUS: gpsd includes support for shipping
-fixes as DBUS notifications, but it is not compiled in by default.
-Build with the option "dbus=yes" to get it working.
+dbus_export=no: for systems using DBUS: gpsd includes support for
+shipping fixes as DBUS notifications, compiled in by default.  This 
+may lead to complaint messages during testing  on systems that don't
+support DBUS. Build with the option "dbus_export=no" to disable it
 
 qt=yes: libQgpsmm is a Qt version of the libgps/libgpsmm
 pair. Thanks to the multi-platform approach of Qt, it allows the gpsd
 client library to be available on all the Qt supported platforms.
 Please see http://qt.nokia.com/doc/4.6/supported-platforms.html for a
 status of Qt supported platforms as of version 4.6.
+
+minimal=yes: people building for extremely constrained environments
+may want to set this.  It changes the default for all boolean (feature)
+options to false; thus, you get *only* the options you specify on the
+command line.  Thus, for example, if you want to turn off all features
+except socket export and nmea0183,
+
+------------------------------------------------
+scons minimal=yes socket_export=yes nmea0183=yes
+------------------------------------------------
+
+will do that.
 
 == Port and toolchain testing ==
 
@@ -328,7 +375,8 @@ framework shove data through the pty and socket layers *way* faster
 than would ever occur in production.  If you get regression-test
 failures that aren't repeatable and look like the test framework is
 sporadically failing to feed the last line or two of test loads, try
-increasing the delay constants in fake.py.  If you have to do this, 
+using the slow=yes option with scons check.  If that fails, try
+increasing the delay constants in gps/fake.py.  If you have to do this,
 please report your experience to the GPSD maintainers.
 
 For instructions on how to live-test the software, see the file INSTALL.
@@ -341,12 +389,49 @@ downloaded it; some scons housekeeping stuff is left in place.  If you
 interrupted a regression test, 'distclean' will remove generated test
 programs.
 
+== Notes on Android:
+
+Samuel Cuella reports:
+
+I use the official google toolchain from the Android NDK (Native
+Development Kit). You can also use the toolchain from code sourcery I
+guess. I cross-compile from a "regular" (with GNU userland) linux box.
+
+People who port software from linux to android tend to use either the
+NDK or code sourcery's.
+
+If you are going to include "official" guidelines, I would go for
+recommending the official toolchain from the NDK.
+
+Here are the scons switches I use:
+
+scons wordsize=32 snapshot=off arch=arm sample=shell
+
+scons -j3 prefix=/usr libdir=$prefix/lib udevdir=/lib/udev
+chrpath=False gpsd_user=gpsd gpsd_group=uucp socket_export=1
+nmea0183=1 sirf=1
+
+With the following environment variables:
+
+TOOL_HOME=/home/samuel/android-official-last/
+export TOOL_PREFIX=${TOOL_HOME}/bin/arm-linux-androideabi
+export CXX=$TOOL_PREFIX-g++
+export AR=$TOOL_PREFIX-ar
+export RANLIB=$TOOL_PREFIX-ranlib
+export CC=$TOOL_PREFIX-gcc
+export LD=$TOOL_PREFIX-ld
+
+export CCFLAGS="-march=armv7-a -mtune=cortex-a8 -mfpu=vfp"
+export ARM_TARGET_LIB=${TOOL_HOME}/sysroot
+
+scons wordsize=32 snapshot=off arch=arm sample=shell
+
 == Cross-building ==
 
 The scons recipe is intended to support cross-building, in particular
 for embedded deployment of the software.  A session transcript
 illustrating how to do that, with some routine messages suppressed and
-replaced with [...], follows.  The script assumes you're cloning from the 
+replaced with [...], follows.  The script assumes you're cloning from the
 GPSD project site or a mirror. Notes and explanation follow the transcript.
 
 ----
@@ -362,7 +447,7 @@ python = False
 prefix = '/work/buildroot/output/staging/usr/'
 sysroot = '/work/buildroot/output/staging/'
 target = 'arm-indigo-linux-gnueabi'
-$ scons 
+$ scons
 scons: Reading SConscript files ...
 [...]
 Altered configuration variables:
@@ -410,15 +495,11 @@ sysroot option.
 arm-indigo-linux-gnueabi-gcc and related tools are available in PATH;
 your cross-compiler is likely to have a different target prefix.
 
-When you are cross-compiling, you'll need chrpath at version 0.14 or
-later for cross-architecture support.  If it's not yet packaged for
-your environment, see http://alioth.debian.org/projects/chrpath/
-
 You may also find it useful to set manbuild=no.
 
 == Autostarting the daemon ==
 
-The preferred way to start gpsd is on-demand by a hotplug script 
+The preferred way to start gpsd is on-demand by a hotplug script
 detecting USB device activations.  Look at the gpsd.rules and
 gpsd.hotplug files to see how this is accomplished.  Relevant
 productions in the build recipe are "udev-install" and

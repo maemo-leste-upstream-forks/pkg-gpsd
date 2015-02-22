@@ -9,8 +9,16 @@
 # This file is Copyright (c) 2010 by the GPSD project
 # BSD terms apply: see the file COPYING in the distribution root for details.
 
-import sys, os, time, getopt, socket, random, pty
-import gps, gps.fake as gpsfake   # The "as" pacifies pychecker
+import getopt
+import gps
+import gps.fake as gpsfake   # The "as" pacifies pychecker
+import os
+import platform
+import pty
+import socket
+import sys
+import time
+
 
 class Baton:
     "Ship progress indications to stderr."
@@ -19,6 +27,7 @@ class Baton:
     # nunber of baton states, otherwise it will cause beat artifacts
     # in the twirling.
     SPINNER_INTERVAL = 11
+
     def __init__(self, prompt, endmsg=None):
         self.stream = sys.stderr
         self.stream.write(prompt + "...")
@@ -45,27 +54,19 @@ class Baton:
         return
 
     def end(self, msg=None):
-        if msg == None:
+        if msg is None:
             msg = self.endmsg
         if self.stream:
             self.stream.write("...(%2.2f sec) %s.\n" % (time.time() - self.time, msg))
         return
 
-def fakeport():
-    "Find a port that isn't in use to bind to."
-    # Grab a random port from IANA's unassigned/private range. Not perfect,
-    # but at least less than in 16000 chance of a pair collision. It would
-    # be very hard to get this deterministically correct, since there would
-    # always be a window between port allocation and when the daemon picked
-    # it up.  We'd need to do some kind of semaphore, etc., and even that
-    # wouldn't prevent collisions with other apps using the range.
-    return random.randint(49152, 65535)
 
 def hexdump(s):
     rep = ""
     for c in s:
         rep += "%02x" % ord(c)
     return rep
+
 
 def fakehook(linenumber, fakegps):
     if len(fakegps.testload.sentences) == 0:
@@ -94,7 +95,7 @@ def fakehook(linenumber, fakegps):
 
 if __name__ == '__main__':
     try:
-        (options, arguments) = getopt.getopt(sys.argv[1:], "1bc:D:fghilm:no:pP:r:s:tuvx")
+        (options, arguments) = getopt.getopt(sys.argv[1:], "1bc:D:ghilm:no:pP:r:s:StTuvx")
     except getopt.GetoptError, msg:
         print "gpsfake: " + str(msg)
         raise SystemExit, 1
@@ -114,52 +115,56 @@ if __name__ == '__main__':
     tcp = False
     udp = False
     verbose = 0
+    slow = False
     for (switch, val) in options:
-        if (switch == '-1'):
+        if switch == '-1':
             singleshot = True
-        elif (switch == '-f'):
-            port = fakeport()
-        elif (switch == '-b'):
+        elif switch == '-b':
             progress = True
-        elif (switch == '-c'):
+        elif switch == '-c':
             cycle = float(val)
-        elif (switch == '-D'):
+        elif switch == '-D':
             doptions += " -D " + val
-        elif (switch == '-g'):
+        elif switch == '-g':
             monitor = "xterm -e gdb -tui --args "
-        elif (switch == '-i'):
+        elif switch == '-i':
             linedump = promptme = True
-        elif (switch == '-l'):
+        elif switch == '-l':
             linedump = True
-        elif (switch == '-m'):
+        elif switch == '-m':
             monitor = val + " "
-        elif (switch == '-n'):
+        elif switch == '-n':
             doptions += " -n"
-        elif (switch == '-x'):
+        elif switch == '-x':
             predump = True
-        elif (switch == '-o'):
+        elif switch == '-o':
             doptions = val
-        elif (switch == '-p'):
+        elif switch == '-p':
             pipe = True
-        elif (switch == '-P'):
+        elif switch == '-P':
             port = int(val)
-        elif (switch == '-r'):
+        elif switch == '-r':
             client_init = val
-        elif (switch == '-s'):
+        elif switch == '-s':
             speed = int(val)
-        elif (switch == '-t'):
+        elif switch == '-S':
+            slow = True
+        elif switch == '-t':
             tcp = True
-        elif (switch == '-u'):
+        elif switch == '-T':
+            sys.stdout.write("sys %s platform %s: WRITE_PAD = %.5f\n" % (sys.platform, platform.platform(), gpsfake.WRITE_PAD))
+            raise SystemExit, 0
+        elif switch == '-u':
             udp = True
-        elif (switch == '-v'):
+        elif switch == '-v':
             verbose += 1
-        elif (switch == '-h'):
-            sys.stderr.write("usage: gpsfake [-h] [-l] [-m monitor] [--D debug] [-o options] [-p] [-s speed] [-c cycle] [-b] logfile\n")
-            raise SystemExit,0
+        elif switch == '-h':
+            sys.stderr.write("usage: gpsfake [-h] [-l] [-m monitor] [--D debug] [-o options] [-p] [-s speed] [-S] [-c cycle] [-b] logfile\n")
+            raise SystemExit, 0
 
     try:
         pty.openpty()
-    except Exception:
+    except (AttributeError, OSError):
         print >>sys.stderr, "gpsfake: ptys not available, falling back to UDP."
         udp = True
 
@@ -172,9 +177,13 @@ if __name__ == '__main__':
     else:
         print >>sys.stderr, "Processing %s" % ",".join(arguments)
 
+    # Don't allocate a private port when cycling logs for client testing.
+    if port is None and not pipe:
+        port = gps.GPSD_PORT
+
     test = gpsfake.TestSession(prefix=monitor, port=port, options=doptions,
                                tcp=tcp, udp=udp, verbose=verbose,
-                               predump=predump)
+                               predump=predump, slow=slow)
 
     if pipe:
         test.reporter = sys.stdout.write
@@ -185,7 +194,7 @@ if __name__ == '__main__':
     try:
         for logfile in arguments:
             try:
-                test.gps_add(logfile, speed=speed, pred=fakehook)
+                test.gps_add(logfile, speed=speed, pred=fakehook, oneshot=singleshot)
             except gpsfake.TestLoadError, e:
                 sys.stderr.write("gpsfake: " + e.msg + "\n")
                 raise SystemExit, 1
@@ -199,7 +208,7 @@ if __name__ == '__main__':
                 if e.filename is None:
                     sys.stderr.write("gpsfake: unknown internal I/O error %s\n" % e)
                 else:
-                    sys.stderr.write("gpsfake: no such file as %s or file unreadable\n"%e.filename)
+                    sys.stderr.write("gpsfake: no such file as %s or file unreadable\n" % e.filename)
                 raise SystemExit, 1
             except OSError:
                 sys.stderr.write("gpsfake: can't open pty.\n")

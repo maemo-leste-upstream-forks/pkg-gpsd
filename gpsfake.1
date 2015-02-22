@@ -31,7 +31,7 @@
 gpsfake \- test harness for gpsd, simulating a GPS
 .SH "SYNOPSIS"
 .HP \w'\fBgpsfake\fR\ 'u
-\fBgpsfake\fR [\-1] [\-h] [\-b] [\-f] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-g] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-P\ \fIport\fR] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-u] [\-t] [\-v] [\fIlogfile\fR...]
+\fBgpsfake\fR [\-1] [\-h] [\-b] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-g] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-P\ \fIport\fR] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-S] [\-u] [\-t] [\-v] [\fIlogfile\fR...]
 .SH "DESCRIPTION"
 .PP
 gpsfake
@@ -119,12 +119,6 @@ gpsd
 instance within gpsfake under control of gdb\&.
 .PP
 The
-\fB\-f\fR
-configures
-gpsd
-to bind to a random dynamic/private port (range 49152 \- 65535)\&. Its main use is within regression\-test scripts so they won\*(Aqt collide with a production instance\&.
-.PP
-The
 \fB\-o\fR
 specifies options to pass to the daemon\&. The \-n option passes \-n to start the daemon reading the GPS without waiting for a client (equivalent to \-o "\-n")\&. The
 \fB\-D\fR
@@ -142,6 +136,8 @@ specifies an initialization command to use in pipe mode\&. The default is
 The
 \fB\-s\fR
 sets the baud rate for the slave tty\&. The default is 4800\&.
+.PP
+The option \-S tells gpsfake to insert realistic delays in the test input rather than trying to stuff it through the daemon as fast as possible\&. This will make the test(s) run much slower, but avoids flaky failures due to machine lode and possible race conditions in the pty layer\&.
 .PP
 The
 \fB\-t\fR

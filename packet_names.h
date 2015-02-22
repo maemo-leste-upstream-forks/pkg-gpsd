@@ -34,6 +34,7 @@
  "TURN_LEAD_1",		/* Turn indicator packet leader 'T' */
  "ECDIS_LEAD_1",	/* ECDIS packet leader 'E' */
  "SOUNDER_LEAD_1",	/* Depth sounder packet leader 'S' */
+ "TRANSDUCER_LEAD_1",	/* Generic transducer packet leader 'Y' */
 #endif /* NMEA_ENABLE */
 
  "DLE_LEADER",		/* we've seen the TSIP/EverMore leader (DLE) */
@@ -105,7 +106,7 @@
 #endif /* ITRAX_ENABLE */
 
 #ifdef NAVCOM_ENABLE
- "NAVCOM_EXPECTED",	/* expecting Navcom packet */
+ "NAVCOM_EXPECTED",	/* expecting Navcom NCT packet */
  "NAVCOM_LEADER_1",	/* saw leading 0x02 */
  "NAVCOM_LEADER_2",	/* saw leading 0x99 */
  "NAVCOM_LEADER_3",	/* saw leading 0x66 */

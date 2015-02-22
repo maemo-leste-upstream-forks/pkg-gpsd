@@ -3,6 +3,7 @@
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
 #include <math.h>
+#include <stdlib.h> /* for labs() */
 #include <time.h>
 
 #include "gpsd.h"
@@ -74,9 +75,9 @@ static bool ubx_initialize(void)
 	return false;
     (void)wborder(ppswin, 0, 0, 0, 0, 0, 0, 0, 0);
     (void)wattrset(ppswin, A_BOLD);
-    (void)mvwaddstr(ppswin, 1, 1, "PPS offset: ");
+    (void)mvwaddstr(ppswin, 1, 1, "PPS: ");
 #ifndef PPS_ENABLE
-    (void)mvwaddstr(ppswin, 1, 13, "N/A");
+    (void)mvwaddstr(ppswin, 1, 6, "N/A");
 #endif /* PPS_ENABLE */
     display(ppswin, 2, 22, " PPS ");
     (void)wattrset(ppswin, A_NORMAL);
@@ -236,7 +237,7 @@ static void ubx_update(void)
     struct timedrift_t drift;
 #endif /* PPS_ENABLE */
 
-    buf = session.packet.outbuffer;
+    buf = session.lexer.outbuffer;
     msgid = (unsigned short)((buf[2] << 8) | buf[3]);
     data_len = (size_t) getles16(buf, 4);
     switch (msgid) {
@@ -255,13 +256,23 @@ static void ubx_update(void)
 
 #ifdef PPS_ENABLE
     /*@-compdef@*/
-    /*@-type@*/ /* splint is confused about struct timespec */
+    /*@-type -noeffect@*/ /* splint is confused about struct timespec */
     if (pps_thread_lastpps(&session, &drift) > 0) {
-	double timedelta = timespec_diff_ns(drift.real, drift.clock) * 1e-9;
-	(void)mvwprintw(ppswin, 1, 13, "%.9f", timedelta);
+	/* NOTE: can not use double here due to precision requirements */
+	struct timespec timedelta;
+	TS_SUB( &timedelta, &drift.clock, &drift.real);
+        if ( 86400 < (long)labs(timedelta.tv_sec) ) {
+	    /* more than one day off, overflow */
+            /* need a bigger field to show it */
+	    (void)mvwprintw(ppswin, 1, 6, "> 1 day");
+        } else {
+	    char buf2[TIMESPEC_LEN];
+	    timespec_str( &timedelta, buf2, sizeof(buf2) );
+	    (void)mvwprintw(ppswin, 1, 6, "%s", buf2);
+        }
 	(void)wnoutrefresh(ppswin);
     }
-    /*@+type@*/
+    /*@+type +noeffect@*/
     /*@+compdef@*/
 #endif /* PPS_ENABLE */
 }
