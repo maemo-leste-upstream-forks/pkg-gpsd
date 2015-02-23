@@ -1,13 +1,31 @@
 libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
+#MISSING:" 3.12# (c++|optional)"gps_shm_close(gps_data_t*)@Base" 3.5
+ gps_shm_close@Base 3.12
+#MISSING:" 3.12# (c++|optional)"gps_shm_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Bas
+ gps_shm_mainloop@Base 3.12
+#MISSING:" 3.12# (c++|optional)"gps_shm_open(gps_data_t*)@Base" 3.5
+ gps_shm_open@Base 3.12
+#MISSING:" 3.12# (c++|optional)"gps_shm_read(gps_data_t*)@Base" 3.5
+ gps_shm_read@Base 3.12
+#MISSING:" 3.12# (c++|optional)"gps_shm_waiting(gps_data_t const*, int)@Base" 3.5
+ gps_shm_waiting@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_close(gps_data_t*)@Base" 3.3
+ gps_sock_close@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_data(gps_data_t const*)@Base" 3.3
+ gps_sock_data@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.3
+ gps_sock_mainloop@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_open(char const*, char const*, gps_data_t*)@Base" 3.3
+ gps_sock_open@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_read(gps_data_t*)@Base" 3.3
+ gps_sock_read@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_send(gps_data_t*, char const*)@Base" 3.3
+ gps_sock_send@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_stream(gps_data_t*, unsigned int, void*)@Base" 3.3
+ gps_sock_stream@Base 3.12
+#MISSING:" 3.12# (c++)"gps_sock_waiting(gps_data_t const*, int)@Base" 3.3
+ gps_sock_waiting@Base 3.12
  (c++)"gpsmm::is_open()@Base" 3.10+dev1~
- (c++)"gps_sock_data(gps_data_t const*)@Base" 3.3
- (c++)"gps_sock_open(char const*, char const*, gps_data_t*)@Base" 3.3
- (c++)"gps_sock_read(gps_data_t*)@Base" 3.3
- (c++)"gps_sock_send(gps_data_t*, char const*)@Base" 3.3
- (c++)"gps_sock_close(gps_data_t*)@Base" 3.3
- (c++)"gps_sock_stream(gps_data_t*, unsigned int, void*)@Base" 3.3
- (c++)"gps_sock_waiting(gps_data_t const*, int)@Base" 3.3
- (c++)"gps_sock_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.3
  (c++|optional)"QList<QString>::detach_helper(int)@Base" 3.3
  (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 3.3
  (c++)"gpsmm::gps_inner_open(char const*, char const*)@Base" 3.3
@@ -31,32 +49,30 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"vtable for gpsmm@Base" 3.3
  (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
  (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
+ (c++)"shiftleft(unsigned char*, int, unsigned short)@Base" 3.12
  (c++)"deg_to_str(deg_str_type, double)@Base" 3.5
  (c++)"export_default()@Base" 3.5
  (c++)"export_list(_IO_FILE*)@Base" 3.5
  (c++)"export_lookup(char const*)@Base" 3.5
- (c++)"gps_dbus_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
- (c++)"gps_dbus_open(gps_data_t*)@Base" 3.5
-#MISSING: 3.11-1# (c++|optional)"gpsd_hexdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
-#MISSING: 3.11-1# (c++|optional)"gpsd_hexdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
-#MISSING: 3.10-1# (c++|optional)"gpsd_hexdump(char*, unsigned int)@Base" 3.5
-#MISSING: 3.10-1# (c++|optional)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
- gpsd_hexdump@Base 3.11
+#MISSING: 3.12-1# (c++)"gps_dbus_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
+ gps_dbus_mainloop@Base 3.12
+#MISSING: 3.12-1# (c++)"gps_dbus_open(gps_data_t*)@Base" 3.5
+ gps_dbus_open@Base 3.12
+#MISSING: 3.12-1# (c++|optional)"gpsd_hexdump(char*, unsigned int)@Base" 3.5
+#MISSING: 3.12-1# (c++|optional)"gpsd_hexdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
+#MISSING: 3.12-1# (c++|optional)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
+#MISSING: 3.12-1# (c++|optional)"gpsd_hexdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
+ gpsd_hexdump@Base 3.12
  (c++)"gpsd_source_spec(char const*, fixsource_t*)@Base" 3.5
  (c++)"gpsd_units()@Base" 3.5
- (c++|optional)"gps_shm_close(gps_data_t*)@Base" 3.5
- (c++|optional)"gps_shm_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
- (c++|optional)"gps_shm_open(gps_data_t*)@Base" 3.5
- (c++|optional)"gps_shm_read(gps_data_t*)@Base" 3.5
- (c++|optional)"gps_shm_waiting(gps_data_t const*, int)@Base" 3.5
 #MISSING: 3.11-1# (c++)"libgps_dump_state(gps_data_t*)@Base" 3.5
  libgps_dump_state@Base 3.11
  (c++)"maidenhead(double, double)@Base" 3.5
  (c++)"true2magnetic(double, double, double)@Base" 3.5
-#MISSING: 3.11-1# (c++|optional)"gpsd_packetdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
-#MISSING: 3.11-1#  (c++|optional)"gpsd_packetdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
-#MISSING: 3.10-1# (c++|optional)"gpsd_packetdump(char*, unsigned int)@Base" 3.9
-#MISSING: 3.10-1# (c++|optional)"gpsd_packetdump(char*, unsigned long)@Base" 3.9
+#MISSING: 3.12-1# (c++|optional)"gpsd_packetdump(char*, unsigned int)@Base" 3.9
+#MISSING: 3.12-1# (c++|optional)"gpsd_packetdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
+#MISSING: 3.12-1# (c++|optional)"gpsd_packetdump(char*, unsigned long)@Base" 3.9
+#MISSING: 3.12-1# (c++|optional)"gpsd_packetdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
  gpsd_packetdump@Base 3.11
  (c++)"sbits(signed char*, unsigned int, unsigned int, bool)@Base" 3.9
  (c++)"ubits(unsigned char*, unsigned int, unsigned int, bool)@Base" 3.9
@@ -75,8 +91,6 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  gps_clear_fix@Base 3.3
  gps_close@Base 3.3
  gps_data@Base 3.3
-#MISSING: 3.5-1# gps_dbus_mainloop@Base 3.3
-#MISSING: 3.5-1# gps_dbus_open@Base 3.3
  gps_enable_debug@Base 3.3
  gps_errstr@Base 3.3
  gps_mainloop@Base 3.3
@@ -121,6 +135,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  safe_atof@Base 3.3
  strlcat@Base 3.3
  strlcpy@Base 3.3
+ timespec_str@Base 3.12
  timestamp@Base 3.3
 #MISSING: 3.5-1# true2magnetic@Base 3.3
  unix_to_iso8601@Base 3.3
