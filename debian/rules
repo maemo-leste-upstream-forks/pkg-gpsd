@@ -221,8 +221,8 @@ binary: install-stamp
 	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python*/*-packages/gps/gps.py
 	dh_python2 -Ngpsd -Ngpsd-clients -Ngpsd-dbg
 	dh_python2 -pgpsd-dbg usr/lib/gpsd/debug
-	dh_python2 -pgpsd-clients /usr/bin
-	dh_python2 -pgpsd /lib/udev/
+	dh_python2 -pgpsd-clients usr/bin
+	dh_python2 -pgpsd lib/udev/
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev 
 	dh_link 
