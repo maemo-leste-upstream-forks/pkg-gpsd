@@ -95,7 +95,7 @@ Description: Global Positioning System - Python libraries
  which utilize the interface: gpsprof for latency-profiling, and gpsfake to
  simulate a GPS by playing back a logfile.
 
-Package: libgps21
+Package: libgps22
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -127,7 +127,7 @@ Description: Global Positioning System - development files
  This package contains the header and development files needed to build
  programs and packages using libgps.
 
-Package: libqgpsmm21
+Package: libqgpsmm22
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
