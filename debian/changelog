@@ -1,3 +1,18 @@
+gpsd (3.12-1) experimental; urgency=medium
+
+  * [9f0dfbda] Merge tag 'upstream/3.12'
+    Upstream version 3.12
+  * [0896c861] Refresh/update patches.
+  * [9daccea4] Fix test_ debug tool list.
+  * [85f4f0bb] Add patch to fix test_gpsmm.
+  * [9c511016] Add some new symbols to the symbols file.
+  * [30cf1b92] Add dh-python as build dependency.
+  * [24c325f9] Bump library sonames in package names.
+  * [a810ac32] Update libqgpsmm symbols file
+  * [1bf373c6] Fix some lintian errors.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 23 Feb 2015 22:37:42 +0100
+
 gpsd (3.11-3) unstable; urgency=medium
 
   [ Andreas Beckmann ]
