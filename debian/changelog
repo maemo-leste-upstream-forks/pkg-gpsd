@@ -1,3 +1,14 @@
+gpsd (3.15-1~1.gbp2d150e) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @2d150e4584ad7a1f68b80bc50881fe6d44157644 **
+
+  * [10e7cafa] Install contrib/* as examples.
+    Thanks to Sanjeev Gupta (Closes: #781688)
+  * [2d150e45] Merge tag 'upstream/3.15'
+    Upstream version 3.15
+
+ -- Bernd Zeimetz <bernd@bzed.de>  Sun, 28 Jun 2015 23:18:21 +0200
+
 gpsd (3.12-1) experimental; urgency=medium
 
   * [9f0dfbda] Merge tag 'upstream/3.12'
