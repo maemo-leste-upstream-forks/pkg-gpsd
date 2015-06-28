@@ -150,7 +150,11 @@ function is a convenience wrapper around a
 <citerefentry><refentrytitle>select</refentrytitle><manvolnum>2</manvolnum></citerefentry>
 call, and zeros <varname>errno</varname> on entry; you can test
 <varname>errno</varname> after exit to get more information about
-error conditions.</para>
+error conditions.  Warning: under the shared-memory interface there is
+a tiny race window between <function>gps_waiting()</function> and a
+following <function>gps_read()</function>; in that context, beause the
+latter does not block, it is probably better to write a simple read
+loop.</para>
 
 <para><function>gps_unpack()</function> parses JSON from the argument
 buffer into the target of the session structure pointer argument.
@@ -212,7 +216,7 @@ other WATCH flags are set, this is the default.</para>
 <varlistentry>
 <term>WATCH_SCALED</term>
 <listitem>
-<para>When reporting AIS or Subframe data, scale integer quantities to 
+<para>When reporting AIS or Subframe data, scale integer quantities to
 floats if they have a divisor or rendering formula associated with them.</para>
 </listitem>
 </varlistentry>
@@ -304,7 +308,7 @@ libgps interface code from
 
 <refsect1 id='limitations'><title>LIMITATIONS</title>
 
-<para>On some systems (those which do not support implicit linking in 
+<para>On some systems (those which do not support implicit linking in
 libraries) you may need to add -lm to your link line when you link libgps.
 It is always safe to do this.</para>
 

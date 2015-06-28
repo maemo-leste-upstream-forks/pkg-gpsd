@@ -23,6 +23,7 @@
  *
  */
 
+#include <time.h>               /* for time_t */
 #include "gpsd_config.h"
 
 #include <stdio.h>
@@ -32,19 +33,16 @@
 #include <string.h>
 #include <strings.h>
 #include <fcntl.h>
-#ifdef HAVE_TERMIOS_H
 #include <termios.h>
-#endif /* HAVE_TERMIOS_H */
-#include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/select.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 
 #include "gpsd.h"
+
+#include "gpsd_config.h"
 #include "gpsdclient.h"
 #include "revision.h"
 
@@ -79,12 +77,12 @@ static void open_serial(char *device)
     }
 
     /* Clear struct for new port settings. */
-    /*@i@*/ bzero(&newtio, sizeof(newtio));
+    bzero(&newtio, sizeof(newtio));
 
     /* make it raw */
     (void)cfmakeraw(&newtio);
     /* set speed */
-    /*@i@*/ (void)cfsetospeed(&newtio, BAUDRATE);
+    (void)cfsetospeed(&newtio, BAUDRATE);
 
     /* Clear the modem line and activate the settings for the port. */
     (void)tcflush(fd_out, TCIFLUSH);
@@ -120,7 +118,6 @@ static void usage(void)
 		  "You must use -o if you use -d.\n");
 }
 
-/*@ -compdestroy @*/
 int main(int argc, char **argv)
 {
     char buf[4096];
@@ -146,7 +143,6 @@ int main(int argc, char **argv)
     char *serialport = NULL;
     char *outfile = NULL;
 
-    /*@-branchstate@*/
     flags = WATCH_ENABLE;
     while ((option = getopt(argc, argv, "?dD:lhrRwStT:vVn:s:o:pPu2")) != -1) {
 	switch (option) {
@@ -224,7 +220,6 @@ int main(int argc, char **argv)
 	    exit(EXIT_FAILURE);
 	}
     }
-    /*@+branchstate@*/
 
     /* Grok the server, port, and device. */
     if (optind < argc) {
@@ -249,13 +244,11 @@ int main(int argc, char **argv)
     }
 
     /* Daemonize if the user requested it. */
-    /*@ -unrecog @*/
     if (daemonize)
 	if (daemon(0, 0) != 0)
 	    (void)fprintf(stderr,
 			  "gpspipe: demonization failed: %s\n",
 			  strerror(errno));
-    /*@ +unrecog @*/
 
     /* Sleep for ten seconds if the user requested it. */
     if (sleepy)
@@ -284,14 +277,12 @@ int main(int argc, char **argv)
     if (serialport)
 	open_serial(serialport);
 
-    /*@ -nullpass -onlytrans @*/
     if (gps_open(source.server, source.port, &gpsdata) != 0) {
 	(void)fprintf(stderr,
 		      "gpspipe: could not connect to gpsd %s:%s, %s(%d)\n",
 		      source.server, source.port, gps_errstr(errno), errno);
 	exit(EXIT_FAILURE);
     }
-    /*@ +nullpass +onlytrans @*/
 
     if (profile)
 	flags |= WATCH_TIMING;
@@ -335,24 +326,24 @@ int main(int argc, char **argv)
 		}
 		if (new_line && timestamp) {
 		    char tmstr_u[20];            // time with "usec" resolution
-		    struct timeval now;
+		    struct timespec now;
 		    struct tm *tmp_now;
 
-		    (void)gettimeofday( &now, NULL );
+		    (void)clock_gettime(CLOCK_REALTIME, &now);
 		    tmp_now = localtime((time_t *)&(now.tv_sec));
 		    (void)strftime(tmstr, sizeof(tmstr), format, tmp_now);
 		    new_line = 0;
 
 		    switch( option_u ) {
 		    case 2:
-			(void)snprintf(tmstr_u, sizeof(tmstr_u), 
-				       " %ld.%06ld", 
+			(void)snprintf(tmstr_u, sizeof(tmstr_u),
+				       " %ld.%06ld",
 				       (long)now.tv_sec,
-				       (long)now.tv_usec);
+				       (long)now.tv_nsec/1000);
 			break;
 		    case 1:
-			(void)snprintf(tmstr_u, sizeof(tmstr_u), 
-				       ".%06ld", (long)now.tv_usec);
+			(void)snprintf(tmstr_u, sizeof(tmstr_u),
+				       ".%06ld", (long)now.tv_nsec/1000);
 			break;
 		    default:
 			*tmstr_u = '\0';
@@ -367,7 +358,7 @@ int main(int argc, char **argv)
 		    }
 		}
 		if (fputc(c, fp) == EOF) {
-		    fprintf(stderr, "gpspipe: Write Error, %s(%d)\n",
+		    fprintf(stderr, "gpspipe: write error, %s(%d)\n",
 			    strerror(errno), errno);
 		    exit(EXIT_FAILURE);
 		}
@@ -376,7 +367,7 @@ int main(int argc, char **argv)
 		    if (serialport != NULL) {
 			if (write(fd_out, serbuf, (size_t) j) == -1) {
 			    fprintf(stderr,
-				    "gpspipe: Serial port write Error, %s(%d)\n",
+				    "gpspipe: serial port write error, %s(%d)\n",
 				    strerror(errno), errno);
 			    exit(EXIT_FAILURE);
 			}
@@ -387,7 +378,7 @@ int main(int argc, char **argv)
 		    /* flush after every good line */
 		    if (fflush(fp)) {
 			(void)fprintf(stderr,
-				      "gpspipe: fflush Error, %s(%d)\n",
+				      "gpspipe: fflush error, %s(%d)\n",
 				      strerror(errno), errno);
 			exit(EXIT_FAILURE);
 		    }
@@ -417,7 +408,7 @@ int main(int argc, char **argv)
     if (serialport != NULL) {
 	/* Restore the old serial port settings. */
 	if (tcsetattr(fd_out, TCSANOW, &oldtio) != 0) {
-	    (void)fprintf(stderr, "Error restoring serial port settings\n");
+	    (void)fprintf(stderr, "gpsipe: error restoring serial port settings\n");
 	    exit(EXIT_FAILURE);
 	}
     }
@@ -426,7 +417,6 @@ int main(int argc, char **argv)
     exit(EXIT_SUCCESS);
 }
 
-/*@ +compdestroy @*/
 
 static void spinner(unsigned int v, unsigned int num)
 {

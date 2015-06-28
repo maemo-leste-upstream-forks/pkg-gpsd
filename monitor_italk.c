@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>     /* for strlcat() */
 
 #include "gpsd.h"
 #include "bits.h"
@@ -11,10 +12,6 @@
 
 #ifdef ITRAX_ENABLE
 #include "driver_italk.h"
-
-#ifdef HAVE_STRLCAT
-#include <string.h>
-#endif
 
 extern const struct gps_type_t driver_italk;
 static WINDOW *satwin, *navfixwin;
@@ -24,7 +21,6 @@ static bool italk_initialize(void)
 {
     int i;
 
-    /*@ -onlytrans @*/
     /* "heavily inspired" by monitor_nmea.c */
     if ((satwin =
 	 derwin(devicewin, MAX_NR_VISIBLE_PRNS + 3, 27, 0, 0)) == NULL)
@@ -65,12 +61,10 @@ static bool italk_initialize(void)
     display(navfixwin, 12, 20, " NAV_FIX ");
     (void)wattrset(navfixwin, A_NORMAL);
     return true;
-    /*@ +onlytrans @*/
 }
 
 static void display_itk_navfix(unsigned char *buf, size_t len)
 {
-
     unsigned int tow, tod, d, svlist;
     unsigned short gps_week, nsv;
     unsigned short year, mon, day, hour, min, sec;

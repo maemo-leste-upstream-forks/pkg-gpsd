@@ -14,6 +14,7 @@ PERMISSIONS
    BSD terms apply: see the file COPYING in the distribution root for details.
 
 ***************************************************************************/
+#include <time.h>            /* for time_t */
 #include "gpsd_config.h"
 
 #ifdef SHM_EXPORT_ENABLE
@@ -29,37 +30,35 @@ PERMISSIONS
 #include "gpsd.h"
 #include "libgps.h" /* for SHM_PSEUDO_FD */
 
-/*@ -mustfreeonly -nullstate -mayaliasunique @*/
 
 bool shm_acquire(struct gps_context_t *context)
 /* initialize the shared-memory segment to be used for export */
 {
-    /*@-nullpass@*/
     long shmkey = getenv("GPSD_SHM_KEY") ? strtol(getenv("GPSD_SHM_KEY"), NULL, 0) : GPSD_SHM_KEY;
-    /*@+nullpass@*/
 
-    int shmid = shmget((key_t)shmkey, sizeof(struct gps_data_t), (int)(IPC_CREAT|0666));
+    int shmid = shmget((key_t)shmkey, sizeof(struct shmexport_t), (int)(IPC_CREAT|0666));
     if (shmid == -1) {
-	gpsd_report(&context->errout, LOG_ERROR,
-		    "shmget(0x%lx, %zd, 0666) for SHM export failed: %s\n",
-		    shmkey,
-		    sizeof(struct gps_data_t),
-		    strerror(errno));
+	gpsd_log(&context->errout, LOG_ERROR,
+		 "shmget(0x%lx, %zd, 0666) for SHM export failed: %s\n",
+		 shmkey,
+		 sizeof(struct shmexport_t),
+		 strerror(errno));
 	return false;
     } else
-	gpsd_report(&context->errout, LOG_PROG,
-		    "shmget(0x%lx, %zd, 0666) for SHM export succeeded\n",
-		    shmkey,
-		    sizeof(struct gps_data_t));
+	gpsd_log(&context->errout, LOG_PROG,
+		 "shmget(0x%lx, %zd, 0666) for SHM export succeeded\n",
+		 shmkey,
+		 sizeof(struct shmexport_t));
 
     context->shmexport = (void *)shmat(shmid, 0, 0);
     if ((int)(long)context->shmexport == -1) {
-	gpsd_report(&context->errout, LOG_ERROR, "shmat failed: %s\n", strerror(errno));
+	gpsd_log(&context->errout, LOG_ERROR,
+		 "shmat failed: %s\n", strerror(errno));
 	context->shmexport = NULL;
 	return false;
     }
-    gpsd_report(&context->errout, LOG_PROG,
-		"shmat() for SHM export succeeded, segment %d\n", shmid);
+    gpsd_log(&context->errout, LOG_PROG,
+	     "shmat() for SHM export succeeded, segment %d\n", shmid);
     return true;
 }
 
@@ -91,9 +90,7 @@ void shm_update(struct gps_context_t *context, struct gps_data_t *gpsdata)
 	 */
 	shared->bookend2 = tick;
 	memory_barrier();
-	memcpy((void *)((char *)context->shmexport + offsetof(struct shmexport_t, gpsdata)),
-	       (void *)gpsdata,
-	       sizeof(struct gps_data_t));
+	shared->gpsdata = *gpsdata;
 	memory_barrier();
 #ifndef USE_QT
 	shared->gpsdata.gps_fd = SHM_PSEUDO_FD;
@@ -105,7 +102,6 @@ void shm_update(struct gps_context_t *context, struct gps_data_t *gpsdata)
     }
 }
 
-/*@ +mustfreeonly +nullstate +mayaliasunique @*/
 
 #endif /* SHM_EXPORT_ENABLE */
 

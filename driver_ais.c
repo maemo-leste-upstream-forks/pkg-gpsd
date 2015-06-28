@@ -29,14 +29,8 @@
 static void from_sixbit(unsigned char *bitvec, uint start, int count, char *to)
 /* beginning at bitvec bit start, unpack count sixbit characters */
 {
-    /*@ +type @*/
-#ifdef S_SPLINT_S
-    /* the real string causes a splint internal error */
-    const char sixchr[] = "abcd";
-#else
     const char sixchr[64] =
 	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_ !\"#$%&'()*+,-./0123456789:;<=>?";
-#endif /* S_SPLINT_S */
     int i;
 
     /* six-bit to ASCII */
@@ -55,10 +49,8 @@ static void from_sixbit(unsigned char *bitvec, uint start, int count, char *to)
 	    to[i] = '\0';
 	else
 	    break;
-    /*@ -type @*/
 }
 
-/*@ +charint @*/
 bool ais_binary_decode(const struct gpsd_errout_t *errout,
 		       struct ais_t *ais,
 		       const unsigned char *bits, size_t bitlen,
@@ -67,9 +59,6 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 {
     unsigned int u; int i;
 
-#ifdef S_SPLINT_S
-    assert(type24_queue != NULL);
-#endif /* S_SPLINT_S */
 #define UBITS(s, l)	ubits((unsigned char *)bits, s, l, false)
 #define SBITS(s, l)	sbits((signed char *)bits, s, l, false)
 #define UCHARS(s, to)	from_sixbit((unsigned char *)bits, s, sizeof(to)-1, to)
@@ -77,26 +66,26 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
     ais->type = UBITS(0, 6);
     ais->repeat = UBITS(6, 2);
     ais->mmsi = UBITS(8, 30);
-    gpsd_report(errout, LOG_INF,
-		"AIVDM message type %d, MMSI %09d:\n",
-		ais->type, ais->mmsi);
+    gpsd_log(errout, LOG_INF,
+	     "AIVDM message type %d, MMSI %09d:\n",
+	     ais->type, ais->mmsi);
 
 #define PERMISSIVE_LENGTH_CHECK(correct) \
 	if (bitlen < correct) { \
-	    gpsd_report(errout, LOG_ERROR, \
-			"AIVDM message type %d size < %d bits (%zd).\n", \
-			ais->type, correct, bitlen); \
+	    gpsd_log(errout, LOG_ERROR, \
+		     "AIVDM message type %d size < %d bits (%zd).\n",	\
+		     ais->type, correct, bitlen);			\
 	    return false; \
 	} else if (bitlen > correct) { \
-	    gpsd_report(errout, LOG_WARN, \
-			"AIVDM message type %d size > %d bits (%zd).\n", \
-			ais->type, correct, bitlen); \
+	    gpsd_log(errout, LOG_WARN, \
+		     "AIVDM message type %d size > %d bits (%zd).\n",	\
+		     ais->type, correct, bitlen);			\
 	}
 #define RANGE_CHECK(min, max) \
 	if (bitlen < min || bitlen > max) { \
-	    gpsd_report(errout, LOG_ERROR, \
-			"AIVDM message type %d size is out of range (%zd).\n", \
-			ais->type, bitlen); \
+	    gpsd_log(errout, LOG_ERROR, \
+		     "AIVDM message type %d size is out of range (%zd).\n", \
+		     ais->type, bitlen);				\
 	    return false; \
 	}
 
@@ -144,9 +133,9 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	break;
     case 5: /* Ship static and voyage related data */
 	if (bitlen != 424) {
-	    gpsd_report(errout, LOG_WARN,
-			"AIVDM message type 5 size not 424 bits (%zd).\n",
-			bitlen);
+	    gpsd_log(errout, LOG_WARN,
+		     "AIVDM message type 5 size not 424 bits (%zd).\n",
+		     bitlen);
 	    /*
 	     * For unknown reasons, a lot of transmitters in the wild ship
 	     * with a length of 420 or 422.  This is a recoverable error.
@@ -183,7 +172,7 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	ais->type6.dac            = UBITS(72, 10);
 	ais->type6.fid            = UBITS(82, 6);
 	ais->type6.bitcount       = bitlen - 88;
-	/* not strictly required - helps stability in testing */ 
+	/* not strictly required - helps stability in testing */
 	(void)memset(ais->type6.bitdata, '\0', sizeof(ais->type6.bitdata));
 	ais->type6.structured = false;
 	/* Inland AIS */
@@ -433,18 +422,16 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
     case 13: /* Safety Related Acknowledge */
     {
 	unsigned int mmsi[4];
-	RANGE_CHECK(72, 158);
+	RANGE_CHECK(72, 168);
 	for (u = 0; u < sizeof(mmsi)/sizeof(mmsi[0]); u++)
 	    if (bitlen > 40 + 32*u)
 		mmsi[u] = UBITS(40 + 32*u, 30);
 	    else
 		mmsi[u] = 0;
-	/*@ -usedef @*/
 	ais->type7.mmsi1 = mmsi[0];
 	ais->type7.mmsi2 = mmsi[1];
 	ais->type7.mmsi3 = mmsi[2];
 	ais->type7.mmsi4 = mmsi[3];
-	/*@ +usedef @*/
 	break;
     }
     case 8: /* Binary Broadcast Message */
@@ -453,7 +440,7 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	ais->type8.dac            = UBITS(40, 10);
 	ais->type8.fid            = UBITS(50, 6);
 	ais->type8.bitcount       = bitlen - 56;
-	/* not strictly required - helps stability in testing */ 
+	/* not strictly required - helps stability in testing */
 	(void)memset(ais->type8.bitdata, '\0', sizeof(ais->type8.bitdata));
 	ais->type8.structured = false;
 	if (ais->type8.dac == 1)
@@ -666,7 +653,7 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 		ais->type8.dac200fid10.heading_q	= (bool)UBITS(159, 1);
 		/* skip 8 bits */
 		/*
-		 * Attempt to prevent false matches with this message type 
+		 * Attempt to prevent false matches with this message type
 		 * by range-checking certain fields.
 		 */
 		if (ais->type8.dac200fid10.hazard > DAC200FID10_HAZARD_MAX
@@ -809,9 +796,9 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
     case 17:	/* GNSS Broadcast Binary Message */
 	RANGE_CHECK(80, 816);
 	//ais->type17.spare         = UBITS(38, 2);
-	ais->type17.lon		= UBITS(40, 18);
-	ais->type17.lat		= UBITS(58, 17);
-	//ais->type17.spare	        = UBITS(75, 4);
+	ais->type17.lon		= SBITS(40, 18);
+	ais->type17.lat		= SBITS(58, 17);
+	//ais->type17.spare	        = UBITS(75, 5);
 	ais->type17.bitcount        = bitlen - 80;
 	(void)memcpy(ais->type17.bitdata,
 		     (char *)bits + (80 / CHAR_BIT),
@@ -943,9 +930,9 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	    {
 		struct ais_type24a_t *saveptr = &type24_queue->ships[type24_queue->index];
 
-		gpsd_report(errout, LOG_PROG,
-			    "AIVDM: 24A from %09u stashed.\n",
-			    ais->mmsi);
+		gpsd_log(errout, LOG_PROG,
+			 "AIVDM: 24A from %09u stashed.\n",
+			 ais->mmsi);
 		saveptr->mmsi = ais->mmsi;
 		UCHARS(40, saveptr->shipname);
 		++type24_queue->index;
@@ -990,9 +977,9 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 		    (void)strlcpy(ais->type24.shipname,
 				  type24_queue->ships[i].shipname,
 				  sizeof(ais->type24.shipname));
-		    gpsd_report(errout, LOG_PROG,
-				"AIVDM 24B from %09u matches a 24A.\n",
-				ais->mmsi);
+		    gpsd_log(errout, LOG_PROG,
+			     "AIVDM 24B from %09u matches a 24A.\n",
+			     ais->mmsi);
 		    /* prevent false match if a 24B is repeated */
 		    type24_queue->ships[i].mmsi = 0;
 		    ais->type24.part = both;
@@ -1004,24 +991,24 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	    ais->type24.part = part_b;
 	    return true;
 	default:
-	    gpsd_report(errout, LOG_WARN,
-			"AIVDM message type 24 of subtype unknown.\n");
+	    gpsd_log(errout, LOG_WARN,
+		     "AIVDM message type 24 of subtype unknown.\n");
 	    return false;
 	}
 	// break;
     case 25:	/* Binary Message, Single Slot */
 	/* this check and the following one reject line noise */
 	if (bitlen < 40 || bitlen > 168) {
-	    gpsd_report(errout, LOG_WARN,
-			"AIVDM message type 25 size not between 40 to 168 bits (%zd).\n",
-			bitlen);
+	    gpsd_log(errout, LOG_WARN,
+		     "AIVDM message type 25 size not between 40 to 168 bits (%zd).\n",
+		     bitlen);
 	    return false;
 	}
 	ais->type25.addressed	= (bool)UBITS(38, 1);
 	ais->type25.structured	= (bool)UBITS(39, 1);
 	if (bitlen < (unsigned)(40 + (16*ais->type25.structured) + (30*ais->type25.addressed))) {
-	    gpsd_report(errout, LOG_WARN,
-			"AIVDM message type 25 too short for mode.\n");
+	    gpsd_log(errout, LOG_WARN,
+		     "AIVDM message type 25 too short for mode.\n");
 	    return false;
 	}
 	if (ais->type25.addressed)
@@ -1044,8 +1031,8 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	ais->type26.addressed	= (bool)UBITS(38, 1);
 	ais->type26.structured	= (bool)UBITS(39, 1);
 	if ((signed)bitlen < 40 + 16*ais->type26.structured + 30*ais->type26.addressed + 20) {
-	    gpsd_report(errout, LOG_WARN,
-			"AIVDM message type 26 too short for mode.\n");
+	    gpsd_log(errout, LOG_WARN,
+		     "AIVDM message type 26 too short for mode.\n");
 	    return false;
 	}
 	if (ais->type26.addressed)
@@ -1064,17 +1051,17 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	break;
     case 27:	/* Long Range AIS Broadcast message */
 	if (bitlen != 96 && bitlen != 168) {
-	    gpsd_report(errout, LOG_WARN,
-			"unexpected AIVDM message type 27 (%zd).\n",
-			bitlen);
+	    gpsd_log(errout, LOG_WARN,
+		     "unexpected AIVDM message type 27 (%zd).\n",
+		     bitlen);
 	    return false;
 	} if (bitlen == 168) {
 	    /*
 	     * This is an implementation error observed in the wild,
 	     * sending a full 168-bit slot rather than just 96 bits.
 	     */
-	    gpsd_report(errout, LOG_WARN,
-			"oversized 169=8-bit AIVDM message type 27.\n");
+	    gpsd_log(errout, LOG_WARN,
+		     "oversized 169=8-bit AIVDM message type 27.\n");
 	}
 	ais->type27.accuracy        = (bool)UBITS(38, 1);
 	ais->type27.raim		= UBITS(39, 1)!=0;
@@ -1086,8 +1073,8 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	ais->type27.gnss            = (bool)UBITS(94, 1);
 	break;
     default:
-	gpsd_report(errout, LOG_ERROR,
-		    "Unparsed AIVDM message type %d.\n",ais->type);
+	gpsd_log(errout, LOG_ERROR,
+		 "Unparsed AIVDM message type %d.\n",ais->type);
 	return false;
     }
     /* *INDENT-ON* */
@@ -1098,6 +1085,5 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
     /* data is fully decoded */
     return true;
 }
-/*@ -charint @*/
 
 /* driver_ais.c ends here */

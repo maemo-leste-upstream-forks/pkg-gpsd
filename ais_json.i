@@ -33,7 +33,7 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type1.radio,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     char timestamp[JSON_VAL_MAX+1];
@@ -54,7 +54,7 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type4.radio,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     char eta[JSON_VAL_MAX+1];
@@ -90,7 +90,7 @@
                                        .len = sizeof(ais->type5.destination)},
 	{"dte",           t_uinteger,  .addr.uinteger = &ais->type5.dte,
                                        .dflt.uinteger = 1},
-	{NULL}
+        {NULL}
     };
 
     char data[JSON_VAL_MAX+1];
@@ -99,7 +99,7 @@
 	AIS_TYPE6
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais6_fid10[] = {
@@ -123,7 +123,7 @@
                                        .dflt.uinteger = 0},
 	{"off_pos",       t_boolean,   .addr.boolean = &ais->type6.dac235fid10.off_pos,
                                        .dflt.boolean = false},
-	{NULL}
+        {NULL}
     };
 
     char departure[JSON_VAL_MAX+1];
@@ -148,7 +148,7 @@
                                        .dflt.uinteger = 0},
 	{"unit",          t_uinteger,  .addr.uinteger = &ais->type6.dac1fid12.unit,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais6_fid15[] = {
@@ -156,7 +156,7 @@
 	AIS_TYPE6
 	{"airdraught",    t_uinteger,  .addr.uinteger = &ais->type6.dac1fid15.airdraught,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais6_fid16[] = {
@@ -164,7 +164,7 @@
 	AIS_TYPE6
 	{"persons",       t_uinteger,  .addr.uinteger = &ais->type6.dac1fid16.persons,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     char arrival[JSON_VAL_MAX+1];
@@ -183,7 +183,7 @@
                                        .dflt.integer = AIS_LON3_NOT_AVAILABLE},
 	{"lat",           t_integer,   .addr.integer = &ais->type6.dac1fid18.lat,
                                        .dflt.integer = AIS_LAT3_NOT_AVAILABLE},
-	{NULL}
+        {NULL}
     };
 
     char berth_name[JSON_VAL_MAX+1];
@@ -261,7 +261,7 @@
                                        .dflt.integer = AIS_LON3_NOT_AVAILABLE},
 	{"berth_lat",     t_integer,   .addr.integer = &ais->type6.dac1fid20.berth_lat,
                                        .dflt.integer = AIS_LAT3_NOT_AVAILABLE},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais6_fid21[] = {
@@ -283,7 +283,7 @@
                                        .dflt.uinteger = 0},
 	{"airdraught",    t_uinteger,  .addr.uinteger = &ais->type6.dac200fid21.airdraught,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     char rta[JSON_VAL_MAX+1];
@@ -304,7 +304,7 @@
                                        .len = sizeof(rta)},
 	{"status",        t_uinteger,  .addr.uinteger = &ais->type6.dac200fid22.status,
                                        .dflt.uinteger = DAC200FID22_STATUS_NOT_AVAILABLE},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais6_fid25_cargos_subtype[] = {
@@ -314,7 +314,6 @@
                                        .dflt.uinteger = 0},
         {NULL}
     };
-/*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais6_fid25[] = {
 	AIS_HEADER
 	AIS_TYPE6
@@ -323,9 +322,8 @@
 	{"amount",        t_uinteger,  .addr.uinteger = &ais->type6.dac1fid25.amount,
                                        .dflt.uinteger = 0},
 	{"cargos",        t_array,     STRUCTARRAY(ais->type6.dac1fid25.cargos, json_ais6_fid25_cargos_subtype, &ais->type6.dac1fid25.ncargos)},
-	{NULL}
+        {NULL}
     };
-/*@+type@*/
 
     char start[JSON_VAL_MAX+1];
     const struct json_attr_t json_ais6_fid28_waypoints_subtype[] = {
@@ -335,7 +333,6 @@
                                        .dflt.integer = AIS_LAT4_NOT_AVAILABLE},
         {NULL}
     };
-/*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais6_fid28[] = {
 	AIS_HEADER
 	AIS_TYPE6
@@ -351,9 +348,8 @@
 	{"duration",      t_uinteger,  .addr.uinteger = &ais->type6.dac1fid28.duration,
                                        .dflt.uinteger = 0},
 	{"waypoints",     t_array,     STRUCTARRAY(ais->type6.dac1fid28.waypoints, json_ais6_fid28_waypoints_subtype, &ais->type6.dac1fid28.waycount)},
-	{NULL}
+        {NULL}
     };
-/*@+type@*/
 
     const struct json_attr_t json_ais6_fid30[] = {
 	AIS_HEADER
@@ -362,7 +358,7 @@
                                        .dflt.uinteger = 0},
 	{"text",          t_string,    .addr.string = ais->type6.dac1fid30.text,
                                        .len = sizeof(ais->type6.dac1fid30.text)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais6_fid32_tidals_subtype[] = {
@@ -384,7 +380,6 @@
                                        .dflt.uinteger = DAC1FID32_CSPEED_NOT_AVAILABLE},
         {NULL}
     };
-/*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais6_fid32[] = {
 	AIS_HEADER
 	AIS_TYPE6
@@ -393,9 +388,8 @@
 	{"day",           t_uinteger,  .addr.uinteger = &ais->type6.dac1fid32.day,
                                        .dflt.uinteger = AIS_DAY_NOT_AVAILABLE},
 	{"tidals",        t_array,     STRUCTARRAY(ais->type6.dac1fid32.tidals, json_ais6_fid32_tidals_subtype, &ais->type6.dac1fid32.ntidals)},
-	{NULL}
+        {NULL}
     };
-/*@+type@*/
 
     const struct json_attr_t json_ais6_fid55[] = {
 	AIS_HEADER
@@ -406,7 +400,7 @@
                                        .dflt.uinteger = DAC200FID55_COUNT_NOT_AVAILABLE},
 	{"personnel",     t_uinteger,  .addr.uinteger = &ais->type6.dac200fid55.personnel,
                                        .dflt.uinteger = DAC200FID55_COUNT_NOT_AVAILABLE},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais7[] = {
@@ -419,7 +413,7 @@
                                        .dflt.uinteger = 0},
 	{"mmsi4",         t_uinteger,  .addr.uinteger = &ais->type7.mmsi4,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8[] = {
@@ -427,7 +421,7 @@
 	AIS_TYPE8
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid10[] = {
@@ -456,7 +450,7 @@
                                        .dflt.boolean = false},
 	{"heading_q",     t_boolean,   .addr.boolean = &ais->type8.dac200fid10.heading_q,
                                        .dflt.boolean = false},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid11[] = {
@@ -532,7 +526,7 @@
 	{"ice",           t_uinteger,  .addr.uinteger = &ais->type8.dac1fid11.ice,
                                        .dflt.uinteger = DAC1FID11_ICE_NOT_AVAILABLE},
 	{"ice_text",   t_ignore},
-	{NULL}
+        {NULL}
     };
 
     char closefrom[JSON_VAL_MAX+1];
@@ -566,7 +560,7 @@
                                        .dflt.uinteger = AIS_HOUR_NOT_AVAILABLE},
 	{"tminute",       t_uinteger,  .addr.uinteger = &ais->type8.dac1fid13.tminute,
                                        .dflt.uinteger = AIS_MINUTE_NOT_AVAILABLE},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid15[] = {
@@ -574,7 +568,7 @@
 	AIS_TYPE8
 	{"airdraught",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid15.airdraught,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid16[] = {
@@ -582,7 +576,7 @@
 	AIS_TYPE8
 	{"persons",       t_uinteger,  .addr.uinteger = &ais->type8.dac1fid16.persons,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid17_targets_subtype[] = {
@@ -608,14 +602,12 @@
                                        .dflt.uinteger = DAC1FID17_SPEED_NOT_AVAILABLE},
         {NULL}
     };
-/*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais8_fid17[] = {
 	AIS_HEADER
 	AIS_TYPE8
 	{"targets",       t_array,     STRUCTARRAY(ais->type8.dac1fid17.targets, json_ais8_fid17_targets_subtype, &ais->type8.dac1fid17.ntargets)},
-	{NULL}
+        {NULL}
     };
-/*@+type@*/
 
     const struct json_attr_t json_ais8_fid19[] = {
 	AIS_HEADER
@@ -640,7 +632,7 @@
 	{"nextsignal",    t_uinteger,  .addr.uinteger = &ais->type8.dac1fid19.nextsignal,
                                        .dflt.uinteger = 0},
 	{"nextsignal_type",   t_ignore},
-	{NULL}
+        {NULL}
     };
 
     char end[JSON_VAL_MAX+1];
@@ -672,7 +664,7 @@
 	{"wind",          t_uinteger,  .addr.uinteger = &ais->type8.dac200fid23.wind,
                                        .dflt.uinteger = DAC200FID23_WIND_UNKNOWN},
 	{"wind_text",   t_ignore},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid24_gauges_subtype[] = {
@@ -682,16 +674,14 @@
                                        .dflt.integer = DAC200FID24_GAUGE_LEVEL_UNKNOWN},
         {NULL}
     };
-/*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais8_fid24[] = {
 	AIS_HEADER
 	AIS_TYPE8
 	{"country",       t_string,    .addr.string = ais->type8.dac200fid24.country,
                                        .len = sizeof(ais->type8.dac200fid24.country)},
 	{"gauges",        t_array,     STRUCTARRAY(ais->type8.dac200fid24.gauges, json_ais8_fid24_gauges_subtype, &ais->type8.dac200fid24.ngauges)},
-	{NULL}
+        {NULL}
     };
-/*@+type@*/
 
     const struct json_attr_t json_ais8_fid27_waypoints_subtype[] = {
 	{"lon",           t_integer, STRUCTOBJECT(struct waypoint_t, lon),
@@ -700,7 +690,6 @@
                                        .dflt.integer = AIS_LAT4_NOT_AVAILABLE},
         {NULL}
     };
-/*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_ais8_fid27[] = {
 	AIS_HEADER
 	AIS_TYPE8
@@ -716,9 +705,8 @@
 	{"duration",      t_uinteger,  .addr.uinteger = &ais->type8.dac1fid27.duration,
                                        .dflt.uinteger = 0},
 	{"waypoints",     t_array,     STRUCTARRAY(ais->type8.dac1fid27.waypoints, json_ais8_fid27_waypoints_subtype, &ais->type8.dac1fid27.waycount)},
-	{NULL}
+        {NULL}
     };
-/*@+type@*/
 
     const struct json_attr_t json_ais8_fid29[] = {
 	AIS_HEADER
@@ -727,7 +715,7 @@
                                        .dflt.uinteger = 0},
 	{"text",          t_string,    .addr.string = ais->type8.dac1fid29.text,
                                        .len = sizeof(ais->type8.dac1fid29.text)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid31[] = {
@@ -806,7 +794,7 @@
                                        .dflt.uinteger = DAC1FID31_SALINITY_NOT_AVAILABLE},
 	{"ice",           t_uinteger,  .addr.uinteger = &ais->type8.dac1fid31.ice,
                                        .dflt.uinteger = DAC1FID31_ICE_NOT_AVAILABLE},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais8_fid40[] = {
@@ -822,7 +810,7 @@
 	{"status",        t_uinteger,  .addr.uinteger = &ais->type8.dac200fid40.status,
                                        .dflt.uinteger = DAC200FID40_STATUS_UNKNOWN},
 	{"status_text",   t_ignore},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais9[] = {
@@ -849,14 +837,14 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type9.radio,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais10[] = {
 	AIS_HEADER
 	{"dest_mmsi",     t_uinteger,  .addr.uinteger = &ais->type10.dest_mmsi,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais12[] = {
@@ -869,14 +857,14 @@
                                        .dflt.boolean = 0},
 	{"text",          t_string,    .addr.string = ais->type12.text,
                                        .len = sizeof(ais->type12.text)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais14[] = {
 	AIS_HEADER
 	{"text",          t_string,    .addr.string = ais->type14.text,
                                        .len = sizeof(ais->type14.text)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais15[] = {
@@ -897,7 +885,7 @@
                                        .dflt.uinteger = 0},
 	{"offset2_1",     t_uinteger,  .addr.uinteger = &ais->type15.offset2_1,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais16[] = {
@@ -914,7 +902,7 @@
                                        .dflt.uinteger = 0},
 	{"increment2",    t_uinteger,  .addr.uinteger = &ais->type16.increment2,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais17[] = {
@@ -925,7 +913,7 @@
                                        .dflt.integer = AIS_GNS_LAT_NOT_AVAILABLE},
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais18[] = {
@@ -962,7 +950,7 @@
                                        .dflt.boolean = false},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type18.radio,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais19[] = {
@@ -1007,7 +995,7 @@
                                        .dflt.uinteger = 1},
 	{"assigned",      t_boolean,   .addr.boolean = &ais->type19.assigned,
                                        .dflt.boolean = false},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais20[] = {
@@ -1044,7 +1032,7 @@
                                        .dflt.uinteger = 0},
 	{"increment4",    t_uinteger,  .addr.uinteger = &ais->type20.increment4,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais21[] = {
@@ -1081,7 +1069,7 @@
                                        .dflt.boolean = false},
 	{"virtual_aid",   t_boolean,   .addr.boolean = &ais->type21.virtual_aid,
                                        .dflt.boolean = false},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais22[] = {
@@ -1114,7 +1102,7 @@
                                        .dflt.boolean = false},
 	{"zonesize",      t_uinteger,  .addr.uinteger = &ais->type22.zonesize,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais23[] = {
@@ -1139,7 +1127,7 @@
                                        .dflt.uinteger = 0},
 	{"quiet",         t_uinteger,  .addr.uinteger = &ais->type23.quiet,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais24[] = {
@@ -1167,7 +1155,7 @@
                                        .dflt.uinteger = 0},
 	{"to_starboard",  t_uinteger,  .addr.uinteger = &ais->type24.dim.to_starboard,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais25[] = {
@@ -1182,7 +1170,7 @@
                                        .dflt.uinteger = 0},
 	{"data",          t_string,    .addr.string = data,
                                        .len = sizeof(data)},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais26[] = {
@@ -1199,7 +1187,7 @@
                                        .len = sizeof(data)},
 	{"radio",         t_uinteger,  .addr.uinteger = &ais->type26.radio,
                                        .dflt.uinteger = 0},
-	{NULL}
+        {NULL}
     };
 
     const struct json_attr_t json_ais27[] = {
@@ -1220,7 +1208,7 @@
                                        .dflt.boolean = false},
 	{"gnss",          t_boolean,   .addr.boolean = &ais->type27.gnss,
                                        .dflt.boolean = true},
-	{NULL}
+        {NULL}
     };
 
 

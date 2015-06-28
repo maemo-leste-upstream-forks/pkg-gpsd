@@ -3,6 +3,7 @@
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
 #include <string.h>
+#include <time.h>       /* for time_t */
 #include "gpsd_config.h"
 
 /*
@@ -19,7 +20,6 @@
  * Returns strlen(src) + MIN(siz, strlen(initial dst)).
  * If retval >= siz, truncation occurred.
  */
-/*@ -compdef -mayaliasunique -mustdefine @*/
 size_t strlcat(char *dst, const char *src, size_t siz)
 {
     size_t slen = strlen(src);
@@ -34,7 +34,6 @@ size_t strlcat(char *dst, const char *src, size_t siz)
     }
     return dlen + slen;
 }
-/*@ +compdef +mayaliasunique +mustdefine @*/
 
 #ifdef __UNUSED__
 /*	$OpenBSD: strlcat.c,v 1.13 2005/08/08 08:05:37 espie Exp $	*/
@@ -55,7 +54,6 @@ size_t strlcat(char *dst, const char *src, size_t siz)
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*@ -usedef -mustdefine @*/
 size_t strlcat(char *dst, const char *src, size_t siz)
 {
     char *d = dst;
@@ -83,7 +81,6 @@ size_t strlcat(char *dst, const char *src, size_t siz)
     return (dlen + (s - src));	/* count does not include NUL */
 }
 #endif /* __UNUSED__ */
-/*@ +usedef +mustdefine @*/
 #endif /* HAVE_STRLCAT */
 
 #ifndef HAVE_STRLCPY
@@ -92,7 +89,6 @@ size_t strlcat(char *dst, const char *src, size_t siz)
  * will be copied.  Always NUL terminates (unless siz == 0).
  * Returns strlen(src); if retval >= siz, truncation occurred.
  */
-/*@ -mayaliasunique -mustdefine @*/
 size_t strlcpy(char *dst, const char *src, size_t siz)
 {
     size_t len = strlen(src);
@@ -105,7 +101,6 @@ size_t strlcpy(char *dst, const char *src, size_t siz)
     }
     return len;
 }
-/*@ -mayaliasunique -mustdefine @*/
 
 #ifdef __UNUSED__
 /*	$OpenBSD: strlcpy.c,v 1.11 2006/05/05 15:27:38 millert Exp $	*/

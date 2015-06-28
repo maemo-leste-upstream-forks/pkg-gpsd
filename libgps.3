@@ -134,7 +134,10 @@ call, and zeros
 \fIerrno\fR
 on entry; you can test
 \fIerrno\fR
-after exit to get more information about error conditions\&.
+after exit to get more information about error conditions\&. Warning: under the shared\-memory interface there is a tiny race window between
+\fBgps_waiting()\fR
+and a following
+\fBgps_read()\fR; in that context, beause the latter does not block, it is probably better to write a simple read loop\&.
 .PP
 \fBgps_unpack()\fR
 parses JSON from the argument buffer into the target of the session structure pointer argument\&. Included in case your application wishes to manage socket I/O itself\&.

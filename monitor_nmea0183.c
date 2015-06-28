@@ -12,9 +12,7 @@
 #include <stdlib.h> /* for labs() */
 #include <assert.h>
 #include <stdarg.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 
 #include "gpsd.h"
 #include "gpsmon.h"
@@ -41,7 +39,6 @@ static bool nmea_initialize(void)
 {
     int i;
 
-    /*@ -globstate -onlytrans @*/
     cookedwin = derwin(devicewin, 3, 80, 0, 0);
     assert(cookedwin !=NULL);
     (void)wborder(cookedwin, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -91,12 +88,22 @@ static bool nmea_initialize(void)
     (void)wborder(gpgsawin, 0, 0, 0, 0, 0, 0, 0, 0);
     (void)syncok(gpgsawin, true);
     (void)wattrset(gpgsawin, A_BOLD);
-    (void)mvwprintw(gpgsawin, 1, 1, "Mode: ");
-    (void)mvwprintw(gpgsawin, 2, 1, "Sats: ");
-    (void)mvwprintw(gpgsawin, 3, 1, "DOP: H=      V=      P=");
-    (void)mvwprintw(gpgsawin, 4, 1, "PPS: ");
+#define MODE_LINE	1
+    (void)mvwprintw(gpgsawin, MODE_LINE, 1, "Mode: ");
+#define SATS_LINE	1
+#define SATS_COL	10
+    (void)mvwprintw(gpgsawin, SATS_LINE, SATS_COL, "Sats: ");
+#define DOP_LINE	2
+    (void)mvwprintw(gpgsawin, DOP_LINE, 1, "DOP: H=      V=      P=");
+#define TOFF_LINE	3
+    (void)mvwprintw(gpgsawin, TOFF_LINE, 1, "TOFF: ");
 #ifndef PPS_ENABLE
-    (void)mvwaddstr(gpgsawin, 4, 6, "N/A");
+    (void)mvwaddstr(gpgsawin, TOFF_LINE, 7, "N/A");
+#endif /* PPS_ENABLE */
+#define PPS_LINE	4
+    (void)mvwprintw(gpgsawin, PPS_LINE, 1, "PPS: ");
+#ifndef PPS_ENABLE
+    (void)mvwaddstr(gpgsawin, PPS_LINE, 6, "N/A");
 #endif /* PPS_ENABLE */
     (void)mvwprintw(gpgsawin, 5, 9, " GSA + PPS ");
     (void)wattrset(gpgsawin, A_NORMAL);
@@ -132,14 +139,12 @@ static bool nmea_initialize(void)
     (void)mvwprintw(gpgstwin, 5, 12, " GST ");
     (void)wattrset(gpgstwin, A_NORMAL);
 
-    /*@ +onlytrans @*/
 
     last_tick = timestamp();
 
     sentences[0] = '\0';
 
     return (nmeawin != NULL);
-    /*@ +globstate @*/
 }
 
 static void cooked_pvt(void)
@@ -174,14 +179,36 @@ static void cooked_pvt(void)
     (void)mvwprintw(cookedwin, 1, 60, "%-17s", scr);
 }
 
+static void monitor_satlist(WINDOW *win, int y, int x)
+/* display as much as we can of a satlist in a specified window */
+{
+    int ymax, xmax;
+    char scr[128];
+    int i;
 
-/*@ -globstate -nullpass (splint is confused) */
+    assert(win != NULL);
+    (void)wmove(win, y, x);
+    (void)wclrtoeol(win);
+    scr[0] = '\0';
+    for (i = 0; i < MAXCHANNELS; i++) {
+	if (session.gpsdata.skyview[i].used)
+	    str_appendf(scr, sizeof(scr),
+			"%d ", session.gpsdata.skyview[i].PRN);
+    }
+    getmaxyx(win, ymax, xmax);
+    assert(ymax != 0);	/* suppress compiler warning */
+    (void)mvwaddnstr(win, y, x, scr, xmax - 2 - x);
+    if (strlen(scr) >= (size_t) (xmax - 2)) {
+	(void)mvwaddch(win, y, xmax - 2 - x, (chtype) '.');
+	(void)mvwaddch(win, y, xmax - 3 - x, (chtype) '.');
+	(void)mvwaddch(win, y, xmax - 4 - x, (chtype) '.');
+    }
+    monitor_fixframe(win);
+}
+
 static void nmea_update(void)
 {
     char **fields;
-#ifdef PPS_ENABLE
-    struct timedrift_t drift;
-#endif /* PPS_ENABLE */
 
     assert(cookedwin != NULL);
     assert(nmeawin != NULL);
@@ -193,7 +220,7 @@ static void nmea_update(void)
     /* can be NULL if packet was overlong */
     fields = session.nmea.field;
 
-    if (session.lexer.outbuffer[0] == (unsigned char)'$' 
+    if (session.lexer.outbuffer[0] == (unsigned char)'$'
 		&& fields != NULL && fields[0] != NULL) {
 	int ymax, xmax;
 	timestamp_t now;
@@ -275,30 +302,18 @@ static void nmea_update(void)
 	if (strcmp(fields[0], "GPGSA") == 0
 	    || strcmp(fields[0], "GNGSA") == 0
 	    || strcmp(fields[0], "GLGSA") == 0) {
-	    char scr[128];
-	    int i;
-	    (void)mvwprintw(gpgsawin, 1, 7, "%1s %s", fields[1], fields[2]);
-	    (void)wmove(gpgsawin, 2, 7);
-	    (void)wclrtoeol(gpgsawin);
-	    scr[0] = '\0';
-	    for (i = 0; i < MAXCHANNELS; i++) {
-		if (session.gpsdata.skyview[i].used)
-		    str_appendf(scr, sizeof(scr),
-				   "%d ", session.gpsdata.skyview[i].PRN);
-	    }
-	    getmaxyx(gpgsawin, ymax, xmax);
-	    (void)mvwaddnstr(gpgsawin, 2, 7, scr, xmax - 2 - 7);
-	    if (strlen(scr) >= (size_t) (xmax - 2)) {
-		(void)mvwaddch(gpgsawin, 2, xmax - 2 - 7, (chtype) '.');
-		(void)mvwaddch(gpgsawin, 2, xmax - 3 - 7, (chtype) '.');
-		(void)mvwaddch(gpgsawin, 2, xmax - 4 - 7, (chtype) '.');
-	    }
-	    monitor_fixframe(gpgsawin);
-	    (void)mvwprintw(gpgsawin, 3, 8, "%-5s", fields[16]);
-	    (void)mvwprintw(gpgsawin, 3, 16, "%-5s", fields[17]);
-	    (void)mvwprintw(gpgsawin, 3, 24, "%-5s", fields[15]);
+	    (void)mvwprintw(gpgsawin, MODE_LINE, 7, "%1s%s", fields[1], fields[2]);
+	    monitor_satlist(gpgsawin, SATS_LINE, SATS_COL+6);
+	    (void)mvwprintw(gpgsawin, DOP_LINE, 8, "%-5s", fields[16]);
+	    (void)mvwprintw(gpgsawin, DOP_LINE, 16, "%-5s", fields[17]);
+	    (void)mvwprintw(gpgsawin, DOP_LINE, 24, "%-5s", fields[15]);
 	    monitor_fixframe(gpgsawin);
 	}
+
+#ifdef NTP_ENABLE
+	toff_update(gpgsawin, TOFF_LINE, 7);
+#endif /* NTP_ENABLE */
+
 	if (strcmp(fields[0], "GPGGA") == 0
 	    || strcmp(fields[0], "GNGGA") == 0
 	    || strcmp(fields[0], "GLGGA") == 0) {
@@ -324,29 +339,9 @@ static void nmea_update(void)
     }
 
 #ifdef PPS_ENABLE
-    /*@-compdef@*/
-    /*@-type -noeffect@*/ /* splint is confused about struct timespec */
-    if (pps_thread_lastpps(&session, &drift) > 0) {
-	/* NOTE: can not use double here due to precision requirements */
-	struct timespec timedelta;
-	TS_SUB( &timedelta, &drift.clock, &drift.real);
-        if ( 86400 < (long)labs(timedelta.tv_sec) ) {
-	    /* more than one day off, overflow */
-            /* need a bigger field to show it */
-	    (void)mvwprintw(gpgsawin, 4, 6, "> 1 day");
-        } else {
-	    char buf[TIMESPEC_LEN];
-	    timespec_str( &timedelta, buf, sizeof(buf) );
-	    (void)mvwprintw(gpgsawin, 4, 6, "%s", buf);
-        }
-	(void)wnoutrefresh(gpgsawin);
-    }
-    /*@+type +noeffect@*/
-    /*@+compdef@*/
+    pps_update(gpgsawin, PPS_LINE, 6);
 #endif /* PPS_ENABLE */
 }
-
-/*@ +globstate +nullpass */
 
 #undef SENTENCELINE
 

@@ -26,6 +26,7 @@ PERMISSIONS
 
 #ifdef SOCKET_EXPORT_ENABLE
 #include "gps_json.h"
+#include "timespec.h"
 #include "revision.h"
 
 /* *INDENT-OFF* */
@@ -53,12 +54,11 @@ struct classmap_t classmap[CLASSMAP_NITEMS] = {
 };
 /* *INDENT-ON* */
 
-char *json_stringify( /*@out@*/ char *to,
+char *json_stringify( char *to,
 		     size_t len,
-		     /*@in@*/ const char *from)
+		     const char *from)
 /* escape double quotes and control characters inside a JSON string */
 {
-    /*@-temptrans@*/
     const char *sp;
     char *tp;
 
@@ -104,10 +104,9 @@ char *json_stringify( /*@out@*/ char *to,
     *tp = '\0';
 
     return to;
-    /*@+temptrans@*/
 }
 
-void json_version_dump( /*@out@*/ char *reply, size_t replylen)
+void json_version_dump( char *reply, size_t replylen)
 {
     (void)snprintf(reply, replylen,
 		   "{\"class\":\"VERSION\",\"release\":\"%s\",\"rev\":\"%s\",\"proto_major\":%d,\"proto_minor\":%d}\r\n",
@@ -124,12 +123,9 @@ void json_version_dump( /*@out@*/ char *reply, size_t replylen)
 
 void json_tpv_dump(const struct gps_device_t *session,
 		   const struct policy_t *policy CONDITIONALLY_UNUSED,
-		   /*@out@*/ char *reply, size_t replylen)
+		   char *reply, size_t replylen)
 {
     const struct gps_data_t *gpsdata = &session->gpsdata;
-#ifdef TIMING_ENABLE
-    timestamp_t rtime = timestamp();
-#endif /* TIMING_ENABLE */
 
     assert(replylen > sizeof(char *));
     (void)strlcpy(reply, "{\"class\":\"TPV\",", replylen);
@@ -184,27 +180,32 @@ void json_tpv_dump(const struct gps_device_t *session,
 	    str_appendf(reply, replylen, "\"epc\":%.2f,", gpsdata->fix.epc);
 #ifdef TIMING_ENABLE
 	if (policy->timing) {
+	    char rtime_str[TIMESPEC_LEN];
+	    struct timespec rtime_tmp;
+	    (int)clock_gettime(CLOCK_REALTIME, &rtime_tmp);
+	    timespec_str(&rtime_tmp, rtime_str, sizeof(rtime_str));
+	    str_appendf(reply, replylen, "\"rtime\":%s,", rtime_str);
 #ifdef PPS_ENABLE
-	    /*@-type -formattype@*/ /* splint is confused about struct timespec */
-	    if (session->ppscount) {
-		char ts_str[TIMESPEC_LEN];  /* buffer to hold printable timespec */
-                /* you can not use a double here as you will lose 11 bits
-                 * of precision */
-		struct timespec clock_tmp = session->ppslast.clock;
-		timespec_str( &clock_tmp, ts_str, sizeof(ts_str) );
+	    if (session->pps_thread.ppsout_count) {
+		char ts_str[TIMESPEC_LEN];
+		struct timedelta_t timedelta;
+		/* ugh - de-consting this might get us in trouble someday */
+		pps_thread_ppsout(&((struct gps_device_t *)session)->pps_thread,
+				  &timedelta);
+		timespec_str(&timedelta.clock, ts_str, sizeof(ts_str) );
 		str_appendf(reply, replylen, "\"pps\":%s,", ts_str);
+                /* TODO: add PPS precision to JSON output */
 	    }
-	    /*@+type +formattype@*/
 #endif /* PPS_ENABLE */
 	    str_appendf(reply, replylen,
-			   "\"sor\":%.9f,\"chars\":%lu,\"sats\":%2d,\"rtime\":%.9f,\"week\":%u,\"tow\":%.3f,\"rollovers\":%d",
-			   session->sor,
-			   session->chars,
-			   gpsdata->satellites_used,
-			   rtime,
-			   session->context->gps_week,
-			   session->context->gps_tow,
-			   session->context->rollovers);
+			"\"sor\":%.9f,\"chars\":%lu,\"sats\":%2d,"
+			"\"week\":%u,\"tow\":%.3f,\"rollovers\":%d",
+			session->sor,
+			session->chars,
+			gpsdata->satellites_used,
+			session->context->gps_week,
+			session->context->gps_tow,
+			session->context->rollovers);
 	}
 #endif /* TIMING_ENABLE */
     }
@@ -213,7 +214,7 @@ void json_tpv_dump(const struct gps_device_t *session,
 }
 
 void json_noise_dump(const struct gps_data_t *gpsdata,
-		   /*@out@*/ char *reply, size_t replylen)
+		   char *reply, size_t replylen)
 {
     char tbuf[JSON_DATE_MAX+1];
 
@@ -244,7 +245,7 @@ void json_noise_dump(const struct gps_data_t *gpsdata,
 }
 
 void json_sky_dump(const struct gps_data_t *datap,
-		   /*@out@*/ char *reply, size_t replylen)
+		   char *reply, size_t replylen)
 {
     int i, reported = 0;
 
@@ -297,7 +298,7 @@ void json_sky_dump(const struct gps_data_t *datap,
 }
 
 void json_device_dump(const struct gps_device_t *device,
-		      /*@out@*/ char *reply, size_t replylen)
+		      char *reply, size_t replylen)
 {
     struct classmap_t *cmp;
     char buf1[JSON_VAL_MAX * 2 + 1];
@@ -310,7 +311,6 @@ void json_device_dump(const struct gps_device_t *device,
 	(void)strlcat(reply, device->device_type->type_name, replylen);
 	(void)strlcat(reply, "\",", replylen);
     }
-    /*@-mustfreefresh@*/
     if (device->subtype[0] != '\0') {
 	(void)strlcat(reply, "\"subtype\":\"", replylen);
 	(void)strlcat(reply,
@@ -318,14 +318,13 @@ void json_device_dump(const struct gps_device_t *device,
 		      replylen);
 	(void)strlcat(reply, "\",", replylen);
     }
-    /*@+mustfreefresh@*/
     /*
      * There's an assumption here: Anything that we type service_sensor is
      * a serial device with the usual control parameters.
      */
     if (device->gpsdata.online > 0) {	
 	str_appendf(reply, replylen,
-		       "\"activated\":\"%s\",", 
+		       "\"activated\":\"%s\",",
 		       unix_to_iso8601(device->gpsdata.online, buf1, sizeof(buf1)));
 	if (device->observed != 0) {
 	    int mask = 0;
@@ -360,9 +359,8 @@ void json_device_dump(const struct gps_device_t *device,
 }
 
 void json_watch_dump(const struct policy_t *ccp,
-		     /*@out@*/ char *reply, size_t replylen)
+		     char *reply, size_t replylen)
 {
-    /*@-compdef@*/
     (void)snprintf(reply, replylen,
 		   "{\"class\":\"WATCH\",\"enable\":%s,\"json\":%s,\"nmea\":%s,\"raw\":%d,\"scaled\":%s,\"timing\":%s,\"split24\":%s,\"pps\":%s,",
 		   ccp->watcher ? "true" : "false",
@@ -377,15 +375,14 @@ void json_watch_dump(const struct policy_t *ccp,
 	str_appendf(reply, replylen, "\"device\":\"%s\",", ccp->devpath);
     str_rstrip_char(reply, ',');
     (void)strlcat(reply, "}\r\n", replylen);
-    /*@+compdef@*/
 }
 
 void json_subframe_dump(const struct gps_data_t *datap,
-			/*@out@*/ char buf[], size_t buflen)
+			char buf[], size_t buflen)
 {
     const struct subframe_t *subframe = &datap->subframe;
     const bool scaled = datap->policy.scaled;
- 
+
     (void)snprintf(buf, buflen, "{\"class\":\"SUBFRAME\",\"device\":\"%s\","
 		   "\"tSV\":%u,\"TOW17\":%u,\"frame\":%u,\"scaled\":%s",
 		   datap->dev.path,
@@ -394,7 +391,6 @@ void json_subframe_dump(const struct gps_data_t *datap,
 		   (unsigned int)subframe->subframe_num,
 		   JSON_BOOL(scaled));
 
-    /*@-type@*/
     if ( 1 == subframe->subframe_num ) {
 	if (scaled) {
 	    str_appendf(buf, buflen,
@@ -495,7 +491,6 @@ void json_subframe_dump(const struct gps_data_t *datap,
 	}
     } else if ( subframe->is_almanac ) {
 	if (scaled) {
-	    /*@-compdef@*/
 	    str_appendf(buf, buflen,
 			",\"ALMANAC\":{\"ID\":%d,\"Health\":%u,"
 			"\"e\":%g,\"toa\":%lu,"
@@ -543,7 +538,6 @@ void json_subframe_dump(const struct gps_data_t *datap,
 	case 52:
 	{
 		int i;
-	    /*@+charint@*/
 		/* decoding of ERD to SV is non trivial and not done yet */
 		str_appendf(buf, buflen,
 		    ",\"ERD\":{\"ai\":%u,", subframe->sub4_13.ai);
@@ -556,7 +550,6 @@ void json_subframe_dump(const struct gps_data_t *datap,
 		str_rstrip_char(buf, ',');
 		str_appendf(buf, buflen, "}");
 		break;
-	    /*@-charint@*/
 	}
 	case 55:
 	    /* JSON is UTF-8. double quote, backslash and
@@ -651,7 +644,6 @@ void json_subframe_dump(const struct gps_data_t *datap,
 		       (unsigned int)subframe->pageid);
 	if ( 51 == subframe->pageid ) {
 	    int i;
-	    /*@+matchanyintegral@*/
 	    /* subframe5, page 25 */
 	    str_appendf(buf, buflen,
 		",\"HEALTH2\":{\"toa\":%lu,\"WNa\":%u,",
@@ -665,21 +657,17 @@ void json_subframe_dump(const struct gps_data_t *datap,
 		str_rstrip_char(buf, ',');
 		str_appendf(buf, buflen, "}");
 
-	    /*@-matchanyintegral@*/
 	}
     }
-    /*@+type@*/
     (void)strlcat(buf, "}\r\n", buflen);
-    /*@+compdef@*/
 }
 
 #if defined(RTCM104V2_ENABLE)
 void json_rtcm2_dump(const struct rtcm2_t *rtcm,
-		     /*@null@*/const char *device,
-		     /*@out@*/char buf[], size_t buflen)
+		     const char *device,
+		     char buf[], size_t buflen)
 /* dump the contents of a parsed RTCM104 message as JSON */
 {
-    /*@-mustfreefresh@*/
     char buf1[JSON_VAL_MAX * 2 + 1];
     unsigned int n;
 
@@ -825,17 +813,15 @@ void json_rtcm2_dump(const struct rtcm2_t *rtcm,
 
     str_rstrip_char(buf, ',');
     (void)strlcat(buf, "}\r\n", buflen);
-    /*@+mustfreefresh@*/
 }
 #endif /* defined(RTCM104V2_ENABLE) */
 
 #if defined(RTCM104V3_ENABLE)
 void json_rtcm3_dump(const struct rtcm3_t *rtcm,
-		     /*@null@*/const char *device,
-		     /*@out@*/char buf[], size_t buflen)
+		     const char *device,
+		     char buf[], size_t buflen)
 /* dump the contents of a parsed RTCM104v3 message as JSON */
 {
-    /*@-mustfreefresh@*/
     char buf1[JSON_VAL_MAX * 2 + 1];
     unsigned short i;
     unsigned int n;
@@ -1224,7 +1210,6 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 	break;
 
     case 1029:
-	/*@-formatcode@*//* splint has a bug */
 	str_appendf(buf, buflen,
 		       "\"station_id\":%u,\"mjd\":%u,\"sec\":%u,"
 		       "\"len\":%zd,\"units\":%zd,\"msg\":\"%s\",",
@@ -1235,7 +1220,6 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 		       rtcm->rtcmtypes.rtcm3_1029.unicode_units,
 		       json_stringify(buf1, sizeof(buf1),
 				      (char *)rtcm->rtcmtypes.rtcm3_1029.text));
-	/*@+formatcode@*/
 	break;
 
     case 1033:
@@ -1263,7 +1247,6 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 
     str_rstrip_char(buf, ',');
     (void)strlcat(buf, "}\r\n", buflen);
-    /*@+mustfreefresh@*/
 #undef CODE
 #undef INT
 }
@@ -1271,8 +1254,8 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 
 #if defined(AIVDM_ENABLE)
 void json_aivdm_dump(const struct ais_t *ais,
-		     /*@null@*/const char *device, bool scaled,
-		     /*@out@*/char *buf, size_t buflen)
+		     const char *device, bool scaled,
+		     char *buf, size_t buflen)
 {
     char buf1[JSON_VAL_MAX * 2 + 1];
     char buf2[JSON_VAL_MAX * 2 + 1];
@@ -1474,7 +1457,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 	"Light Vessel / LANBY / Rigs",
     };
 
-#define NAVAIDTYPE_DISPLAY(n) (((n) < (unsigned int)NITEMS(navaid_type_legends[0])) ? navaid_type_legends[n] : "INVALID NAVAID TYPE")
+#define NAVAIDTYPE_DISPLAY(n) (((n) < (unsigned int)NITEMS(navaid_type_legends)) ? navaid_type_legends[n] : "INVALID NAVAID TYPE")
 
     // cppcheck-suppress variableScope
     static const char *signal_legends[] = {
@@ -1495,7 +1478,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 	"X = Vessels shall proceed only on direction.",
     };
 
-#define SIGNAL_DISPLAY(n) (((n) < (unsigned int)NITEMS(signal_legends[0])) ? signal_legends[n] : "INVALID SIGNAL TYPE")
+#define SIGNAL_DISPLAY(n) (((n) < (unsigned int)NITEMS(signal_legends)) ? signal_legends[n] : "INVALID SIGNAL TYPE")
 
     static const char *route_type[32] = {
 	"Undefined (default)",
@@ -1582,7 +1565,6 @@ void json_aivdm_dump(const struct ais_t *ais,
     str_appendf(buf, buflen,
 		   "\"type\":%u,\"repeat\":%u,\"mmsi\":%u,\"scaled\":%s,",
 		   ais->type, ais->repeat, ais->mmsi, JSON_BOOL(scaled));
-    /*@ -formatcode -mustfreefresh @*/
     switch (ais->type) {
     case 1:			/* Position Report */
     case 2:
@@ -2126,7 +2108,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 			   "\"data\":\"%zd:%s\"}\r\n",
 			   ais->type8.bitcount,
 			   json_stringify(buf1, sizeof(buf1),
-					  gpsd_hexdump(scratchbuf, sizeof(scratchbuf), 
+					  gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
 						       (char *)ais->type8.bitdata,
 						       BITS_TO_BYTES(ais->type8.bitcount))));
 	    break;
@@ -3290,13 +3272,12 @@ void json_aivdm_dump(const struct ais_t *ais,
 	(void)strlcat(buf, "}\r\n", buflen);
 	break;
     }
-    /*@ +formatcode +mustfreefresh @*/
 }
 #endif /* defined(AIVDM_ENABLE) */
 
 #ifdef COMPASS_ENABLE
 void json_att_dump(const struct gps_data_t *gpsdata,
-		   /*@out@*/ char *reply, size_t replylen)
+		   char *reply, size_t replylen)
 /* dump the contents of an attitude_t structure as JSON */
 {
     assert(replylen > sizeof(char *));
@@ -3388,7 +3369,7 @@ void json_att_dump(const struct gps_data_t *gpsdata,
 void json_data_report(const gps_mask_t changed,
 		 const struct gps_device_t *session,
 		 const struct policy_t *policy,
-		 /*@out@*/char *buf, size_t buflen)
+		 char *buf, size_t buflen)
 /* report a session state in JSON */
 {
     const struct gps_data_t *datap = &session->gpsdata;

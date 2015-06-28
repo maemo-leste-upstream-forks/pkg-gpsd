@@ -54,7 +54,7 @@ everything will work. Strings are supported but all string storage
 has to be inline in the struct.
 
 NOTE
-   This code has been spun out, packaged, and documented as a 
+   This code has been spun out, packaged, and documented as a
 reusable module; search for "microjson".
 
 PERMISSIONS
@@ -67,13 +67,14 @@ PERMISSIONS
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <time.h>               /* for time_t */
 #include <ctype.h>
 
 #include "gpsd_config.h"	/* for strlcpy() prototype */
 #ifdef SOCKET_EXPORT_ENABLE
 #include "json.h"
 
-#include "gps.h"		/* for safe_atof() & timestamp_t prototype */
+#include "gps.h"		/* for safe_atof() prototype */
 #include "strfuncs.h"
 
 #define JSON_MINIMAL	/* GPSD only uses a subset of the features */
@@ -107,12 +108,10 @@ static void json_trace(int errlevel, const char *fmt, ...)
 
 # define json_debug_trace(args) (void) json_trace args
 #else
-# define json_debug_trace(args) /*@i1@*/do { } while (0)
+# define json_debug_trace(args) do { } while (0)
 #endif /* CLIENTDEBUG_ENABLE */
 
-/*@-immediatetrans -dependenttrans -usereleased -compdef@*/
-static /*@null@*/ char *json_target_address(const struct json_attr_t *cursor,
-					     /*@null@*/
+static char *json_target_address(const struct json_attr_t *cursor,
 					     const struct json_array_t
 					     *parent, int offset)
 {
@@ -156,16 +155,13 @@ static /*@null@*/ char *json_target_address(const struct json_attr_t *cursor,
     return targetaddr;
 }
 
-/*@-immediatetrans -dependenttrans +usereleased +compdef@*/
 
 static int json_internal_read_object(const char *cp,
 				     const struct json_attr_t *attrs,
-				     /*@null@*/
 				     const struct json_array_t *parent,
 				     int offset,
-				     /*@null@*/ const char **end)
+				     const char **end)
 {
-    /*@ -nullstate -nullderef -mustfreefresh -nullpass -usedef @*/
     enum
     { init, await_attr, in_attr, await_value, in_val_string,
 	in_escape, in_val_token, post_val, post_array
@@ -185,12 +181,6 @@ static int json_internal_read_object(const char *cp,
     unsigned int u;
     const struct json_enum_t *mp;
     char *lptr;
-
-#ifdef S_SPLINT_S
-    /* prevents gripes about buffers not being completely defined */
-    memset(valbuf, '\0', sizeof(valbuf));
-    memset(attrbuf, '\0', sizeof(attrbuf));
-#endif /* S_SPLINT_S */
 
     if (end != NULL)
 	*end = NULL;		/* give it a well-defined value on parse failure */
@@ -535,7 +525,6 @@ static int json_internal_read_object(const char *cp,
 		    }
 		    break;
 		}
-	    /*@fallthrough@*/
 	case post_array:
 	    if (isspace((unsigned char) *cp))
 		continue;
@@ -564,13 +553,11 @@ static int json_internal_read_object(const char *cp,
 	*end = cp;
     json_debug_trace((1, "JSON parse ends.\n"));
     return 0;
-    /*@ +nullstate +nullderef +mustfreefresh +nullpass +usedef @*/
 }
 
 int json_read_array(const char *cp, const struct json_array_t *arr,
 		    const char **end)
 {
-    /*@-nullstate -onlytrans@*/
     int substatus, offset, arrcount;
     char *tp;
 
@@ -672,7 +659,7 @@ int json_read_array(const char *cp, const struct json_array_t *arr,
 	    if (*cp != '"')
 		return JSON_ERR_BADSTRING;
 	    else
-		++cp; 
+		++cp;
 	    break;
 #endif /* JSON_MINIMAL */
 	case t_real:
@@ -727,16 +714,13 @@ int json_read_array(const char *cp, const struct json_array_t *arr,
 	*(arr->count) = arrcount;
     if (end != NULL)
 	*end = cp;
-    /*@ -nullderef @*/
     json_debug_trace((1, "leaving json_read_array() with %d elements\n",
 		      arrcount));
-    /*@ +nullderef @*/
     return 0;
-    /*@+nullstate +onlytrans@*/
 }
 
 int json_read_object(const char *cp, const struct json_attr_t *attrs,
-		     /*@null@*/ const char **end)
+		     const char **end)
 {
     int st;
 
@@ -745,7 +729,7 @@ int json_read_object(const char *cp, const struct json_attr_t *attrs,
     return st;
 }
 
-const /*@observer@*/ char *json_error_string(int err)
+const char *json_error_string(int err)
 {
     const char *errors[] = {
 	"unknown error while parsing JSON",

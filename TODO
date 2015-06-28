@@ -1,5 +1,5 @@
 This is the gpsd to-do list.  If you're viewing it with Emacs, try
-doing Ctl-C Ctl-t and browsing through the outline headers.  Ctl-C Ctl-a 
+doing Ctl-C Ctl-t and browsing through the outline headers.  Ctl-C Ctl-a
 will unfold them again.
 
 For contribution guidelines and internals documentation, please see
@@ -10,13 +10,23 @@ the "Upstream Bugs" page on the project website.
 
 ** Documentation **
 
-We now have two different calibration procedures in the Tine Service
+We now have two different calibration procedures in the Time Service
 HOWTO. One was written by Gary and is based on peerstats; the other by
 Sanjeev Gupta and is based on loopstats.
 
 Can these be merged? How do we know which is appropriate to use when?
 What could we build in the way of tools and visualization aids to make
 the calibration process less annoying?
+
+** Things to do when we can break compatibility **
+
+In gps_data_t Make subtype longer. 128 chars long sounds good.
+
+In gps_data_t, save PPS precision; this will require creating a pps struct.
+
+In gps_fix_t, maybe change time away from float to timespec?
+
+Add MMSI sequence number fields to type 7.
 
 ** Bugs in gpsd and its clients:
 
@@ -66,7 +76,7 @@ revision (all we have is revision 3).
 
 The support for unpacking RTCM3 sentences in the client library is
 limited to 1001, 1002, 1007, 1008, 1009, 1010, 1014, and 1033. There
-are some design issues with the baby JSON parser that are going to 
+are some design issues with the baby JSON parser that are going to
 make extending this set difficult.
 
 **** Reporting code for specialized Type 6 and 8 AIS messages is incomplete.
@@ -85,15 +95,6 @@ Our goal is to be independent of the system clock.
 **** Maybe apply wraparound compensation ****
 
 See <http://www.febo.com/pipermail/time-nuts/2013-August/079271.html>
-
-**** Track gpsd's confidence in the GPS time it's seeing
-
-This would increase when we see a leap-second offset or get GPZDA from
-the device, decrease when we detect a rollover.  Some devices that are
-known to deliver high-quality time (notably u-blox GPSes) would peg the
-confidence measure at a high level.  We'd use the confidence level to
-control (a) whether gpsd ships to NTP, and (b) how it sets time
-uncertainty in output JSON.
 
 *** Optionally use tag blocks in NMEA output
 
@@ -131,29 +132,18 @@ However, Iván Sánchez Ortega notes:
 >I, for one, would like to see the secs/msecs problem solved before GPSD
 >embarks on the enterprise of writing TAGblocks.
 
-*** Time offset debugging in gpsmon ***
-
-Hall Murray:
-> The gpsmon logging stuff should include time stamps.
->
-> There should be some way for gpsmon to display the time offset that it would
-> send to NTP via SHM.  I don't see any obvious empty space on the screen.  If
-> nothing else, it could use the PPS space or alternate with the PPS info,
-> perhaps via a keyboard command.
->
-> Or perhaps a higher level keyboard command to switch into timekeeping
-> debugging mode rather than position debugging mode.
-
-Add PPS offset to each PPS bar.
-
-**** Speed, mode and rate-changes in client-mode gpsmon.
-
-Are not implemented.  In theory they could be.
+If someone is working on this, please see:
+http://www.nmea.org/Assets/0183_errata_tag_block_final.pdf
 
 **** Speed, mode and rate-changes in client-mode gpsctl.
 
 Baud rate and mode changes work in direct mode but are not
 reliable in client mode.
+
+**** Optional dump of GPS configuration using gpsctl.
+
+Some setting, like antenna in use, dead-reckoning mode, would be
+helpful to see.
 
 **** Integrate 1PPS into profiling ***
 
@@ -161,7 +151,7 @@ We caw now *really* measure latency from GPS top of second when it has
 1PPS.  Add this capability to gpsprof and revise the "Where's the
 Latency?" white paper.
 
-*** Low-pwer autoconfiguration in the uBlox driver ***
+*** Low-power autoconfiguration in the uBlox driver ***
 
 Anthony Stirk <upuaut@gmail.com> writes on Wed May 21 06:09:00 2014:
 
@@ -195,9 +185,9 @@ The baud-rate switcher in the TNT driver needs to be tested.
 
 gpsmon could support a number of TNT configuration commands, including
 unit changes. See http://gpsd.googlecode.com/truenorth-reference.pdf
-for possibilities.  
+for possibilities.
 
-Jon Schlueter has one of these on a flock machine, so testing 
+Jon Schlueter has one of these on a flock machine, so testing
 shouldn't be difficult.
 
 *** Enable flocktest on the Debian server farm
@@ -225,13 +215,6 @@ These are used for the '?DEVICE' command.  All work for 8N1.
 SiRF, UBX, TSIP, and even Zodiac can support non-8N1 modes; these need
 to be tested.
 
-*** Command to ship RTCM corrections to a specified device
-
-At the moment, if a GPS accepts RTCM corrections and they are
-available, gpsd ships them to the serial device from which the GPS is
-reporting fix data.  Some GPSes have auxiliary ports for RTCM; 
-there should be a (privileged) command to redirect RTCM connections.
-
 *** Per-driver restore of changed config settings on exit.
 
 This is a solved problem for generic NMEA, EverMore, TripMate,
@@ -243,7 +226,7 @@ some (but not all) of the things it tweaks in binary mode -- at the
 moment, just the Navigation Parameters from message 0x13.  With more
 work, we should be able to do a full revert.
 
-The TSIP driver changes its per-cycle sentence inventory and thus 
+The TSIP driver changes its per-cycle sentence inventory and thus
 needs some state-restore logic.  This can be done; the same packet 0x35
 we use to configure it can be sent in a no-argument mode to query
 the current sentence mix for later restore.
@@ -276,7 +259,7 @@ output enough data to make this a chore, rather than a hard problem.
 Probably the best way to do this would be to add support for unscaled
 output of pseudoranges in SKY and add clock and doppler carrier
 phase. This JSON could then be interpreted by a client program and
-dunmped in various standard formats.
+dumped in various standard formats.
 
 Currently the RT-IGS format is looking like the favorite for
 implementation; it's a fairly lightweight protocol, flexible enough to

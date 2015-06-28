@@ -13,9 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 
 #include "gpsd.h"
 #include "bits.h"
@@ -58,7 +56,7 @@ static ssize_t end_write(int fd, void *d, size_t len)
 
     size_t n;
     for (n = 0; n < (size_t)(len/2); n++)
-	putle16(buf, n*2, data[n]); 
+	putle16(buf, n*2, data[n]);
     return write(fd, (char*)buf, len);
 }
 
@@ -86,8 +84,8 @@ static ssize_t zodiac_spew(struct gps_device_t *session, unsigned short type,
 	if (end_write(session->gpsdata.gps_fd, &h, hlen) != (ssize_t) hlen ||
 	    end_write(session->gpsdata.gps_fd, dat,
 		      datlen) != (ssize_t) datlen) {
-	    gpsd_report(&session->context->errout, LOG_RAW,
-			"Reconfigure write failed\n");
+	    gpsd_log(&session->context->errout, LOG_RAW,
+		     "Reconfigure write failed\n");
 	    return -1;
 	}
     }
@@ -98,8 +96,8 @@ static ssize_t zodiac_spew(struct gps_device_t *session, unsigned short type,
     for (i = 0; i < dlen; i++)
 	str_appendf(buf, sizeof(buf), " %04x", dat[i]);
 
-    gpsd_report(&session->context->errout, LOG_RAW,
-		"Sent Zodiac packet: %s\n", buf);
+    gpsd_log(&session->context->errout, LOG_RAW,
+	     "Sent Zodiac packet: %s\n", buf);
 
     return 0;
 }
@@ -145,13 +143,11 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     /* ticks                      = getzlong(6); */
     /* sequence                   = getzword(8); */
     /* measurement_sequence       = getzword(9); */
-    /*@ -boolops -predboolothers @*/
     session->gpsdata.status = (getzword(10) & 0x1c) ? 0 : 1;
     if (session->gpsdata.status != 0)
 	session->newdata.mode = (getzword(10) & 1) ? MODE_2D : MODE_3D;
     else
 	session->newdata.mode = MODE_NO_FIX;
-    /*@ +boolops -predboolothers @*/
 
     /* solution_type                 = getzword(11); */
     session->gpsdata.satellites_used = (int)getzword(12);
@@ -167,10 +163,7 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     unpacked_date.tm_sec = (int)getzword(24);
     unpacked_date.tm_isdst = 0;
     subseconds = (int)getzlong(25) / 1e9;
-    /*@ -compdef */
     session->newdata.time = (timestamp_t)mkgmtime(&unpacked_date) + subseconds;
-    /*@ +compdef */
-    /*@ -type @*/
     session->newdata.latitude = ((long)getzlong(27)) * RAD_2_DEG * 1e-8;
     session->newdata.longitude = ((long)getzlong(29)) * RAD_2_DEG * 1e-8;
     /*
@@ -179,7 +172,6 @@ static gps_mask_t handle1000(struct gps_device_t *session)
      * specify whether word 31 is geodetic or WGS 84.
      */
     session->newdata.altitude = ((long)getzlong(31)) * 1e-2;
-    /*@ +type @*/
     session->gpsdata.separation = ((short)getzword(33)) * 1e-2;
     session->newdata.altitude -= session->gpsdata.separation;
     session->newdata.speed = (int)getzlong(34) * 1e-2;
@@ -204,13 +196,13 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     mask =
 	TIME_SET | PPSTIME_IS | LATLON_SET | ALTITUDE_SET | CLIMB_SET | SPEED_SET |
 	TRACK_SET | STATUS_SET | MODE_SET;
-    gpsd_report(&session->context->errout, LOG_DATA,
-		"1000: time=%.2f lat=%.2f lon=%.2f alt=%.2f track=%.2f speed=%.2f climb=%.2f mode=%d status=%d\n",
-		session->newdata.time, session->newdata.latitude,
-		session->newdata.longitude, session->newdata.altitude,
-		session->newdata.track, session->newdata.speed,
-		session->newdata.climb, session->newdata.mode,
-		session->gpsdata.status);
+    gpsd_log(&session->context->errout, LOG_DATA,
+	     "1000: time=%.2f lat=%.2f lon=%.2f alt=%.2f track=%.2f speed=%.2f climb=%.2f mode=%d status=%d\n",
+	     session->newdata.time, session->newdata.latitude,
+	     session->newdata.longitude, session->newdata.altitude,
+	     session->newdata.track, session->newdata.speed,
+	     session->newdata.climb, session->newdata.mode,
+	     session->gpsdata.status);
     return mask;
 }
 
@@ -222,20 +214,16 @@ static gps_mask_t handle1002(struct gps_device_t *session)
     /* ticks                      = getzlong(6); */
     /* sequence                   = getzword(8); */
     /* measurement_sequence       = getzword(9); */
-    /*@+charint@*/
     int gps_week = getzword(10);
     int gps_seconds = getzlong(11);
     /* gps_nanoseconds            = getzlong(13); */
-    /*@-charint@*/
     /* Note: this week counter is not limited to 10 bits. */
     session->context->gps_week = (unsigned short)gps_week;
     session->gpsdata.satellites_used = 0;
     for (i = 0; i < ZODIAC_CHANNELS; i++) {
 	int status, prn;
-	/*@ -type @*/
 	session->driver.zodiac.Zv[i] = status = (int)getzword(15 + (3 * i));
 	session->driver.zodiac.Zs[i] = prn = (int)getzword(16 + (3 * i));
-	/*@ +type @*/
 
 	if (status & 1)
 	    session->gpsdata.satellites_used++;
@@ -247,10 +235,10 @@ static gps_mask_t handle1002(struct gps_device_t *session)
     session->gpsdata.skyview_time = gpsd_gpstime_resolve(session,
 						      (unsigned short)gps_week,
 						      (double)gps_seconds);
-    gpsd_report(&session->context->errout, LOG_DATA,
-		"1002: visible=%d used=%d mask={SATELLITE|USED}\n",
-		session->gpsdata.satellites_visible,
-		session->gpsdata.satellites_used);
+    gpsd_log(&session->context->errout, LOG_DATA,
+	     "1002: visible=%d used=%d mask={SATELLITE|USED}\n",
+	     session->gpsdata.satellites_visible,
+	     session->gpsdata.satellites_used);
     return SATELLITE_SET | USED_IS;
 }
 
@@ -293,14 +281,14 @@ static gps_mask_t handle1003(struct gps_device_t *session)
 	}
     }
     session->gpsdata.skyview_time = NAN;
-    gpsd_report(&session->context->errout, LOG_DATA,
-		"NAVDOP: visible=%d gdop=%.2f pdop=%.2f "
-		"hdop=%.2f vdop=%.2f tdop=%.2f mask={SATELLITE|DOP}\n",
-		session->gpsdata.satellites_visible,
-		session->gpsdata.dop.gdop,
-		session->gpsdata.dop.hdop,
-		session->gpsdata.dop.vdop,
-		session->gpsdata.dop.pdop, session->gpsdata.dop.tdop);
+    gpsd_log(&session->context->errout, LOG_DATA,
+	     "NAVDOP: visible=%d gdop=%.2f pdop=%.2f "
+	     "hdop=%.2f vdop=%.2f tdop=%.2f mask={SATELLITE|DOP}\n",
+	     session->gpsdata.satellites_visible,
+	     session->gpsdata.dop.gdop,
+	     session->gpsdata.dop.hdop,
+	     session->gpsdata.dop.vdop,
+	     session->gpsdata.dop.pdop, session->gpsdata.dop.tdop);
     return SATELLITE_SET | DOP_SET;
 }
 
@@ -328,9 +316,9 @@ static gps_mask_t handle1011(struct gps_device_t *session)
      * The Zodiac is supposed to send one of these messages on startup.
      */
     getstringz(session->subtype, session->lexer.outbuffer, 19, 28);	/* software version field */
-    gpsd_report(&session->context->errout, LOG_DATA,
-		"1011: subtype=%s mask={DEVICEID}\n",
-		session->subtype);
+    gpsd_log(&session->context->errout, LOG_DATA,
+	     "1011: subtype=%s mask={DEVICEID}\n",
+	     session->subtype);
     return DEVICEID_SET;
 }
 
@@ -353,9 +341,15 @@ static gps_mask_t zodiac_analyze(struct gps_device_t *session)
     unsigned int id =
 	(unsigned int)((session->lexer.outbuffer[3] << 8) |
 		       session->lexer.outbuffer[2]);
-    gpsd_report(&session->context->errout, LOG_RAW,
-		"Raw Zodiac packet type %d length %zd: %s\n",
-		id, session->lexer.outbuflen, gpsd_prettydump(session));
+    /*
+     * The guard looks superfluous, but it keeps the rather expensive
+     * gpsd_packetdump() function from being called even when the debug
+     * level does not actually require it.
+     */
+    if (session->context->errout.debug >= LOG_RAW)
+	gpsd_log(&session->context->errout, LOG_RAW,
+		 "Raw Zodiac packet type %d length %zd: %s\n",
+		 id, session->lexer.outbuflen, gpsd_prettydump(session));
 
     if (session->lexer.outbuflen < 10)
 	return 0;
@@ -391,7 +385,6 @@ static gps_mask_t zodiac_analyze(struct gps_device_t *session)
 static ssize_t zodiac_control_send(struct gps_device_t *session,
 				   char *msg, size_t len)
 {
-    /*@-usedef -compdef@*/
     unsigned short shortwords[256];
 
 #define min(x,y)	((x) < (y) ? x : y)
@@ -404,7 +397,6 @@ static ssize_t zodiac_control_send(struct gps_device_t *session,
     /* and if len isn't even, it's your own fault */
     return zodiac_spew(session, shortwords[0], shortwords + 1,
 		       (int)(len / 2 - 1));
-    /*@+usedef +compdef@*/
 }
 #endif /* CONTROLSEND_ENABLE */
 

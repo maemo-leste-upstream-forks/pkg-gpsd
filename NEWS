@@ -1,5 +1,24 @@
 			GPSD project news
 
+3.15: 2015-06-03 (Eric S. Raymond <esr@snark.thyrsus.com>)
+  Fix a rare crash bug related to devices becomin inaccessible while timed out.
+  Accept NMEA 4.1 GSV sententences with the trailing signal-ID field.
+  Fixed incorrect decode of south latitudes in AIS Type 17 messages.
+  splint has been retired; this removes almost 2KLOC of annotations.
+  chrpath is no longer a build dependency. Corrected Beidou/QZNSS display
+  in the Python clients so the graphics don't look like SBAS.
+
+3.14: 2015-03-14 (Eric S. Raymond <esr@snark.thyrsus.com>)
+  The Pi Day release, 3.14 on 3/14 2015 at 9:26. Longer timeouts on test clients.
+  Skyview support for the Beidou and QZSS constellations in the NMEA0183 driver.
+  ntpmon rename to ntpshmmon - it doesn't actually monitor NTP itself.
+  New HOWTO on the website: "Introduction to Time Service".
+
+3.13: 2015-02-26 (Eric S. Raymond <esr@snark.thyrsus.com>)
+  compiler.h inclusion removed for gps.h so it's standalone for /usr/include. 
+  TOFF JSON report gives the offset between GPS top of second and clock time.
+  A new ntpmon tool supports capturing clock samples from NTP SHM segments. 
+
 3.12: 2015-02-22 (Eric S. Raymond <esr@snark.thyrsus.com>)
   The daemon's power utilization has been reduced by changing from
   non-blocking to blocking I/O; this may be significant on mobile devices.

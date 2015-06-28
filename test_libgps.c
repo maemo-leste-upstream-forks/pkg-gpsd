@@ -14,9 +14,7 @@
 
 #include "gpsd.h"
 
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 #include <getopt.h>
 #include <signal.h>
 
@@ -26,8 +24,10 @@ static void onsig(int sig)
     exit(EXIT_FAILURE);
 }
 
+#ifdef SOCKET_EXPORT_ENABLE
 /* must start zeroed, otherwise the unit test will try to chase garbage pointer fields. */
 static struct gps_data_t gpsdata;
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -35,7 +35,9 @@ int main(int argc, char *argv[])
     char buf[BUFSIZ];
     int option;
     bool batchmode = false;
+#ifdef CLIENTDEBUG_ENABLE
     int debug = 0;
+#endif
 
     (void)signal(SIGSEGV, onsig);
     (void)signal(SIGBUS, onsig);
@@ -56,9 +58,11 @@ int main(int argc, char *argv[])
 		 sizeof(collect.devices), sizeof(struct policy_t),
 		 sizeof(struct version_t), sizeof(struct gst_t));
 	    exit(EXIT_SUCCESS);
+#ifdef CLIENTDEBUG_ENABLE
 	case 'D':
 	    debug = atoi(optarg);
 	    break;
+#endif
 	case '?':
 	case 'h':
 	default:
@@ -67,14 +71,18 @@ int main(int argc, char *argv[])
 	}
     }
 
+#ifdef CLIENTDEBUG_ENABLE
     gps_enable_debug(debug, stdout);
+#endif
     if (batchmode) {
+#ifdef SOCKET_EXPORT_ENABLE
 	while (fgets(buf, sizeof(buf), stdin) != NULL) {
 	    if (buf[0] == '{' || isalpha(buf[0])) {
 		gps_unpack(buf, &gpsdata);
 		libgps_dump_state(&gpsdata);
 	    }
 	}
+#endif
     } else if (gps_open(NULL, 0, &collect) <= 0) {
 	(void)fputs("Daemon is not running.\n", stdout);
 	exit(EXIT_FAILURE);
@@ -83,7 +91,9 @@ int main(int argc, char *argv[])
 	(void)strlcat(buf, "\n", sizeof(buf));
 	(void)gps_send(&collect, buf);
 	(void)gps_read(&collect);
+#ifdef SOCKET_EXPORT_ENABLE
 	libgps_dump_state(&collect);
+#endif
 	(void)gps_close(&collect);
     } else {
 	int tty = isatty(0);
@@ -101,7 +111,9 @@ int main(int argc, char *argv[])
 	    collect.set = 0;
 	    (void)gps_send(&collect, buf);
 	    (void)gps_read(&collect);
+#ifdef SOCKET_EXPORT_ENABLE
 	    libgps_dump_state(&collect);
+#endif
 	}
 	(void)gps_close(&collect);
     }
@@ -109,4 +121,3 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/*@-nullderef@*/

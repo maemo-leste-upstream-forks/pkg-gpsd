@@ -1,7 +1,7 @@
-#!/usr/local/bin/php
 <?php
 
 # Copyright (c) 2006,2007 Chris Kuethe <chris.kuethe@gmail.com>
+# Updated 2015 by Sanjeev Gupta <ghane0@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -15,14 +15,33 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+// This program originally read a logfile of filtered gpsd messages,
+// type Y.  The gpsd protocal changed in 2.90, since when this became
+// non-functional.
+//
+// The program has been updated (the first while loop) to read messages
+// over tcp; of type SKY.  These are unpacked from JSON.  No attempt has
+// been made to touch the actual calculation or plotting routines.
+//
+// Because it now reads a live stream, the program must be run with an
+// option, "count", to specify the number of SKY messages it reads.  SKY
+// messages are usually emitted every 5 secs, so a number close to 700
+// will cover an hour's worth.
+//
+// Tested to work with php5.6 , although earlier versions may work.
+
+
 $cellmode = 0;
 if ($argc != 3){
 	if (($argc != 4) || strcmp("cells", $argv[3])){
-		die("usage: ${argv[0]} logfile imagefile [cells]\n");
+		die("usage: ${argv[0]} count imagefile.png [cells]\n");
 	} else {
 		$cellmode = 1;
 	}
 }
+
+// How many samples to read of SKY messages.
+$count = $argv[1] ;
 
 $sz = 640;
 $cellsize = 5; # degrees
@@ -36,14 +55,59 @@ legend($im, $sz, $C);
 
 $sky = array();
 
-$fd = @fopen($argv[1], 'r');
-while (!feof($fd)){
-	$line = fgets($fd);
-	if (preg_match('/,Y=\S+ [0-9\.\?]+ (\d+):/', $line, $m)){
-		$n = $m[1];	
-		$s = explode(':', $line);
-		for($i = 1; $i <= $n; $i++){
-			list($sv, $el, $az, $snr, $u) = explode(' ', $s[$i]);
+error_reporting(E_ALL);
+
+// Get the port for the GPSD service.
+$service_port = 2947 ;
+// Get the IP address for the target host. 
+$address = "127.0.0.1" ;
+// Create a TCP/IP socket.
+$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+if ($socket === false) {
+    echo "socket_create() failed: reason: " . socket_strerror(socket_last_error()) . "\n";
+}
+
+$result = socket_connect($socket, $address, $service_port);
+if ($result === false) {
+    echo "socket_connect() failed.\nReason: ($result) " . socket_strerror(socket_last_error($socket)) . "\n";
+}
+
+// Send a WATCH command.
+$cmd = "?WATCH={\"enable\":true,\"json\":true};" ;
+
+socket_write($socket, $cmd, strlen($in));
+
+// Start the loop to start reading from gpsd.
+$out = '';
+$j = 0 ;
+while (($out = socket_read($socket, 2048)) && ( $j < $count) ) {
+
+	if (strpos($out, "SKY")) {
+		$j = $j + 1;
+		$PRN = json_decode($out,true);
+// var_dump($PRN) ;
+// object(stdClass)#12 (5)
+//       ["PRN"]=>
+//       int(137)
+//       ["el"]=>
+//       int(42)
+//       ["az"]=>
+//       int(91)
+//       ["ss"]=>
+//       int(32)
+//       ["used"]=>
+//       bool(false)
+
+		$n =  count($PRN["satellites"]) ;
+		for($i = 0; $i < $n; $i++) {
+        		$sv = $PRN["satellites"][$i]["PRN"] ;
+        		$el = $PRN["satellites"][$i]["el"] ;
+        		$az = $PRN["satellites"][$i]["az"] ;
+        		$snr = $PRN["satellites"][$i]["ss"] ;
+        		$u = $PRN["satellites"][$i]["used"] ;
+
+// Below this, Chris' original code, more or less. -- Sanjeev 20150326
+
 			if ($cellmode){
 				$az = $cellsize * (int)($az/$cellsize);
 				$el = $cellsize * (int)($el/$cellsize);
@@ -58,7 +122,10 @@ while (!feof($fd)){
 			$sky[$az][$el]['avg'] = $sky[$az][$el]['snr'] / $sky[$az][$el]['num'];
 		}
 	}
+
 }
+
+
 foreach($sky as $az => $x){
 	foreach ($sky[$az] as $el => $y){
 		$e = array(-1, $el, $az, $sky[$az][$el]['avg'], -1);
@@ -68,6 +135,7 @@ foreach($sky as $az => $x){
 			splot($im, $sz, $C, $radius, $filled, $e);
 	}
 }
+
 
 skygrid($im, $sz, $C);	# redraw grid over satellites
 imagePNG($im, $argv[2]);

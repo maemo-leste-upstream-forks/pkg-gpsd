@@ -21,7 +21,6 @@
 #define AIS_MSG_PART2_FLAG 0x100
 
 static unsigned char convtab[] = {"0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVW`abcdefghijklmnopqrstuvw"};
-/*@+charint */
 static unsigned char contab1[] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
 				  0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
 				  0x20,0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x2a,0x2b,0x2c,0x2d,0x2e,0x2f,
@@ -30,7 +29,6 @@ static unsigned char contab1[] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0
 				  0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f,
 				  0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
 				  0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
-/*@ -charint */
 
 static void ais_addbits(unsigned char *bits,
 			unsigned int   start,
@@ -53,7 +51,7 @@ static void ais_addbits(unsigned char *bits,
 
     for(l=0;l<len;l++) {
         if (data & mask) {
-	    bits[pos] |= mask1; 
+	    bits[pos] |= mask1;
 	}
 	mask  <<= 1;
 	mask1 <<= 1;
@@ -73,7 +71,7 @@ static void ais_addchar(unsigned char *bits,
 {
     unsigned int l;
     unsigned int flag;
-    
+
     for(l=0,flag=0;l<len;l++) {
         unsigned char a, b;
 	
@@ -86,7 +84,7 @@ static void ais_addchar(unsigned char *bits,
 	} else {
 	  b = (unsigned char) '\0';
 	}
-	ais_addbits(bits, start+6*l, 6, (uint64_t)b); 
+	ais_addbits(bits, start+6*l, 6, (uint64_t)b);
     }
     return;
 }
@@ -98,9 +96,9 @@ static void ais_adddata(unsigned char *bits,
 		   char          *data)
 {
     unsigned int l;
-    
+
     for(l=0;l<len;l++) {
-        ais_addbits(bits, start+6*l, 6, (uint64_t)data[l]); 
+        ais_addbits(bits, start+6*l, 6, (uint64_t)data[l]);
     }
     return;
 }
@@ -122,7 +120,6 @@ static void ais_binary_to_ascii(unsigned char *bits, unsigned int len)
 }
 
 
-/*@-compdef -mustdefine@*/
 unsigned int ais_binary_encode(struct ais_t *ais,
 			       unsigned char *bits,
                                int flag)
@@ -130,7 +127,7 @@ unsigned int ais_binary_encode(struct ais_t *ais,
     unsigned int len;
 
     len = 0;
-    
+
     if (flag != 0) {
         flag = AIS_MSG_PART2_FLAG;
     }
@@ -319,5 +316,4 @@ unsigned int ais_binary_encode(struct ais_t *ais,
     ais_binary_to_ascii(bits, len);
     return len;
 }
-/*@+compdef +mustdefine@*/
 #endif /* AIVDM_ENABLE */

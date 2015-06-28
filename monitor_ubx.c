@@ -21,7 +21,6 @@ static bool ubx_initialize(void)
 {
     int i;
 
-    /*@ -onlytrans @*/
     /* "heavily inspired" by monitor_nmea.c */
     if ((satwin = derwin(devicewin, 19, 28, 0, 0)) == NULL)
 	return false;
@@ -32,11 +31,10 @@ static bool ubx_initialize(void)
 	display(satwin, (int)(i + 2), 1, "%2d", i);
     display(satwin, 18, 7, " NAV_SVINFO ");
     (void)wattrset(satwin, A_NORMAL);
-    /*@ -onlytrans @*/
 
     /* "heavily inspired" by monitor_nmea.c */
     if ((navsolwin = derwin(devicewin, 13, 51, 0, 28)) == NULL)
-	return false;    
+	return false;
     (void)wborder(navsolwin, 0, 0, 0, 0, 0, 0, 0, 0),
 	(void)wattrset(navsolwin, A_BOLD);
     (void)wmove(navsolwin, 1, 1);
@@ -75,11 +73,18 @@ static bool ubx_initialize(void)
 	return false;
     (void)wborder(ppswin, 0, 0, 0, 0, 0, 0, 0, 0);
     (void)wattrset(ppswin, A_BOLD);
-    (void)mvwaddstr(ppswin, 1, 1, "PPS: ");
+#define TOFF_LINE	1
+#define TOFF_COLUMN	1
+    (void)mvwaddstr(ppswin, TOFF_LINE, TOFF_COLUMN, "TOFF: ");
 #ifndef PPS_ENABLE
-    (void)mvwaddstr(ppswin, 1, 6, "N/A");
+    (void)mvwaddstr(ppswin, TOFF_LINE, TOFF_COLUMN + 10, "N/A");
 #endif /* PPS_ENABLE */
-    display(ppswin, 2, 22, " PPS ");
+#define PPS_LINE	1
+#define PPS_COLUMN	26
+    (void)mvwaddstr(ppswin, PPS_LINE, PPS_COLUMN, "PPS: ");
+#ifndef PPS_ENABLE
+    (void)mvwaddstr(ppswin, PPS_LINE, PPS_COLUMN + 10, "N/A");
+#endif /* PPS_ENABLE */
     (void)wattrset(ppswin, A_NORMAL);
 
     return true;
@@ -116,7 +121,6 @@ static void display_nav_svinfo(unsigned char *buf, size_t data_len)
     return;
 }
 
-/*@ -mustfreeonly -compdestroy @*/
 static void display_nav_sol(unsigned char *buf, size_t data_len)
 {
     unsigned short gw = 0;
@@ -128,10 +132,6 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
 
     if (data_len != 52)
 	return;
-
-#ifdef S_SPLINT_S
-    assert(navsolwin != NULL);
-#endif /* S_SPLINT_S */
 
     navmode = (unsigned char)getub(buf, 10);
     flags = (unsigned int)getub(buf, 11);
@@ -171,7 +171,6 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
     (void)wattrset(navsolwin, A_NORMAL);
 
     (void)wmove(navsolwin, 7, 7);
-    /*@ -compdef @*/
     {
 	unsigned int day = tow / 8640000;
 	unsigned int tod = tow % 8640000;
@@ -185,7 +184,6 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
 	(void)wprintw(navsolwin, "%u %02u:%02u:%05.2f", day, h, m, (double)s / 100);
 	(void)wattrset(navsolwin, A_NORMAL);
     }
-    /*@ +compdef @*/
     (void)wmove(navsolwin, 8, 11);
     if ((flags & (UBX_SOL_VALID_WEEK | UBX_SOL_VALID_TIME)) != 0) {
 	(void)wprintw(navsolwin, "%d+%10.3lf", gw, (double)(tow / 1000.0));
@@ -209,7 +207,6 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
     (void)wnoutrefresh(navsolwin);
 }
 
-/*@ +mustfreeonly +compdestroy @*/
 
 static void display_nav_dop(unsigned char *buf, size_t data_len)
 {
@@ -233,9 +230,6 @@ static void ubx_update(void)
     unsigned char *buf;
     size_t data_len;
     unsigned short msgid;
-#ifdef PPS_ENABLE
-    struct timedrift_t drift;
-#endif /* PPS_ENABLE */
 
     buf = session.lexer.outbuffer;
     msgid = (unsigned short)((buf[2] << 8) | buf[3]);
@@ -254,26 +248,12 @@ static void ubx_update(void)
 	break;
     }
 
+#ifdef NTP_ENABLE
+    toff_update(ppswin, TOFF_LINE, TOFF_COLUMN + 6);
+#endif /* NTP_ENABLE */
+
 #ifdef PPS_ENABLE
-    /*@-compdef@*/
-    /*@-type -noeffect@*/ /* splint is confused about struct timespec */
-    if (pps_thread_lastpps(&session, &drift) > 0) {
-	/* NOTE: can not use double here due to precision requirements */
-	struct timespec timedelta;
-	TS_SUB( &timedelta, &drift.clock, &drift.real);
-        if ( 86400 < (long)labs(timedelta.tv_sec) ) {
-	    /* more than one day off, overflow */
-            /* need a bigger field to show it */
-	    (void)mvwprintw(ppswin, 1, 6, "> 1 day");
-        } else {
-	    char buf2[TIMESPEC_LEN];
-	    timespec_str( &timedelta, buf2, sizeof(buf2) );
-	    (void)mvwprintw(ppswin, 1, 6, "%s", buf2);
-        }
-	(void)wnoutrefresh(ppswin);
-    }
-    /*@+type +noeffect@*/
-    /*@+compdef@*/
+    pps_update(ppswin, PPS_LINE, PPS_COLUMN + 5);
 #endif /* PPS_ENABLE */
 }
 

@@ -19,7 +19,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include "gpsd.h"  /* could be gps.h if we didn't need splint decorations */
+#include "gps.h"
 #include "libgps.h"
 
 #ifdef USE_QT
@@ -32,7 +32,6 @@
  * with the decimal point and stripped down to an atof()-equivalent.
  */
 
-/*@-shiftimplementation +charint@*/
 double safe_atof(const char *string)
 /* Takes a decimal ASCII floating-point number, optionally
  * preceded by white space.  Must have form "-I.FE-X",
@@ -231,11 +230,10 @@ done:
     }
     return fraction;
 }
-/*@+shiftimplementation -charint@*/
 
 #define MONTHSPERYEAR	12	/* months per calendar year */
 
-void gps_clear_fix( /*@out@*/ struct gps_fix_t *fixp)
+void gps_clear_fix(struct gps_fix_t *fixp)
 /* stuff a fix structure with recognizable out-of-band values */
 {
     fixp->time = NAN;
@@ -254,15 +252,15 @@ void gps_clear_fix( /*@out@*/ struct gps_fix_t *fixp)
     fixp->epc = NAN;
 }
 
-void gps_clear_dop( /*@out@*/ struct dop_t *dop)
+void gps_clear_dop( struct dop_t *dop)
 {
     dop->xdop = dop->ydop = dop->vdop = dop->tdop = dop->hdop = dop->pdop =
         dop->gdop = NAN;
 }
 
-void gps_merge_fix( /*@ out @*/ struct gps_fix_t *to,
+void gps_merge_fix(struct gps_fix_t *to,
 		   gps_mask_t transfer,
-		   /*@ in @*/ struct gps_fix_t *from)
+		   struct gps_fix_t *from)
 /* merge new data into an old fix */
 {
     if ((NULL == to) || (NULL == from))
@@ -299,15 +297,9 @@ void gps_merge_fix( /*@ out @*/ struct gps_fix_t *to,
  * near microSec.  Do not use near PPS which is nanoSec precise */
 timestamp_t timestamp(void)
 {
-#ifdef HAVE_CLOCK_GETTIME
      struct timespec ts;
-     /*@i2@*/(void)clock_gettime(CLOCK_REALTIME, &ts);
-     /*@i3@*/return (timestamp_t)(ts.tv_sec + ts.tv_nsec * 1e-9);
-#else
-    struct timeval tv;
-    (void)gettimeofday(&tv, NULL);
-    return (timestamp_t)(tv.tv_sec + tv.tv_usec * 1e-6);
-#endif
+     (void)clock_gettime(CLOCK_REALTIME, &ts);
+     return (timestamp_t)(ts.tv_sec + ts.tv_nsec * 1e-9);
 }
 
 time_t mkgmtime(register struct tm * t)
@@ -318,7 +310,6 @@ time_t mkgmtime(register struct tm * t)
     static const int cumdays[MONTHSPERYEAR] =
 	{ 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
-    /*@ +matchanyintegral @*/
     year = 1900 + t->tm_year + t->tm_mon / MONTHSPERYEAR;
     result = (year - 1970) * 365 + cumdays[t->tm_mon % MONTHSPERYEAR];
     result += (year - 1968) / 4;
@@ -336,20 +327,20 @@ time_t mkgmtime(register struct tm * t)
     result += t->tm_sec;
     if (t->tm_isdst == 1)
 	result -= 3600;
-    /*@ -matchanyintegral @*/
     return (result);
 }
 
-timestamp_t iso8601_to_unix( /*@in@*/ char *isotime)
+timestamp_t iso8601_to_unix(char *isotime)
 /* ISO8601 UTC to Unix UTC, no leapsecond correction. */
 {
+#ifndef __clang_analyzer__
 #ifndef USE_QT
     char *dp = NULL;
     double usec;
     struct tm tm;
     memset(&tm,0,sizeof(tm));
 
-    /*@i1@*/ dp = strptime(isotime, "%Y-%m-%dT%H:%M:%S", &tm);
+    dp = strptime(isotime, "%Y-%m-%dT%H:%M:%S", &tm);
     if (dp != NULL && *dp == '.')
 	usec = strtod(dp, NULL);
     else
@@ -372,10 +363,11 @@ timestamp_t iso8601_to_unix( /*@in@*/ char *isotime)
 	usec = sl[1].toInt() / pow(10., (double)sl[1].size());
     return (timestamp_t)(d.toTime_t() + usec);
 #endif
+#endif /* __clang_analyzer__ */
 }
 
 /* *INDENT-OFF* */
-/*@observer@*/char *unix_to_iso8601(timestamp_t fixtime, /*@ out @*/
+char *unix_to_iso8601(timestamp_t fixtime, /*@ out @*/
 				     char isotime[], size_t len)
 /* Unix UTC time to ISO8601, no timezone adjustment */
 /* example: 2007-12-11T23:38:51.033Z */
@@ -398,7 +390,7 @@ timestamp_t iso8601_to_unix( /*@in@*/ char *isotime)
      */
     (void)snprintf(fractstr, sizeof(fractstr), "%.3f", fractional);
     /* add fractional part, ignore leading 0; "0.2" -> ".2" */
-    /*@i2@*/(void)snprintf(isotime, len, "%s%sZ",timestr, strchr(fractstr,'.'));
+    (void)snprintf(isotime, len, "%s%sZ",timestr, strchr(fractstr,'.'));
     return isotime;
 }
 /* *INDENT-ON* */
@@ -407,7 +399,6 @@ timestamp_t iso8601_to_unix( /*@in@*/ char *isotime)
 
 /* Distance in meters between two points specified in degrees, optionally
 with initial and final bearings. */
-/*@-mustdefine@*/
 double earth_distance_and_bearings(double lat1, double lon1, double lat2, double lon2, double *ib, double *fb)
 {
     /*
@@ -477,7 +468,6 @@ double earth_distance_and_bearings(double lat1, double lon1, double lat2, double
 
     return (WGS84B * A * (S - d_S));
 }
-/*@+mustdefine@*/
 
 /* Distance in meters between two points specified in degrees. */
 double earth_distance(double lat1, double lon1, double lat2, double lon2)
@@ -485,32 +475,4 @@ double earth_distance(double lat1, double lon1, double lat2, double lon2)
 	return earth_distance_and_bearings(lat1, lon1, lat2, lon2, NULL, NULL);
 }
 
-/* Convert a normailized timespec to a nice string 
- * put in it *buf, buf should be at least 22 bytes
- *
- * the returned buffer will look like, shortest case:
- *    sign character ' ' or '-'
- *    one digit of seconds
- *    decmal point '.'
- *    9 digits of nanoSec
- *
- * So 12 chars, like this: "-0.123456789"
- *
- * Absolute worst case is 10 digits of seconds.  
- * So 21 digits like this: "-2147483647.123456789"
- *
-*/
-void timespec_str(const struct timespec *ts, /*@out@*/char *buf, int buf_size)
-{
-    char sign = ' ';
-
-    /*@-type@*//* splint is confused about timespec*/
-    if ( (0 > ts->tv_nsec ) || ( 0 > ts->tv_sec ) ) {
-	sign = '-';
-    }
-    (void) snprintf( buf, buf_size, "%c%ld.%09ld",
-			  sign,
-			  (long)labs(ts->tv_sec),
-			  (long)labs(ts->tv_nsec));
-    /*@+type@*/
-}
+/* end */

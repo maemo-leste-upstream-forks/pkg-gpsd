@@ -1,7 +1,7 @@
 /****************************************************************************
 
 NAME
-   libgps_shm.c - reasder access to shared-memory export
+   libgps_shm.c - reader access to shared-memory export
 
 DESCRIPTION
    This is a very lightweight alternative to JSON-over-sockets.  Clients
@@ -14,6 +14,7 @@ PERMISSIONS
    BSD terms apply: see the file COPYING in the distribution root for details.
 
 ***************************************************************************/
+#include <time.h>             /* for time_t */
 #include "gpsd_config.h"
 
 #ifdef SHM_EXPORT_ENABLE
@@ -29,23 +30,19 @@ PERMISSIONS
 #include "gpsd.h"
 #include "libgps.h"
 
-/*@-matchfields@*/
 struct privdata_t
 {
     void *shmseg;
     int tick;
 };
-/*@+matchfields@*/
 
 
-int gps_shm_open(/*@out@*/struct gps_data_t *gpsdata)
+int gps_shm_open(struct gps_data_t *gpsdata)
 /* open a shared-memory connection to the daemon */
 {
     int shmid;
 
-    /*@-nullpass@*/
     long shmkey = getenv("GPSD_SHM_KEY") ? strtol(getenv("GPSD_SHM_KEY"), NULL, 0) : GPSD_SHM_KEY;
-    /*@+nullpass@*/
 
     libgps_debug_trace((DEBUG_CALLS, "gps_shm_open()\n"));
 
@@ -60,8 +57,9 @@ int gps_shm_open(/*@out@*/struct gps_data_t *gpsdata)
 	return -1;
 
     PRIVATE(gpsdata)->shmseg = shmat(shmid, 0, 0);
-    if ((int)(long)gpsdata->privdata == -1) {
+    if (PRIVATE(gpsdata)->shmseg == (void *) -1) {
 	/* attach failed for sume unknown reason */
+	free(gpsdata->privdata);
 	return -2;
     }
 #ifndef USE_QT
@@ -74,28 +72,32 @@ int gps_shm_open(/*@out@*/struct gps_data_t *gpsdata)
 
 bool gps_shm_waiting(const struct gps_data_t *gpsdata, int timeout)
 /* check to see if new data has been written */
+/* timeout is in uSec */
 {
     volatile struct shmexport_t *shared = (struct shmexport_t *)PRIVATE(gpsdata)->shmseg;
-    timestamp_t basetime = timestamp();
+    volatile bool newdata = false;
+    timestamp_t endtime = timestamp() + (((double)timeout)/1000000);
 
     /* busy-waiting sucks, but there's not really an alternative */
     for (;;) {
-	bool newdata = false;
+	volatile int bookend1, bookend2;
 	memory_barrier();
-	if (shared->bookend1 == shared->bookend2 && shared->bookend1 > PRIVATE(gpsdata)->tick)
+	bookend1 = shared->bookend1;
+	memory_barrier();
+	bookend2 = shared->bookend2;
+	memory_barrier();
+	if (bookend1 == bookend2 && bookend1 > PRIVATE(gpsdata)->tick)
 	    newdata = true;
-	memory_barrier();
-	if (newdata || (timestamp() - basetime >= (double)timeout))
+	if (newdata || (timestamp() >= endtime))
 	    break;
     }
 
-    return true;
+    return newdata;
 }
 
 int gps_shm_read(struct gps_data_t *gpsdata)
 /* read an update from the shared-memory segment */
 {
-    /*@ -compdestroy */
     if (gpsdata->privdata == NULL)
 	return -1;
     else
@@ -130,7 +132,7 @@ int gps_shm_read(struct gps_data_t *gpsdata)
 	    (void)memcpy((void *)gpsdata,
 			 (void *)&noclobber,
 			 sizeof(struct gps_data_t));
-	    /*@i1@*/gpsdata->privdata = private_save;
+	    gpsdata->privdata = private_save;
 	    PRIVATE(gpsdata)->tick = after;
 	    if ((gpsdata->set & REPORT_IS)!=0) {
 		if (gpsdata->fix.mode >= 2)
@@ -142,7 +144,6 @@ int gps_shm_read(struct gps_data_t *gpsdata)
 	    return (int)sizeof(struct gps_data_t);
 	}
     }
-    /*@ +compdestroy */
 }
 
 void gps_shm_close(struct gps_data_t *gpsdata)

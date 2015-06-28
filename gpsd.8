@@ -194,6 +194,12 @@ A normal Unix device name of a serial or USB device to which a sensor is attache
 /dev/ttyUSB0\&.
 .RE
 .PP
+Local PPS device
+.RS 4
+A normal Unix device name of a PPS device to which a PPS source is attached\&. The device name must start with "/dev/pps" and a local serial or USB GPS device must also be available\&. Example:
+/dev/pps0\&.
+.RE
+.PP
 TCP feed
 .RS 4
 A URI with the prefix "tcp://", followed by a hostname, a colon, and a port number\&. The daemon will open a socket to the indicated address and port and read data packets from it, which will be interpreted as though they had been issued by a serial device\&. Example:
@@ -591,6 +597,9 @@ AIVDM/AIVDO Protocol Decoding, on the references page of the GPSD project websit
 Subframe data is defined by IS\-GPS\-200E,
 GLOBAL POSITIONING SYSTEM WING (GPSW) SYSTEMS ENGINEERING & INTEGRATION, INTERFACE SPECIFICATION IS\-GPS\-200 Revision E\&. The format understood by this program is defined in Section 20 (Appendix II) of the IS\-GPS\-200E,
 GPS NAVIGATION DATA STRUCTURE FOR DATA, D(t)
+.PP
+JSON is specified by RFC 7159,
+The JavaScript Object Notation (JSON) Data Interchange Format\&.
 .PP
 The API for PPS time service is specified by RFC 2783,
 Pulse\-Per\-Second API for UNIX\-like Operating Systems, Version 1\&.0
