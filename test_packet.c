@@ -9,9 +9,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 
 #include "gpsd.h"
 
@@ -27,7 +25,6 @@ struct map
 };
 
 /* *INDENT-OFF* */
-/*@ -initallelements +charint -usedef @*/
 static struct map singletests[] = {
     /* NMEA tests */
     {
@@ -235,11 +232,9 @@ static struct map singletests[] = {
 	.type = RTCM3_PACKET,
     },
 };
-/*@ +initallelements -charint +usedef @*/
 /* *INDENT-ON* */
 
 /* *INDENT-OFF* */
-/*@ -initallelements +charint -usedef @*/
 static struct map runontests[] = {
     /* NMEA tests */
     {
@@ -250,20 +245,17 @@ static struct map runontests[] = {
 	NMEA_PACKET,
     },
 };
-/*@ +initallelements -charint +usedef @*/
 /* *INDENT-ON* */
 
 static int packet_test(struct map *mp)
 {
-    /*@-compdestroy@*/
     struct gps_lexer_t lexer;
     int failure = 0;
 
     lexer_init(&lexer);
     lexer.errout.debug = verbose;
-    /*@i@*/ memcpy(lexer.inbufptr = lexer.inbuffer, mp->test, mp->testlen);
+    memcpy(lexer.inbufptr = lexer.inbuffer, mp->test, mp->testlen);
     lexer.inbuflen = mp->testlen;
-    /*@ -compdef -uniondef -usedef -formatcode @*/
     packet_parse(&lexer);
     if (lexer.type != mp->type)
 	printf("%2zi: %s test FAILED (packet type %d wrong).\n",
@@ -276,13 +268,11 @@ static int packet_test(struct map *mp)
 	++failure;
     } else
 	printf("%2zi: %s test succeeded.\n", mp - singletests + 1,
-	       mp->legend);    /*@ +compdef +uniondef +usedef +formatcode @*/
+	       mp->legend);
 
     return failure;
-    /*@+compdestroy@*/
 }
 
-/*@ -compdef -uniondef -usedef -formatcode -compdestroy @*/
 static void runon_test(struct map *mp)
 {
     struct gps_lexer_t lexer;
@@ -291,7 +281,7 @@ static void runon_test(struct map *mp)
 
     lexer_init(&lexer);
     lexer.errout.debug = verbose;
-    /*@i@*/ memcpy(lexer.inbufptr = lexer.inbuffer, mp->test, mp->testlen);
+    memcpy(lexer.inbufptr = lexer.inbuffer, mp->test, mp->testlen);
     lexer.inbuflen = mp->testlen;
      (void)fputs(mp->test, stdout);
     do {
@@ -299,7 +289,6 @@ static void runon_test(struct map *mp)
 	//printf("packet_parse() returned %zd\n", st);
     } while (st > 0);
 }
-/*@ +compdef +uniondef +usedef +formatcode +compdestroy@*/
 
 static int property_check(void)
 {
@@ -349,7 +338,7 @@ static int property_check(void)
     for (dp = gpsd_drivers; *dp; dp++) {
 	if (*dp == NULL || (*dp)->packet_type == COMMENT_PACKET)
 	    continue;
-#ifdef CONTROLSEND_ENABLE
+#if defined(CONTROLSEND_ENABLE) && defined(RECONFIGURE_ENABLE)
 	if (CONTROLLABLE(*dp) && (*dp)->control_send == NULL) {
 	    (void)fprintf(stderr, "%s has control methods but no send\n",
 			  (*dp)->type_name);
@@ -365,7 +354,7 @@ static int property_check(void)
 			  (*dp)->type_name);
 	    status = EXIT_FAILURE;
 	}
-#endif /* CONTROLSEND_ENABLE */
+#endif /* CONTROLSEND_ENABLE && RECONFIGURE_ENABLE*/
     }
 
     return status;

@@ -1,8 +1,5 @@
 /*
- * ntpshm.c - put time information in SHM segment for xntpd, or to chrony
- *
- * struct shmTime and getShmTime from file in the xntp distribution:
- *	sht.c - Testprogram for shared memory refclock
+ * timehint.c - put time information in SHM segment for ntpd, or to chrony
  *
  * Note that for easy debugging all logging from this file is prefixed
  * with PPS or NTP.
@@ -18,47 +15,15 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef S_SPLINT_S
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 
+#include "timespec.h"
 #include "gpsd.h"
 
 #ifdef NTPSHM_ENABLE
-#include <sys/time.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
-#define NTPD_BASE	0x4e545030	/* "NTP0" */
-
-#define PPS_MIN_FIXES	3	/* # fixes to wait for before shipping PPS */
-
-/* the definition of shmTime is from ntpd source ntpd/refclock_shm.c */
-struct shmTime
-{
-    int mode;	/* 0 - if valid set
-		 *       use values,
-		 *       clear valid
-		 * 1 - if valid set
-		 *       if count before and after read of values is equal,
-		 *         use values
-		 *       clear valid
-		 */
-    volatile int count;
-    time_t clockTimeStampSec;
-    int clockTimeStampUSec;
-    time_t receiveTimeStampSec;
-    int receiveTimeStampUSec;
-    int leap;
-    int precision;
-    int nsamples;
-    volatile int valid;
-    unsigned        clockTimeStampNSec;     /* Unsigned ns timestamps */
-    unsigned        receiveTimeStampNSec;   /* Unsigned ns timestamps */
-    int             dummy[8];
-};
+#include "ntpshm.h"
 
 /* Note: you can start gpsd as non-root, and have it work with ntpd.
  * However, it will then only use the ntpshm segments 2 3, and higher.
@@ -66,13 +31,13 @@ struct shmTime
  * Ntpd always runs as root (to be able to control the system clock).
  * After that it often (depending on its host configuration) drops to run as
  * user ntpd and group ntpd.
- * 
+ *
  * As of February 2015 its rules for the creation of ntpshm segments are:
  *
  * Segments 0 and 1: permissions 0600, i.e. other programs can only
  *                   read and write as root.
  *
- * Segments 2, 3, and higher: 
+ * Segments 2, 3, and higher:
  *                   permissions 0666, i.e. other programs can read
  *                   and write as any user.  I.e.: if ntpd has been
  *                   configured to use these segments, any
@@ -109,7 +74,7 @@ struct shmTime
  * To debug, try looking at the live segments this way:
  *
  *  ipcs -m
- * 
+ *
  * results  should look like this:
  * ------ Shared Memory Segments --------
  *  key        shmid      owner      perms      bytes      nattch     status
@@ -136,10 +101,13 @@ struct shmTime
  * ipcrm  -M 0x4e545034
  * ipcrm  -M 0x4e545035
  *
- * Removing these segments is usually not necessary, as the operating system 
+ * Removing these segments is usually not necessary, as the operating system
  * garbage-collects them when they have no attached processes.
  */
-static /*@null@*/ volatile struct shmTime *getShmTime(struct gps_context_t *context, int unit)
+
+#define PPS_MIN_FIXES	3	/* # fixes to wait for before shipping PPS */
+
+static volatile struct shmTime *getShmTime(struct gps_context_t *context, int unit)
 {
     int shmid;
     unsigned int perms;
@@ -161,25 +129,23 @@ static /*@null@*/ volatile struct shmTime *getShmTime(struct gps_context_t *cont
     shmid = shmget((key_t) (NTPD_BASE + unit),
 		   sizeof(struct shmTime), (int)(IPC_CREAT | perms));
     if (shmid == -1) {
-	gpsd_report(&context->errout, LOG_ERROR,
-		    "NTPD shmget(%ld, %zd, %o) fail: %s\n",
-		    (long int)(NTPD_BASE + unit), sizeof(struct shmTime),
-		    (int)perms, strerror(errno));
+	gpsd_log(&context->errout, LOG_ERROR,
+		 "NTP: shmget(%ld, %zd, %o) fail: %s\n",
+		 (long int)(NTPD_BASE + unit), sizeof(struct shmTime),
+		 (int)perms, strerror(errno));
 	return NULL;
     }
     p = (struct shmTime *)shmat(shmid, 0, 0);
-    /*@ -mustfreefresh */
     if ((int)(long)p == -1) {
-	gpsd_report(&context->errout, LOG_ERROR,
-		    "NTPD shmat failed: %s\n",
-		    strerror(errno));
+	gpsd_log(&context->errout, LOG_ERROR,
+		 "NTP: shmat failed: %s\n",
+		 strerror(errno));
 	return NULL;
     }
-    gpsd_report(&context->errout, LOG_PROG,
-		"NTPD shmat(%d,0,0) succeeded, segment %d\n",
-		shmid, unit);
+    gpsd_log(&context->errout, LOG_PROG,
+	     "NTP: shmat(%d,0,0) succeeded, segment %d\n",
+	     shmid, unit);
     return p;
-    /*@ +mustfreefresh */
 }
 
 void ntpshm_context_init(struct gps_context_t *context)
@@ -196,8 +162,7 @@ void ntpshm_context_init(struct gps_context_t *context)
     memset(context->shmTimeInuse, 0, sizeof(context->shmTimeInuse));
 }
 
-/*@-unqualifiedtrans@*/
-static /*@null@*/ volatile struct shmTime *ntpshm_alloc(struct gps_context_t *context)
+static volatile struct shmTime *ntpshm_alloc(struct gps_context_t *context)
 /* allocate NTP SHM segment.  return its segment number, or -1 */
 {
     int i;
@@ -225,7 +190,6 @@ static /*@null@*/ volatile struct shmTime *ntpshm_alloc(struct gps_context_t *co
 
     return NULL;
 }
-/*@+unqualifiedtrans@*/
 
 static bool ntpshm_free(struct gps_context_t * context, volatile struct shmTime *s)
 /* free NTP SHM segment */
@@ -243,7 +207,6 @@ static bool ntpshm_free(struct gps_context_t * context, volatile struct shmTime 
 
 void ntpshm_session_init(struct gps_device_t *session)
 {
-    /*@-mustfreeonly@*/
 #ifdef NTPSHM_ENABLE
     /* mark NTPD shared memory segments as unused */
     session->shm_clock = NULL;
@@ -251,78 +214,44 @@ void ntpshm_session_init(struct gps_device_t *session)
 #ifdef PPS_ENABLE
     session->shm_pps = NULL;
 #endif	/* PPS_ENABLE */
-    /*@+mustfreeonly@*/
 }
 
-int ntpshm_put(struct gps_device_t *session, volatile struct shmTime *shmseg, struct timedrift_t *td)
+int ntpshm_put(struct gps_device_t *session, volatile struct shmTime *shmseg, struct timedelta_t *td)
 /* put a received fix time into shared memory for NTP */
 {
     char real_str[TIMESPEC_LEN];
     char clock_str[TIMESPEC_LEN];
-    /*
-     * shmTime is volatile to try to prevent C compiler from reordering
-     * writes, or optimizing some 'dead code'.  but CPU cache may still
-     * write out of order if memory_barrier() is a no-op (our implementation 
-     * isn't portable).
-     */
-    volatile struct shmTime *shmTime = shmseg;
+
     /* Any NMEA will be about -1 or -2. Garmin GPS-18/USB is around -6 or -7. */
     int precision = -1; /* default precision */
 
-    if (shmTime == NULL) {
-	gpsd_report(&session->context->errout, LOG_RAW, "NTPD missing shm\n");
+    if (shmseg == NULL) {
+	gpsd_log(&session->context->errout, LOG_RAW, "NTP:PPS: missing shm\n");
 	return 0;
     }
 
 #ifdef PPS_ENABLE
     /* ntpd sets -20 for PPS refclocks, thus -20 precision */
-    if (shmTime == session->shm_pps)
-	precision = -20;
+    if (shmseg == session->shm_pps) {
+        if ( source_usb == session->sourcetype ) {
+	    /* if PPS over USB 1.1, then precision = -10 */
+	    precision = -10;
+        } else {
+	    /* likely PPS over serial, precision = -20 */
+	    precision = -20;
+        }
+    }
 #endif	/* PPS_ENABLE */
 
-    /* we use the shmTime mode 1 protocol
-     *
-     * ntpd does this:
-     *
-     * reads valid.
-     * IFF valid is 1
-     *    reads count
-     *    reads values
-     *    reads count
-     *    IFF count unchanged
-     *        use values
-     *    clear valid
-     *
-     */
+    ntp_write(shmseg, td, precision, session->context->leap_notify);
 
-    shmTime->valid = 0;
-    shmTime->count++;
-    /* We need a memory barrier here to prevent write reordering by
-     * the compiler or CPU cache */
-    memory_barrier();
-    /*@-type@*/ /* splint is confused about struct timespec */
-    shmTime->clockTimeStampSec = (time_t)td->real.tv_sec;
-    shmTime->clockTimeStampUSec = (int)(td->real.tv_nsec/1000);
-    shmTime->clockTimeStampNSec = (unsigned)td->real.tv_nsec;
-    shmTime->receiveTimeStampSec = (time_t)td->clock.tv_sec;
-    shmTime->receiveTimeStampUSec = (int)(td->clock.tv_nsec/1000);
-    shmTime->receiveTimeStampNSec = (unsigned)td->clock.tv_nsec;
-    /*@+type@*/
-    shmTime->leap = session->context->leap_notify;
-    shmTime->precision = precision;
-    memory_barrier();
-    shmTime->count++;
-    shmTime->valid = 1;
-
-    /*@-type@*/ /* splint is confused about struct timespec */
     timespec_str( &td->real, real_str, sizeof(real_str) );
     timespec_str( &td->clock, clock_str, sizeof(clock_str) );
-    gpsd_report(&session->context->errout, LOG_RAW,
-		"NTP ntpshm_put(%s %s) %s @ %s\n",
-		session->gpsdata.dev.path,
-		(precision == -20) ? "pps" : "clock", 
-		real_str, clock_str);
-    /*@+type@*/
+    gpsd_log(&session->context->errout, LOG_PROG,
+	     "NTP: ntpshm_put(%s %s) %s @ %s\n",
+	     session->gpsdata.dev.path,
+	     (precision == -20) ? "pps" : "clock",
+	     real_str, clock_str);
 
     return 1;
 }
@@ -333,13 +262,12 @@ struct sock_sample {
     struct timeval tv;
     double offset;
     int pulse;
-    int leap;
+    int leap;    /* notify that a leap second is upcoming */
     // cppcheck-suppress unusedStructMember
     int _pad;
     int magic;      /* must be SOCK_MAGIC */
 };
 
-/*@-mustfreefresh@*/
 static void init_hook(struct gps_device_t *session)
 /* for chrony SOCK interface, which allows nSec timekeeping */
 {
@@ -360,82 +288,97 @@ static void init_hook(struct gps_device_t *session)
     }
 
     if (access(chrony_path, F_OK) != 0) {
-	gpsd_report(&session->context->errout, LOG_PROG,
-		    "PPS chrony socket %s doesn't exist\n", chrony_path);
+	gpsd_log(&session->context->errout, LOG_PROG,
+		"PPS:%s chrony socket %s doesn't exist\n",
+		session->gpsdata.dev.path, chrony_path);
     } else {
 	session->chronyfd = netlib_localsocket(chrony_path, SOCK_DGRAM);
 	if (session->chronyfd < 0)
-	    gpsd_report(&session->context->errout, LOG_PROG,
-		"PPS connect chrony socket failed: %s, error: %d, errno: %d/%s\n",
-		chrony_path, session->chronyfd, errno, strerror(errno));
+	    gpsd_log(&session->context->errout, LOG_PROG,
+		     "PPS:%s connect chrony socket failed: %s, error: %d, errno: %d/%s\n",
+		     session->gpsdata.dev.path,
+		     chrony_path, session->chronyfd, errno, strerror(errno));
 	else
-	    gpsd_report(&session->context->errout, LOG_RAW,
-			"PPS using chrony socket: %s\n", chrony_path);
+	    gpsd_log(&session->context->errout, LOG_RAW,
+		     "PPS:%s using chrony socket: %s\n",
+		     session->gpsdata.dev.path, chrony_path);
     }
 }
-/*@+mustfreefresh@*/
 
 
 /* td is the real time and clock time of the edge */
 /* offset is actual_ts - clock_ts */
-static void chrony_send(struct gps_device_t *session, struct timedrift_t *td)
+static void chrony_send(struct gps_device_t *session, struct timedelta_t *td)
 {
     char real_str[TIMESPEC_LEN];
     char clock_str[TIMESPEC_LEN];
+    struct timespec offset;
     struct sock_sample sample;
+    struct tm tm;
+    int leap_notify = session->context->leap_notify;
+
+    /* insist that leap seconds only happen in june and december
+     * GPS emits leap pending for 3 months prior to insertion
+     * NTP expects leap pending for only 1 month prior to insertion
+     * Per http://bugs.ntp.org/1090 */
+    (void)gmtime_r( &(td->real.tv_sec), &tm);
+    if ( 5 != tm.tm_mon && 11 != tm.tm_mon ) {
+        /* Not june, not December, no way */
+        leap_notify = LEAP_NOWARNING;
+    }
+
 
     /* chrony expects tv-sec since Jan 1970 */
     sample.pulse = 0;
-    sample.leap = session->context->leap_notify;
+    sample.leap = leap_notify;
     sample.magic = SOCK_MAGIC;
-    /*@-type@*//* splint is confused about struct timespec */
+    /* chronyd wants a timeval, not a timspec, not to worry, it is
+     * just the top of the second */
     TSTOTV(&sample.tv, &td->clock);
-    /*@-compdef@*/
-    /* WARNING!  this will fail if timedelta more than a few seconds */
-    sample.offset = timespec_diff_ns(td->real, td->clock) / 1e9;
-    /*@+compdef@*/
-#ifdef __COVERITY__
+    /* calculate the offset as a timespec to not lose precision */
+    TS_SUB( &offset, &td->real, &td->clock);
+    /* if tv_sec greater than 2 then tv_nsec loses precision, but
+     * not a big deal as slewing will bbe required */
+    sample.offset = TSTONS( &offset );
     sample._pad = 0;
-#endif /* __COVERITY__ */
-    /*@+type@*/
 
-    /*@-type@*/ /* splint is confused about struct timespec */
     timespec_str( &td->real, real_str, sizeof(real_str) );
     timespec_str( &td->clock, clock_str, sizeof(clock_str) );
-    gpsd_report(&session->context->errout, LOG_RAW,
-		"PPS chrony_send %s @ %s Offset: %0.9f\n",
-		real_str, clock_str, sample.offset);
-    /*@+type@*/
+    gpsd_log(&session->context->errout, LOG_RAW,
+	     "PPS chrony_send %s @ %s Offset: %0.9f\n",
+	     real_str, clock_str, sample.offset);
     (void)send(session->chronyfd, &sample, sizeof (sample), 0);
 }
 
-static void wrap_hook(struct gps_device_t *session)
-{
-    if (session->chronyfd != -1)
-	(void)close(session->chronyfd);
-}
-
-static /*@observer@*/ char *report_hook(struct gps_device_t *session,
-					struct timedrift_t *td)
+static char *report_hook(volatile struct pps_thread_t *pps_thread,
+					struct timedelta_t *td)
 /* ship the time of a PPS event to ntpd and/or chrony */
 {
     char *log1;
+    struct gps_device_t *session = (struct gps_device_t *)pps_thread->context;
 
-    if (!session->ship_to_ntpd)
-	return "skipped ship_to_ntp=0";
+    /* PPS only source never get any serial info
+     * so no PPSTIME_IS or fixcnt */
+    if ( source_pps != session->sourcetype) {
+        /* FIXME! these two validations need to move back into ppsthread.c */
 
-    /*
-     * Only listen to PPS after several consecutive fixes,
-     * otherwise time may be inaccurate.  (We know this is
-     * required on all Garmin and u-blox; safest to do it 
-     * for all cases as we have no other general way to know 
-     * if PPS is good.
-     *
-     * Not sure yet how to handle u-blox UBX_MODE_TMONLY
-     */
-    if (session->fixcnt <= PPS_MIN_FIXES)
-	return "no fix";
+	if ( !session->ship_to_ntpd)
+	    return "skipped ship_to_ntp=0";
 
+	/*
+	 * Only listen to PPS after several consecutive fixes,
+	 * otherwise time may be inaccurate.  (We know this is
+	 * required on all Garmin and u-blox; safest to do it
+	 * for all cases as we have no other general way to know
+	 * if PPS is good.
+	 *
+	 * Not sure yet how to handle u-blox UBX_MODE_TMONLY
+	 */
+	if (session->fixcnt <= PPS_MIN_FIXES)
+	    return "no fix";
+    }
+
+    /* FIXME?  how to log socket AND shm reported? */
     log1 = "accepted";
     if ( 0 <= session->chronyfd ) {
 	log1 = "accepted chrony sock";
@@ -444,11 +387,14 @@ static /*@observer@*/ char *report_hook(struct gps_device_t *session,
     if (session->shm_pps != NULL)
 	(void)ntpshm_put(session, session->shm_pps, td);
 
+    /* session context might have a hook set, too */
+    if (session->context->pps_hook != NULL)
+	session->context->pps_hook(session, td);
+
     return log1;
 }
 #endif	/* PPS_ENABLE */
 
-/*@-mustfreeonly@*/
 void ntpshm_link_deactivate(struct gps_device_t *session)
 /* release ntpshm storage for a session */
 {
@@ -458,15 +404,15 @@ void ntpshm_link_deactivate(struct gps_device_t *session)
     }
 #if defined(PPS_ENABLE)
     if (session->shm_pps != NULL) {
-	pps_thread_deactivate(session);
+	pps_thread_deactivate(&session->pps_thread);
+	if (session->chronyfd != -1)
+	    (void)close(session->chronyfd);
 	(void)ntpshm_free(session->context, session->shm_pps);
 	session->shm_pps = NULL;
     }
 #endif	/* PPS_ENABLE */
 }
-/*@+mustfreeonly@*/
 
-/*@-mustfreeonly@*/
 void ntpshm_link_activate(struct gps_device_t *session)
 /* set up ntpshm storage for a session */
 {
@@ -474,31 +420,36 @@ void ntpshm_link_activate(struct gps_device_t *session)
     if (session->sourcetype == source_pty)
 	return;
 
-    /* allocate a shared-memory segment for "NMEA" time data */
-    session->shm_clock = ntpshm_alloc(session->context);
+    if (session->sourcetype != source_pps ) {
+	/* allocate a shared-memory segment for "NMEA" time data */
+	session->shm_clock = ntpshm_alloc(session->context);
 
-    if (session->shm_clock == NULL) {
-	gpsd_report(&session->context->errout, LOG_INF, 
-                    "NTPD ntpshm_alloc() failed\n");
+	if (session->shm_clock == NULL) {
+	    gpsd_log(&session->context->errout, LOG_WARN,
+		     "NTP: ntpshm_alloc() failed\n");
+	    return;
+        }
+    }
+
 #if defined(PPS_ENABLE)
-    } else if (session->sourcetype == source_usb || session->sourcetype == source_rs232) {
+    if (session->sourcetype == source_usb
+            || session->sourcetype == source_rs232
+            || session->sourcetype == source_pps) {
 	/* We also have the 1pps capability, allocate a shared-memory segment
 	 * for the 1pps time data and launch a thread to capture the 1pps
 	 * transitions
 	 */
 	if ((session->shm_pps = ntpshm_alloc(session->context)) == NULL) {
-	    gpsd_report(&session->context->errout, LOG_INF, 
-                        "NTPD ntpshm_alloc(1) failed\n");
+	    gpsd_log(&session->context->errout, LOG_WARN,
+		     "PPS: ntpshm_alloc(1) failed\n");
 	} else {
 	    init_hook(session);
-	    session->thread_report_hook = report_hook;
-	    session->thread_wrap_hook = wrap_hook;
-	    pps_thread_activate(session);
+	    session->pps_thread.report_hook = report_hook;
+	    pps_thread_activate(&session->pps_thread);
 	}
-#endif /* PPS_ENABLE */
     }
+#endif /* PPS_ENABLE */
 }
-/*@+mustfreeonly@*/
 
 #endif /* NTPSHM_ENABLE */
 /* end */

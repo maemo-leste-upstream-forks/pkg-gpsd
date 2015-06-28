@@ -6,7 +6,6 @@
  *
  */
 
-#ifndef S_SPLINT_S
 #include <cstdlib>
 #include "libgpsmm.h"
 #include "gpsd_config.h"
@@ -69,13 +68,13 @@ const char *gpsmm::data(void)
     return gps_data(gps_state());
 }
 
-// cppcheck-suppress unusedFunction 
+// cppcheck-suppress unusedFunction
 void gpsmm::clear_fix(void)
 {
     gps_clear_fix(&(gps_state()->fix));
 }
 
-// cppcheck-suppress unusedFunction 
+// cppcheck-suppress unusedFunction
 void gpsmm::enable_debug(int level, FILE *fp)
 {
 #ifdef CLIENTDEBUG_ENABLE
@@ -83,7 +82,7 @@ void gpsmm::enable_debug(int level, FILE *fp)
 #endif /* CLIENTDEBUG_ENABLE */
 }
 
-// cppcheck-suppress unusedFunction 
+// cppcheck-suppress unusedFunction
 bool gpsmm::is_open(void)
 {
 	return to_user != NULL;
@@ -96,4 +95,3 @@ gpsmm::~gpsmm()
 	delete to_user;
     }
 }
-#endif /* S_SPLINT_S */

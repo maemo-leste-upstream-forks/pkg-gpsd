@@ -10,7 +10,7 @@
  * getting fixes before giving up on the possibility of 1PPS.
  *
  * Also, check your cable. Cheap DB9 to DB9 cables such as those
- * issued with UPSes often carry TXD/RXD/SG only, omitting handshake
+ * issued with UPSes often carry TXD/RXD/GND only, omitting handshake
  * lines such as DCD.  Suspect this especially if the cable jacket
  * looks too skinny to hold more than three leads!
  *
@@ -23,9 +23,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 #include <fcntl.h>	/* needed for open() and friends */
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -37,7 +35,7 @@ struct assoc {
 };
 
 /*
- * Possible pins for PPS: DCD, CTS, RTS, RI, DSR. Pinouts:
+ * Possible pins for PPS: DCD, CTS, RI, DSR. Pinouts:
  *
  * DB9  DB25  Name      Full name
  * ---  ----  ----      --------------------
@@ -50,6 +48,11 @@ struct assoc {
  *  1     8    DCD  <-- Data Carrier Detect
  *  9    22    RI   <-- Ring Indicator
  *  5     7    GND      Signal ground
+ *
+ * Note that it only makes sense to wait on handshake lines
+ * activated from the receive side (DCE->DTE) here; in this
+ * context "DCE" is the GPS. {CD,RI,CTS,DSR} is the
+ * entire set of these.
  */
 const static struct assoc hlines[] = {
     {TIOCM_CD, "TIOCM_CD"},
@@ -71,7 +74,7 @@ int main(int argc, char *argv[])
     }
 
     for (;;) {
-	if (ioctl(fd, TIOCMIWAIT, TIOCM_CD|TIOCM_DSR|TIOCM_CAR|TIOCM_RI|TIOCM_CTS) != 0) {
+	if (ioctl(fd, TIOCMIWAIT, TIOCM_CD|TIOCM_DSR|TIOCM_RI|TIOCM_CTS) != 0) {
 	    (void)fprintf(stderr,
 			  "PPS ioctl(TIOCMIWAIT) failed: %d %.40s\n",
 			  errno, strerror(errno));

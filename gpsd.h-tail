@@ -5,46 +5,12 @@
  */
 #endif /* GPSD_CONFIG_H */
 
-#ifdef HAVE_TERMIOS_H
-#include <termios.h>
-#endif /* HAVE_TERMIOS_H */
 #include <stdint.h>
 #include <stdarg.h>
+#include <termios.h>
+
 #include "gps.h"
 #include "compiler.h"
-
-/*
- * Tell GCC that we want thread-safe behavior with _REENTRANT;
- * in particular, errno must be thread-local.
- * Tell POSIX-conforming implementations with _POSIX_THREAD_SAFE_FUNCTIONS.
- * See http://www.unix.org/whitepapers/reentrant.html
- */
-#ifndef _REENTRANT
-#define _REENTRANT
-#endif
-#ifndef _POSIX_THREAD_SAFE_FUNCTIONS
-#define _POSIX_THREAD_SAFE_FUNCTIONS
-#endif
-
-/* use RFC 2782 PPS API */
-/* this needs linux >= 2.6.34 and
- * CONFIG_PPS=y
- * CONFIG_PPS_DEBUG=y  [optional to kernel log pulses]
- * CONFIG_PPS_CLIENT_LDISC=y
- */
-#ifndef S_SPLINT_S
-#if defined(HAVE_SYS_TIMEPPS_H)
-// include unistd.h here as it is missing on older pps-tools releases.
-// 'close' is not defined otherwise.
-#include <unistd.h>
-#include <sys/time.h>
-#include <sys/timepps.h>
-#endif /* S_SPLINT_S */
-#endif
-
-#ifdef _WIN32
-typedef unsigned int speed_t;
-#endif
 
 /*
  * Constants for the VERSION response
@@ -64,15 +30,17 @@ typedef unsigned int speed_t;
  *      (Thus, the 'scaled' flag no longer affects display of these fields.)
  *      PPS drift message ships nsec rather than msec.
  * 3.10 The obsolete tag field has been dropped from JSON.
+ * 3.11 A precision field, log2 of the time source jitter, as been added
+ *      to the PPS report.  See ntpshm.h for more details.
  */
 #define GPSD_PROTO_MAJOR_VERSION	3	/* bump on incompatible changes */
-#define GPSD_PROTO_MINOR_VERSION	10	/* bump on compatible changes */
+#define GPSD_PROTO_MINOR_VERSION	11	/* bump on compatible changes */
 
 #define JSON_DATE_MAX	24	/* ISO8601 timestamp with 2 decimal places */
 
 #ifndef DEFAULT_GPSD_SOCKET
 #define DEFAULT_GPSD_SOCKET	"/var/run/gpsd.sock"
-#endif 
+#endif
 
 /* Some internal capabilities depend on which drivers we're compiling. */
 #if !defined(AIVDM_ENABLE) && defined(NMEA2000_ENABLE)
@@ -183,7 +151,7 @@ struct gps_lexer_t {
     size_t length;
     unsigned char inbuffer[MAX_PACKET_LENGTH*2+1];
     size_t inbuflen;
-    unsigned /*@observer@*/char *inbufptr;
+    unsigned char *inbufptr;
     /* outbuffer needs to be able to hold 4 GPGSV records at once */
     unsigned char outbuffer[MAX_PACKET_LENGTH*2+1];
     size_t outbuflen;
@@ -220,8 +188,8 @@ struct gps_lexer_t {
 #endif /* PASSTHROUGH_ENABLE */
 };
 
-extern void lexer_init(/*@out@*/struct gps_lexer_t *);
-extern void packet_reset(/*@out@*/struct gps_lexer_t *);
+extern void lexer_init(struct gps_lexer_t *);
+extern void packet_reset(struct gps_lexer_t *);
 extern void packet_pushback(struct gps_lexer_t *);
 extern void packet_parse(struct gps_lexer_t *);
 extern ssize_t packet_get(int, struct gps_lexer_t *);
@@ -270,16 +238,16 @@ struct gps_context_t {
 #ifdef NTPSHM_ENABLE
     /* we need the volatile here to tell the C compiler not to
      * 'optimize' as 'dead code' the writes to SHM */
-    /*@reldef@*/volatile struct shmTime *shmTime[NTPSHMSEGS];
+    volatile struct shmTime *shmTime[NTPSHMSEGS];
     bool shmTimeInuse[NTPSHMSEGS];
 #endif /* NTPSHM_ENABLE */
 #ifdef PPS_ENABLE
-    /*@null@*/ void (*pps_hook)(struct gps_device_t *, struct timedrift_t *);
+    void (*pps_hook)(struct gps_device_t *, struct timedelta_t *);
 #endif /* PPS_ENABLE */
 #ifdef SHM_EXPORT_ENABLE
     /* we don't want the compiler to treat writes to shmexport as dead code,
      * and we don't want them reordered either */
-    /*@reldef@*/volatile void *shmexport;
+    volatile void *shmexport;
 #endif
     ssize_t (*serial_write)(struct gps_device_t *,
 			    const char *buf, const size_t len);
@@ -339,7 +307,7 @@ typedef enum {
 #define EOF_IS		INTERNAL_SET(10)	/* synthetic EOF */
 #define DATA_IS	~(ONLINE_SET|PACKET_SET|CLEAR_IS|REPORT_IS)
 
-typedef /*@unsignedintegraltype@*/ unsigned int driver_mask_t;
+typedef unsigned int driver_mask_t;
 #define DRIVER_NOFLAGS	0x00000000u
 #define DRIVER_STICKY	0x00000001u
 
@@ -352,35 +320,35 @@ typedef /*@unsignedintegraltype@*/ unsigned int driver_mask_t;
 				  || (dp)->rate_switcher != NULL))
 
 /*
- * True if a driver selection of it should be sticky. 
+ * True if a driver selection of it should be sticky.
  */
 #define STICKY(dp)		((dp) != NULL && ((dp)->flags & DRIVER_STICKY) != 0)
 
 struct gps_type_t {
 /* GPS method table, describes how to talk to a particular GPS type */
-    /*@observer@*/char *type_name;
+    char *type_name;
     int packet_type;
     driver_mask_t flags;	/* reserved for expansion */
-    /*@observer@*//*@null@*/char *trigger;
+    char *trigger;
     int channels;
-    /*@null@*/bool (*probe_detect)(struct gps_device_t *session);
-    /*@null@*/ssize_t (*get_packet)(struct gps_device_t *session);
-    /*@null@*/gps_mask_t (*parse_packet)(struct gps_device_t *session);
-    /*@null@*/ssize_t (*rtcm_writer)(struct gps_device_t *session, const char *rtcmbuf, size_t rtcmbytes);
-    /*@null@*/void (*init_query)(struct gps_device_t *session);
-    /*@null@*/void (*event_hook)(struct gps_device_t *session, event_t event);
+    bool (*probe_detect)(struct gps_device_t *session);
+    ssize_t (*get_packet)(struct gps_device_t *session);
+    gps_mask_t (*parse_packet)(struct gps_device_t *session);
+    ssize_t (*rtcm_writer)(struct gps_device_t *session, const char *rtcmbuf, size_t rtcmbytes);
+    void (*init_query)(struct gps_device_t *session);
+    void (*event_hook)(struct gps_device_t *session, event_t event);
 #ifdef RECONFIGURE_ENABLE
-    /*@null@*/bool (*speed_switcher)(struct gps_device_t *session,
+    bool (*speed_switcher)(struct gps_device_t *session,
 				     speed_t speed, char parity, int stopbits);
-    /*@null@*/void (*mode_switcher)(struct gps_device_t *session, int mode);
-    /*@null@*/bool (*rate_switcher)(struct gps_device_t *session, double rate);
+    void (*mode_switcher)(struct gps_device_t *session, int mode);
+    bool (*rate_switcher)(struct gps_device_t *session, double rate);
     double min_cycle;
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
-    /*@null@*/ssize_t (*control_send)(struct gps_device_t *session, char *buf, size_t buflen);
+    ssize_t (*control_send)(struct gps_device_t *session, char *buf, size_t buflen);
 #endif /* CONTROLSEND_ENABLE */
 #ifdef TIMEHINT_ENABLE
-    /*@null@*/double (*time_offset)(struct gps_device_t *session);
+    double (*time_offset)(struct gps_device_t *session);
 #endif /* TIMEHINT_ENABLE */
 };
 
@@ -390,12 +358,12 @@ struct gps_type_t {
  *
  * (1) To determince if we require that gpsd be the only process opening a
  * device.  We make an exception for PTYs because the master side has to be
- * opened by test code,
+ * opened by test code.
  *
  * (2) To determine whether it's safe to send wakeup strings.  These are
  * required on some unusual RS-232 devices (such as the TNT compass and
  * Thales/Ashtech GPSes) but should not be shipped to unidentified USB
- * or Bluetooth devices as we don't even know in advance those are GPSEs;
+ * or Bluetooth devices as we don't even know in advance those are GPSes;
  * they might not cope well.
  *
  * Where it says "case detected but not used" it means that we can identify
@@ -416,6 +384,7 @@ typedef enum {source_unknown,
 	      source_tcp,	/* TCP/IP stream: case detected but not used */
 	      source_udp,	/* UDP stream: case detected but not used */
 	      source_gpsd,	/* Remote gpsd instance over TCP/IP */
+	      source_pps,	/* PPS-only device, such as /dev/ppsN */
 } sourcetype_t;
 
 /*
@@ -460,22 +429,24 @@ struct ntrip_stream_t
     int bitrate;
 };
 
+#ifdef PPS_ENABLE
+#include "ppsthread.h"
+#endif /* PPS_ENABLE */
+
 struct gps_device_t {
 /* session object, encapsulates all global state */
     struct gps_data_t gpsdata;
-    /*@relnull@*/const struct gps_type_t *device_type;
+    const struct gps_type_t *device_type;
     unsigned int driver_index;		/* numeric index of current driver */
     unsigned int drivers_identified;	/* bitmask; what drivers have we seen? */
 #ifdef RECONFIGURE_ENABLE
-    /*@relnull@*/const struct gps_type_t *last_controller;
+    const struct gps_type_t *last_controller;
 #endif /* RECONFIGURE_ENABLE */
     struct gps_context_t	*context;
     sourcetype_t sourcetype;
     servicetype_t servicetype;
     int mode;
-#ifndef _WIN32
     struct termios ttyset, ttyset_old;
-#endif
 #ifndef FIXED_PORT_SPEED
     unsigned int baudindex;
 #endif /* FIXED_PORT_SPEED */
@@ -484,37 +455,26 @@ struct gps_device_t {
     int badcount;
     int subframe_count;
     char subtype[64];			/* firmware version or subtype ID */
-    timestamp_t opentime;
-    timestamp_t releasetime;
+    time_t opentime;
+    time_t releasetime;
     bool zerokill;
-    timestamp_t reawake;
+    time_t reawake;
 #ifdef TIMING_ENABLE
     timestamp_t sor;	/* timestamp start of this reporting cycle */
     unsigned long chars;	/* characters in the cycle */
 #endif /* TIMING_ENABLE */
-#ifdef NTPSHM_ENABLE
+#ifdef NTP_ENABLE
     bool ship_to_ntpd;
-    volatile /*@null@*/ struct shmTime *shm_clock;
-# ifdef PPS_ENABLE
-    volatile /*@null@*/ struct shmTime *shm_pps;
-# endif /* PPS_ENABLE */
+#ifdef NTPSHM_ENABLE
+    volatile struct shmTime *shm_clock;
 #endif /* NTPSHM_ENABLE */
-    volatile struct {
-	timestamp_t real;
-        /* clock must be a timespec as it is in nSec and
-         * a timestamp_t will lose precision */
-	struct timespec clock; /* system clock time when last fix received */
-    } last_fixtime;	/* so updates happen once */
-#ifdef PPS_ENABLE
-#if defined(HAVE_SYS_TIMEPPS_H)
-    pps_handle_t kernelpps_handle;
-#endif /* defined(HAVE_SYS_TIMEPPS_H) */
+# ifdef PPS_ENABLE
+    volatile struct shmTime *shm_pps;
     int chronyfd;			/* for talking to chrony */
-    /*@null@*/ char *(*thread_report_hook)(struct gps_device_t *,
-					   struct timedrift_t *);
-    /*@null@*/ void (*thread_wrap_hook)(struct gps_device_t *);
-    volatile struct timedrift_t ppslast;
-    volatile int ppscount;
+# endif /* PPS_ENABLE */
+#endif /* NTP_ENABLE */
+#ifdef PPS_ENABLE
+    volatile struct pps_thread_t pps_thread;
 #endif /* PPS_ENABLE */
     double mag_var;			/* magnetic variation in degrees */
     bool back_to_nmea;			/* back to NMEA on revert? */
@@ -537,6 +497,8 @@ struct gps_device_t {
 	bool latch_mode;
 	char last_gga_timestamp[16];
 	bool seen_glgsv;
+	bool seen_bdgsv;
+	bool seen_qzss;
 	char last_gsv_talker;
 	/*
 	 * State for the cycle-tracking machinery.
@@ -552,9 +514,6 @@ struct gps_device_t {
 	unsigned int lasttag;
 	unsigned int cycle_enders;
 	bool cycle_continue;
-#ifdef GPSCLOCK_ENABLE
-	bool ignore_trailing_edge;
-#endif /* GPSCLOCK_ENABLE */
     } nmea;
 #endif /* NMEA_ENABLE */
     /*
@@ -684,7 +643,7 @@ struct gps_device_t {
 	    unsigned int can_msgcnt;
 	    unsigned int can_net;
 	    unsigned int unit;
-	    unsigned int unit_valid;
+	    bool unit_valid;
 	    int mode;
 	    unsigned int mode_valid;
 	    unsigned int idx;
@@ -744,6 +703,12 @@ struct gps_device_t {
     } dgpsip;
 };
 
+/*
+ * These are used where a file descriptor of 0 or greater indicaes open device.
+ */
+#define UNALLOCATED_FD	-1	/* this slot is available for reallocation */
+#define PLACEHOLDING_FD	-2	/* this slot *not* available for reallocation */
+
 /* logging levels */
 #define LOG_ERROR 	-1	/* errors, display always */
 #define LOG_SHOUT	0	/* not an error but we should always see it */
@@ -761,7 +726,7 @@ struct gps_device_t {
 #define IS_HIGHEST_BIT(v,m)	(v & ~((m<<1)-1))==0
 
 /* driver helper functions */
-extern void isgps_init(/*@out@*/struct gps_lexer_t *);
+extern void isgps_init(struct gps_lexer_t *);
 enum isgpsstat_t isgps_decode(struct gps_lexer_t *,
 			      bool (*preamble_match)(isgps30bits_t *),
 			      bool (*length_check)(struct gps_lexer_t *),
@@ -772,12 +737,12 @@ extern void isgps_output_magnavox(const isgps30bits_t *, unsigned int, FILE *);
 
 extern enum isgpsstat_t rtcm2_decode(struct gps_lexer_t *, unsigned int);
 extern void json_rtcm2_dump(const struct rtcm2_t *,
-			    /*@null@*/const char *, /*@out@*/char[], size_t);
-extern void rtcm2_unpack(/*@out@*/struct rtcm2_t *, char *);
+			    const char *, char[], size_t);
+extern void rtcm2_unpack(struct rtcm2_t *, char *);
 extern void json_rtcm3_dump(const struct rtcm3_t *,
-			    /*@null@*/const char *, /*@out@*/char[], size_t);
-extern void rtcm3_unpack(const struct gps_context_t *, 
-			 /*@out@*/struct rtcm3_t *, char *);
+			    const char *, char[], size_t);
+extern void rtcm3_unpack(const struct gps_context_t *,
+			 struct rtcm3_t *, char *);
 
 /* here are the available GPS drivers */
 extern const struct gps_type_t **gpsd_drivers;
@@ -835,152 +800,62 @@ extern ssize_t gpsd_write(struct gps_device_t *, const char *, const size_t);
 
 extern void gpsd_time_init(struct gps_context_t *, time_t);
 extern void gpsd_set_century(struct gps_device_t *);
-extern timestamp_t gpsd_gpstime_resolve(/*@in@ */ struct gps_device_t *,
+extern timestamp_t gpsd_gpstime_resolve(struct gps_device_t *,
 			      const unsigned short, const double);
-extern timestamp_t gpsd_utc_resolve(/*@in@*/struct gps_device_t *);
-extern void gpsd_century_update(/*@in@*/struct gps_device_t *, int);
+extern timestamp_t gpsd_utc_resolve(struct gps_device_t *);
+extern void gpsd_century_update(struct gps_device_t *, int);
 
-extern void gpsd_zero_satellites(/*@out@*/struct gps_data_t *sp);
+extern void gpsd_zero_satellites(struct gps_data_t *sp);
 extern gps_mask_t gpsd_interpret_subframe(struct gps_device_t *, unsigned int,
 				uint32_t[]);
 extern gps_mask_t gpsd_interpret_subframe_raw(struct gps_device_t *,
 				unsigned int, uint32_t[]);
-extern /*@ observer @*/ const char *gpsd_hexdump(/*@out@*/char *, size_t,
-						 /*@null@*/char *, size_t);
-extern /*@ observer @*/ const char *gpsd_packetdump(/*@out@*/char *, size_t,
-						    /*@null@*/char *, size_t);
-extern /*@ observer @*/ const char *gpsd_prettydump(struct gps_device_t *);
+extern const char *gpsd_hexdump(char *, size_t, char *, size_t);
+extern const char *gpsd_packetdump(char *, size_t, char *, size_t);
+extern const char *gpsd_prettydump(struct gps_device_t *);
 # ifdef __cplusplus
 extern "C" {
 # endif
-extern int gpsd_hexpack(/*@in@*/const char *, /*@out@*/char *, size_t);
+extern int gpsd_hexpack(const char *, char *, size_t);
 # ifdef __cplusplus
 }
 # endif
-extern ssize_t hex_escapes(/*@out@*/char *, const char *);
+extern ssize_t hex_escapes(char *, const char *);
 extern void gpsd_position_fix_dump(struct gps_device_t *,
-				   /*@out@*/char[], size_t);
+				   char[], size_t);
 extern void gpsd_clear_data(struct gps_device_t *);
 extern socket_t netlib_connectsock(int, const char *, const char *, const char *);
 extern socket_t netlib_localsocket(const char *, int);
-extern const char /*@observer@*/ *netlib_errstr(const int);
-extern char /*@observer@*/ *netlib_sock2ip(socket_t);
+extern const char *netlib_errstr(const int);
+extern char *netlib_sock2ip(socket_t);
 
-extern void nmea_tpv_dump(struct gps_device_t *, /*@out@*/char[], size_t);
-extern void nmea_sky_dump(struct gps_device_t *, /*@out@*/char[], size_t);
-extern void nmea_subframe_dump(struct gps_device_t *, /*@out@*/char[], size_t);
-extern void nmea_ais_dump(struct gps_device_t *, /*@out@*/char[], size_t);
-extern unsigned int ais_binary_encode(struct ais_t *ais, /*@out@*/unsigned char *bits, int flag);
+extern void nmea_tpv_dump(struct gps_device_t *, char[], size_t);
+extern void nmea_sky_dump(struct gps_device_t *, char[], size_t);
+extern void nmea_subframe_dump(struct gps_device_t *, char[], size_t);
+extern void nmea_ais_dump(struct gps_device_t *, char[], size_t);
+extern unsigned int ais_binary_encode(struct ais_t *ais, unsigned char *bits, int flag);
 
+#ifdef NTP_ENABLE
+extern void ntp_latch(struct gps_device_t *device,  struct timedelta_t *td);
 #ifdef NTPSHM_ENABLE
 extern void ntpshm_context_init(struct gps_context_t *);
 extern void ntpshm_session_init(struct gps_device_t *);
-extern int ntpshm_put(struct gps_device_t *, volatile struct shmTime *, struct timedrift_t *);
-extern void ntpshm_latch(struct gps_device_t *device,  /*@out@*/struct timedrift_t *td);
+extern int ntpshm_put(struct gps_device_t *, volatile struct shmTime *, struct timedelta_t *);
 extern void ntpshm_link_deactivate(struct gps_device_t *);
 extern void ntpshm_link_activate(struct gps_device_t *);
 #endif /* NTPSHM_ENABLE */
-#ifdef PPS_ENABLE
-extern void pps_early_init(struct gps_context_t *);
-#endif /* PPS_ENABLE */
-
-/* normalize a timespec 
- * 
- * three cases to note
- * if tv_sec is positve, then tv_nsec must be positive
- * if tv_sec is negative, then tv_nsec must be negative
- * if tv_sec is zero, then tv_nsec may be positive or negative.
- *
- * this only handles the case where two normalized timespecs
- * are added or subracted.  (e.g. only a one needs to be borrowed/carried
- */
-/*@-type -noeffect@*/ /* splint is confused about struct timespec */
-/*@unused@*/static inline void TS_NORM( struct timespec *ts)
-{
-    if ( (  1 <= ts->tv_sec ) ||
-         ( (0 == ts->tv_sec ) && (0 <= ts->tv_nsec ) ) ) {
-        /* result is positive */
-	if ( 1000000000 <= ts->tv_nsec ) {
-            /* borrow from tv_sec */
-	    ts->tv_nsec -= 1000000000;
-	    ts->tv_sec++;
-	} else if ( 0 > (ts)->tv_nsec ) {
-            /* carry to tv_sec */
-	    ts->tv_nsec += 1000000000;
-	    ts->tv_sec--;
-	}
-    }  else {
-        /* result is negative */
-	if ( -1000000000 >= ts->tv_nsec ) {
-            /* carry to tv_sec */
-	    ts->tv_nsec += 1000000000;
-	    ts->tv_sec--;
-	} else if ( 0 < ts->tv_nsec ) {
-            /* borrow from tv_sec */
-	    ts->tv_nsec -= 1000000000;
-	    ts->tv_sec++;
-	}
-    }
-}
-/*@+type +noeffect@*/
-
-/* normalize a timeval */
-#define TV_NORM(tv)  \
-    do { \
-	if ( 1000000 <= (tv)->tv_usec ) { \
-	    (tv)->tv_usec -= 1000000; \
-	    (tv)->tv_sec++; \
-	} else if ( 0 > (tv)->tv_usec ) { \
-	    (tv)->tv_usec += 1000000; \
-	    (tv)->tv_sec--; \
-	} \
-    } while (0)
-
-/* convert timespec to timeval, with rounding */
-#define TSTOTV(tv, ts) \
-    do { \
-	(tv)->tv_sec = (ts)->tv_sec; \
-	(tv)->tv_usec = ((ts)->tv_nsec + 500)/1000; \
-        TV_NORM( tv ); \
-    } while (0)
-
-/* convert timeval to timespec */
-#define TVTOTS(ts, tv) \
-    do { \
-	(ts)->tv_sec = (tv)->tv_sec; \
-	(ts)->tv_nsec = (tv)->tv_usec*1000; \
-        TS_NORM( ts ); \
-    } while (0)
-
-/* subtract two timespec */
-#define TS_SUB(r, ts1, ts2) \
-    do { \
-	(r)->tv_sec = (ts1)->tv_sec - (ts2)->tv_sec; \
-	(r)->tv_nsec = (ts1)->tv_nsec - (ts2)->tv_nsec; \
-        TS_NORM( r ); \
-    } while (0)
-
-extern void timespec_str(const struct timespec *, /*@out@*/char *, int);
-#define TIMESPEC_LEN	22	/* required length of a timespec buffer */
-
-#ifdef PPS_ENABLE
-extern void pps_thread_stash_fixtime(struct gps_device_t *, 
-			      timestamp_t, struct timespec);
-#endif /* PPS_ENABLE */
-extern void pps_thread_activate(struct gps_device_t *);
-extern void pps_thread_deactivate(struct gps_device_t *);
-extern int pps_thread_lastpps(struct gps_device_t *, struct timedrift_t *);
+#endif /* NTP_ENABLE */
 
 extern void errout_reset(struct gpsd_errout_t *errout);
 
 extern void gpsd_acquire_reporting_lock(void);
 extern void gpsd_release_reporting_lock(void);
 
-extern void ecef_to_wgs84fix(/*@out@*/struct gps_fix_t *,
-			     /*@out@*/double *,
+extern void ecef_to_wgs84fix(struct gps_fix_t *,
+			     double *,
 			     double, double, double,
 			     double, double, double);
-extern void clear_dop(/*@out@*/struct dop_t *);
+extern void clear_dop(struct dop_t *);
 
 /* shmexport.c */
 #define GPSD_SHM_KEY	0x47505344	/* "GPSD" */
@@ -994,12 +869,11 @@ extern bool shm_acquire(struct gps_context_t *);
 extern void shm_release(struct gps_context_t *);
 extern void shm_update(struct gps_context_t *, struct gps_data_t *);
 
-
 /* dbusexport.c */
-#if defined(DBUS_EXPORT_ENABLE) && !defined(S_SPLINT_S)
+#if defined(DBUS_EXPORT_ENABLE)
 int initialize_dbus_connection (void);
 void send_dbus_fix (struct gps_device_t* channel);
-#endif /* defined(DBUS_EXPORT_ENABLE) && !defined(S_SPLINT_S) */
+#endif /* defined(DBUS_EXPORT_ENABLE) */
 
 /* srecord.c */
 extern void hexdump(size_t, unsigned char *, unsigned char *);
@@ -1009,12 +883,16 @@ extern int srec_hdr(unsigned int, unsigned char *, unsigned char *);
 extern int srec_fin(unsigned int, unsigned char *);
 extern unsigned char hc(unsigned char);
 
+/* a BSD transplant */
+int b64_ntop(unsigned char const *src, size_t srclength, char *target,
+    size_t targsize);
+
 /* application interface */
-extern void gps_context_init(struct gps_context_t *context, 
-			     /*@observer@*/const char *label);
+extern void gps_context_init(struct gps_context_t *context,
+			     const char *label);
 extern void gpsd_init(struct gps_device_t *,
 		      struct gps_context_t *,
-		      /*@null@*/const char *);
+		      const char *);
 extern void gpsd_clear(struct gps_device_t *);
 extern int gpsd_open(struct gps_device_t *);
 #define O_CONTINUE	0
@@ -1026,10 +904,10 @@ extern void gpsd_deactivate(struct gps_device_t *);
 #define AWAIT_GOT_INPUT	1
 #define AWAIT_NOT_READY	0
 #define AWAIT_FAILED	-1
-extern int gpsd_await_data(/*@out@*/fd_set *,
-			   /*@out@*/fd_set *,
-			    const int, 
-			    /*@in@*/fd_set *,
+extern int gpsd_await_data(fd_set *,
+			   fd_set *,
+			    const int,
+			    fd_set *,
 			    struct gpsd_errout_t *errout);
 extern gps_mask_t gpsd_poll(struct gps_device_t *);
 #define DEVICE_EOF	-3
@@ -1043,15 +921,15 @@ extern int gpsd_multipoll(const bool,
 			  float reawake_time);
 extern void gpsd_wrap(struct gps_device_t *);
 extern bool gpsd_add_device(const char *device_name, bool flag_nowait);
-extern /*@observer@*/const char *gpsd_maskdump(gps_mask_t);
+extern const char *gpsd_maskdump(gps_mask_t);
 
 /* exceptional driver methods */
 extern bool ubx_write(struct gps_device_t *, unsigned int, unsigned int,
-		      /*@null@*/unsigned char *, size_t);
+		      unsigned char *, size_t);
 extern bool ais_binary_decode(const struct gpsd_errout_t *errout,
 			      struct ais_t *ais,
 			      const unsigned char *, size_t,
-			      /*@null@*/struct ais_type24_queue_t *);
+			      struct ais_type24_queue_t *);
 
 /* debugging apparatus for the client library */
 #ifdef CLIENTDEBUG_ENABLE
@@ -1064,19 +942,14 @@ extern bool ais_binary_decode(const struct gpsd_errout_t *errout,
 extern int libgps_debuglevel;
 extern void libgps_dump_state(struct gps_data_t *);
 #else
-# define libgps_debug_trace(args) /*@i1@*/do { } while (0)
+# define libgps_debug_trace(args) do { } while (0)
 #endif /* LIBGPS_DEBUG */
 
 void gpsd_labeled_report(const int, const int,
 			 const char *, const char *, va_list);
-PRINTF_FUNC(3, 4) void gpsd_report(const struct gpsd_errout_t *, const int, const char *, ...);
-
-#ifdef S_SPLINT_S
-extern struct protoent *getprotobyname(const char *);
-extern /*@observer@*/char *strptime(const char *,const char *tp,/*@out@*/struct tm *)/*@modifies tp@*/;
-extern struct tm *gmtime_r(const time_t *,/*@out@*/struct tm *tp)/*@modifies tp@*/;
-extern struct tm *localtime_r(const time_t *,/*@out@*/struct tm *tp)/*@modifies tp@*/;
-#endif /* S_SPLINT_S */
+void gpsd_vlog(const struct gpsd_errout_t *,
+	       const int, char *, size_t, const char *, va_list ap);
+PRINTF_FUNC(3, 4) void gpsd_log(const struct gpsd_errout_t *, const int, const char *, ...);
 
 /*
  * How to mix together epx and epy to get a horizontal circular error
@@ -1085,7 +958,7 @@ extern struct tm *localtime_r(const time_t *,/*@out@*/struct tm *tp)/*@modifies 
  */
 #define EMIX(x, y)	(((x) > (y)) ? (x) : (y))
 
-#define NITEMS(x) (int)(sizeof(x)/sizeof(x[0]))
+#define NITEMS(x) ((int) (sizeof(x) / sizeof(x[0]) + COMPILE_CHECK_IS_ARRAY(x)))
 
 /* Ugh - required for build on Solaris */
 #ifndef NAN
@@ -1098,24 +971,6 @@ void cfmakeraw(struct termios *);
 #endif /* defined(__CYGWIN__) */
 
 #define DEVICEHOOKPATH "/"SYSCONFDIR"/gpsd/device-hook"
-
-/* Needed because 4.x versions of GCC are really annoying */
-#define ignore_return(funcall) \
-    do { \
-        ssize_t locresult = (funcall); \
-        assert(locresult != -23); \
-    } while (0)
-
-static /*@unused@*/ inline void memory_barrier(void)
-{
-#ifndef S_SPLINT_S
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7)
-       __atomic_thread_fence(__ATOMIC_SEQ_CST);
-#elif (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
-       __sync_synchronize();
-#endif
-#endif /* S_SPLINT_S */
-}
 
 # ifdef __cplusplus
 }

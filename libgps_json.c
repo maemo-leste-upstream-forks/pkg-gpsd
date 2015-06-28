@@ -24,18 +24,9 @@ PERMISSIONS
 #ifdef SOCKET_EXPORT_ENABLE
 #include "gps_json.h"
 
-/*
- * There's a splint limitation that parameters can be declared
- * @out@ or @null@ but not, apparently, both.  This collides with
- * the (admittedly tricky) way we use endptr. The workaround is to
- * declare it @null@ and use -compdef around the JSON reader calls.
- */
-/*@-compdef@*/
-
 static int json_tpv_read(const char *buf, struct gps_data_t *gpsdata,
-			 /*@null@*/ const char **endptr)
+			 const char **endptr)
 {
-    /*@ -fullinitblock @*/
     const struct json_attr_t json_attrs_1[] = {
 	/* *INDENT-OFF* */
 	{"class",  t_check,   .dflt.check = "TPV"},
@@ -76,15 +67,13 @@ static int json_tpv_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@ +fullinitblock @*/
 
     return json_read_object(buf, json_attrs_1, endptr);
 }
 
 static int json_noise_read(const char *buf, struct gps_data_t *gpsdata,
-                           /*@null@*/ const char **endptr)
+                           const char **endptr)
 {
-    /*@ -fullinitblock @*/
     const struct json_attr_t json_attrs_1[] = {
 	/* *INDENT-OFF* */
 	{"class",  t_check,   .dflt.check = "GST"},
@@ -111,16 +100,13 @@ static int json_noise_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@ +fullinitblock @*/
 
     return json_read_object(buf, json_attrs_1, endptr);
 }
 
 static int json_sky_read(const char *buf, struct gps_data_t *gpsdata,
-			 /*@null@*/ const char **endptr)
+			 const char **endptr)
 {
-    /*@ -fullinitblock @*/
-    /*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_attrs_satellites[] = {
 	/* *INDENT-OFF* */
 	{"PRN",	   t_integer, STRUCTOBJECT(struct satellite_t, PRN)},
@@ -161,7 +147,6 @@ static int json_sky_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@ +fullinitblock @*/
     int status, i, j;
 
     for (i = 0; i < MAXCHANNELS; i++) {
@@ -187,9 +172,8 @@ static int json_sky_read(const char *buf, struct gps_data_t *gpsdata,
 }
 
 static int json_att_read(const char *buf, struct gps_data_t *gpsdata,
-			 /*@null@*/ const char **endptr)
+			 const char **endptr)
 {
-    /*@ -fullinitblock @*/
     const struct json_attr_t json_attrs_1[] = {
 	/* *INDENT-OFF* */
 	{"class",    t_check,     .dflt.check = "ATT"},
@@ -238,15 +222,13 @@ static int json_att_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@ +fullinitblock @*/
 
     return json_read_object(buf, json_attrs_1, endptr);
 }
 
 static int json_devicelist_read(const char *buf, struct gps_data_t *gpsdata,
-				/*@null@*/ const char **endptr)
+				const char **endptr)
 {
-    /*@ -fullinitblock @*/
     const struct json_attr_t json_attrs_subdevices[] = {
 	/* *INDENT-OFF* */
 	{"class",      t_check,      .dflt.check = "DEVICE"},
@@ -274,7 +256,6 @@ static int json_devicelist_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@-type@*//* STRUCTARRAY confuses splint */
     const struct json_attr_t json_attrs_devices[] = {
 	{"class", t_check,.dflt.check = "DEVICES"},
 	{"devices", t_array, STRUCTARRAY(gpsdata->devices.list,
@@ -282,8 +263,6 @@ static int json_devicelist_read(const char *buf, struct gps_data_t *gpsdata,
 					 &gpsdata->devices.ndevices)},
 	{NULL},
     };
-    /*@+type@*/
-    /*@ +fullinitblock @*/
     int status;
 
     memset(&gpsdata->devices, '\0', sizeof(gpsdata->devices));
@@ -297,9 +276,8 @@ static int json_devicelist_read(const char *buf, struct gps_data_t *gpsdata,
 }
 
 static int json_version_read(const char *buf, struct gps_data_t *gpsdata,
-			     /*@null@*/ const char **endptr)
+			     const char **endptr)
 {
-    /*@ -fullinitblock @*/
     const struct json_attr_t json_attrs_version[] = {
 	/* *INDENT-OFF* */
         {"class",     t_check,   .dflt.check = "VERSION"},
@@ -314,7 +292,6 @@ static int json_version_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@ +fullinitblock @*/
     int status;
 
     memset(&gpsdata->version, '\0', sizeof(gpsdata->version));
@@ -324,9 +301,8 @@ static int json_version_read(const char *buf, struct gps_data_t *gpsdata,
 }
 
 static int json_error_read(const char *buf, struct gps_data_t *gpsdata,
-			   /*@null@*/ const char **endptr)
+			   const char **endptr)
 {
-    /*@ -fullinitblock @*/
     const struct json_attr_t json_attrs_error[] = {
 	/* *INDENT-OFF* */
         {"class",     t_check,   .dflt.check = "ERROR"},
@@ -335,7 +311,6 @@ static int json_error_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@ +fullinitblock @*/
     int status;
 
     memset(&gpsdata->error, '\0', sizeof(gpsdata->error));
@@ -346,14 +321,13 @@ static int json_error_read(const char *buf, struct gps_data_t *gpsdata,
     return status;
 }
 
-int json_pps_read(const char *buf, struct gps_data_t *gpsdata,
-			   /*@null@*/ const char **endptr)
+int json_toff_read(const char *buf, struct gps_data_t *gpsdata,
+			   const char **endptr)
 {
     int real_sec = 0, real_nsec = 0, clock_sec = 0, clock_nsec = 0;
-    /*@ -fullinitblock @*/
-    const struct json_attr_t json_attrs_pps[] = {
+    const struct json_attr_t json_attrs_toff[] = {
 	/* *INDENT-OFF* */
-        {"class",     t_check,   .dflt.check = "PPS"},
+        {"class",     t_check,   .dflt.check = "TOFF"},
 	{"device",    t_string,  .addr.string = gpsdata->dev.path,
 			         .len = sizeof(gpsdata->dev.path)},
 	{"real_sec",  t_integer, .addr.integer = &real_sec,
@@ -367,26 +341,57 @@ int json_pps_read(const char *buf, struct gps_data_t *gpsdata,
 	{NULL},
 	/* *INDENT-ON* */
     };
-    /*@ +fullinitblock @*/
     int status;
 
-    memset(&gpsdata->timedrift, '\0', sizeof(gpsdata->timedrift));
-    status = json_read_object(buf, json_attrs_pps, endptr);
-    /*
-     * This is theoretically dodgy, but in practice likely not
-     * to break until GPSes are obsolete.
-     */
-    /*@-usedef@*/
-    /*@-type@*//* splint is confused about struct timespec */
-    gpsdata->timedrift.real.tv_sec = (time_t)real_sec;
-    gpsdata->timedrift.real.tv_nsec = (long)real_nsec;
-    gpsdata->timedrift.clock.tv_sec = (time_t)clock_sec;
-    gpsdata->timedrift.clock.tv_nsec = (long)clock_nsec;
-    /*@+type@*/
-    /*@+usedef@*/
+    memset(&gpsdata->toff, '\0', sizeof(gpsdata->toff));
+    status = json_read_object(buf, json_attrs_toff, endptr);
+    gpsdata->toff.real.tv_sec = (time_t)real_sec;
+    gpsdata->toff.real.tv_nsec = (long)real_nsec;
+    gpsdata->toff.clock.tv_sec = (time_t)clock_sec;
+    gpsdata->toff.clock.tv_nsec = (long)clock_nsec;
     if (status != 0)
 	return status;
 
+    return status;
+}
+
+int json_pps_read(const char *buf, struct gps_data_t *gpsdata,
+		  const char **endptr)
+{
+    int real_sec = 0, real_nsec = 0, clock_sec = 0, clock_nsec = 0, precision=0;
+    const struct json_attr_t json_attrs_pps[] = {
+	/* *INDENT-OFF* */
+        {"class",     t_check,   .dflt.check = "PPS"},
+	{"device",    t_string,  .addr.string = gpsdata->dev.path,
+			         .len = sizeof(gpsdata->dev.path)},
+	{"real_sec",  t_integer, .addr.integer = &real_sec,
+			         .dflt.integer = 0},
+	{"real_nsec", t_integer, .addr.integer = &real_nsec,
+			         .dflt.integer = 0},
+	{"clock_sec", t_integer, .addr.integer = &clock_sec,
+			         .dflt.integer = 0},
+	{"clock_nsec",t_integer, .addr.integer = &clock_nsec,
+			         .dflt.integer = 0},
+	{"precision", t_integer, .addr.integer = &precision,
+			         .dflt.integer = 0},
+	{NULL},
+	/* *INDENT-ON* */
+    };
+    int status;
+
+    memset(&gpsdata->pps, '\0', sizeof(gpsdata->pps));
+    status = json_read_object(buf, json_attrs_pps, endptr);
+
+    /* This is good until GPS are more than nanosec accurate */
+    gpsdata->pps.real.tv_sec = (time_t)real_sec;
+    gpsdata->pps.real.tv_nsec = (long)real_nsec;
+    gpsdata->pps.clock.tv_sec = (time_t)clock_sec;
+    gpsdata->pps.clock.tv_nsec = (long)clock_nsec;
+    /* FIXME! find a place to stash precision */
+    if (status != 0)
+	return status;
+
+    /* FIXME: precision is currently parsed but discarded */
     return status;
 }
 
@@ -517,18 +522,24 @@ int libgps_json_unpack(const char *buf,
 	    gpsdata->set |= ERROR_SET;
 	}
 	return status;
+    } else if (str_starts_with(classtag, "\"class\":\"TOFF\"")) {
+	status = json_pps_read(buf, gpsdata, end);
+	if (status == 0) {
+	    gpsdata->set &= ~UNION_SET;
+	    gpsdata->set |= TOFF_SET;
+	}
+	return status;
     } else if (str_starts_with(classtag, "\"class\":\"PPS\"")) {
 	status = json_pps_read(buf, gpsdata, end);
 	if (status == 0) {
 	    gpsdata->set &= ~UNION_SET;
-	    gpsdata->set |= PPSDRIFT_SET;
+	    gpsdata->set |= PPS_SET;
 	}
 	return status;
     } else
 	return -1;
 }
 
-/*@+compdef@*/
 
 #endif /* SOCKET_EXPORT_ENABLE */
 

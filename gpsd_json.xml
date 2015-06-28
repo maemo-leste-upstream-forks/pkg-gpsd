@@ -35,9 +35,11 @@ also exist for other languages) and take appropriate care to
 conditionalize their code on the major and minor protocol version
 symbols.</para>
 
-<para>The GPSD protocol is built on top of JSON, JavaScript
-Object Notation. GPSD's use of JSON is restricted in some ways
-that make parsing it in fixed-extent languages (such as C) easier.</para>
+<para>The GPSD protocol is built on top of JSON, JavaScript Object
+Notation, as specified in RFC 7159: <citetitle>The JavaScript Object
+Notation (JSON) Data Interchange Format</citetitle>. GPSD's use of
+JSON is restricted in some ways that make parsing it in fixed-extent
+languages (such as C) easier.</para>
 
 <para>A request line is introduced by "?" and may include multiple
 commands.  Commands begin with a command identifier, followed either
@@ -60,7 +62,7 @@ limit for responses and reports is 1536 characters, including trailing
 newline; longer responses will be truncated, so client code must be
 prepared for the possibility of invalid JSON fragments.</para>
 
-<para>In JSON reports, if an attribute is present only if the parent 
+<para>In JSON reports, if an attribute is present only if the parent
 attribute is present or has a particular range, then the parent
 attribute is emitted first.</para>
 
@@ -123,14 +125,14 @@ Others may be reported or not depending on the fix quality.</para>
 	<entry>No</entry>
 	<entry>string</entry>
         <entry>Time/date stamp in ISO8601 format, UTC. May have a
-	fractional part of up to .001sec precision. May be absent if mode 
+	fractional part of up to .001sec precision. May be absent if mode
         is not 2 or 3.</entry>
 </row>
 <row>
 	<entry>ept</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Estimated timestamp error (%f, seconds, 95% confidence). 
+        <entry>Estimated timestamp error (%f, seconds, 95% confidence).
         Present if time is present.</entry>
 </row>
 <row>
@@ -157,24 +159,24 @@ Others may be reported or not depending on the fix quality.</para>
 	<entry>epx</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Longitude error estimate in meters, 95% confidence. Present 
-        if mode is 2 or 3 and DOPs can be calculated from the satellite 
+        <entry>Longitude error estimate in meters, 95% confidence. Present
+        if mode is 2 or 3 and DOPs can be calculated from the satellite
         view.</entry>
 </row>
 <row>
 	<entry>epy</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Latitude error estimate in meters, 95% confidence. Present 
-        if mode is 2 or 3 and DOPs can be calculated from the satellite 
+        <entry>Latitude error estimate in meters, 95% confidence. Present
+        if mode is 2 or 3 and DOPs can be calculated from the satellite
         view.</entry>
 </row>
 <row>
 	<entry>epv</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Estimated vertical error in meters, 95% confidence. Present 
-        if mode is 3 and DOPs can be calculated from the satellite 
+        <entry>Estimated vertical error in meters, 95% confidence. Present
+        if mode is 3 and DOPs can be calculated from the satellite
         view.</entry>
 </row>
 <row>
@@ -367,7 +369,7 @@ error modeling than the covariance calculation.</para>
 	<entry>PRN</entry>
 	<entry>Yes</entry>
 	<entry>numeric</entry>
-        <entry>PRN ID of the satellite. 1-63 are GNSS satellites, 
+        <entry>PRN ID of the satellite. 1-63 are GNSS satellites,
 	64-96 are GLONASS satellites, 100-164 are SBAS satellites</entry>
 </row>
 <row>
@@ -986,8 +988,8 @@ object.</para>
 	<entry>pps</entry>
 	<entry>No</entry>
 	<entry>boolean</entry>
-        <entry>If true, emit a PPS JSON message when the device issues
-        1PPS. Default is false.</entry>
+        <entry>If true, emit the TOFF JSON message on each cycle and a
+	PPS JSON message when the device issues 1PPS. Default is false.</entry>
 </row>
 <row>
 	<entry>device</entry>
@@ -1129,11 +1131,125 @@ into this response.</para>
 </varlistentry>
 
 <varlistentry>
+<term>TOFF</term>
+<listitem>
+
+<para>This message is emitted on each cycle and reports the offset
+between the host's clock time and the GPS time at top of second
+(actually, when the first data for the reporting cycle is received).</para>
+
+<para>This message exactly mirrors the PPS message except for two
+details.</para>
+
+<para>TOFF emits no NTP precision, this is assumed to be -2.  See
+the NTP documentation for their definition of precision.</para>
+
+<para>  The TOFF message reports the GPS time as derived from the GPS
+serial data stream.  The PPS message reports the GPS time as derived
+from the GPS PPS pulse.</para>
+
+<para>A TOFF object has the following elements:</para>
+
+<table frame="all" pgwide="0"><title>TOFF object</title>
+<tgroup cols="4" align="left" colsep="1" rowsep="1">
+<thead>
+<row>
+	<entry>Name</entry>
+	<entry>Always?</entry>
+	<entry>Type</entry>
+	<entry>Description</entry>
+</row>
+</thead>
+<tbody>
+<row>
+	<entry>class</entry>
+	<entry>Yes</entry>
+	<entry>string</entry>
+        <entry>Fixed: "TOFF"</entry>
+</row>
+<row>
+	<entry>device</entry>
+	<entry>Yes</entry>
+	<entry>string</entry>
+        <entry>Name of originating device</entry>
+</row>
+<row>
+	<entry>real_sec</entry>
+	<entry>Yes</entry>
+	<entry>numeric</entry>
+        <entry>seconds from the GPS clock</entry>
+</row>
+<row>
+	<entry>real_nsec</entry>
+	<entry>Yes</entry>
+	<entry>numeric</entry>
+        <entry>nanoseconds from the GPS clock</entry>
+</row>
+<row>
+	<entry>clock_sec</entry>
+	<entry>Yes</entry>
+	<entry>numeric</entry>
+        <entry>seconds from the system clock</entry>
+</row>
+<row>
+	<entry>clock_nsec</entry>
+	<entry>Yes</entry>
+	<entry>numeric</entry>
+        <entry>nanoseconds from the system clock</entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+
+<para>This message is emitted once per second to watchers of a device
+and is intended to report the time stamps of the in-band report of the
+GPS and seconds as reported by the system clock (which may be
+NTP-corrected) when the first valid timestamp of the reporting cycle
+was seen.</para>
+
+<para>The message contains two second/nanosecond pairs: real_sec and
+real_nsec contain the time the GPS thinks it was at the start of the
+current cycle; clock_sec and clock_nsec contain the time the system
+clock thinks it was on receipt of the first timing message of the cycle.
+real_nsec is always to nanosecond precision. clock_nsec is nanosecond
+precision on most systems.</para>
+
+<para>Here's an example:</para>
+
+<programlisting>
+{"class":"TOFF","device":"/dev/ttyUSB0",
+     "real_sec":1330212592, "real_nsec":343182,
+     "clock_sec":1330212592,"clock_nsec":343184,
+     "precision":-2}}
+</programlisting>
+
+</listitem>
+</varlistentry>
+
+<varlistentry>
 <term>PPS</term>
 <listitem>
 
-<para>This message is emitted each time the daemon sees a PPS (Pulse
+<para>This message is emitted each time the daemon sees a valid PPS (Pulse
 Per Second) strobe from a device.</para>
+
+<para>This message exactly mirrors the PPS message except for two
+details.</para>
+
+<para>PPS emits the NTP precision.  See the NTP documentation for their
+definition of precision.</para>
+
+<para>The TOFF message reports the GPS time as derived from the GPS
+serial data stream.  The PPS message reports the GPS time as derived
+from the GPS PPS pulse.</para>
+
+<para>There are various sources of error in the reported clock times.
+The speed of the serial connection between the GPS and the system adds
+a delay to start of cycle detection.  An even bigger error is added
+by the variable computation time inside the GPS.  Taken together the
+time derived from the start of the GPS cycle can have offsets of
+10 millisecond to 700 milliseconds and combined jjitter and wander of
+100 to 300 millisecond.</para>
 
 <para>A PPS object has the following elements:</para>
 
@@ -1164,13 +1280,13 @@ Per Second) strobe from a device.</para>
 	<entry>real_sec</entry>
 	<entry>Yes</entry>
 	<entry>numeric</entry>
-        <entry>seconds from the realtime clock</entry>
+        <entry>seconds from the PPS source</entry>
 </row>
 <row>
 	<entry>real_nsec</entry>
 	<entry>Yes</entry>
 	<entry>numeric</entry>
-        <entry>nanoseconds from the realtime clock</entry>
+        <entry>nanoseconds from the PPS source</entry>
 </row>
 <row>
 	<entry>clock_sec</entry>
@@ -1184,34 +1300,41 @@ Per Second) strobe from a device.</para>
 	<entry>numeric</entry>
         <entry>nanoseconds from the system clock</entry>
 </row>
+<row>
+	<entry>precision</entry>
+	<entry>Yes</entry>
+	<entry>numeric</entry>
+        <entry>NTP style estimate of PPS precision</entry>
+</row>
 </tbody>
 </tgroup>
 </table>
 
 <para>This message is emitted once per second to watchers of a device
-emitting PPS, and is intended to report the drift between the start of
-the GPS second and seconds as reported by the system clock (which may
-be NTP-corrected).</para>
+emitting PPS, and reports the time of the start of the GPS second (when
+the 1PPS arrives) and seconds as reported by the system clock (which
+may be NTP-corrected) at that moment.</para>
 
-<para>The message contains second/microsecond pairs for two clocks;
-the realtime clock without NTP correction (the result of 
-clock_gettime(CLOCK_REALTIME), but only to microsecond precision) 
-and the ordinary system clock (which may be NTP corrected).</para>
+<para>The message contains two second/nanosecond pairs: real_sec and
+real_nsec contain the time the GPS thinks it was at the PPS edge;
+clock_sec and clock_nsec contain the time the system clock thinks it was
+at the PPS edge. real_nsec is always to nanosecond precision. clock_nsec
+is nanosecond precision on most systems.</para>
 
 <para>There are various sources of error in the reported clock times.
 For PPS delivered via a real serial-line strobe, serial-interrupt
 latency plus processing time to the timer call should be bounded above
-by about 10 microseconds; USB-to-serial control-line emulation is
-known to add jitter of about 50 microseconds.  (Both figures are for
-GPSD running in non-realtime mode on an x86 with a gigahertz clock and
-are estimates based on measured latency in other applications)</para>
+by about 10 microseconds; that can be reduced to less than 1 microsecond if
+your kernel supports RFC 2783.   USB1.1-to-serial control-line emulation is
+limited to about 1 millisecond. seconds.</para>
 
 <para>Here's an example:</para>
 
 <programlisting>
 {"class":"PPS","device":"/dev/ttyUSB0",
      "real_sec":1330212592, "real_nsec":343182,
-     "clock_sec":1330212592,"clock_nsec":343184}
+     "clock_sec":1330212592,"clock_nsec":343184,
+     "precision":-3}
 </programlisting>
 
 </listitem>
@@ -1244,7 +1367,7 @@ backup battery.</para>
 
 <para>A DEVICE object has the following elements:</para>
 
-<table frame="all" pgwide="0"><title>CONFIGCHAN object</title>
+<table frame="all" pgwide="0"><title>DEVICE object</title>
 <tgroup cols="4" align="left" colsep="1" rowsep="1">
 <thead>
 <row>
@@ -1341,7 +1464,7 @@ backup battery.</para>
 	<entry>No</entry>
 	<entry>real</entry>
         <entry>Device minimum cycle time in seconds. Reported from
-	?CONFIGDEV when (and only when) the rate is switchable. It is
+	?DEVICE when (and only when) the rate is switchable. It is
 	read-only and not settable.</entry>
 </row>
 </tbody>
@@ -2235,7 +2358,7 @@ message:</para>
 <row>
 	<entry>tod</entry>
 	<entry>uinteger</entry>
-        <entry><para>Count of 30-second periods since the top of the 
+        <entry><para>Count of 30-second periods since the top of the
 	hour.</para></entry>
 </row>
 <row>

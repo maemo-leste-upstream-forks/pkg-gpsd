@@ -1,7 +1,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name: gpsd
-Version: 3.12~dev
+Version: 3.15
 Release: 1%{?dist}
 Summary: Service daemon for mediating access to a GPS
 
@@ -234,11 +234,9 @@ fi
 %{python_sitearch}/gps/fake*
 %{_includedir}/gps.h
 %{_includedir}/libgpsmm.h
-#%{_includedir}/gpsd.h
 %{_mandir}/man1/gpsfake.1*
 %{_mandir}/man3/libgps.3*
 %{_mandir}/man3/libgpsmm.3*
-%{_mandir}/man3/libgpsd.3*
 %{_mandir}/man5/srec.5*
 
 %files -n libQgpsmm
@@ -284,6 +282,9 @@ fi
 %attr(0755,root,root) %{_var}/www/html/gpsd/pgps.cgi
 
 %changelog
+* Mon Mar 23 00:11:00 EDT 2015Eric S. Raymond <esr@thyrsus.com> 3.15-1
+- We no longer export libgpsd.
+
 * Sun Jul 31 2011 Michael R. Davis <mrdvt@cpan.org> 3.0-2
 - Added gegps, gpsdctl
 - Dropped hotplug wrapper

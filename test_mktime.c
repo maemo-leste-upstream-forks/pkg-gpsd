@@ -8,8 +8,8 @@
 #include <time.h>
 
 #include "gps.h"
+#include "compiler.h"
 
-/*@-type@*/
 static struct
 {
     struct tm t;
@@ -81,9 +81,7 @@ static struct
 	/* *INDENT-ON* */
 };
 
-/*@-type@*/
 
-/*@+longunsignedintegral*/
 int main(int argc UNUSED, char *argv[] UNUSED)
 {
     int i;
@@ -107,4 +105,5 @@ int main(int argc UNUSED, char *argv[] UNUSED)
     return (int)failed;
 }
 
-/*@-longunsignedintegral*/
+/* end */
+

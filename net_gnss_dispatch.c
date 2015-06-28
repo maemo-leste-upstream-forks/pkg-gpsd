@@ -8,10 +8,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef S_SPLINT_S
 #include <sys/socket.h>
 #include <unistd.h>
-#endif /* S_SPLINT_S */
 
 #include "gpsd.h"
 #include "strfuncs.h"
@@ -28,7 +26,6 @@ bool netgnss_uri_check(char *name)
 }
 
 
-/*@ -branchstate */
 int netgnss_uri_open(struct gps_device_t *dev, char *netgnss_service)
 /* open a connection to a DGNSS service */
 {
@@ -45,13 +42,12 @@ int netgnss_uri_open(struct gps_device_t *dev, char *netgnss_service)
 #ifndef REQUIRE_DGNSS_PROTO
     return dgpsip_open(dev, netgnss_service);
 #else
-    gpsd_report(&dev->context.errout, LOG_ERROR,
-		"Unknown or unspecified DGNSS protocol for service %s\n",
-		netgnss_service);
+    gpsd_log(&dev->context.errout, LOG_ERROR,
+	     "Unknown or unspecified DGNSS protocol for service %s\n",
+	     netgnss_service);
     return -1;
 #endif
 }
-/*@ +branchstate */
 
 void netgnss_report(struct gps_context_t *context,
 		    struct gps_device_t *gps, struct gps_device_t *dgnss)

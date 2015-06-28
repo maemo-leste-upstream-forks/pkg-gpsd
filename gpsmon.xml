@@ -61,6 +61,14 @@ particular, this tool does not do any interpolation or modeling
 to derive climb/sink or error estimates. Nor does it discard
 altitude reports when the fix quality is too low.</para>
 
+<para>Unlike <application>gpsd</application>,
+<application>gpsmon</application> never writes control or probe
+strings to the device unless you explicitly tell it to.  Thus, while
+it will auto-sync to binary packet types, it won't automatically
+reecognize a device shipping an extended NMEA protocol as anything
+other than a plain NMEA device. Use the <option>-t</option> option or
+the <command>t</command> to work around this.</para>
+
 <para><application>gpsmon</application> is a designed to run in a
 terminal emulator with a minimum 25x80 size; the non-GUI interface is
 a design choice made to accommodate users operating in constrained
@@ -98,12 +106,12 @@ IPv4 and IPv6.</para></listitem>
 </varlistentry>
 <varlistentry>
 <term>71.162.241.5:2317:/dev/ttyS3</term>
-<listitem><para>Look at port 2317 at the specified IPv4 
+<listitem><para>Look at port 2317 at the specified IPv4
 address, collecting data from attached serial device 3.</para></listitem>
 </varlistentry>
 <varlistentry>
 <term>[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:2317:/dev/ttyS5</term>
-<listitem><para>Look at port 2317 at the specified IPv6 
+<listitem><para>Look at port 2317 at the specified IPv6
 address, collecting data from attached serial device 5.</para></listitem>
 </varlistentry>
 </variablelist>
@@ -146,7 +154,7 @@ packet type is NMEA but the device is known to have a binary mode,
 such as SiRF binary.</para>
 
 <para>The -a option enables a special debugging mode that does not
-use screen painting.  Packets are dumped normally; any character 
+use screen painting.  Packets are dumped normally; any character
 typed suspends packet dumping and brings up a command prompt. This
 feature will mainly be of interest to GPSD developers.</para>
 
@@ -156,10 +164,11 @@ the contents of several especially interesting packet types.  The
 second and the system clock at that time.</para>
 
 <para>The bottom half of the screen is a scrolling hex dump of all
-packets the GPS is issuing.  Dump lines beginning &gt;&gt;&gt;
-represent control packets sent to the GPS. Lines consisting of "PPS"
-surrounded by dashes, if present, indicate 1PPS and the start of the
-reporting cycle.</para>
+packets the GPS is issuing.  If the packet type is textual, any
+trailing CR/LF is omitted. Dump lines beginning &gt;&gt;&gt; represent
+control packets sent to the GPS. Lines consisting of "PPS" surrounded
+by dashes, if present, indicate 1PPS and the start of the reporting
+cycle.</para>
 
 </refsect1>
 <refsect1 id='commands'><title>COMMANDS</title>

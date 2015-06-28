@@ -21,12 +21,12 @@ static void basic_report(const char *buf)
 
 void errout_reset(struct gpsd_errout_t *errout)
 {
-    errout->debug = 0;
+    errout->debug = LOG_SHOUT;
     errout->report = basic_report;
 }
 
-void gpsd_report(const struct gpsd_errout_t *errout UNUSED, 
-		 int errlevel, const char *fmt, ... )
+void gpsd_log(const struct gpsd_errout_t *errout UNUSED,
+	      int errlevel, const char *fmt, ... )
 {
     char buf[BUFSIZ];
     PyObject *args;
@@ -256,7 +256,7 @@ level of the message and the message itself.\n\
 extern PyMODINIT_FUNC initpacket(void);
 
 PyMODINIT_FUNC
-// cppcheck-suppress unusedFunction 
+// cppcheck-suppress unusedFunction
 initpacket(void)
 {
     PyObject *m;

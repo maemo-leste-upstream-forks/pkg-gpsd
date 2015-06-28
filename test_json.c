@@ -57,14 +57,12 @@ static void assert_uinteger(char *attr, uint fld, uint val)
 
 static void assert_boolean(char *attr, bool fld, bool val)
 {
-    /*@-boolcompare@*/
     if (fld != val) {
 	(void)fprintf(stderr,
 		      "'%s' boolean attribute eval failed, value = %s.\n",
 		      attr, fld ? "true" : "false");
 	exit(EXIT_FAILURE);
     }
-    /*@+boolcompare@*/
 }
 
 /*
@@ -81,7 +79,6 @@ static void assert_real(char *attr, double fld, double val)
     }
 }
 
-/*@ -fullinitblock @*/
 
 static struct gps_data_t gpsdata;
 
@@ -114,7 +111,6 @@ static char *stringptrs[3];
 static char stringstore[256];
 static int stringcount;
 
-/*@-type@*/
 static const struct json_array_t json_array_3 = {
     .element_type = t_string,
     .arr.strings.ptrs = stringptrs,
@@ -123,7 +119,6 @@ static const struct json_array_t json_array_3 = {
     .count = &stringcount,
     .maxlen = sizeof(stringptrs)/sizeof(stringptrs[0]),
 };
-/*@+type@*/
 
 /* Case 4: test defaulting of unspecified attributes */
 
@@ -167,7 +162,6 @@ struct dumbstruct_t {
 static struct dumbstruct_t dumbstruck[5];
 static int dumbcount;
 
-/*@-type@*/
 static const struct json_attr_t json_attrs_6_subtype[] = {
     {"name",  t_string,  .addr.offset = offsetof(struct dumbstruct_t, name),
                          .len = 64},
@@ -185,7 +179,6 @@ static const struct json_attr_t json_attrs_6[] = {
                        .addr.array.maxlen = sizeof(dumbstruck)/sizeof(dumbstruck[0])},
     {NULL},
 };
-/*@+type@*/
 
 /* Case 7: test parsing of version response */
 
@@ -212,60 +205,66 @@ static const struct json_attr_t json_attrs_8[] = {
 
 static const char *json_str9 = "{\"parts\":[]}";
 
-#ifndef JSON_MINIMAL
-/* Case 10: Read array of integers */
+/* Case 10: test parsing of PPS message  */
 
-static const char *json_str10 = "[23,-17,5]";
+static const char *json_strPPS = "{\"class\":\"PPS\",\"device\":\"GPS#1\"," \
+    "\"real_sec\":1428001514, \"real_nsec\":1000000," \
+    "\"clock_sec\":1428001513,\"clock_nsec\":999999999," \
+    "\"precision\":-20}";
+
+/* Case 11: test parsing of TOFF message  */
+
+static const char *json_strTOFF = "{\"class\":\"TOFF\",\"device\":\"GPS#1\"," \
+    "\"real_sec\":1428001514, \"real_nsec\":1000000," \
+    "\"clock_sec\":1428001513,\"clock_nsec\":999999999}";
+
+#ifndef JSON_MINIMAL
+/* Case 12: Read array of integers */
+
+static const char *json_strInt = "[23,-17,5]";
 static int intstore[4], intcount;
 
-/*@-type@*/
-static const struct json_array_t json_array_10 = {
+static const struct json_array_t json_array_Int = {
     .element_type = t_integer,
     .arr.integers.store = intstore,
     .count = &intcount,
     .maxlen = sizeof(intstore)/sizeof(intstore[0]),
 };
-/*@+type@*/
 
-/* Case 11: Read array of booleans */
+/* Case 13: Read array of booleans */
 
-static const char *json_str11 = "[true,false,true]";
+static const char *json_strBool = "[true,false,true]";
 static bool boolstore[4];
 static int boolcount;
 
-/*@-type@*/
-static const struct json_array_t json_array_11 = {
+static const struct json_array_t json_array_Bool = {
     .element_type = t_boolean,
     .arr.booleans.store = boolstore,
     .count = &boolcount,
     .maxlen = sizeof(boolstore)/sizeof(boolstore[0]),
 };
-/*@+type@*/
 
-/* Case 12: Read array of reals */
+/* Case 14: Read array of reals */
 
-static const char *json_str12 = "[23.1,-17.2,5.3]";
-static double realstore[4]; 
+static const char *json_str14 = "[23.1,-17.2,5.3]";
+static double realstore[4];
 static int realcount;
 
-/*@-type@*/
-static const struct json_array_t json_array_12 = {
+static const struct json_array_t json_array_14 = {
     .element_type = t_real,
     .arr.reals.store = realstore,
     .count = &realcount,
     .maxlen = sizeof(realstore)/sizeof(realstore[0]),
 };
-/*@+type@*/
 #endif /* JSON_MINIMAL */
 
-/*@ +fullinitblock @*/
 /* *INDENT-ON* */
 
 static void jsontest(int i)
 {
     int status = 0;
 
-    switch (i) 
+    switch (i)
     {
     case 1:
 	status = libgps_json_unpack(json_str1, &gpsdata, NULL);
@@ -356,17 +355,37 @@ static void jsontest(int i)
 	break;
 
     case 9:
-	/* yes, the '6' in the next line is correct */ 
+	/* yes, the '6' in the next line is correct */
 	status = json_read_object(json_str9, json_attrs_6, NULL);
 	assert_case(9, status);
 	assert_integer("dumbcount", dumbcount, 0);
 	break;
 
-#ifdef JSON_MINIMAL
-#define MAXTEST 9
-#else
     case 10:
-	status = json_read_array(json_str10, &json_array_10, NULL);
+	status = json_pps_read(json_strPPS, &gpsdata, NULL);
+	assert_case(10, status);
+	assert_string("device", gpsdata.dev.path, "GPS#1");
+	assert_integer("real_sec", gpsdata.pps.real.tv_sec, 1428001514);
+	assert_integer("real_nsec", gpsdata.pps.real.tv_nsec, 1000000);
+	assert_integer("clock_sec", gpsdata.pps.clock.tv_sec, 1428001513);
+	assert_integer("clock_nsec", gpsdata.pps.clock.tv_nsec, 999999999);
+	break;
+
+    case 11:
+	status = json_toff_read(json_strTOFF, &gpsdata, NULL);
+	assert_case(11, status);
+	assert_string("device", gpsdata.dev.path, "GPS#1");
+	assert_integer("real_sec", gpsdata.pps.real.tv_sec, 1428001514);
+	assert_integer("real_nsec", gpsdata.pps.real.tv_nsec, 1000000);
+	assert_integer("clock_sec", gpsdata.pps.clock.tv_sec, 1428001513);
+	assert_integer("clock_nsec", gpsdata.pps.clock.tv_nsec, 999999999);
+	break;
+
+#ifdef JSON_MINIMAL
+#define MAXTEST 11
+#else
+    case 12:
+	status = json_read_array(json_strInt, &json_array_Int, NULL);
 	assert_integer("count", intcount, 3);
 	assert_integer("intstore[0]", intstore[0], 23);
 	assert_integer("intstore[1]", intstore[1], -17);
@@ -374,8 +393,8 @@ static void jsontest(int i)
 	assert_integer("intstore[3]", intstore[3], 0);
 	break;
 
-    case 11:
-	status = json_read_array(json_str11, &json_array_11, NULL);
+    case 13:
+	status = json_read_array(json_strBool, &json_array_Bool, NULL);
 	assert_integer("count", boolcount, 3);
 	assert_boolean("boolstore[0]", boolstore[0], true);
 	assert_boolean("boolstore[1]", boolstore[1], false);
@@ -383,8 +402,8 @@ static void jsontest(int i)
 	assert_boolean("boolstore[3]", boolstore[3], false);
 	break;
 
-    case 12:
-	status = json_read_array(json_str12, &json_array_12, NULL);
+    case 14:
+	status = json_read_array(json_str14, &json_array_14, NULL);
 	assert_integer("count", realcount, 3);
 	assert_real("realstore[0]", realstore[0], 23.1);
 	assert_real("realstore[1]", realstore[1], -17.2);
@@ -392,13 +411,12 @@ static void jsontest(int i)
 	assert_real("realstore[3]", realstore[3], 0);
 	break;
 
-#define MAXTEST 12
+#define MAXTEST 14
 #endif /* JSON_MINIMAL */
 
     default:
-	if (fputs("Unknown test number\n", stderr) == EOF)
-	    exit(1);
-	break;
+	(void)fputs("Unknown test number\n", stderr);
+	exit(EXIT_FAILURE);
     }
 }
 
@@ -409,9 +427,11 @@ int main(int argc UNUSED, char *argv[]UNUSED)
 
     while ((option = getopt(argc, argv, "hn:D:?")) != -1) {
 	switch (option) {
+#ifdef CLIENTDEBUG_ENABLE
 	case 'D':
 	    gps_enable_debug(atoi(optarg), stdout);
 	    break;
+#endif
 	case 'n':
 	    individual = atoi(optarg);
 	    break;

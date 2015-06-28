@@ -54,13 +54,13 @@ bin2srec(unsigned int type, unsigned int offset, unsigned int num,
     return 0;
 }
 
-// cppcheck-suppress unusedFunction 
+// cppcheck-suppress unusedFunction
 int srec_hdr(unsigned int num, unsigned char *bbuf, unsigned char *sbuf)
 {
     return bin2srec(0, 0, num, bbuf, sbuf);
 }
 
-// cppcheck-suppress unusedFunction 
+// cppcheck-suppress unusedFunction
 int srec_fin(unsigned int num, unsigned char *sbuf)
 {
     unsigned char bbuf[4], sum;
@@ -89,7 +89,6 @@ void hexdump(size_t len, unsigned char *bbuf, unsigned char *abuf)
     }
 }
 
-/*@ -type @*/
 unsigned char hc(unsigned char x)
 {
     switch (x) {
@@ -117,7 +116,6 @@ unsigned char hc(unsigned char x)
     }
 }
 
-/*@ -type @*/
 
 unsigned char
 sr_sum(unsigned int count, unsigned int addr, unsigned char *bbuf)

@@ -11,7 +11,7 @@ typedef enum {t_integer, t_uinteger, t_real,
 	      t_string, t_boolean, t_character,
 	      t_time,
 	      t_object, t_structobject, t_array,
-	      t_check, t_ignore} 
+	      t_check, t_ignore}
     json_type;
 
 struct json_enum_t {
@@ -81,10 +81,10 @@ struct json_attr_t {
 extern "C" {
 #endif
 int json_read_object(const char *, const struct json_attr_t *,
-		     /*@null@*/const char **);
+		     const char **);
 int json_read_array(const char *, const struct json_array_t *,
-		    /*@null@*/const char **);
-const /*@observer@*/char *json_error_string(int);
+		    const char **);
+const char *json_error_string(int);
 
 void json_enable_debug(int, FILE *);
 #ifdef __cplusplus
