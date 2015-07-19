@@ -1,3 +1,4 @@
 full-systemd-support
 gpsd_hotplug_rules_disable_generic_serial_converters
 fix_cppflags_parsing
+fix_test_gpsmm_linking
