@@ -132,7 +132,8 @@ build-static-stamp: SConstruct.deb_revision
 	    -prune \
 	    -o -name debian -prune \
 	    -o -exec cp -pr {} static_lib \;
-	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) distclean ;\
+	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) --clean ;\
+	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) sconsclean || true ;\
 	$(SCONS_ENV) scons -C static_lib $(SCONSOPTS) $(SCONSSTATICOPTS) libgps.a
 	touch $@
 
@@ -141,9 +142,10 @@ clean: debian/control
 	dh_testroot
 	set -e; \
 	    for py in $(PYTHONS); do \
-	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) distclean ; \
-	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) distclean ; \
+	    	$(SCONS_ENV) python$${py} /usr/bin/scons $(SCONSOPTS) --clean ; \
+	    	$(SCONS_ENV) python$${py}-dbg /usr/bin/scons $(SCONSOPTS) --clean ; \
 	    done
+	$(SCONS_ENV) python /usr/bin/scons $(SCONSOPTS) sconsclean || true
 	# revert revision changes in SConstruct
 	if [ -f SConstruct.deb_revision ]; then \
 	    mv SConstruct.deb_revision SConstruct; \
