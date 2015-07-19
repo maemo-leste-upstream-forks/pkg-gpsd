@@ -1,5 +1,3 @@
-sconstruct_do_not_clean_test_tools_during_regression_tests
 full-systemd-support
 gpsd_hotplug_rules_disable_generic_serial_converters
 fix_cppflags_parsing
-8a60305_Fix-unit-test-for-C-binding
