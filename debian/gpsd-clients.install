@@ -21,3 +21,5 @@ usr/share/man/man1/xgps.1
 usr/share/man/man1/xgpsspeed.1
 usr/share/man/man1/gpxlogger.1
 usr/share/man/man1/gps2udp.1
+usr/bin/ntpshmmon
+usr/share/man/man1/ntpshmmon.1

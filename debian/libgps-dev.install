@@ -3,6 +3,6 @@ usr/include/gps.h
 usr/share/man/man3/libgps.3
 usr/share/man/man3/libgpsmm.3
 usr/share/man/man5/*
-usr/lib/*/pkgconfig/libgps.pc
+usr/lib/*/pkgconfig/libgps*.pc
 usr/lib/*/libgps.so
 usr/lib/*/libgps.a
