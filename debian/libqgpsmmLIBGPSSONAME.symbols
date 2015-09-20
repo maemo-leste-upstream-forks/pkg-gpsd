@@ -50,6 +50,10 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
  (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
  (c++)"shiftleft(unsigned char*, int, unsigned short)@Base" 3.12
+ (c++)"shm_get(int, bool, bool)@Base" 3.15
+ (c++)"ntp_name(int)@Base" 3.15
+ (c++)"ntp_read(shmTime*, shm_stat_t*, bool)@Base" 3.15
+ (c++)"ntp_write(shmTime volatile*, timedelta_t*, int, int)@Base" 3.15
  (c++)"deg_to_str(deg_str_type, double)@Base" 3.5
  (c++)"export_default()@Base" 3.5
  (c++)"export_list(_IO_FILE*)@Base" 3.5
@@ -62,7 +66,6 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
 #MISSING: 3.12# (c++|optional)"gpsd_hexdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
 #MISSING: 3.12# (c++|optional)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
 #MISSING: 3.12# (c++|optional)"gpsd_hexdump(char*, unsigned long, char*, unsigned long)@Base" 3.10
- gpsd_hexdump@Base 3.12
  (c++)"gpsd_source_spec(char const*, fixsource_t*)@Base" 3.5
  (c++)"gpsd_units()@Base" 3.5
 #MISSING: 3.11-1# (c++)"libgps_dump_state(gps_data_t*)@Base" 3.5
@@ -102,7 +105,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  gps_stream@Base 3.3
  gps_unpack@Base 3.3
  gps_waiting@Base 3.3
-#MISSING: 3.5-1# gpsd_hexdump@Base 3.3
+ gpsd_hexdump@Base 3.12
  gpsd_hexpack@Base 3.3
 #MISSING: 3.5-1# gpsd_source_spec@Base 3.3
 #MISSING: 3.5-1# gpsd_units@Base 3.3
@@ -118,6 +121,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  json_read_object@Base 3.3
  json_rtcm2_read@Base 3.3
  json_rtcm3_read@Base 3.10
+ json_toff_read@Base 3.15
  json_watch_read@Base 3.3
  libgps_debuglevel@Base 3.3
  libgps_json_unpack@Base 3.3
@@ -135,7 +139,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  safe_atof@Base 3.3
  strlcat@Base 3.3
  strlcpy@Base 3.3
- timespec_str@Base 3.12
+#MISSING: 3.15 timespec_str@Base 3.12
  timestamp@Base 3.3
 #MISSING: 3.5-1# true2magnetic@Base 3.3
  unix_to_iso8601@Base 3.3
