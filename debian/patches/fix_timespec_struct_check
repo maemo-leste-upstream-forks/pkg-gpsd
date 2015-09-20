@@ -1,0 +1,16 @@
+--- a/SConstruct
++++ b/SConstruct
+@@ -744,11 +744,13 @@ typedef int clockid_t;
+ # endif
+ /* OS X uses _STRUCT_TIMESPEC, but no clock_gettime */
+ #ifndef _STRUCT_TIMESPEC
++#ifndef __timespec_defined
+ struct timespec {
+     time_t  tv_sec;
+     long    tv_nsec;
+ };
+ #endif
++#endif
+ #define CLOCK_REALTIME	0
+ int clock_gettime(clockid_t, struct timespec *);
+ # ifdef __cplusplus
