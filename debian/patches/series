@@ -4,3 +4,4 @@ gpsd_hotplug_rules_disable_generic_serial_converters
 fix_cppflags_parsing
 fix_test_gpsmm_linking
 055d148_Test-rebuild-required-for-the-mid-2015-leap-second-bump
+fix_timespec_struct_member_names
