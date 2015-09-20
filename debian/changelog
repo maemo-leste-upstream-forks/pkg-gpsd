@@ -1,13 +1,32 @@
-gpsd (3.15-1~1.gbp2d150e) UNRELEASED; urgency=medium
+gpsd (3.15-1) experimental; urgency=medium
 
-  ** SNAPSHOT build @2d150e4584ad7a1f68b80bc50881fe6d44157644 **
-
-  * [10e7cafa] Install contrib/* as examples.
+  * [10e7caf] Install contrib/* as examples.
     Thanks to Sanjeev Gupta (Closes: #781688)
-  * [2d150e45] Merge tag 'upstream/3.15'
+  * [2d150e4] Merge tag 'upstream/3.15'
     Upstream version 3.15
+  * [4163f08] snapshot changelog.
+  * [1ea8da4] Remove libgpsd.
+    Upstream links it statically now and I can't be bothered to maintain
+    patches as Gentoo and others do it.
+    The result is a slightly larger gpsd-clients package and running
+    the binaries in parallel will waste memory.
+    Thanks to Paul Wise & Andreas Beckmann (Closes: #779286, #781567)
+  * [bb7a556] scons distclean doesn't work anymore.
+    use --clean + sconsclean.
+  * [31ff968] Refreshing patches
+  * [5861e60] Fix broken static linking of test_gpsmm
+  * [ef84468] Install new files.
+  * [f9e250c] Add patch to fix regression tests for leap second bump
+  * [65b8ac6] Updating symbols file.
+  * [7e3d4a4] Update libqgpsmm symbols.
+  * [785e932] _STRUCT_TIMESPEC is not defined in time.h anymore.
+    Only linux/time.h defines _STRUCT_TIMESPEC.
+    Check for __timespec_defined additionally.
+  * [0b56700] Fix struct member names in timspec.
+  * [e723fdd] Use system clock_gettime again.
+    Fix some more broken header checks in SConstruct.
 
- -- Bernd Zeimetz <bernd@bzed.de>  Sun, 28 Jun 2015 23:18:21 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 20 Sep 2015 19:32:19 +0200
 
 gpsd (3.12-1) experimental; urgency=medium
 
