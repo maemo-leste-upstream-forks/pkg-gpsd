@@ -1,3 +1,9 @@
+gpsd (3.15-2) unstable; urgency=medium
+
+  * Uploading to unstable
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 31 Oct 2015 20:02:31 +0100
+
 gpsd (3.15-1) experimental; urgency=medium
 
   * [10e7caf] Install contrib/* as examples.
@@ -26,7 +32,7 @@ gpsd (3.15-1) experimental; urgency=medium
   * [e723fdd] Use system clock_gettime again.
     Fix some more broken header checks in SConstruct.
 
- -- Bernd Zeimetz <bzed@debian.org>  Sun, 20 Sep 2015 19:32:19 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 31 Oct 2015 20:02:07 +0100
 
 gpsd (3.12-1) experimental; urgency=medium
 
