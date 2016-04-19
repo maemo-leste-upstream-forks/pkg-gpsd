@@ -1,3 +1,12 @@
+gpsd (3.16-1~1.gbpc3d166) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @c3d1663790b5f2d56666389e92260c4e6fb2b11d **
+
+  * [c3d1663] Merge tag 'upstream/3.16'
+    Upstream version 3.16
+
+ -- Bernd Zeimetz <bernd@bzed.de>  Tue, 19 Apr 2016 21:23:05 +0200
+
 gpsd (3.15-2) unstable; urgency=medium
 
   * Uploading to unstable
