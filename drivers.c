@@ -27,7 +27,7 @@ gps_mask_t generic_parse_input(struct gps_device_t *session)
     else if (session->lexer.type == COMMENT_PACKET) {
 	gpsd_set_century(session);
 	return 0;
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
     } else if (session->lexer.type == NMEA_PACKET) {
 	const struct gps_type_t **dp;
 	gps_mask_t st = 0;
@@ -61,7 +61,7 @@ gps_mask_t generic_parse_input(struct gps_device_t *session)
 	    }
 	}
 	return st;
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
     } else {
 	gpsd_log(&session->context->errout, LOG_SHOUT,
 		 "packet type %d fell through (should never happen): %s.\n",
@@ -104,7 +104,7 @@ const struct gps_type_t driver_unknown = {
 };
 /* *INDENT-ON* */
 
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
 /**************************************************************************
  *
  * NMEA 0183
@@ -144,14 +144,14 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 	 * unless there is actual following data.
 	 */
 	switch (session->lexer.counter) {
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
 	case 0:
 	    /* probe for Garmin serial GPS -- expect $PGRMC followed by data */
 	    gpsd_log(&session->context->errout, LOG_PROG,
 		     "=> Probing for Garmin NMEA\n");
 	    (void)nmea_send(session, "$PGRMCE");
 	    break;
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 #ifdef SIRF_ENABLE
 	case 1:
 	    /*
@@ -181,7 +181,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 	    session->back_to_nmea = true;
 	    break;
 #endif /* SIRF_ENABLE */
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
 	case 2:
 	    /* probe for the FV-18 -- expect $PFEC,GPint followed by data */
 	    gpsd_log(&session->context->errout, LOG_PROG,
@@ -194,7 +194,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 		     "=> Probing for Trimble Copernicus\n");
 	    (void)nmea_send(session, "$PTNLSNM,0139,01");
 	    break;
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 #ifdef EVERMORE_ENABLE
 	case 4:
 	    gpsd_log(&session->context->errout, LOG_PROG,
@@ -276,7 +276,7 @@ const struct gps_type_t driver_nmea0183 = {
 };
 /* *INDENT-ON* */
 
-#if defined(GARMIN_ENABLE) && defined(NMEA_ENABLE)
+#if defined(GARMIN_ENABLE) && defined(NMEA0183_ENABLE)
 /**************************************************************************
  *
  * Garmin NMEA
@@ -377,7 +377,7 @@ const struct gps_type_t driver_garmin = {
 #endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
-#endif /* GARMIN_ENABLE && NMEA_ENABLE */
+#endif /* GARMIN_ENABLE && NMEA0183_ENABLE */
 
 #ifdef ASHTECH_ENABLE
 /**************************************************************************
@@ -641,7 +641,7 @@ static const struct gps_type_t driver_earthmate = {
 /* *INDENT-ON* */
 #endif /* EARTHMATE_ENABLE */
 
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 
 #ifdef TNT_ENABLE
 /**************************************************************************
@@ -1185,7 +1185,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
     unsigned char *field[NMEA_MAX*2];
     unsigned char fieldcopy[NMEA_MAX*2+1];
     unsigned char *data, *cp;
-    unsigned char pad;
+    int pad;
     struct aivdm_context_t *ais_context;
     int i;
 
@@ -1211,10 +1211,19 @@ static bool aivdm_decode(const char *buf, size_t buflen,
     field[nfields++] = (unsigned char *)buf;
     for (cp = fieldcopy;
 	 cp < fieldcopy + buflen; cp++)
-	if (*cp == (unsigned char)',') {
+    {
+	if (
+             (*cp == (unsigned char)',') ||
+             (*cp == (unsigned char)'*')
+           ) {
 	    *cp = '\0';
 	    field[nfields++] = cp + 1;
 	}
+    }
+#ifdef __UNDEF_DEBUG_
+    for(int i=0;i<nfields;i++)
+        gpsd_log(&session->context->errout, LOG_DATA, "field [%d] [%s]\n",i,field[i]);
+#endif
 
     /* discard sentences with exiguous commas; catches run-ons */
     if (nfields < 7) {
@@ -1264,10 +1273,13 @@ static bool aivdm_decode(const char *buf, size_t buflen,
     nfrags = atoi((char *)field[1]); /* number of fragments to expect */
     ifrag = atoi((char *)field[2]); /* fragment id */
     data = field[5];
-    pad = field[6][0]; /* number of padding bits */
+
+    pad = 0;
+    if(isdigit(field[6][0]))
+        pad = field[6][0] - '0'; /* number of padding bits ASCII encoded*/
     gpsd_log(&session->context->errout, LOG_PROG,
-	     "nfrags=%d, ifrag=%d, decoded_frags=%d, data=%s\n",
-	     nfrags, ifrag, ais_context->decoded_frags, data);
+	     "nfrags=%d, ifrag=%d, decoded_frags=%d, data=%s, pad=%d\n",
+	     nfrags, ifrag, ais_context->decoded_frags, data, pad);
 
     /* assemble the binary data */
 
@@ -1311,8 +1323,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 	    }
 	}
     }
-    if (isdigit(pad))
-	ais_context->bitlen -= (pad - '0');	/* ASCII assumption */
+    ais_context->bitlen -= pad;
 
     /* time to pass buffered-up data to where it's actually processed? */
     if (ifrag == nfrags) {
@@ -1351,10 +1362,10 @@ static gps_mask_t aivdm_analyze(struct gps_device_t *session)
 	    return ONLINE_SET | AIS_SET;
 	} else
 	    return ONLINE_SET;
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
     } else if (session->lexer.type == NMEA_PACKET) {
 	return nmea_parse((char *)session->lexer.outbuffer, session);
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
     } else
 	return 0;
 }
@@ -1548,7 +1559,7 @@ extern const struct gps_type_t driver_zodiac;
 /* the point of this rigamarole is to not have to export a table size */
 static const struct gps_type_t *gpsd_driver_array[] = {
     &driver_unknown,
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
     &driver_nmea0183,
 #ifdef ASHTECH_ENABLE
     &driver_ashtech,
@@ -1583,7 +1594,7 @@ static const struct gps_type_t *gpsd_driver_array[] = {
 #ifdef AIVDM_ENABLE
     &driver_aivdm,
 #endif /* AIVDM_ENABLE */
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 
 #ifdef EVERMORE_ENABLE
     &driver_evermore,

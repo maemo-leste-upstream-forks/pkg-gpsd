@@ -2,11 +2,11 @@
 
 #ifndef GPSD_CONFIG_H
 
-#define VERSION "3.15"
+#define VERSION "3.16"
 
 #define GPSD_URL "http://catb.org/gpsd"
 
-#define HAVE_LIBUSB 1
+/* #undef HAVE_LIBUSB */
 
 #define HAVE_LIBRT 1
 
@@ -16,9 +16,7 @@
 
 #define HAVE_LINUX_CAN_H 1
 
-/* #undef HAVE_STDATOMIC_H */
-
-/* #undef HAVE_OSATOMIC_H */
+#define HAVE_STDATOMIC_H 1
 
 #define HAVE_BUILTIN_ENDIANNESS 1
 
@@ -269,7 +267,7 @@
 #define UDEVDIR "/lib/udev"
 
 /* libusb support for USB devices */
-#define USB_ENABLE 1
+/* #undef USB_ENABLE */
 
 /* Some libcs do not have strlcat/strlcpy. Local copies are provided */
 #ifndef HAVE_STRLCAT

@@ -24,7 +24,7 @@
 # * Coveraging mode: gcc "-coverage" flag requires a hack for building the python bindings
 
 # Release identification begins here
-gpsd_version = "3.15"
+gpsd_version = "3.16"
 
 # client library version
 libgps_version_current   = 22
@@ -541,6 +541,8 @@ else:
     if env['ncurses']:
         if config.CheckPKG('ncurses'):
             ncurseslibs = pkg_config('ncurses')
+	    if config.CheckPKG('tinfo'):
+		ncurseslibs += pkg_config('tinfo')
         elif WhereIs('ncurses5-config'):
             ncurseslibs = ['!ncurses5-config --libs --cflags']
         elif WhereIs('ncursesw5-config'):
@@ -663,7 +665,7 @@ else:
             announce("You do not have the endian.h header file. RTCM V2 support disabled.")
             env["rtcm104v2"] = False
 
-    # check function after libraries, because some function require library
+    # check function after libraries, because some function require libraries
     # for example clock_gettime() require librt on Linux glibc < 2.17
     for f in ("daemon", "strlcpy", "strlcat", "clock_gettime"):
         if config.CheckFunc(f):
@@ -1092,10 +1094,23 @@ else:
     # ensure that we build the python modules with scan-build, too
     if env['CC'] is None or env['CC'].find('scan-build') < 0:
         python_env['CC'] = cc
+        # As we seem to be changing compilers we must assume that the
+        # CCFLAGS are incompatible with the new compiler. If we should
+        # use other flags, the variable or the variable for this
+        # should be predefined.
+        if cc.split()[0] != env['CC']:
+            python_env['CCFLAGS'] = ''
     else:
         python_env['CC'] = ' '.join([env['CC']] + cc.split()[1:])
     if env['CXX'] is None or env['CXX'].find('scan-build') < 0:
         python_env['CXX'] = cxx
+        # As we seem to be changing compilers we must assume that the
+        # CCFLAGS or CXXFLAGS are incompatible with the new
+        # compiler. If we should use other flags, the variable or the
+        # variable for this should be predefined.
+        if cxx.split()[0] != env['CXX']:
+            python_env['CCFLAGS'] = '' 
+            python_env['CXXFLAGS'] = ''
     else:
         python_env['CXX'] = ' '.join([env['CXX']] + cxx.split()[1:])
 
@@ -1515,7 +1530,7 @@ else:
     rtcm_regress = Utility('rtcm-regress', [gpsdecode], [
         '@echo "Testing RTCM decoding..."',
         '@for f in $SRCDIR/test/*.rtcm2; do '
-            'echo "Testing $${f}..."; '
+            'echo "\tTesting $${f}..."; '
             'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
             '$SRCDIR/gpsdecode -u -j <$${f} >$${TMPFILE}; '
             'diff -ub $${f}.chk $${TMPFILE}; '
@@ -1543,7 +1558,7 @@ else:
     aivdm_regress = Utility('aivdm-regress', [gpsdecode], [
         '@echo "Testing AIVDM decoding w/ CSV format..."',
         '@for f in $SRCDIR/test/*.aivdm; do '
-            'echo "Testing $${f}..."; '
+            'echo "\tTesting $${f}..."; '
             'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
             '$SRCDIR/gpsdecode -u -c <$${f} >$${TMPFILE}; '
             'diff -ub $${f}.chk $${TMPFILE} || echo "Test FAILED!"; '
@@ -1551,7 +1566,7 @@ else:
         'done;',
         '@echo "Testing AIVDM decoding w/ JSON unscaled format..."',
         '@for f in $SRCDIR/test/*.aivdm; do '
-            'echo "  Testing $${f}..."; '
+            'echo "\tTesting $${f}..."; '
             'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
             '$SRCDIR/gpsdecode -u -j <$${f} >$${TMPFILE}; '
             'diff -ub $${f}.ju.chk $${TMPFILE} || echo "Test FAILED!"; '
@@ -1559,7 +1574,7 @@ else:
         'done;',
         '@echo "Testing AIVDM decoding w/ JSON scaled format..."',
         '@for f in $SRCDIR/test/*.aivdm; do '
-            'echo "  Testing $${f}..."; '
+            'echo "\tTesting $${f}..."; '
             'TMPFILE=`mktemp -t gpsd-test-XXXXXXXXXXXXXX.chk`; '
             '$SRCDIR/gpsdecode -j <$${f} >$${TMPFILE}; '
             'diff -ub $${f}.js.chk $${TMPFILE} || echo "Test FAILED!"; '

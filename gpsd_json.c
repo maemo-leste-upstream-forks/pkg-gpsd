@@ -1902,7 +1902,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 		break;
 	    case 16:	/* IMO236 - Number of persons on board */
 		str_appendf(buf, buflen,
-			       "\"persons\":%u}\t\n", ais->type6.dac1fid16.persons);
+			       "\"persons\":%u}\r\n", ais->type6.dac1fid16.persons);
 		break;
 	    case 18:	/* IMO289 - Clearance time to enter port */
 		str_appendf(buf, buflen,
@@ -2167,8 +2167,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 		    str_appendf(buf, buflen,
 				   "\"airtemp\":%.1f,\"dewpoint\":%.1f,"
 				   "\"pressure\":%u,\"pressuretend\":\"%s\",",
-				   (ais->type8.dac1fid11.airtemp - DAC1FID11_AIRTEMP_OFFSET) / DAC1FID11_AIRTEMP_DIV,
-				   (ais->type8.dac1fid11.dewpoint - DAC1FID11_DEWPOINT_OFFSET) / DAC1FID11_DEWPOINT_DIV,
+				   ((signed int)ais->type8.dac1fid11.airtemp - DAC1FID11_AIRTEMP_OFFSET) / DAC1FID11_AIRTEMP_DIV,
+				   ((signed int)ais->type8.dac1fid11.dewpoint - DAC1FID11_DEWPOINT_OFFSET) / DAC1FID11_DEWPOINT_DIV,
 				   ais->type8.dac1fid11.pressure - DAC1FID11_PRESSURE_OFFSET,
 				   trends[ais->type8.dac1fid11.pressuretend]);
 		else
@@ -2195,7 +2195,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 		else
 		    str_appendf(buf, buflen,
 				   "\"waterlevel\":%.1f,",
-				   (ais->type8.dac1fid11.waterlevel - DAC1FID11_WATERLEVEL_OFFSET) / DAC1FID11_WATERLEVEL_DIV);
+				   ((signed int)ais->type8.dac1fid11.waterlevel - DAC1FID11_WATERLEVEL_OFFSET) / DAC1FID11_WATERLEVEL_DIV);
 
 		if (scaled) {
 		    str_appendf(buf, buflen,
@@ -2224,7 +2224,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 				   ais->type8.dac1fid11.swellperiod,
 				   ais->type8.dac1fid11.swelldir,
 				   ais->type8.dac1fid11.seastate,
-				   (ais->type8.dac1fid11.watertemp - DAC1FID11_WATERTEMP_OFFSET) / DAC1FID11_WATERTEMP_DIV,
+				   ((signed int)ais->type8.dac1fid11.watertemp - DAC1FID11_WATERTEMP_OFFSET) / DAC1FID11_WATERTEMP_DIV,
 				   ais->type8.dac1fid11.preciptype,
 				   preciptypes[ais->type8.dac1fid11.preciptype],
 				   ais->type8.dac1fid11.salinity / DAC1FID11_SALINITY_DIV,
@@ -2296,7 +2296,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 		break;
 	    case 16:	/* IMO289 - Number of persons on board */
 		str_appendf(buf, buflen,
-			       "\"persons\":%u}\t\n", ais->type6.dac1fid16.persons);
+			       "\"persons\":%u}\r\n", ais->type6.dac1fid16.persons);
 		break;
 	    case 17:        /* IMO289 - VTS-generated/synthetic targets */
 		(void)strlcat(buf, "\"targets\":[", buflen);
@@ -2483,7 +2483,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 		else
 		    str_appendf(buf, buflen,
 				   "\"waterlevel\":%.1f,",
-				   (ais->type8.dac1fid31.waterlevel - DAC1FID31_WATERLEVEL_OFFSET) / DAC1FID31_WATERLEVEL_DIV);
+				   ((unsigned int)ais->type8.dac1fid31.waterlevel - DAC1FID31_WATERLEVEL_OFFSET) / DAC1FID31_WATERLEVEL_DIV);
 
 		if (scaled) {
 		    str_appendf(buf, buflen,
@@ -2804,7 +2804,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 		(void)strlcpy(speedlegend, "\"fast\"", sizeof(speedlegend));
 	    else
 		(void)snprintf(speedlegend, sizeof(speedlegend),
-			       "%u", ais->type1.speed);
+			       "%u", ais->type9.speed);
 
 	    str_appendf(buf, buflen,
 			   "\"alt\":%s,\"speed\":%s,\"accuracy\":%s,"

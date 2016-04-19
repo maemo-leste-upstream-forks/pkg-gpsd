@@ -16,11 +16,6 @@ struct timedelta_t {
 };
 #endif /* TIMEDELTA_DEFINED */
 
-/* difference between timespecs in nanoseconds */
-/* int is too small, avoid floats  */
-/* WARNING!  this will overflow if x and y differ by more than a few seconds */
-#define timespec_diff_ns(x, y)	(long)(((x).tv_sec-(y).tv_sec)*1000000000+(x).tv_nsec-(y).tv_nsec)
-
 /*
  * Set context, devicefd, and devicename at initialization time, before
  * you call pps_thread_activate().  The context pointer can be used to

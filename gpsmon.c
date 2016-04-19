@@ -39,9 +39,9 @@ extern struct monitor_object_t garmin_mmt, garmin_bin_ser_mmt;
 extern struct monitor_object_t italk_mmt, ubx_mmt, superstar2_mmt;
 extern struct monitor_object_t fv18_mmt, gpsclock_mmt, mtk3301_mmt;
 extern struct monitor_object_t oncore_mmt, tnt_mmt, aivdm_mmt;
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
 extern const struct gps_type_t driver_nmea0183;
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 
 /* These are public */
 struct gps_device_t session;
@@ -76,11 +76,11 @@ const struct monitor_object_t json_mmt = {
 #endif /* PASSTHROUGH_ENABLE */
 
 static const struct monitor_object_t *monitor_objects[] = {
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
     &nmea_mmt,
-#if defined(GARMIN_ENABLE) && defined(NMEA_ENABLE)
+#if defined(GARMIN_ENABLE) && defined(NMEA0183_ENABLE)
     &garmin_mmt,
-#endif /* GARMIN_ENABLE && NMEA_ENABLE */
+#endif /* GARMIN_ENABLE && NMEA0183_ENABLE */
 #if defined(GARMIN_ENABLE) && defined(BINARY_ENABLE)
     &garmin_bin_ser_mmt,
 #endif /* defined(GARMIN_ENABLE) && defined(BINARY_ENABLE) */
@@ -99,7 +99,7 @@ static const struct monitor_object_t *monitor_objects[] = {
 #ifdef AIVDM_ENABLE
     &aivdm_mmt,
 #endif /* AIVDM_ENABLE */
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 #if defined(SIRF_ENABLE) && defined(BINARY_ENABLE)
     &sirf_mmt,
 #endif /* defined(SIRF_ENABLE) && defined(BINARY_ENABLE) */
@@ -516,6 +516,8 @@ static bool switch_type(const struct gps_type_t *devtype)
 		(void)delwin(devicewin);
 	    }
 	    active = newobject;
+	    if (devicewin)
+		delwin(devicewin);
 	    devicewin = newwin((*active)->min_y, (*active)->min_x, 1, 0);
 	    /* screen might have JSOM on it from the init sequence */
 	    (void)clearok(stdscr, true);
@@ -561,11 +563,11 @@ static void select_packet_monitor(struct gps_device_t *device)
      */
     if (device->lexer.type != last_type) {
 	const struct gps_type_t *active_type = device->device_type;
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
 	if (device->lexer.type == NMEA_PACKET
 	    && ((device->device_type->flags & DRIVER_STICKY) != 0))
 	    active_type = &driver_nmea0183;
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 	if (!switch_type(active_type))
 	    longjmp(terminate, TERM_DRIVER_SWITCH);
 	else {
@@ -583,6 +585,9 @@ static void select_packet_monitor(struct gps_device_t *device)
 	(void)wnoutrefresh(devicewin);
 }
 
+/* Control-L character */
+#define CTRL_L 0x0C
+
 static char *curses_get_command(void)
 /* char-by-char nonblocking input, return accumulated command line on \n */
 {
@@ -591,7 +596,8 @@ static char *curses_get_command(void)
     int c;
 
     c = wgetch(cmdwin);
-    if (c == CTRL('L')) {
+    if (CTRL_L == c) {
+        /* ^L is to repaint the screen */
 	(void)clearok(stdscr, true);
 	if (active != NULL && (*active)->initialize != NULL)
 	    (void)(*active)->initialize();

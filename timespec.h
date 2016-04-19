@@ -18,8 +18,15 @@
  *
  * NOTE: this normalization is not the same as ntpd uses
  */
-#define NS_IN_SEC	1000000000
-#define MS_IN_SEC	1000000
+#define NS_IN_SEC	1000000000LL
+#define MS_IN_SEC	1000000LL
+
+/* return the difference between timespecs in nanoseconds
+ * int may be too small, 32 bit long is too small, floats are too imprecise,
+ * doubles are not quite precise enough 
+ * MUST be long long to maintain precision on 32 bit code */
+#define timespec_diff_ns(x, y) \
+    (long long)((((x).tv_sec-(y).tv_sec)*NS_IN_SEC)+(x).tv_nsec-(y).tv_nsec)
 
 static inline void TS_NORM( struct timespec *ts)
 {
@@ -86,7 +93,9 @@ static inline void TS_NORM( struct timespec *ts)
     } while (0)
 
 /* convert a timespec to a double.
- * is tv_sec > 2, then inevitable loss of precision in tv_nsec */
+ * if tv_sec > 2, then inevitable loss of precision in tv_nsec
+ * so best to NEVER use TSTONS() 
+ * WARNING replacing 1e9 with NS_IN_SEC casues loss of precision */
 #define TSTONS(ts) ((double)((ts)->tv_sec + ((ts)->tv_nsec / 1e9)))
 
 #define TIMESPEC_LEN	22	/* required length of a timespec buffer */
