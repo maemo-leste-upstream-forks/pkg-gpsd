@@ -26,7 +26,7 @@
  * Parse the data from the device
  */
 
-static void from_sixbit(unsigned char *bitvec, uint start, int count, char *to)
+static void from_sixbit_untrimmed(unsigned char *bitvec, uint start, int count, char *to)
 /* beginning at bitvec bit start, unpack count sixbit characters */
 {
     const char sixchr[64] =
@@ -43,12 +43,31 @@ static void from_sixbit(unsigned char *bitvec, uint start, int count, char *to)
 	    to[i] = newchar;
     }
     to[i] = '\0';
-    /* trim spaces on right end */
-    for (i = count - 2; i >= 0; i--)
+}
+
+static void trim_spaces_on_right_end(char* to)
+/* trim spaces on right end */
+{
+    int i;
+    for (i = strlen(to) - 1; i >= 0; i--)
+    {
 	if (to[i] == ' ' || to[i] == '@')
+	{
 	    to[i] = '\0';
+	}
 	else
+	{
 	    break;
+	}
+    }
+}
+
+static void from_sixbit(unsigned char *bitvec, uint start, int count, char *to)
+/* beginning at bitvec bit start, unpack count sixbit characters and remove trailing
+ * spaces */
+{
+       from_sixbit_untrimmed(bitvec, start, count, to);
+       trim_spaces_on_right_end(to);
 }
 
 bool ais_binary_decode(const struct gpsd_errout_t *errout,
@@ -99,7 +118,7 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
     case 1:	/* Position Report */
     case 2:
     case 3:
-	PERMISSIVE_LENGTH_CHECK(168)
+	PERMISSIVE_LENGTH_CHECK(163)
 	ais->type1.status	= UBITS(38, 4);
 	ais->type1.turn		= SBITS(42, 8);
 	ais->type1.speed	= UBITS(50, 10);
@@ -112,7 +131,10 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	ais->type1.maneuver	= UBITS(143, 2);
 	//ais->type1.spare	= UBITS(145, 3);
 	ais->type1.raim		= UBITS(148, 1)!=0;
-	ais->type1.radio	= UBITS(149, 19);
+	if(bitlen >= 168)
+		ais->type1.radio	= UBITS(149, 19);
+	if(bitlen < 168)
+		ais->type1.radio	= UBITS(149, bitlen - 149);
 	break;
     case 4: 	/* Base Station Report */
     case 11:	/* UTC/Date Response */
@@ -221,7 +243,6 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 		ais->type6.structured = true;
 		break;
 	    }
-	    break;
 	}
 	/* UK and Republic Of Ireland */
 	else if (ais->type6.dac == 235 || ais->type6.dac == 250) {
@@ -241,7 +262,6 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 		ais->type6.structured = true;
 		break;
 	    }
-	    break;
 	}
 	/* International */
 	else if (ais->type6.dac == 1)
@@ -509,10 +529,15 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 		break;
 	    case 16:	    /* Number of Persons On Board */
 		if (ais->type8.bitcount == 136)
-		    ais->type8.dac1fid16.persons = UBITS(88, 13);/* 289 */
-		else
-		    ais->type8.dac1fid16.persons = UBITS(55, 13);/* 236 */
-		ais->type8.structured = true;
+		{
+			ais->type8.dac1fid16.persons = UBITS(88, 13);/* 289 */
+			ais->type8.structured = true;
+		}
+		else if (ais->type8.bitcount == 72)
+		{
+			ais->type8.dac1fid16.persons = UBITS(55, 13);/* 236 */
+			ais->type8.structured = true;
+		}
 		break;
 	    case 17:        /* IMO289 - VTS-generated/synthetic targets */
 #define ARRAY_BASE 56
@@ -719,10 +744,16 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	    }
 	}
 	/* land here if we failed to match a known DAC/FID */
-	if (!ais->type8.structured)
-	    (void)memcpy(ais->type8.bitdata,
-			 (char *)bits + (56 / CHAR_BIT),
-			 BITS_TO_BYTES(ais->type8.bitcount));
+	if (!ais->type8.structured) {
+		size_t number_of_bytes = BITS_TO_BYTES(ais->type8.bitcount);
+		(void)memcpy(ais->type8.bitdata,
+				(char *)bits + (56 / CHAR_BIT),
+				number_of_bytes);
+		size_t valid_bits_in_last_byte = ais->type8.bitcount % CHAR_BIT;
+		if(valid_bits_in_last_byte>0)
+			ais->type8.bitdata[number_of_bytes-1] &= (0xFF
+					<< (8-valid_bits_in_last_byte));
+	}
 	break;
     case 9: /* Standard SAR Aircraft Position Report */
 	PERMISSIVE_LENGTH_CHECK(168);
@@ -781,7 +812,7 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	}
 	break;
     case 16:	/* Assigned Mode Command */
-	RANGE_CHECK(96, 144);
+	RANGE_CHECK(96, 168);
 	ais->type16.mmsi1		= UBITS(40, 30);
 	ais->type16.offset1		= UBITS(70, 12);
 	ais->type16.increment1	= UBITS(82, 10);
@@ -848,7 +879,7 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	//ais->type19.spare      = UBITS(308, 4);
 	break;
     case 20:	/* Data Link Management Message */
-	RANGE_CHECK(72, 160);
+	RANGE_CHECK(72, 186);
 	//ais->type20.spare		= UBITS(38, 2);
 	ais->type20.offset1		= UBITS(40, 12);
 	ais->type20.number1		= UBITS(52, 4);
@@ -868,9 +899,9 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	ais->type20.increment4	= UBITS(149, 11);
 	break;
     case 21:	/* Aid-to-Navigation Report */
-	RANGE_CHECK(272, 360);
+	RANGE_CHECK(272, 368);
 	ais->type21.aid_type = UBITS(38, 5);
-	from_sixbit((unsigned char *)bits,
+	from_sixbit_untrimmed((unsigned char *)bits,
 		    43, 20, ais->type21.name);
 	ais->type21.accuracy     = UBITS(163, 1);
 	ais->type21.lon          = SBITS(164, 28);
@@ -889,6 +920,7 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
 	//ais->type21.spare      = UBITS(271, 1);
 	if (strlen(ais->type21.name) == 20 && bitlen > 272)
 	    ENDCHARS(272, ais->type21.name+20);
+        trim_spaces_on_right_end(ais->type21.name);
 	break;
     case 22:	/* Channel Management */
 	PERMISSIVE_LENGTH_CHECK(168)

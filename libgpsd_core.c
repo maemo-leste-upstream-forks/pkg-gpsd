@@ -305,6 +305,9 @@ void gpsd_init(struct gps_device_t *session, struct gps_context_t *context,
 	(void)strlcpy(session->gpsdata.dev.path, device,
 		      sizeof(session->gpsdata.dev.path));
     session->device_type = NULL;	/* start by hunting packets */
+#ifdef RECONFIGURE_ENABLE
+    session->last_controller = NULL;
+#endif /* RECONFIGURE_ENABLE */
     session->observed = 0;
     session->sourcetype = source_unknown;	/* gpsd_open() sets this */
     session->servicetype = service_unknown;	/* gpsd_open() sets this */
@@ -543,7 +546,7 @@ int gpsd_open(struct gps_device_t *session)
 int gpsd_activate(struct gps_device_t *session, const int mode)
 /* acquire a connection to the GPS device */
 {
-    if (session->mode == O_OPTIMIZE)
+    if (mode == O_OPTIMIZE)
 	gpsd_run_device_hook(&session->context->errout,
 			     session->gpsdata.dev.path, "ACTIVATE");
     session->gpsdata.gps_fd = gpsd_open(session);
@@ -560,7 +563,7 @@ int gpsd_activate(struct gps_device_t *session, const int mode)
 	return session->gpsdata.gps_fd;
     }
 
-#ifdef NON_NMEA_ENABLE
+#ifdef NON_NMEA0183_ENABLE
     /* if it's a sensor, it must be probed */
     if ((session->servicetype == service_sensor) &&
 	(session->sourcetype != source_can)) {
@@ -590,7 +593,7 @@ int gpsd_activate(struct gps_device_t *session, const int mode)
 		 "no probe matched...\n");
     }
 foundit:
-#endif /* NON_NMEA_ENABLE */
+#endif /* NON_NMEA0183_ENABLE */
 
     gpsd_clear(session);
     gpsd_log(&session->context->errout, LOG_INF,

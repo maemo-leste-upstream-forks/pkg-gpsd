@@ -1617,7 +1617,7 @@ PPS
 .RS 4
 This message is emitted each time the daemon sees a valid PPS (Pulse Per Second) strobe from a device\&.
 .sp
-This message exactly mirrors the PPS message except for two details\&.
+This message exactly mirrors the TOFF message except for two details\&.
 .sp
 PPS emits the NTP precision\&. See the NTP documentation for their definition of precision\&.
 .sp
@@ -1857,7 +1857,7 @@ T}
 T{
 parity
 T}:T{
-Yes
+No
 T}:T{
 string
 T}:T{
@@ -1906,7 +1906,7 @@ Device minimum cycle time in seconds\&. Reported from
 T}
 .TE
 .sp 1
-The serial parameters will be omitted in a response describing a TCP/IP source such as an Ntrip, DGPSIP, or AIS feed\&.
+The serial parameters will (bps, parity, stopbits) be omitted in a response describing a TCP/IP source such as an Ntrip, DGPSIP, or AIS feed; on a serial device they will always be present\&.
 .sp
 The contents of the flags field should be interpreted as follows:
 .sp

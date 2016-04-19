@@ -93,8 +93,8 @@ void json_enable_debug(int level, FILE * fp)
 static void json_trace(int errlevel, const char *fmt, ...)
 /* assemble command in printf(3) style */
 {
-    if (errlevel <= debuglevel) {
-	char buf[BUFSIZ];
+    if (errlevel <= debuglevel && NULL != debugfp) {
+	char buf[BUFSIZ] = {0};
 	va_list ap;
 
 	(void)strlcpy(buf, "json: ", sizeof(buf));
@@ -127,6 +127,12 @@ static char *json_target_address(const struct json_attr_t *cursor,
 	    break;
 	case t_uinteger:
 	    targetaddr = (char *)&cursor->addr.uinteger[offset];
+	    break;
+	case t_short:
+	    targetaddr = (char *)&cursor->addr.shortint[offset];
+	    break;
+	case t_ushort:
+	    targetaddr = (char *)&cursor->addr.ushortint[offset];
 	    break;
 	case t_time:
 	case t_real:
@@ -196,6 +202,13 @@ static int json_internal_read_object(const char *cp,
 		    break;
 		case t_uinteger:
 		    memcpy(lptr, &cursor->dflt.uinteger, sizeof(unsigned int));
+		    break;
+		case t_short:
+		    memcpy(lptr, &cursor->dflt.shortint, sizeof(short));
+		    break;
+		case t_ushort:
+		    memcpy(lptr, &cursor->dflt.ushortint,
+		           sizeof(unsigned short));
 		    break;
 		case t_time:
 		case t_real:
@@ -478,6 +491,18 @@ static int json_internal_read_object(const char *cp,
 			memcpy(lptr, &tmp, sizeof(unsigned int));
 		    }
 		    break;
+		case t_short:
+		    {
+			short tmp = atoi(valbuf);
+			memcpy(lptr, &tmp, sizeof(short));
+		    }
+		    break;
+		case t_ushort:
+		    {
+			unsigned short tmp = (unsigned int)atoi(valbuf);
+			memcpy(lptr, &tmp, sizeof(unsigned short));
+		    }
+		    break;
 		case t_time:
 		    {
 			double tmp = iso8601_to_unix(valbuf);
@@ -639,6 +664,24 @@ int json_read_array(const char *cp, const struct json_array_t *arr,
 	case t_uinteger:
 #ifndef JSON_MINIMAL
 	    arr->arr.uintegers.store[offset] = (unsigned int)strtoul(cp, &ep, 0);
+	    if (ep == cp)
+		return JSON_ERR_BADNUM;
+	    else
+		cp = ep;
+	    break;
+#endif /* JSON_MINIMAL */
+	case t_short:
+#ifndef JSON_MINIMAL
+	    arr->arr.shorts.store[offset] = (short)strtol(cp, &ep, 0);
+	    if (ep == cp)
+		return JSON_ERR_BADNUM;
+	    else
+		cp = ep;
+	    break;
+#endif /* JSON_MINIMAL */
+	case t_ushort:
+#ifndef JSON_MINIMAL
+	    arr->arr.ushorts.store[offset] = (unsigned short)strtoul(cp, &ep, 0);
 	    if (ep == cp)
 		return JSON_ERR_BADNUM;
 	    else

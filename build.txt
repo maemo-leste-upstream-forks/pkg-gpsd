@@ -16,6 +16,12 @@ this line will do:
 
 If you get any errors, you need to read the detailed instructions that follow.
 
+If 'scons' fails, it is possible that your target system has moved to
+Python 3 as its default 'python' interpreter, but you can work around
+it by saying "python2 /usr/bin/scons" or something similar.  GPSD's
+own Python scripts assume that "#!/usr/bin/env python2" will invoke a
+Python 2 interpreter.
+
 == Supported platforms ==
 
 Native-build success should be expected on the following platforms,
@@ -162,7 +168,9 @@ The build degrades gracefully in the absence of any of these. You should
 be able to tell from scons messages which extensions you will get.
 
 Under Ubuntu and most other Debian-derived distributions, an easy way
-to pick up the prerequisites is: "apt-get build-dep gpsd"
+to pick up the prerequisites is: "apt-get build-dep gpsd".  Note
+that your sources.list will need "deb-src" lines for this, not
+just "deb" lines.
 
 If you are custom-building a Linux kernel for embedded deployment, you
 will need some subset of the following modules:
@@ -201,10 +209,6 @@ You can specify the installation prefix, as for an autotools build, by
 running "scons prefix=<installation_root>". The default value is
 "/usr/local".  The environment variable DESTDIR also works in the
 usual way.
-
-If your scons fails with the complaint "No tool named 'textfile'",
-you need to upgrade it.  This feature was introduced during the long
-interval after the 1.2.0 release; 1.2.1 and later versions will have it.
 
 If your linker run fails with missing math symbols, see the FIXME
 comment relating to implicit_links in the scons recipe; you probably
@@ -279,6 +283,26 @@ by refreshing leapseconds.cache you reduce the error window for
 leap-second offset bumps to affect your installation so that it begins
 as late as possible, at your build time rather than from when the
 source tree was copied.
+
+If you have had a leap-second transition, the following regression tests
+will break:
+
+	  bu303-climbing.log
+	  bu303-moving.log
+	  bu303-nofix.log
+	  bu303-stillfix.log
+	  bu303b-nofix.log
+	  italk-binary.log
+	  navcom.log
+	  ublox-aek-4t.log
+	  ublox-lea-4t.log
+	  ublox-sirf1.log
+
+There is no help for this other than a test rebuild.  The problem is
+that these devices rely on the build-time leap-second offset; you'll
+see times one second off.  Other GPSes either return
+leap-second-corrected time or the test loads include a
+leapsecond-offset report before any time is reported.
 
 == Optional features ==
 

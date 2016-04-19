@@ -56,7 +56,6 @@
 #include <limits.h>
 #include <errno.h>
 #include <math.h>
-#include <pthread.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <pthread.h>		/* pacifies OpenBSD's compiler */
@@ -530,13 +529,16 @@ static int get_edge_rfc2783(struct inner_context_t *inner_context,
 
 	char errbuf[BUFSIZ] = "unknown error";
 	(void)strerror_r(errno, errbuf, sizeof(errbuf));
-	thread_context->log_hook(thread_context, THREAD_ERROR,
-		    "KPPS:%s kernel PPS failed %s\n",
-		    thread_context->devicename, errbuf);
 	if ( ETIMEDOUT == errno || EINTR == errno ) {
 		/* just a timeout */
+		thread_context->log_hook(thread_context, THREAD_INF,
+			    "KPPS:%s kernel PPS timeout %s\n",
+			    thread_context->devicename, errbuf);
 		return 1;
 	}
+	thread_context->log_hook(thread_context, THREAD_WARN,
+		    "KPPS:%s kernel PPS failed %s\n",
+		    thread_context->devicename, errbuf);
 	return 0;
     }
     if ( inner_context->pps_canwait ) {
@@ -619,7 +621,7 @@ static void *gpsd_ppsmonitor(void *arg)
     volatile struct timedelta_t last_fixtime = {{0, 0}, {0, 0}};
     struct timespec clock_ts = {0, 0};
     time_t last_second_used = 0;
-    long cycle = 0, duration = 0;
+    long long cycle = 0, duration = 0;
     /* state is the last state of the tty control signals */
     int state = 0;
     /* count of how many cycles unchanged data */
@@ -631,8 +633,8 @@ static void *gpsd_ppsmonitor(void *arg)
 
 #if defined(TIOCMIWAIT)
     int edge_tio = 0;
-    long cycle_tio = 0;
-    long duration_tio = 0;
+    long long cycle_tio = 0;
+    long long duration_tio = 0;
     int state_tio = 0;
     int state_last_tio = 0;
     struct timespec clock_ts_tio = {0, 0};
@@ -641,7 +643,7 @@ static void *gpsd_ppsmonitor(void *arg)
 #endif /* TIOCMIWAIT */
 
 #if defined(HAVE_SYS_TIMEPPS_H)
-    long cycle_kpps = 0, duration_kpps = 0;
+    long long cycle_kpps = 0, duration_kpps = 0;
     /* kpps_pulse stores the time of the last two edges */
     struct timespec pulse_kpps[2] = { {0, 0}, {0, 0} };
 #endif /* defined(HAVE_SYS_TIMEPPS_H) */
@@ -1088,8 +1090,9 @@ static void *gpsd_ppsmonitor(void *arg)
 			delay_str);
 	    log1 = "system clock went backwards";
 	} else if ( ( 2 < delay.tv_sec)
-	  || ( 1 == delay.tv_sec && 100000000 > delay.tv_nsec ) ) {
-	    /* system clock could be slewing so allow 1.1 sec delay */
+	  || ( 1 == delay.tv_sec && 100000000 < delay.tv_nsec ) ) {
+	    /* system clock could be slewing so allow up to 1.1 sec delay */
+	    /* chronyd can slew +/-8.33% */
 	    thread_context->log_hook(thread_context, THREAD_RAW,
 			"PPS:%s %.10s no current GPS seconds: %.20s\n",
 			thread_context->devicename,

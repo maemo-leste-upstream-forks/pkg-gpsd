@@ -13,7 +13,7 @@
 #include "gpsd.h"
 #include "strfuncs.h"
 
-#ifdef NMEA_ENABLE
+#ifdef NMEA0183_ENABLE
 /**************************************************************************
  *
  * Parser helpers begin here
@@ -605,8 +605,9 @@ static gps_mask_t processGSV(int count, char *field[],
      *   GP (GPS, SBAS, QZSS),
      *   QZ (QZSS).
      *
-     * GL may to be used when GSVs are mixed containing GLONASS, GN maybe
-     * used when GSVs contain GLONASS only.  Usage is inconsistent.
+     * GL may be (incorrectly) used when GSVs are mixed containing
+     * GLONASS, GN may be (incorrectly) used when GSVs contain GLONASS
+     * only.  Usage is inconsistent.
      *
      * In the GLONASS version sat IDs run from 65-96 (NMEA0183 standardizes
      * this). At least two GPS, the BU-353 GLONASS and the u-blox NEO-M8N,
@@ -693,11 +694,20 @@ static gps_mask_t processGSV(int count, char *field[],
 	if (sp->PRN != 0)
 	    session->gpsdata.satellites_visible++;
     }
-    if (session->nmea.part == session->nmea.await
-	&& atoi(field[3]) != session->gpsdata.satellites_visible)
-	gpsd_log(&session->context->errout, LOG_WARN,
-		 "GPGSV field 3 value of %d != actual count %d\n",
-		 atoi(field[3]), session->gpsdata.satellites_visible);
+
+    /*
+     * Alas, we can't sanity check field counts when there are multiple sat 
+     * pictures, because the visible member counts *all* satellites - you 
+     * get a bad result on the second and later SV spans.  Note, this code
+     * assumes that if any of the special sat pics occur they come right
+     * after a stock GPGSV one.
+     */
+    if (session->nmea.seen_glgsv || session->nmea.seen_bdgsv || session->nmea.seen_qzss)
+	if (session->nmea.part == session->nmea.await
+		&& atoi(field[3]) != session->gpsdata.satellites_visible)
+	    gpsd_log(&session->context->errout, LOG_WARN,
+		     "GPGSV field 3 value of %d != actual count %d\n",
+		     atoi(field[3]), session->gpsdata.satellites_visible);
 
     /* not valid data until we've seen a complete set of parts */
     if (session->nmea.part < session->nmea.await) {
@@ -1587,7 +1597,7 @@ gps_mask_t nmea_parse(char *sentence, struct gps_device_t * session)
     return retval;
 }
 
-#endif /* NMEA_ENABLE */
+#endif /* NMEA0183_ENABLE */
 
 void nmea_add_checksum(char *sentence)
 /* add NMEA checksum to a possibly  *-terminated sentence */
