@@ -1,0 +1,38 @@
+From 65f2a7ee0d1b9fef9041e9380c9b9f593dbe22b6 Mon Sep 17 00:00:00 2001
+From: Mattia Rizzolo <mattia@debian.org>
+Date: Tue, 19 Apr 2016 20:09:18 +0200
+Subject: [PATCH] Fix FTBFS on hurd
+
+Correctly checking for __APPLE__ instead of __MACH__
+
+Signed-off-by: Bernd Zeimetz <bernd@bzed.de>
+---
+ clock_gettime.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/clock_gettime.c b/clock_gettime.c
+index 9335dd4..818af2f 100644
+--- a/clock_gettime.c
++++ b/clock_gettime.c
+@@ -9,7 +9,8 @@
+ 
+ #include "compiler.h"
+ 
+-#ifdef __MACH__
++// check for osx only - hurd doesn't have/need these includes.
++#ifdef __APPLE__
+ #include <mach/clock.h>
+ #include <mach/mach.h>
+ #endif
+@@ -17,7 +18,7 @@
+ #ifndef HAVE_CLOCK_GETTIME
+ int clock_gettime(clockid_t clk_id UNUSED, struct timespec *ts)
+ {
+-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
++#ifdef __MACH__ // OS X and hurd do not have clock_gettime, use clock_get_time
+     clock_serv_t cclock;
+     mach_timespec_t mts;
+     host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+-- 
+2.8.0.rc3
+

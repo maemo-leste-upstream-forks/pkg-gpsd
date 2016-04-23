@@ -1,0 +1,23 @@
+From 1a35ea05be91a3ac7e812aacd3d185c771e8ef92 Mon Sep 17 00:00:00 2001
+From: Rob Norris <rw_norris@hotmail.com>
+Date: Mon, 29 Feb 2016 21:38:33 +0000
+Subject: [PATCH] Ensure the test_gpsmm program compiles
+
+test_gpsmm may depend on the dbus library.
+
+Signed-off-by: Jon Schlueter <jon.schlueter@gmail.com>
+---
+ SConstruct | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/SConstruct
++++ b/SConstruct
+@@ -1055,7 +1055,7 @@ else:
+ 	parse_flags=["-lm"] + rtlibs + usbflags + dbusflags)
+ 
+ test_gpsmm = env.Program('test_gpsmm', ['test_gpsmm.cpp'],
+-                         LIBS=['gps_static'], LIBPATH='.', parse_flags=["-lm"])
++                         LIBS=['gps_static'], LIBPATH='.', parse_flags=["-lm"] + dbusflags)
+ testprogs = [test_bits, test_float, test_geoid, test_libgps, test_matrix, test_mktime, test_packet, test_timespec, test_trig]
+ if env['socket_export']:
+     testprogs.append(test_json)

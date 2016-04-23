@@ -1,3 +1,5 @@
 full-systemd-support
 gpsd_hotplug_rules_disable_generic_serial_converters
 fix_cppflags_parsing
+1a35ea0_Ensure-the-test_gpsmm-program-compiles
+65f2a7e_Fix-FTBFS-on-hurd
