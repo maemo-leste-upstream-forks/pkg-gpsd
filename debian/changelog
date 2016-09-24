@@ -1,3 +1,17 @@
+gpsd (3.16-3) unstable; urgency=medium
+
+  * [aa43cc65] Various patches were applied upstream.
+    Take them from there, removing our version.
+  * [1444f940] Build with -std=gnu++98. (Closes: #830993)
+  * [505d032a] Remove netbase/systemd-sysv dependency.
+    Not needed anymore. (Closes: #768100)
+  * [b53473f0] Migrate to github.
+  * [cb624dcb] Add travis.yml build stuff.
+  * [1c3c3463] Updating gbp.conf to ignore travis.yml for debuild.
+  * [d870a5c6] Don't rebuild for the static library.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 24 Sep 2016 14:34:07 +0200
+
 gpsd (3.16-2) unstable; urgency=medium
 
   * [5001c11a] Do not start gpsd.service by default.
