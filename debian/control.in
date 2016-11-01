@@ -49,6 +49,7 @@ Package: gpsd-dbg
 Architecture: any
 Section: debug
 Priority: extra
+Suggests: gpsd-dbgsym
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
  libgpsLIBGPSSONAME (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
@@ -56,8 +57,9 @@ Description: Global Positioning System - debugging symbols
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
  .
- This package contains the detached debug symbols for gpsd, gpsd-clients,
- python-gps, and libgpsLIBGPSSONAME.
+ This package contains the python debug modules and some test tools
+ to the debug the behaviour of gpsd. Debug symbols are being shipped
+ in the dbgsym package.
 
 Package: gpsd-clients
 Architecture: any

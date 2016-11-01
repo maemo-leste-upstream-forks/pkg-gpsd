@@ -38,7 +38,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 SCONSOPTS = \
 	prefix=/usr \
 	systemd=yes \
-	strip=no \
+	nostrip=yes \
 	dbus_export=yes \
 	docdir=/usr/share/doc/gpsd \
 	libdir=/usr/lib/$(DEB_HOST_MULTIARCH) \
@@ -208,7 +208,7 @@ binary: install-stamp
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev 
 	dh_link 
-	dh_strip  --dbg-package=$(PACKAGE_GPSDDBG)
+	dh_strip --dbgsym-migration='gpsd-dbg (<< 3.16-4~)'
 	dh_buildinfo -p$(PACKAGE_GPSDDBG)
 	dh_compress 
 	dh_fixperms  -Xgpsd.hotplug
