@@ -82,16 +82,12 @@ $(LIBGPS_DEBIAN_FILE_TARGETS): $(LIBGPS_DEBIAN_FILE_SOURCES)
 	done
 
 debian/control: debian/control.in
-	if grep -q "Package: libgps$(LIBGPS_SONAME)" debian/control; then \
-		touch debian/control ;\
-	else \
-		rm -f $@ ;\
-		sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g' $< > $@ ;\
+		rm -f $@ 
+		sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g' $< > $@ 
 		if [ -d .git ]; then \
 			git add debian/control ;\
 			git commit -m 'Updating debian/control from debian/control.in' debian/control ;\
 		fi ;\
-	fi
 
 SConstruct.deb_revision: SConstruct
 	if [ ! -f $@ ]; then \
