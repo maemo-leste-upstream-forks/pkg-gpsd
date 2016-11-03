@@ -2,7 +2,7 @@ Source: gpsd
 Section: misc
 Priority: optional
 Maintainer: Bernd Zeimetz <bzed@debian.org>
-Build-Depends: debhelper (>= 8.1.3~),
+Build-Depends: debhelper (>= 8.1.3~), po-debconf,
  python-all-dev (>= 2.6.6-3),
  python-all-dbg (>= 2.6.6-3),
  xsltproc, docbook-xsl, docbook-xml,
@@ -15,18 +15,18 @@ Build-Depends: debhelper (>= 8.1.3~),
  dpkg-dev (>= 1.15.6),
  scons (>= 2.0.1), chrpath,
  dh-buildinfo,
+ hardening-includes,
  pps-tools (>= 0.20120406+g0deb9c7e-2~) [linux-any],
- dh-systemd (>= 1.3),
- dh-python
+ dh-systemd (>= 1.3)
 Standards-Version: 3.9.2
 Homepage: http://www.catb.org/gpsd/
-Vcs-Browser: https://github.com/bzed/pkg-gpsd
-Vcs-Git: https://github.com/bzed/pkg-gpsd.git
+Vcs-Browser: http://git.recluse.de/?p=debian/pkg-gpsd.git
+Vcs-Git: git://git.recluse.de/debian/pkg-gpsd.git
 X-Python-Version: >= 2.3
 
 Package: gpsd
 Architecture: any
-Depends: lsb-base (>= 3.2-13),
+Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
  adduser (>= 3.34),
  ${shlibs:Depends}, ${misc:Depends},
  libgps22 (= ${binary:Version})
@@ -49,6 +49,7 @@ Package: gpsd-dbg
 Architecture: any
 Section: debug
 Priority: extra
+Suggests: gpsd-dbgsym
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
  libgps22 (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
@@ -56,14 +57,15 @@ Description: Global Positioning System - debugging symbols
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
  .
- This package contains the detached debug symbols for gpsd, gpsd-clients,
- python-gps, and libgps22.
+ This package contains the python debug modules and some test tools
+ to the debug the behaviour of gpsd. Debug symbols are being shipped
+ in the dbgsym package.
 
 Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgps22 (= ${binary:Version}),
- python-gps, python-gtk2, python-cairo, ${python:Depends}, python
+ python-gps, python-gtk2, python-cairo, ${python:Depends}
 Suggests: gpsd
 Conflicts: gps
 Breaks: ${python:Breaks}
@@ -118,8 +120,7 @@ Package: libgps-dev
 Architecture: any
 Section: libdevel
 Depends: libgps22 (= ${binary:Version}), ${misc:Depends}, pkg-config
-Breaks: gpsd (<< 2.34.dfsg-1)
-Replaces: gpsd (<< 2.34.dfsg-1)
+Conflicts: gpsd (<< 2.34.dfsg-1)
 Description: Global Positioning System - development files
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
