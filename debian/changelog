@@ -1,3 +1,16 @@
+gpsd (3.16-4) unstable; urgency=medium
+
+  * [2405f456] Fix debug symbol handling.
+    Debug symbols went missing when upstream switched the strip
+    option name.
+    Thanks to Andre Naujoks (Closes: #842792)
+  * [74c3cd07] Updating debian/control from debian/control.in
+  * [b66410da] hadle debian/control creation a bit better
+  * [06a9623f] Use gz compression for now.
+  * [44376877] Remove obsolete build dependency on hardening-includes.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Fri, 04 Nov 2016 23:35:14 +0100
+
 gpsd (3.16-3) unstable; urgency=medium
 
   * [aa43cc65] Various patches were applied upstream.
