@@ -12,7 +12,7 @@
 
 const char *gps_maskdump(gps_mask_t set)
 {
-    static char buf[196];
+    static char buf[207];
     const struct {
         gps_mask_t      mask;
         const char      *name;
@@ -51,16 +51,18 @@ const char *gps_maskdump(gps_mask_t set)
         {TOFF_SET,	"TOFF"},
         {PPS_SET,	"PPS"},
         {NAVDATA_SET,	"NAVDATA"},
+        {OSCILLATOR_SET,	"OSCILLATOR"},
         {RAW_IS,	"RAW"},
         {USED_IS,	"USED"},
         {DRIVER_IS,	"DRIVER"},
         {CLEAR_IS,	"CLEAR"},
         {REPORT_IS,	"REPORT"},
         {NODATA_IS,	"NODATA"},
-        {PPSTIME_IS,	"PPSTIME"},
+        {NTPTIME_IS,	"NTPTIME"},
         {PERR_IS,	"PERR"},
         {PASSTHROUGH_IS,	"PASSTHROUGH"},
         {EOF_IS,	"EOF"},
+        {GOODTIME_IS,	"GOODTIME"},
     };
 
     memset(buf, '\0', sizeof(buf));

@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsd
 .\"    Author: [see the "AUTHORS" section]
-.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
 .\"      Date: 9 Aug 2004
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -31,7 +31,7 @@
 gpsd \- interface daemon for GPS receivers
 .SH "SYNOPSIS"
 .HP \w'\fBgpsd\fR\ 'u
-\fBgpsd\fR [\-F\ \fIcontrol\-socket\fR] [\-S\ \fIlistener\-port\fR] [\-b] [\-l] [\-G] [\-n] [\-N] [\-h] [\-P\ \fIpidfile\fR] [\-D\ \fIdebuglevel\fR] [\-V] [[\fIsource\-name\fR]...]
+\fBgpsd\fR [\-b] [\-D\ \fIdebuglevel\fR] [\-F\ \fIcontrol\-socket\fR] [\-G] [\-h] [\-l] [\-n] [\-N] [\-P\ \fIpidfile\fR] [\-r] [\-S\ \fIlistener\-port\fR] [\-V] [[\fIsource\-name\fR]...]
 .SH "QUICK START"
 .PP
 If you have a GPS attached on the lowest\-numbered USB port of a Linux system, and want to read reports from it on TCP/IP port 2947, it will normally suffice to do this:
@@ -117,16 +117,6 @@ via a TCP/IP port, 2947 by default)\&. Both IPv4 and IPv6 connections are suppor
 .PP
 The program accepts the following options:
 .PP
-\-F
-.RS 4
-Create a control socket for device addition and removal commands\&. You must specify a valid pathname on your local filesystem; this will be created as a Unix\-domain socket to which you can write commands that edit the daemon\*(Aqs internal device list\&.
-.RE
-.PP
-\-S
-.RS 4
-Set TCP/IP port on which to listen for GPSD clients (default is 2947)\&.
-.RE
-.PP
 \-b
 .RS 4
 Broken\-device\-safety mode, otherwise known as read\-only mode\&. A few bluetooth and USB receivers lock up or become totally inaccessible when probed or reconfigured; see the hardware compatibility list on the GPSD project website for details\&. This switch prevents gpsd from writing to a receiver\&. This means that
@@ -136,11 +126,30 @@ gpsd
 cannot break the receiver\&. A better solution would be for Bluetooth to not be so fragile\&. A platform independent method to identify serial\-over\-Bluetooth devices would also be nice\&.
 .RE
 .PP
+\-D
+.RS 4
+Set debug level\&. At debug levels 2 and above,
+gpsd
+reports incoming sentence and actions to standard error if
+gpsd
+is in the foreground (\-N) or to syslog if in the background\&.
+.RE
+.PP
+\-F
+.RS 4
+Create a control socket for device addition and removal commands\&. You must specify a valid pathname on your local filesystem; this will be created as a Unix\-domain socket to which you can write commands that edit the daemon\*(Aqs internal device list\&.
+.RE
+.PP
 \-G
 .RS 4
 This flag causes
 gpsd
 to listen on all addresses (INADDR_ANY) rather than just the loop back (INADDR_LOOPBACK) address\&. For the sake of privacy and security, TPV information is now private to the local machine until the user makes an effort to expose this to the world\&.
+.RE
+.PP
+\-h
+.RS 4
+Display help message and terminate\&.
 .RE
 .PP
 \-l
@@ -162,9 +171,9 @@ Don\*(Aqt wait for a client to connect before polling whatever GPS is associated
 Don\*(Aqt daemonize; run in foreground\&. This switch is mainly useful for debugging\&.
 .RE
 .PP
-\-h
+\-r
 .RS 4
-Display help message and terminate\&.
+Use GPS time even with no current fix\&. Some GPS\*(Aqs have battery powered Real Time Clocks (RTC\*(Aqs) built in, makeing them a valid time source even before a fix is acquired\&. This can be useful on a Raspberry Pi, or other device that has no battery powered RTC, and thus has no valid time at startup\&.
 .RE
 .PP
 \-P
@@ -172,13 +181,9 @@ Display help message and terminate\&.
 Specify the name and path to record the daemon\*(Aqs process ID\&.
 .RE
 .PP
-\-D
+\-S
 .RS 4
-Set debug level\&. At debug levels 2 and above,
-gpsd
-reports incoming sentence and actions to standard error if
-gpsd
-is in the foreground (\-N) or to syslog if in the background\&.
+Set TCP/IP port on which to listen for GPSD clients (default is 2947)\&.
 .RE
 .PP
 \-V
@@ -246,6 +251,17 @@ nmea2000://can0\&.
 .PP
 (The "ais:://" source type supported in some older versions of the daemon has been retired in favor of the more general "tcp://"\&.)
 .PP
+Additionally, two serial device names have a side effect:
+.PP
+/dev/ttyAMA0
+.RS 4
+The UART device on a Raspberry Pi\&. Has the side effect of opening /dev/pps0 for RFC2783 1PPS data\&.
+.RE
+.PP
+Generic GPS device 0\&. Has the side effect of opening /dev/pps0 for RFC2783 1PPS data/
+.RS 4
+.RE
+.PP
 Internally, the daemon maintains a device pool holding the pathnames of devices and remote servers known to the daemon\&. Initially, this list is the list of device\-name arguments specified on the command line\&. That list may be empty, in which case the daemon will have no devices on its search list until they are added by a control\-socket command (see
 the section called \(lqGPS DEVICE MANAGEMENT\(rq
 for details on this)\&. Daemon startup will abort with an error if neither any devices nor a control socket are specified\&.
@@ -267,7 +283,7 @@ client library and take appropriate care to conditionalize their code on the maj
 .PP
 The request\-response protocol for the socket interface is fully documented in
 \fBgpsd_json\fR(5)\&.
-.SH "SHARED-MEMORY AND DBUS INTERFACES"
+.SH "SHARED\-MEMORY AND DBUS INTERFACES"
 .PP
 gpsd
 has two other (read\-only) interfaces\&.
@@ -491,7 +507,7 @@ gpsd
 will use that for extra accuracy\&.
 .PP
 Detailed instructions for using GPSD to set up a high\-quality time service can be found among the documentation on the GPSD website\&.
-.SH "USE WITH D-BUS"
+.SH "USE WITH D\-BUS"
 .PP
 On operating systems that support D\-BUS,
 gpsd
@@ -609,7 +625,7 @@ Pulse\-Per\-Second API for UNIX\-like Operating Systems, Version 1\&.0
 \fBgps\fR(1),
 \fBlibgps\fR(3),
 \fBgpsd_json\fR(5),
-\fBlibgpsd\fR(3),
+\fBlibgpsmm\fR(3),
 \fBgpsprof\fR(1),
 \fBgpsfake\fR(1),
 \fBgpsctl\fR(1),

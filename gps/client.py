@@ -1,28 +1,27 @@
 # This file is Copyright (c) 2010 by the GPSD project
 # BSD terms apply: see the file COPYING in the distribution root for details.
 #
-import time, socket, sys, select, exceptions
+# This code run compatibly under Python 2 and 3.x for x >= 2.
+# Preserve this property!
+from __future__ import absolute_import, print_function, division
 
-if sys.hexversion >= 0x2060000:
-    import json			# For Python 2.6
-else:
-    import simplejson as json 	# For Python 2.4 and 2.5
+import json
+import select
+import socket
+import sys
+import time
+
+from .misc import polystr, polybytes
 
 GPSD_PORT = "2947"
 
 
-class json_error(exceptions.Exception):
-    def __init__(self, data, explanation):
-        exceptions.Exception.__init__(self)
-        self.data = data
-        self.explanation = explanation
-
-
-class gpscommon:
+class gpscommon(object):
     "Isolate socket handling and buffering from the protocol interpretation."
+
     def __init__(self, host="127.0.0.1", port=GPSD_PORT, verbose=0):
         self.sock = None        # in case we blow up in connect
-        self.linebuffer = ""
+        self.linebuffer = b''
         self.verbose = verbose
         if host is not None:
             self.connect(host, port)
@@ -41,7 +40,7 @@ class gpscommon:
             try:
                 port = int(port)
             except ValueError:
-                raise socket.error, "nonnumeric port"
+                raise socket.error("nonnumeric port")
         # if self.verbose > 0:
         #    print 'connect:', (host, port)
         msg = "getaddrinfo returns an empty list"
@@ -52,13 +51,14 @@ class gpscommon:
                 self.sock = socket.socket(af, socktype, proto)
                 # if self.debuglevel > 0: print 'connect:', (host, port)
                 self.sock.connect(sa)
-            except socket.error, msg:
+            except socket.error as e:
+                msg = str(e)
                 # if self.debuglevel > 0: print 'connect fail:', (host, port)
                 self.close()
                 continue
             break
         if not self.sock:
-            raise socket.error, msg
+            raise socket.error(msg)
 
     def close(self):
         if self.sock:
@@ -72,16 +72,18 @@ class gpscommon:
         "Return True if data is ready for the client."
         if self.linebuffer:
             return True
-        (winput, _woutput, _wexceptions) = select.select((self.sock,), (), (), timeout)
+        (winput, _woutput, _wexceptions) = select.select(
+            (self.sock,), (), (), timeout)
         return winput != []
 
     def read(self):
         "Wait for and read data being streamed from the daemon."
         if self.verbose > 1:
             sys.stderr.write("poll: reading from daemon...\n")
-        eol = self.linebuffer.find('\n')
+        eol = self.linebuffer.find(b'\n')
         if eol == -1:
-            frag = self.sock.recv(4096)
+            # RTCM3 JSON can be over 4.4k long, so go big
+            frag = self.sock.recv(8192)
             self.linebuffer += frag
             if self.verbose > 1:
                 sys.stderr.write("poll: read complete.\n")
@@ -90,11 +92,12 @@ class gpscommon:
                     sys.stderr.write("poll: returning -1.\n")
                 # Read failed
                 return -1
-            eol = self.linebuffer.find('\n')
+            eol = self.linebuffer.find(b'\n')
             if eol == -1:
                 if self.verbose > 1:
                     sys.stderr.write("poll: returning 0.\n")
                 # Read succeeded, but only got a fragment
+                self.response = ''  # Don't duplicate last response
                 return 0
         else:
             if self.verbose > 1:
@@ -102,7 +105,9 @@ class gpscommon:
 
         # We got a line
         eol += 1
-        self.response = self.linebuffer[:eol]
+        # Provide the response in both 'str' and 'bytes' form
+        self.bresponse = self.linebuffer[:eol]
+        self.response = polystr(self.bresponse)
         self.linebuffer = self.linebuffer[eol:]
 
         # Can happen if daemon terminates while we're reading.
@@ -114,6 +119,11 @@ class gpscommon:
         # We got a \n-terminated line
         return len(self.response)
 
+    # Note that the 'data' method is sometimes shadowed by a name
+    # collision, rendering it unusable.  The documentation recommends
+    # accessing 'response' directly.  Consequently, no accessor method
+    # for 'bresponse' is currently provided.
+
     def data(self):
         "Return the client data buffer."
         return self.response
@@ -122,7 +132,7 @@ class gpscommon:
         "Ship commands to the daemon."
         if not commands.endswith("\n"):
             commands += "\n"
-        self.sock.send(commands)
+        self.sock.send(polybytes(commands))
 
 WATCH_ENABLE = 0x000001 	# enable streaming
 WATCH_DISABLE = 0x000002 	# disable watching
@@ -137,20 +147,29 @@ WATCH_PPS = 0x002000    	# enable PPS in raw/NMEA
 WATCH_DEVICE = 0x000800 	# watch specific device
 
 
-class gpsjson:
+class json_error(BaseException):
+    def __init__(self, data, explanation):
+        BaseException.__init__(self)
+        self.data = data
+        self.explanation = explanation
+
+
+class gpsjson(object):
     "Basic JSON decoding."
+
     def __iter__(self):
         return self
 
     def unpack(self, buf):
         try:
             self.data = dictwrapper(json.loads(buf.strip(), encoding="ascii"))
-        except ValueError, e:
+        except ValueError as e:
             raise json_error(buf, e.args[0])
         # Should be done for any other array-valued subobjects, too.
         # This particular logic can fire on SKY or RTCM2 objects.
         if hasattr(self.data, "satellites"):
-            self.data.satellites = map(dictwrapper, self.data.satellites)
+            self.data.satellites = [dictwrapper(x)
+                                    for x in self.data.satellites]
 
     def stream(self, flags=0, devpath=None):
         "Control streaming reports from the daemon,"
@@ -195,8 +214,9 @@ class gpsjson:
         return self.send(arg + "}")
 
 
-class dictwrapper:
+class dictwrapper(object):
     "Wrapper that yields both class and dictionary behavior,"
+
     def __init__(self, ddict):
         self.__dict__ = ddict
 

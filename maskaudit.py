@@ -1,6 +1,4 @@
-#!@PYTHON@
-#
-# @MASTER@
+#!/usr/bin/env python
 #
 # This file is Copyright (c) 2010 by the GPSD project
 # BSD terms apply: see the file COPYING in the distribution root for details.
@@ -11,13 +9,21 @@
 #
 # With -t, tabulate usage of defines to find unused ones.  Requires -c or -d.
 
-import commands
+# This code runs compatibly under Python 2 and 3.x for x >= 2.
+# Preserve this property!
+from __future__ import absolute_import, print_function, division
+
 import getopt
 import glob
 import sys
 
+try:
+    from subprocess import getstatusoutput
+except ImportError:
+    from commands import getstatusoutput
 
-class SourceExtractor:
+
+class SourceExtractor(object):
     def __init__(self, sourcefile, clientside):
         self.sourcefile = sourcefile
         self.clientside = clientside
@@ -31,19 +37,23 @@ class SourceExtractor:
         ] + glob.glob("driver_*.c") + glob.glob("monitor_*.c")
         self.masks = []
         self.primitive_masks = []
-        for line in file(self.sourcefile):
-            if line.startswith("#define") and ("_SET" in line or "_IS" in line):
+        for line in open(self.sourcefile):
+            if ((line.startswith("#define")
+                 and ("_SET" in line or "_IS" in line))):
                 fields = line.split()
                 self.masks.append((fields[1], fields[2]))
-                if fields[2].startswith("(1llu<<") or fields[2].startswith("INTERNAL_SET"):
+                if ((fields[2].startswith("(1llu<<")
+                     or fields[2].startswith("INTERNAL_SET"))):
                     self.primitive_masks.append((fields[1], fields[2]))
 
     def in_library(self, flag):
-        (status, _output) = commands.getstatusoutput("grep %s libgps_core.c libgps_json.c gpsctl.c" % flag)
+        (status, _output) = getstatusoutput(
+            "grep '%s' libgps_core.c libgps_json.c gpsctl.c" % flag)
         return status == 0
 
     def in_daemon(self, flag):
-        (status, _output) = commands.getstatusoutput("grep %s %s" % (flag, " ".join(self.daemonfiles)))
+        (status, _output) = getstatusoutput(
+            "grep '%s' %s" % (flag, " ".join(self.daemonfiles)))
         return status == 0
 
     def relevant(self, flag):
@@ -80,16 +90,19 @@ if __name__ == '__main__':
         elif daemongen:
             source = daemonside
             banner = "Daemon"
+        else:
+            sys.stderr.write("maskaudit: need -c or -d option\n")
+            sys.exit(1)
 
         if tabulate:
-            print "%-14s	%8s" % (" ", banner)
+            print("%-14s	%8s" % (" ", banner))
             for (flag, value) in source.masks:
-                print "%-14s	%8s" % (flag, source.relevant(flag))
+                print("%-14s	%8s" % (flag, source.relevant(flag)))
         if pythonize:
             for (d, v) in source.masks:
                 if v[-1] == 'u':
                     v = v[:-1]
-                print "%-15s\t= %s" % (d, v)
+                print("%-15s\t= %s" % (d, v))
         if not pythonize and not tabulate:
             maxout = 0
             for (d, v) in source.primitive_masks:
@@ -100,7 +113,7 @@ if __name__ == '__main__':
                     if stem.endswith("_IS"):
                         stem = stem[:-3]
                     maxout += len(stem) + 1
-            print """/* This code is generated.  Do not hand-hack it! */
+            print("""/* This code is generated.  Do not hand-hack it! */
 
 /*
  * Also, beware that it is something of a CPU hog when called on every packet.
@@ -118,15 +131,16 @@ const char *gps_maskdump(gps_mask_t set)
     const struct {
         gps_mask_t      mask;
         const char      *name;
-    } *sp, names[] = {""" % (maxout + 3,)
-            for (flag, value) in clientside.primitive_masks + daemonside.primitive_masks:
+    } *sp, names[] = {""" % (maxout + 3,))
+            masks = clientside.primitive_masks + daemonside.primitive_masks
+            for (flag, value) in masks:
                 stem = flag
                 if stem.endswith("_SET"):
                     stem = stem[:-4]
                 if stem.endswith("_IS"):
                     stem = stem[:-3]
-                print "        {%s,\t\"%s\"}," % (flag, stem)
-            print '''\
+                print("        {%s,\t\"%s\"}," % (flag, stem))
+            print('''\
     };
 
     memset(buf, '\\0', sizeof(buf));
@@ -141,7 +155,7 @@ const char *gps_maskdump(gps_mask_t set)
     (void)strlcat(buf, "}", sizeof(buf));
     return buf;
 }
-'''
+''')
     except KeyboardInterrupt:
         pass
 

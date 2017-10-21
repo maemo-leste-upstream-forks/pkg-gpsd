@@ -4,6 +4,18 @@
  * BSD terms apply: see the file COPYING in the distribution root for details.
  *
  */
+
+#ifdef __linux__
+/* FreeBSD chokes on this */
+/* sys/ipc.h needs _XOPEN_SOURCE, 500 means X/Open 1995 */
+#define _XOPEN_SOURCE 500
+/* pselect() needs _POSIX_C_SOURCE >= 200112L */
+#define _POSIX_C_SOURCE 200112L
+#endif /* __linux__ */
+
+/* strlcpy() needs _DARWIN_C_SOURCE */
+#define _DARWIN_C_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -43,11 +55,18 @@ static bool hunting = true;
 static void settle(struct gps_device_t *session)
 /* allow the device to settle after a control operation */
 {
+    struct timespec delay;
+
     /*
      * See the 'deep black magic' comment in serial.c:set_serial().
      */
     (void)tcdrain(session->gpsdata.gps_fd);
-    (void)usleep(50000);
+
+    /* wait 50,000 uSec */
+    delay.tv_sec = 0;
+    delay.tv_nsec = 50000000L;
+    nanosleep(&delay, NULL);
+
     (void)tcdrain(session->gpsdata.gps_fd);
 }
 #endif /* defined(RECONFIGURE_ENABLE) || defined(CONTROLSEND_ENABLE) */
@@ -176,6 +195,7 @@ int main(int argc, char **argv)
     char *device = NULL, *devtype = NULL;
     char *speed = NULL, *control = NULL, *rate = NULL;
     bool to_binary = false, to_nmea = false, reset = false;
+    bool control_stdout = false;
     bool lowlevel=false, echo=false;
     struct gps_data_t gpsdata;
     const struct gps_type_t *forcetype = NULL;
@@ -217,6 +237,7 @@ int main(int argc, char **argv)
 	    break;
 	case 'e':		/* echo specified control string with wrapper */
 	    lowlevel = true;
+	    control_stdout = true;  /* Prevent message going to stdout */
 	    echo = true;
 	    break;
 	case 'f':		/* force direct access to the device */
@@ -309,7 +330,7 @@ int main(int argc, char **argv)
 	    exit(EXIT_SUCCESS);
 	case 'h':
 	default:
-	    fprintf(stderr, USAGE);
+	    (void)fprintf(stderr, USAGE);
 	    break;
 	}
     }
@@ -366,7 +387,7 @@ int main(int argc, char **argv)
 	    timeout = HIGH_LEVEL_TIMEOUT;
 
 	/* what devices have we available? */
-	if (!gps_query(&gpsdata, DEVICELIST_SET, (int)timeout, "?DEVICES;\n")) {
+	if (!gps_query(&gpsdata, DEVICELIST_SET, (int)timeout, "?DEVICES;\r\n")) {
 	    gpsd_log(&context.errout, LOG_ERROR, "no DEVICES response received.\n");
 	    (void)gps_close(&gpsdata);
 	    exit(EXIT_FAILURE);
@@ -550,7 +571,7 @@ int main(int argc, char **argv)
 	if (rate != NULL) {
 	    (void)gps_query(&gpsdata,
 			    DEVICE_SET, (int)timeout,
-			    "?DEVICE={\"path\":\"%s\",\"cycle\":%s}\n",
+			    "?DEVICE={\"path\":\"%s\",\"cycle\":%s}\r\n",
 			    device, rate);
 	}
 #endif /* RECONFIGURE_ENABLE */
@@ -704,9 +725,10 @@ int main(int argc, char **argv)
 	    }
 	}
 
-	(void)printf("%s identified as a %s at %u baud.\n",
-                       device, gpsd_id(&session),
-                       session.gpsdata.dev.baudrate);
+	if(!control_stdout)
+	    (void)printf("%s identified as a %s at %u baud.\n",
+			 device, gpsd_id(&session),
+			 session.gpsdata.dev.baudrate);
 
 	/* if no control operation was specified, we're done */
 	if (speed==NULL && !to_nmea && !to_binary && control==NULL)

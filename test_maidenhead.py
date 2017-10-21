@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Test grid locator conversion.
 #
@@ -7,7 +7,13 @@
 # Test conversions generated using
 #       http://f6fvy.free.fr/qthLocator/
 
-import sys, gps.clienthelpers
+# This code runs compatibly under Python 2 and 3.x for x >= 2.
+# Preserve this property!
+from __future__ import absolute_import, print_function, division
+
+import sys
+
+import gps.clienthelpers
 
 errors = 0
 for (lat, lon, maidenhead, location) in [
@@ -18,11 +24,12 @@ for (lat, lon, maidenhead, location) in [
 ]:
     converted = gps.clienthelpers.maidenhead(lat, lon)
     if converted != maidenhead:
-        print >>sys.stderr, "maidenhead test: from %s %s (%s) expected %s got %s" \
-            % (lat, lon, location, maidenhead, converted)
+        sys.stderr.write(
+            "maidenhead test: from %s %s (%s) expected %s got %s\n"
+            % (lat, lon, location, maidenhead, converted))
         errors += 1
     else:
-        print "%s OK" % location
+        print("%s OK" % location)
 
 if errors:
     sys.exit(1)

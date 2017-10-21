@@ -23,6 +23,10 @@
  *
  */
 
+/* cfmakeraw() needs _DEFAULT_SOURCE */
+#define _DEFAULT_SOURCE
+
+
 #include <time.h>               /* for time_t */
 #include "gpsd_config.h"
 
@@ -33,11 +37,21 @@
 #include <string.h>
 #include <strings.h>
 #include <fcntl.h>
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#endif /* HAVE_TERMIOS_H */
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif /* HAVE_SYS_SELECT_H */
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif /* HAVE_WINSOCK2_H */
 #include <unistd.h>
 
 #include "gpsd.h"
@@ -66,18 +80,19 @@ static void open_serial(char *device)
      * tty.
      */
     if ((fd_out = open(device, O_RDWR | O_NOCTTY)) == -1) {
-	fprintf(stderr, "gpspipe: error opening serial port\n");
+	(void)fprintf(stderr, "gpspipe: error opening serial port\n");
 	exit(EXIT_FAILURE);
     }
 
+#ifdef HAVE_TERMIOS_H
     /* Save current serial port settings for later */
     if (tcgetattr(fd_out, &oldtio) != 0) {
-	fprintf(stderr, "gpspipe: error reading serial port settings\n");
+	(void)fprintf(stderr, "gpspipe: error reading serial port settings\n");
 	exit(EXIT_FAILURE);
     }
 
     /* Clear struct for new port settings. */
-    bzero(&newtio, sizeof(newtio));
+    memset(&newtio, 0, sizeof(newtio));
 
     /* make it raw */
     (void)cfmakeraw(&newtio);
@@ -90,6 +105,7 @@ static void open_serial(char *device)
 	(void)fprintf(stderr, "gpspipe: error configuring serial port\n");
 	exit(EXIT_FAILURE);
     }
+#endif /* HAVE_TERMIOS_H */
 }
 
 static void usage(void)
@@ -245,9 +261,9 @@ int main(int argc, char **argv)
 
     /* Daemonize if the user requested it. */
     if (daemonize)
-	if (daemon(0, 0) != 0)
+	if (os_daemon(0, 0) != 0)
 	    (void)fprintf(stderr,
-			  "gpspipe: demonization failed: %s\n",
+			  "gpspipe: daemonization failed: %s\n",
 			  strerror(errno));
 
     /* Sleep for ten seconds if the user requested it. */
@@ -315,7 +331,7 @@ int main(int argc, char **argv)
 
 	/* reading directly from the socket avoids decode overhead */
 	errno = 0;
-	r = (int)read(gpsdata.gps_fd, buf, sizeof(buf));
+	r = (int)recv(gpsdata.gps_fd, buf, sizeof(buf), 0);
 	if (r > 0) {
 	    int i = 0;
 	    int j = 0;
@@ -358,17 +374,18 @@ int main(int argc, char **argv)
 		    }
 		}
 		if (fputc(c, fp) == EOF) {
-		    fprintf(stderr, "gpspipe: write error, %s(%d)\n",
-			    strerror(errno), errno);
+		    (void)fprintf(stderr, "gpspipe: write error, %s(%d)\n",
+		                  strerror(errno), errno);
 		    exit(EXIT_FAILURE);
 		}
 
 		if (c == '\n') {
 		    if (serialport != NULL) {
 			if (write(fd_out, serbuf, (size_t) j) == -1) {
-			    fprintf(stderr,
-				    "gpspipe: serial port write error, %s(%d)\n",
-				    strerror(errno), errno);
+			    (void)fprintf(stderr,
+			                  "gpspipe: serial port write error,"
+			                  " %s(%d)\n",
+			                  strerror(errno), errno);
 			    exit(EXIT_FAILURE);
 			}
 			j = 0;

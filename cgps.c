@@ -101,6 +101,7 @@
 #include "compiler.h"	/* for UNUSED */
 #include "gpsdclient.h"
 #include "revision.h"
+#include "os_compat.h"
 
 static struct gps_data_t gpsdata;
 static time_t status_timer;	/* Time of last state change. */
@@ -126,7 +127,7 @@ static bool compass_flag = false;
 #endif /* TRUENORTH */
 
 /* pseudo-signals indicating reason for termination */
-#define CGPS_QUIT	0	/* voluntary yterminastion */
+#define CGPS_QUIT	0	/* voluntary termination */
 #define GPS_GONE	-1	/* GPS device went away */
 #define GPS_ERROR	-2	/* low-level failure in GPS read */
 #define GPS_TIMEOUT	-3	/* low-level failure in GPS waiting */
@@ -356,23 +357,23 @@ static void update_compass_panel(struct gps_data_t *gpsdata)
 	(void)snprintf(scr, sizeof(scr), "n/a");
     (void)mvwprintw(datawin, 2, DATAWIN_VALUE_OFFSET, "%-*s", 27, scr);
 
-    /* Fill in the pitch. */
+    /* Fill in the climb. */
     if (isnan(gpsdata->fix.climb) == 0) {
-	(void)snprintf(scr, sizeof(scr), "%.1f", gpsdata->fix.climb);
+	(void)snprintf(scr, sizeof(scr), "%.2f", gpsdata->fix.climb);
     } else
 	(void)snprintf(scr, sizeof(scr), "n/a");
     (void)mvwprintw(datawin, 3, DATAWIN_VALUE_OFFSET, "%-*s", 27, scr);
 
-    /* Fill in the roll. */
+    /* Fill in the speed. */
     if (isnan(gpsdata->fix.speed) == 0)
-	(void)snprintf(scr, sizeof(scr), "%.1f", gpsdata->fix.speed);
+	(void)snprintf(scr, sizeof(scr), "%.2f", gpsdata->fix.speed);
     else
 	(void)snprintf(scr, sizeof(scr), "n/a");
     (void)mvwprintw(datawin, 4, DATAWIN_VALUE_OFFSET, "%-*s", 27, scr);
 
-    /* Fill in the speed. */
+    /* Fill in the altitude. */
     if (isnan(gpsdata->fix.altitude) == 0)
-	(void)snprintf(scr, sizeof(scr), "%.1f", gpsdata->fix.altitude);
+	(void)snprintf(scr, sizeof(scr), "%.3f", gpsdata->fix.altitude);
     else
 	(void)snprintf(scr, sizeof(scr), "n/a");
     (void)mvwprintw(datawin, 5, DATAWIN_VALUE_OFFSET, "%-*s", 27, scr);
@@ -392,6 +393,20 @@ static void update_compass_panel(struct gps_data_t *gpsdata)
 }
 #endif /* TRUENORTH */
 
+/* sort the skyviews
+ * Used = Y first, then used = N
+ * then sort by PRN
+ */
+static int sat_cmp(const void *p1, const void *p2)
+{
+
+   if ( ((struct satellite_t*)p2)->used - ((struct satellite_t*)p1)->used ) {
+	return ((struct satellite_t*)p2)->used - ((struct satellite_t*)p1)->used;
+   }
+   return ((struct satellite_t*)p1)->PRN - ((struct satellite_t*)p2)->PRN;
+}
+
+
 static void update_gps_panel(struct gps_data_t *gpsdata)
 /* This gets called once for each new GPS sentence. */
 {
@@ -404,6 +419,8 @@ static void update_gps_panel(struct gps_data_t *gpsdata)
      * fix.  */
     if (gpsdata->satellites_visible != 0) {
 	int i;
+	qsort( gpsdata->skyview, gpsdata->satellites_visible,
+		sizeof( struct satellite_t), sat_cmp);
 	if (display_sats >= MAX_POSSIBLE_SATS) {
 	    for (i = 0; i < MAX_POSSIBLE_SATS; i++) {
 		if (i < gpsdata->satellites_visible) {
@@ -479,7 +496,7 @@ static void update_gps_panel(struct gps_data_t *gpsdata)
 
     /* Fill in the altitude. */
     if (gpsdata->fix.mode >= MODE_3D && isnan(gpsdata->fix.altitude) == 0)
-	(void)snprintf(scr, sizeof(scr), "%.1f %s",
+	(void)snprintf(scr, sizeof(scr), "%.3f %s",
 		       gpsdata->fix.altitude * altfactor, altunits);
     else
 	(void)snprintf(scr, sizeof(scr), "n/a");
@@ -487,7 +504,7 @@ static void update_gps_panel(struct gps_data_t *gpsdata)
 
     /* Fill in the speed. */
     if (gpsdata->fix.mode >= MODE_2D && isnan(gpsdata->fix.track) == 0)
-	(void)snprintf(scr, sizeof(scr), "%.1f %s",
+	(void)snprintf(scr, sizeof(scr), "%.2f %s",
 		       gpsdata->fix.speed * speedfactor, speedunits);
     else
 	(void)snprintf(scr, sizeof(scr), "n/a");
@@ -511,7 +528,7 @@ static void update_gps_panel(struct gps_data_t *gpsdata)
 
     /* Fill in the rate of climb. */
     if (gpsdata->fix.mode >= MODE_3D && isnan(gpsdata->fix.climb) == 0)
-	(void)snprintf(scr, sizeof(scr), "%.1f %s/min",
+	(void)snprintf(scr, sizeof(scr), "%.2f %s/min",
 		       gpsdata->fix.climb * altfactor * 60, altunits);
     else
 	(void)snprintf(scr, sizeof(scr), "n/a");
@@ -524,16 +541,17 @@ static void update_gps_panel(struct gps_data_t *gpsdata)
 	(void)snprintf(scr, sizeof(scr), "OFFLINE");
     } else {
 	newstate = gpsdata->fix.mode;
-	/*
-	 * DGPS
-	 */
 	switch (gpsdata->fix.mode) {
 	case MODE_2D:
-	    (void)snprintf(scr, sizeof(scr), "2D FIX (%d secs)",
+	    (void)snprintf(scr, sizeof(scr), "2D %sFIX (%d secs)",
+			   (gpsdata->status ==
+			    STATUS_DGPS_FIX) ? "DIFF " : "",
 			   (int)(time(NULL) - status_timer));
 	    break;
 	case MODE_3D:
-	    (void)snprintf(scr, sizeof(scr), "3D FIX (%d secs)",
+	    (void)snprintf(scr, sizeof(scr), "3D %sFIX (%d secs)",
+			   (gpsdata->status ==
+			    STATUS_DGPS_FIX) ? "DIFF " : "",
 			   (int)(time(NULL) - status_timer));
 	    break;
 	default:
@@ -642,9 +660,9 @@ static void usage(char *prog)
 		  "  -V	  Show version, then exit\n"
 		  "  -s	  Be silent (don't print raw gpsd data)\n"
 		  "  -l {d|m|s}  Select lat/lon format\n"
-		  "		d = DD.dddddd\n"
-		  "		m = DD MM.mmmm'\n"
-		  "		s = DD MM' SS.sss\"\n"
+		  "		d = DD.ddddddd\n"
+		  "		m = DD MM.mmmmmm'\n"
+		  "		s = DD MM' SS.sssss\"\n"
 		  " -m      Display heading as the estimated magnetic heading\n"
 		  "         Valid only for USA (Lower 48 + AK) and Western Europe.\n",
 		  prog);
@@ -791,7 +809,7 @@ int main(int argc, char *argv[])
 	    wait_clicks = 0;
 	    errno = 0;
 	    if (gps_read(&gpsdata) == -1) {
-		fprintf(stderr, "cgps: socket error 4\n");
+		(void)fprintf(stderr, "cgps: socket error 4\n");
 		die(errno == 0 ? GPS_GONE : GPS_ERROR);
 	    } else {
 		/* Here's where updates go now that things are established. */

@@ -1,6 +1,4 @@
-#!@PYTHON@
-#
-# @MASTER@
+#!/usr/bin/env python
 #
 # This file is Copyright (c) 2010 by the GPSD project
 # BSD terms apply: see the file COPYING in the distribution root for details.
@@ -10,7 +8,12 @@
 # This code generates template declarations for AIS-JSON parsing from a
 # declarative specification of a JSON structure.
 #
-import sys, getopt
+# This code runs compatibly under Python 2 and 3.x for x >= 2.
+# Preserve this property!
+from __future__ import absolute_import, print_function, division
+
+import getopt
+import sys
 
 #
 # Here is the information that makes it all work - attribute, type, and
@@ -302,14 +305,14 @@ ais_specs = (
             ('day',        'uinteger', 'AIS_DAY_NOT_AVAILABLE'),
             ('tidals',     'array', (
                 ('tidal_t', 'ntidals', (
-                    ('lon',        'integer',  'AIS_LON3_NOT_AVAILABLE'),
-                    ('lat',        'integer',  'AIS_LAT3_NOT_AVAILABLE'),
-                    ('from_hour',  'uinteger', 'AIS_MONTH_NOT_AVAILABLE'),
-                    ('from_min',   'uinteger', 'AIS_MINUTE_NOT_AVAILABLE'),
-                    ('to_hour',    'uinteger', 'AIS_HOUR_NOT_AVAILABLE'),
-                    ('to_min',     'uinteger', 'AIS_MINUTE_NOT_AVAILABLE'),
-                    ('cdir',       'uinteger', 'DAC1FID32_CDIR_NOT_AVAILABLE'),
-                    ('cspeed',     'uinteger', 'DAC1FID32_CSPEED_NOT_AVAILABLE'),
+                    ('lon', 'integer',  'AIS_LON3_NOT_AVAILABLE'),
+                    ('lat', 'integer',  'AIS_LAT3_NOT_AVAILABLE'),
+                    ('from_hour', 'uinteger', 'AIS_MONTH_NOT_AVAILABLE'),
+                    ('from_min', 'uinteger', 'AIS_MINUTE_NOT_AVAILABLE'),
+                    ('to_hour', 'uinteger', 'AIS_HOUR_NOT_AVAILABLE'),
+                    ('to_min', 'uinteger', 'AIS_MINUTE_NOT_AVAILABLE'),
+                    ('cdir', 'uinteger', 'DAC1FID32_CDIR_NOT_AVAILABLE'),
+                    ('cspeed', 'uinteger', 'DAC1FID32_CSPEED_NOT_AVAILABLE'),
                 )))),
         ),
     },
@@ -384,10 +387,12 @@ ais_specs = (
             ('humidity',     'uinteger',  'DAC1FID11_HUMIDITY_NOT_AVAILABLE'),
             ('dewpoint',     'uinteger',  'DAC1FID11_DEWPOINT_NOT_AVAILABLE'),
             ('pressure',     'uinteger',  'DAC1FID11_PRESSURE_NOT_AVAILABLE'),
-            ('pressuretend', 'uinteger',  'DAC1FID11_PRESSURETREND_NOT_AVAILABLE'),
-            ('visibility',   'uinteger',  'DAC1FID11_VISIBILITY_NOT_AVAILABLE'),
-            ('waterlevel',   'integer',   'DAC1FID11_WATERLEVEL_NOT_AVAILABLE'),
-            ('leveltrend',   'uinteger',  'DAC1FID11_WATERLEVELTREND_NOT_AVAILABLE'),
+            ('pressuretend', 'uinteger',
+             'DAC1FID11_PRESSURETREND_NOT_AVAILABLE'),
+            ('visibility', 'uinteger',  'DAC1FID11_VISIBILITY_NOT_AVAILABLE'),
+            ('waterlevel', 'integer',   'DAC1FID11_WATERLEVEL_NOT_AVAILABLE'),
+            ('leveltrend', 'uinteger',
+             'DAC1FID11_WATERLEVELTREND_NOT_AVAILABLE'),
             ('cspeed',       'uinteger',  'DAC1FID11_CSPEED_NOT_AVAILABLE'),
             ('cdir',         'uinteger',  'DAC1FID11_CDIR_NOT_AVAILABLE'),
             ('cspeed2',      'uinteger',  'DAC1FID11_CSPEED_NOT_AVAILABLE'),
@@ -396,19 +401,19 @@ ais_specs = (
             ('cspeed3',      'uinteger',  'DAC1FID11_CSPEED_NOT_AVAILABLE'),
             ('cdir3',        'uinteger',  'DAC1FID11_CDIR_NOT_AVAILABLE'),
             ('cdepth3',      'uinteger',  'DAC1FID11_CDEPTH_NOT_AVAILABLE'),
-            ('waveheight',   'uinteger',  'DAC1FID11_WAVEHEIGHT_NOT_AVAILABLE'),
-            ('waveperiod',   'uinteger',  'DAC1FID11_WAVEPERIOD_NOT_AVAILABLE'),
-            ('wavedir',      'uinteger',  'DAC1FID11_WAVEDIR_NOT_AVAILABLE'),
-            ('swellheight',  'uinteger',  'DAC1FID11_WAVEHEIGHT_NOT_AVAILABLE'),
-            ('swellperiod',  'uinteger',  'DAC1FID11_WAVEPERIOD_NOT_AVAILABLE'),
-            ('swelldir',     'uinteger',  'DAC1FID11_WAVEDIR_NOT_AVAILABLE'),
-            ('seastate',     'uinteger',  'DAC1FID11_SEASTATE_NOT_AVAILABLE'),
-            ('watertemp',    'uinteger',  'DAC1FID11_WATERTEMP_NOT_AVAILABLE'),
-            ('preciptype',   'uinteger',  'DAC1FID11_PRECIPTYPE_NOT_AVAILABLE'),
+            ('waveheight', 'uinteger',  'DAC1FID11_WAVEHEIGHT_NOT_AVAILABLE'),
+            ('waveperiod', 'uinteger',  'DAC1FID11_WAVEPERIOD_NOT_AVAILABLE'),
+            ('wavedir',    'uinteger',  'DAC1FID11_WAVEDIR_NOT_AVAILABLE'),
+            ('swellheight', 'uinteger',  'DAC1FID11_WAVEHEIGHT_NOT_AVAILABLE'),
+            ('swellperiod', 'uinteger',  'DAC1FID11_WAVEPERIOD_NOT_AVAILABLE'),
+            ('swelldir',    'uinteger',  'DAC1FID11_WAVEDIR_NOT_AVAILABLE'),
+            ('seastate',    'uinteger',  'DAC1FID11_SEASTATE_NOT_AVAILABLE'),
+            ('watertemp',   'uinteger',  'DAC1FID11_WATERTEMP_NOT_AVAILABLE'),
+            ('preciptype',  'uinteger',  'DAC1FID11_PRECIPTYPE_NOT_AVAILABLE'),
             ('preciptype_text', 'ignore', None),
-            ('salinity',     'uinteger',  'DAC1FID11_SALINITY_NOT_AVAILABLE'),
-            ('ice',          'uinteger',  'DAC1FID11_ICE_NOT_AVAILABLE'),
-            ('ice_text',     'ignore',    None),
+            ('salinity',    'uinteger',  'DAC1FID11_SALINITY_NOT_AVAILABLE'),
+            ('ice',         'uinteger',  'DAC1FID11_ICE_NOT_AVAILABLE'),
+            ('ice_text',    'ignore',    None),
         ),
         "stringbuffered": ("timestamp",),
     },
@@ -467,9 +472,9 @@ ais_specs = (
                     ("id.other",   'string',   'DAC1FID17_ID_LENGTH'),
                     ('lat',        'integer',  'AIS_LAT3_NOT_AVAILABLE'),
                     ('lon',        'integer',  'AIS_LON3_NOT_AVAILABLE'),
-                    ('course',     'uinteger', 'DAC1FID17_COURSE_NOT_AVAILABLE'),
-                    ('second',     'uinteger', 'AIS_SECOND_NOT_AVAILABLE'),
-                    ('speed',      'uinteger', 'DAC1FID17_SPEED_NOT_AVAILABLE'),
+                    ('course', 'uinteger', 'DAC1FID17_COURSE_NOT_AVAILABLE'),
+                    ('second', 'uinteger', 'AIS_SECOND_NOT_AVAILABLE'),
+                    ('speed', 'uinteger', 'DAC1FID17_SPEED_NOT_AVAILABLE'),
                 )))),
         ),
     },
@@ -524,8 +529,8 @@ ais_specs = (
             ('country',    'string',   None),
             ('gauges',     'array', (
                 ('gauge_t', 'ngauges', (
-                    ('id',        'uinteger', 'DAC200FID24_GAUGE_ID_UNKNOWN'),
-                    ('level',     'integer',  'DAC200FID24_GAUGE_LEVEL_UNKNOWN'),
+                    ('id', 'uinteger', 'DAC200FID24_GAUGE_ID_UNKNOWN'),
+                    ('level', 'integer', 'DAC200FID24_GAUGE_LEVEL_UNKNOWN'),
                 )))),
         ),
     },
@@ -577,11 +582,13 @@ ais_specs = (
             ('humidity',   'uinteger', 'DAC1FID31_HUMIDITY_NOT_AVAILABLE'),
             ('dewpoint',   'integer',  'DAC1FID31_DEWPOINT_NOT_AVAILABLE'),
             ('pressure',   'uinteger', 'DAC1FID31_PRESSURE_NOT_AVAILABLE'),
-            ('pressuretend', 'uinteger', 'DAC1FID31_PRESSURETEND_NOT_AVAILABLE'),
+            ('pressuretend', 'uinteger',
+             'DAC1FID31_PRESSURETEND_NOT_AVAILABLE'),
             ('visgreater', 'boolean',  'false'),
             ('visibility', 'uinteger', 'DAC1FID31_VISIBILITY_NOT_AVAILABLE'),
             ('waterlevel', 'integer',  'DAC1FID31_WATERLEVEL_NOT_AVAILABLE'),
-            ('leveltrend', 'uinteger', 'DAC1FID31_WATERLEVELTREND_NOT_AVAILABLE'),
+            ('leveltrend', 'uinteger',
+             'DAC1FID31_WATERLEVELTREND_NOT_AVAILABLE'),
             ('cspeed',     'uinteger', 'DAC1FID31_CSPEED_NOT_AVAILABLE'),
             ('cdir',       'uinteger', 'DAC1FID31_DIR_NOT_AVAILABLE'),
             ('cspeed2',    'uinteger', 'DAC1FID31_CSPEED_NOT_AVAILABLE'),
@@ -934,9 +941,9 @@ def generate(spec):
     attributes = [t[0] for t in spec["fieldmap"]]
     for attr in spec.get("stringbuffered", []):
         if attr not in attributes:
-            print >>sys.stderr, "buffered %s is not in base attributes of %s"\
-                % (attr, initname)
-            raise SystemExit, 1
+            sys.stderr.write("buffered %s is not in base attributes of %s\n"
+                             % (attr, initname))
+            raise SystemExit(1)
         elif attr not in outboard:
             report += "    char %s[JSON_VAL_MAX+1];\n" % attr
             outboard.append(attr)
@@ -949,17 +956,21 @@ def generate(spec):
     for (attr, itype, arrayparts) in spec["fieldmap"]:
         if itype == 'array':
             (innerstruct, lengthfield, elements) = arrayparts
-            report += "    const struct json_attr_t %s_%s_subtype[] = {\n" % (initname, attr)
+            report += ("    const struct json_attr_t %s_%s_subtype[] = {\n"
+                       % (initname, attr))
             for (subattr, subitype, default) in elements:
-                report += '\t{"%s",%st_%s,%sSTRUCTOBJECT(struct %s, %s),\n' % \
-                    (subattr, " " * (14 - len(subattr)), subitype, " " * (8 - len(subitype)), innerstruct, subattr)
+                report += ('\t{"%s",%st_%s,%sSTRUCTOBJECT(struct %s, %s),\n'
+                           % (subattr, " " * (14 - len(subattr)), subitype,
+                              " " * (8 - len(subitype)), innerstruct, subattr))
                 if subitype != "string":
-                    report += leader + ".dflt.%s = %s},\n" % (subitype, default)
+                    report += (leader + ".dflt.%s = %s},\n"
+                               % (subitype, default))
                 elif default:
                     report += leader + ".len = %s},\n" % (default,)
                 else:
-                    print >>sys.stderr, "explicit length specification required"
-                    raise SystemExit, 1
+                    sys.stderr.write(
+                        "explicit length specification required\n")
+                    raise SystemExit(1)
             report += """\
         {NULL}
     };
@@ -973,8 +984,10 @@ def generate(spec):
     for (attr, itype, default) in spec["fieldmap"]:
         if itype == 'array':
             (innerstruct, lengthfield, elements) = default
-            report += '\t{"%s",%st_array,     STRUCTARRAY(%s.%s, %s_%s_subtype, &%s.%s)},\n' \
-                      % (attr, " " * (14 - len(attr)), structname, attr, initname, attr, structname, lengthfield)
+            report += ('\t{"%s",%st_array,     '
+                       'STRUCTARRAY(%s.%s, %s_%s_subtype, &%s.%s)},\n'
+                       % (attr, " " * (14 - len(attr)), structname, attr,
+                          initname, attr, structname, lengthfield))
         else:
             if itype == "string":
                 deref = ""
@@ -990,7 +1003,8 @@ def generate(spec):
                 report += '\t{"%s",   t_ignore},\n' % attr
                 continue
             report += '\t{"%s",%st_%s,%s.addr.%s = %s%s,\n' % \
-                (attr, " " * (14 - len(attr)), itype, " " * (10 - len(itype)), itype, deref, target)
+                (attr, " " * (14 - len(attr)), itype, " " * (10 - len(itype)),
+                 itype, deref, target)
             if itype == "string":
                 report += leader + ".len = sizeof(%s)},\n" % target
             else:
@@ -999,17 +1013,18 @@ def generate(spec):
         {NULL}
     };
 """
-    print report
+    print(report)
 
 if __name__ == '__main__':
     try:
         # The --ais and --target= options are (required) placeholders.
         # In the future, this script will generate more different kinds
         # of code.
-        (options, arguments) = getopt.getopt(sys.argv[1:], "", ["ais", "target="])
-    except getopt.GetoptError, msg:
-        print "jsongen.py: " + str(msg)
-        raise SystemExit, 1
+        (options, arguments) = getopt.getopt(sys.argv[1:], "",
+                                             ["ais", "target="])
+    except getopt.GetoptError as msg:
+        print("jsongen.py: " + str(msg))
+        raise SystemExit(1)
 
     spec = None
     target = None
@@ -1020,26 +1035,26 @@ if __name__ == '__main__':
             target = val
 
     if not target or not spec:
-        print "jsongen.py: must specify type and target."
-        raise SystemExit, 1
+        print("jsongen.py: must specify type and target.")
+        raise SystemExit(1)
 
     if target == 'parser':
-        print """/*
+        print("""/*
  * This is code generated by jsongen.py. Do not hand-hack it!
  */
  #define NITEMS(x) (int)(sizeof(x)/sizeof(x[0]))
 
 /*@ -fullinitblock */
 
-"""
+""")
         outboard = []
         for description in spec:
             generate(description)
-        print """
+        print("""
 /*@ +fullinitblock */
 
 /* Generated code ends. */
-"""
+""")
 # The following sets edit modes for GNU EMACS
 # Local Variables:
 # mode:python

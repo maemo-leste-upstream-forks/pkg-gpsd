@@ -25,16 +25,17 @@ BSD terms apply: see the file COPYING in the distribution root for details.
 
 <cmdsynopsis>
   <command>gpsd</command>
-      <arg choice='opt'>-F <replaceable>control-socket</replaceable></arg>
-      <arg choice='opt'>-S <replaceable>listener-port</replaceable></arg>
       <arg choice='opt'>-b </arg>
-      <arg choice='opt'>-l </arg>
+      <arg choice='opt'>-D <replaceable>debuglevel</replaceable></arg>
+      <arg choice='opt'>-F <replaceable>control-socket</replaceable></arg>
       <arg choice='opt'>-G </arg>
+      <arg choice='opt'>-h </arg>
+      <arg choice='opt'>-l </arg>
       <arg choice='opt'>-n </arg>
       <arg choice='opt'>-N </arg>
-      <arg choice='opt'>-h </arg>
       <arg choice='opt'>-P <replaceable>pidfile</replaceable></arg>
-      <arg choice='opt'>-D <replaceable>debuglevel</replaceable></arg>
+      <arg choice='opt'>-r </arg>
+      <arg choice='opt'>-S <replaceable>listener-port</replaceable></arg>
       <arg choice='opt'>-V </arg>
       <arg rep='repeat'>
 	   <group><replaceable>source-name</replaceable></group>
@@ -137,20 +138,6 @@ are supported and a client may connect via either.</para>
 <para>The program accepts the following options:</para>
 <variablelist remap='TP'>
 <varlistentry>
-<term>-F</term>
-<listitem>
-<para>Create a control socket for device addition and removal
-commands.  You must specify a valid pathname on your local filesystem;
-this will be created as a Unix-domain socket to which you can write
-commands that edit the daemon's internal device list.</para>
-</listitem>
-</varlistentry>
-<varlistentry>
-<term>-S</term>
-<listitem><para>Set TCP/IP port on which to listen for GPSD clients
-(default is 2947).</para></listitem>
-</varlistentry>
-<varlistentry>
 <term>-b</term>
 <listitem><para>Broken-device-safety mode, otherwise known as
 read-only mode. A few bluetooth and USB receivers lock up or become
@@ -165,12 +152,34 @@ independent method to identify serial-over-Bluetooth devices would
 also be nice.</para></listitem>
 </varlistentry>
 <varlistentry>
+<term>-D</term>
+<listitem>
+<para>Set debug level. At debug levels 2 and above,
+<application>gpsd</application> reports incoming sentence and actions
+to standard error if <application>gpsd</application> is in the foreground
+(-N) or to syslog if in the background.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>-F</term>
+<listitem>
+<para>Create a control socket for device addition and removal
+commands.  You must specify a valid pathname on your local filesystem;
+this will be created as a Unix-domain socket to which you can write
+commands that edit the daemon's internal device list.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
 <term>-G</term>
 <listitem><para>This flag causes <application>gpsd</application> to
 listen on all addresses (INADDR_ANY) rather than just the loop back
 (INADDR_LOOPBACK) address. For the sake of privacy and security, TPV
 information is now private to the local machine until the user makes
 an effort to expose this to the world.</para></listitem>
+</varlistentry>
+<varlistentry>
+<term>-h</term>
+<listitem><para>Display help message and terminate.</para></listitem>
 </varlistentry>
 <varlistentry>
 <term>-l</term>
@@ -199,8 +208,12 @@ This switch is mainly useful for debugging.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
-<term>-h</term>
-<listitem><para>Display help message and terminate.</para></listitem>
+<term>-r</term>
+<listitem><para>Use GPS time even with no current fix.  Some GPS's have
+battery powered Real Time Clocks (RTC's) built in, makeing them a valid time
+source even before a fix is acquired.  This can be useful on a Raspberry Pi,
+or other device that has no battery powered RTC, and thus has no valid
+time at startup.</para></listitem>
 </varlistentry>
 <varlistentry>
 <term>-P</term>
@@ -209,13 +222,9 @@ This switch is mainly useful for debugging.</para>
 </listitem>
 </varlistentry>
 <varlistentry>
-<term>-D</term>
-<listitem>
-<para>Set debug level. At debug levels 2 and above,
-<application>gpsd</application> reports incoming sentence and actions
-to standard error if <application>gpsd</application> is in the foreground
-(-N) or to syslog if in the background.</para>
-</listitem>
+<term>-S</term>
+<listitem><para>Set TCP/IP port on which to listen for GPSD clients
+(default is 2947).</para></listitem>
 </varlistentry>
 <varlistentry>
 <term>-V</term>
@@ -326,6 +335,25 @@ is first seen. Example: <filename>nmea2000://can0</filename>.
 <para>(The "ais:://" source type supported in some older versions of
 the daemon has been retired in favor of the more general
 "tcp://".)</para>
+
+<para>Additionally, two serial device names have a side effect:
+<variablelist>
+<varlistentry>
+<term>/dev/ttyAMA0</term>
+<listitem>
+<para>The UART device on a Raspberry Pi. Has the side effect of
+opening /dev/pps0 for RFC2783 1PPS data.</para>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term>Generic GPS device 0. Has the side effect of
+opening /dev/pps0 for RFC2783 1PPS data/</term>
+<listitem>
+<para> </para>
+</listitem>
+</varlistentry>
+</variablelist>
+</para>
 
 <para>Internally, the daemon maintains a device pool holding the
 pathnames of devices and remote servers known to the
@@ -858,7 +886,7 @@ Version 1.0</citetitle></para>
 <citerefentry><refentrytitle>gps</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>libgps</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gpsd_json</refentrytitle><manvolnum>5</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>libgpsd</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+<citerefentry><refentrytitle>libgpsmm</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gpsprof</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gpsfake</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gpsctl</refentrytitle><manvolnum>1</manvolnum></citerefentry>,

@@ -182,7 +182,7 @@ function radial($angle, $sz){
 
 function azel2xy($az, $el, $sz){
 	global $swap_ew;
-	#rotate coords... 90deg W = 180deg trig
+	#rotate coords... 90deg E = 180deg trig
 	$az += 270;
 
 	#turn into radians
@@ -195,14 +195,14 @@ function azel2xy($az, $el, $sz){
 	# and convert length/azimuth to cartesian
 	$x = sprintf("%d", (($sz * 0.5) + ($r * cos($az))));
 	$y = sprintf("%d", (($sz * 0.5) + ($r * sin($az))));
-	if ($swap_ew == 0)
+	if ($swap_ew != 0)
 		$x = $sz - $x;
 
 	return array($x, $y);
 }
 
 function splot($im, $sz, $C, $e){
-	if ((0 == $e['PRN']) || (0 == $e['az'] + $e['el'] + $e['ss']) ||
+	if ((0 == $e['PRN']) || (0 == $e['az'] + $e['el']) ||
 	    ($e['az'] < 0) || ($e['el'] < 0))
 		return;
 
@@ -297,7 +297,7 @@ function skyview($im, $sz, $C){
 
 	imageString($im, 4, $sz/2 + 4, 2        , 'N', $C['black']);
 	imageString($im, 4, $sz/2 + 4, $sz - 16 , 'S', $C['black']);
-	if ($swap_ew == 0){
+	if ($swap_ew != 0){
 		imageString($im, 4, 4        , $sz/2 + 4, 'E', $C['black']);
 		imageString($im, 4, $sz - 10 , $sz/2 + 4, 'W', $C['black']);
 	} else {
@@ -461,6 +461,9 @@ EOF;
 		$sky = $GPS['sky'][0];
 		$sats = $sky['satellites'];
 
+		$fixtype = array('Unknown' => 0, 'No Fix' => 1,'2D Fix' => 2, '3D Fix' => 3);
+		$type = array_search($fix['mode'],$fixtype);
+
 		$nsv = count($sats);
                 $ts = $fix['time'];
                 $sat = '';
@@ -478,7 +481,7 @@ EOF;
         <tr><td>Latitude</td><td>{$fix['lat']}</td></tr>
         <tr><td>Longitude</td><td>{$fix['lon']}</td></tr>
         <tr><td>Altitude</td><td>{$fix['alt']}</td></tr>
-        <tr><td>Fix Type</td><td>{$fix['mode']}</td></tr>
+        <tr><td>Fix Type</td><td>{$type}</td></tr>
         <tr><td>Satellites</td><td>{$nsv}</td></tr>
         <tr><td>HDOP</td><td>{$sky['hdop']}</td></tr>
         <tr><td>VDOP</td><td>{$sky['vdop']}</td></tr>
@@ -535,7 +538,7 @@ function write_config(){
 \$autorefresh = 0; # number of seconds after which to refresh
 \$showmap = 0; # set to 1 if you want to have a google map, set it to 2 if you want a map based on openstreetmap
 \$gmap_key = 'GetYourOwnGoogleKey'; # your google API key goes here
-\$swap_ew = 0; # set to 1 if you don't understand projections
+\$swap_ew = 0; # set to 1 for upward facing view (nonstandard)
 \$open = 0; # set to 1 to show the form to change the GPSd server
 
 ## You can read the header, footer and blurb from a file...

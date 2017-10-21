@@ -1,16 +1,33 @@
-/* Feature configuration switches end here
+/* gpsd.h -- fundamental types and structures for the gpsd library
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2017 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
-#endif /* GPSD_CONFIG_H */
 
-#include <stdint.h>
+#ifndef _GPSD_H_
+#define _GPSD_H_
+
+#include "compiler.h"	/* Must be outside extern "C" for "atomic" */
+
+# ifdef __cplusplus
+extern "C" {
+# endif
+
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include "gpsd_config.h"
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#endif
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h> /* for fd_set */
+#endif
+#include <time.h>    /* for time_t */
 
 #include "gps.h"
-#include "compiler.h"
+#include "os_compat.h"
 
 /*
  * Constants for the VERSION response
@@ -32,9 +49,10 @@
  * 3.10 The obsolete tag field has been dropped from JSON.
  * 3.11 A precision field, log2 of the time source jitter, has been added
  *      to the PPS report.  See ntpshm.h for more details.
+ * 3.12 OSC message added to repertoire.
  */
 #define GPSD_PROTO_MAJOR_VERSION	3	/* bump on incompatible changes */
-#define GPSD_PROTO_MINOR_VERSION	11	/* bump on compatible changes */
+#define GPSD_PROTO_MINOR_VERSION	12	/* bump on compatible changes */
 
 #define JSON_DATE_MAX	24	/* ISO8601 timestamp with 2 decimal places */
 
@@ -46,7 +64,7 @@
 #if !defined(AIVDM_ENABLE) && defined(NMEA2000_ENABLE)
 #define AIVDM_ENABLE
 #endif
-#if !defined(NMEA0183_ENABLE) && (defined(FV18_ENABLE) || defined(MTK3301_ENABLE) || defined(TNT_ENABLE) || defined(OCEANSERVER_ENABLE) || defined(GPSCLOCK_ENABLE) || defined(FURY_ENABLE))
+#if !defined(NMEA0183_ENABLE) && (defined(ASHTECH_ENABLE) || defined(FV18_ENABLE) || defined(MTK3301_ENABLE) || defined(TNT_ENABLE) || defined(OCEANSERVER_ENABLE) || defined(GPSCLOCK_ENABLE) || defined(FURY_ENABLE) || defined(SKYTRAQ_ENABLE)   || defined(TRIPMATE_ENABLE))
 #define NMEA0183_ENABLE
 #endif
 #ifdef EARTHMATE_ENABLE
@@ -56,7 +74,7 @@
 #define BINARY_ENABLE
 #endif
 #if defined(TRIPMATE_ENABLE) || defined(BINARY_ENABLE)
-#define NON_NMEA_ENABLE
+#define NON_NMEA0183_ENABLE
 #endif
 #if defined(TNT_ENABLE) || defined(OCEANSERVER_ENABLE)
 #define COMPASS_ENABLE
@@ -64,16 +82,22 @@
 #ifdef NTPSHM_ENABLE
 #define TIMEHINT_ENABLE
 #endif
+#ifdef ISYNC_ENABLE
+#define STASH_ENABLE
+#endif
 
 /* First, declarations for the packet layer... */
 
 /*
- * For NMEA-conforming receivers this is supposed to be 82, but
- * some receivers (TN-200, GSW 2.3.2) emit oversized sentences.
- * The current hog champion is the Trimble BX-960 receiver, which
- * emits a 91-character GGA message.
+ * NMEA 3.01, Section 5.3 says the max sentence length shall be
+ * 82 chars, including the leading $ and terminating \r\n.
+ *
+ * Some receivers (TN-200, GSW 2.3.2) emit oversized sentences.
+ * The Trimble BX-960 receiver emits a 91-character GGA message.
+ * The current hog champion is the Skytraq S2525F8 which emits
+ * a 100-character PSTI message.
  */
-#define NMEA_MAX	91		/* max length of NMEA sentence */
+#define NMEA_MAX	102	/* max length of NMEA sentence */
 #define NMEA_BIG_BUF	(2*NMEA_MAX+1)	/* longer than longest NMEA sentence */
 
 /* a few bits of ISGPS magic */
@@ -82,6 +106,8 @@ enum isgpsstat_t {
 };
 
 #define RTCM_MAX	(RTCM2_WORDS_MAX * sizeof(isgps30bits_t))
+/* RTCM is more variable length than RTCM 2 */
+#define RTCM3_MAX	512
 
 /*
  * The packet buffers need to be as long than the longest packet we
@@ -142,6 +168,7 @@ struct gps_lexer_t {
 #define RTCM3_PACKET    	17
 #define JSON_PACKET    	    	18
 #define PACKET_TYPES		19	/* increment this as necessary */
+#define SKY_PACKET     		20
 #define TEXTUAL_PACKET_TYPE(n)	((((n)>=NMEA_PACKET) && ((n)<=MAX_TEXTUAL_TYPE)) || (n)==JSON_PACKET)
 #define GPS_PACKET_TYPE(n)	(((n)>=NMEA_PACKET) && ((n)<=MAX_GPSPACKET_TYPE))
 #define LOSSLESS_PACKET_TYPE(n)	(((n)>=RTCM2_PACKET) && ((n)<=RTCM3_PACKET))
@@ -186,6 +213,10 @@ struct gps_lexer_t {
     unsigned int json_depth;
     unsigned int json_after;
 #endif /* PASSTHROUGH_ENABLE */
+#ifdef STASH_ENABLE
+    unsigned char stashbuffer[MAX_PACKET_LENGTH];
+    size_t stashbuflen;
+#endif /* STASH_ENABLE */
 };
 
 extern void lexer_init(struct gps_lexer_t *);
@@ -207,6 +238,8 @@ extern int packet_sniff(struct gps_lexer_t *);
 #define GPSD_CONFIDENCE	CEP95_SIGMA
 
 #define NTPSHMSEGS	(MAX_DEVICES * 2)	/* number of NTP SHM segments */
+#define NTP_MIN_FIXES	3  /* # fixes to wait for before shipping NTP time */
+
 
 #define AIVDM_CHANNELS	2		/* A, B */
 
@@ -248,6 +281,7 @@ struct gps_context_t {
     /* we don't want the compiler to treat writes to shmexport as dead code,
      * and we don't want them reordered either */
     volatile void *shmexport;
+    int shmid;				/* ID of SHM  (for later IPC_RMID) */
 #endif
     ssize_t (*serial_write)(struct gps_device_t *,
 			    const char *buf, const size_t len);
@@ -287,12 +321,6 @@ typedef enum {
     event_reactivate,
 } event_t;
 
-/*
- * Used internally only in the gpsdata status field; not exported to
- * client-side gpsdata structures.  Instead this is used to change
- * the base U_ERE values used by the error modeler.
- */
-#define STATUS_DGPS_FIX	2	/* yes, with DGPS */
 
 #define INTERNAL_SET(n)	((gps_mask_t)(1llu<<(SET_HIGH_BIT+(n))))
 #define RAW_IS  	INTERNAL_SET(1) 	/* raw pseudoranges available */
@@ -301,10 +329,11 @@ typedef enum {
 #define CLEAR_IS	INTERNAL_SET(4) 	/* starts a reporting cycle */
 #define REPORT_IS	INTERNAL_SET(5) 	/* ends a reporting cycle */
 #define NODATA_IS	INTERNAL_SET(6) 	/* no data read from fd */
-#define PPSTIME_IS	INTERNAL_SET(7) 	/* precision time is available */
+#define NTPTIME_IS	INTERNAL_SET(7) 	/* precision time is available */
 #define PERR_IS 	INTERNAL_SET(8) 	/* PDOP set */
 #define PASSTHROUGH_IS 	INTERNAL_SET(9) 	/* passthrough mode */
 #define EOF_IS		INTERNAL_SET(10)	/* synthetic EOF */
+#define GOODTIME_IS	INTERNAL_SET(11) 	/* time good even if no pos fix */
 #define DATA_IS	~(ONLINE_SET|PACKET_SET|CLEAR_IS|REPORT_IS)
 
 typedef unsigned int driver_mask_t;
@@ -338,11 +367,13 @@ struct gps_type_t {
     void (*init_query)(struct gps_device_t *session);
     void (*event_hook)(struct gps_device_t *session, event_t event);
 #ifdef RECONFIGURE_ENABLE
+#ifdef HAVE_TERMIOS_H
     bool (*speed_switcher)(struct gps_device_t *session,
 				     speed_t speed, char parity, int stopbits);
     void (*mode_switcher)(struct gps_device_t *session, int mode);
     bool (*rate_switcher)(struct gps_device_t *session, double rate);
     double min_cycle;
+#endif /* HAVE_TERMIOS_H */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     ssize_t (*control_send)(struct gps_device_t *session, char *buf, size_t buflen);
@@ -415,7 +446,9 @@ struct ntrip_stream_t
 	fmt_rtcm2_1,
 	fmt_rtcm2_2,
 	fmt_rtcm2_3,
-	fmt_rtcm3,
+	fmt_rtcm3_0,
+	fmt_rtcm3_1,
+	fmt_rtcm3_2,
 	fmt_unknown
     } format;
     int carrier;
@@ -447,7 +480,9 @@ struct gps_device_t {
     sourcetype_t sourcetype;
     servicetype_t servicetype;
     int mode;
+#ifdef HAVE_TERMIOS_H
     struct termios ttyset, ttyset_old;
+#endif
 #ifndef FIXED_PORT_SPEED
     unsigned int baudindex;
 #endif /* FIXED_PORT_SPEED */
@@ -479,7 +514,11 @@ struct gps_device_t {
 #endif /* PPS_ENABLE */
     double mag_var;			/* magnetic variation in degrees */
     bool back_to_nmea;			/* back to NMEA on revert? */
-    char msgbuf[MAX_PACKET_LENGTH*2+1];	/* command message buffer for sends */
+    /*
+     * msgbuf needs to hold the hex decode of inbuffer
+     * so msgbuf must be 2x the size of inbuffer
+     */
+    char msgbuf[MAX_PACKET_LENGTH*4+1];	/* command message buffer for sends */
     size_t msgbuflen;
     int observed;			/* which packet type`s have we seen? */
     bool cycle_end_reliable;		/* does driver signal REPORT_MASK */
@@ -501,6 +540,10 @@ struct gps_device_t {
 	bool seen_bdgsv;
 	bool seen_qzss;
 	char last_gsv_talker;
+	bool seen_glgsa;
+	bool seen_gngsa;
+	bool seen_bdgsa;
+	char last_gsa_talker;
 	/*
 	 * State for the cycle-tracking machinery.
 	 * The reason these timestamps are separate from the
@@ -789,9 +832,11 @@ extern ssize_t gpsd_serial_write(struct gps_device_t *,
 				 const char *, const size_t);
 extern bool gpsd_next_hunt_setting(struct gps_device_t *);
 extern int gpsd_switch_driver(struct gps_device_t *, char *);
+#ifdef HAVE_TERMIOS_H
 extern void gpsd_set_speed(struct gps_device_t *, speed_t, char, unsigned int);
 extern speed_t gpsd_get_speed(const struct gps_device_t *);
 extern speed_t gpsd_get_speed_old(const struct gps_device_t *);
+#endif /* HAVE_TERMIOS_H */
 extern int gpsd_get_stopbits(const struct gps_device_t *);
 extern char gpsd_get_parity(const struct gps_device_t *);
 extern void gpsd_assert_sync(struct gps_device_t *);
@@ -932,20 +977,6 @@ extern bool ais_binary_decode(const struct gpsd_errout_t *errout,
 			      const unsigned char *, size_t,
 			      struct ais_type24_queue_t *);
 
-/* debugging apparatus for the client library */
-#ifdef CLIENTDEBUG_ENABLE
-#define LIBGPS_DEBUG
-#endif /* CLIENTDEBUG_ENABLE */
-#ifdef LIBGPS_DEBUG
-#define DEBUG_CALLS	1	/* shallowest debug level */
-#define DEBUG_JSON	5	/* minimum level for verbose JSON debugging */
-# define libgps_debug_trace(args) (void) libgps_trace args
-extern int libgps_debuglevel;
-extern void libgps_dump_state(struct gps_data_t *);
-#else
-# define libgps_debug_trace(args) do { } while (0)
-#endif /* LIBGPS_DEBUG */
-
 void gpsd_labeled_report(const int, const int,
 			 const char *, const char *, va_list);
 void gpsd_vlog(const struct gpsd_errout_t *,
@@ -971,7 +1002,7 @@ PRINTF_FUNC(3, 4) void gpsd_log(const struct gpsd_errout_t *, const int, const c
 void cfmakeraw(struct termios *);
 #endif /* defined(__CYGWIN__) */
 
-#define DEVICEHOOKPATH "/"SYSCONFDIR"/gpsd/device-hook"
+#define DEVICEHOOKPATH "/" SYSCONFDIR "/gpsd/device-hook"
 
 # ifdef __cplusplus
 }

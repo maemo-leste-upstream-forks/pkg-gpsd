@@ -12,6 +12,9 @@
  *
  */
 
+/* strsep() needs _DEFAULT_SOURCE */
+#define _DEFAULT_SOURCE
+
 #include <time.h>
 #include "gpsd_config.h"
 
@@ -86,7 +89,7 @@ static int send_udp (char *nmeastring, size_t ind)
 	/* compute message size and add 0x0a 0x0d */
 	for (ind=0; nmeastring [ind] != '\0'; ind ++) {
 	    if (ind >= sizeof(message) - 3) {
-		fprintf(stderr, "gps2udp: too big [%s] \n", nmeastring);
+		(void)fprintf(stderr, "gps2udp: too big [%s] \n", nmeastring);
 		return -1;
 	    }
 	    message[ind] = nmeastring[ind];
@@ -154,18 +157,21 @@ static int open_udp(char **hostport)
 
        sock[channel]= socket(AF_INET, SOCK_DGRAM, 0);
        if (sock[channel] < 0) {
-	   fprintf(stderr, "gps2udp: error creating UDP socket\n");
+	   (void)fprintf(stderr, "gps2udp: error creating UDP socket\n");
 	   return (-1);
        }
 
        remote[channel].sin_family = (sa_family_t)AF_INET;
        hp = gethostbyname(hostname);
        if (hp==NULL) {
-	   fprintf(stderr, "gps2udp: syntax is [-u hostname:port] [%s] is not a valid hostname\n",hostname);
+	   (void)fprintf(stderr,
+	                 "gps2udp: syntax is [-u hostname:port] [%s]"
+	                 " is not a valid hostname\n",
+	                 hostname);
 	   return (-1);
        }
 
-       bcopy((char *)hp->h_addr, (char *)&remote[channel].sin_addr, hp->h_length);
+       memcpy( &remote[channel].sin_addr, hp->h_addr, hp->h_length);
        remote[channel].sin_port = htons((in_port_t)portnum);
    }
 return (0);
@@ -233,6 +239,9 @@ static ssize_t read_gpsd(char *message, size_t len)
     // prepare select structure */
     FD_ZERO(&master);
     FD_SET(gpsdata.gps_fd, &master);
+
+    /* allow room for trailing NUL */
+    len--;
 
     /* loop until we get some data or an error */
     for (ind = 0; ind < (int)len;) {
@@ -422,9 +431,9 @@ int main(int argc, char **argv)
 
     /* Daemonize if the user requested it. */
     if (daemonize) {
-	if (daemon(0, 0) != 0) {
+	if (os_daemon(0, 0) != 0) {
 	    (void)fprintf(stderr,
-			  "gps2udp: demonization failed: %s\n",
+			  "gps2udp: daemonization failed: %s\n",
 			  strerror(errno));
         }
     }
@@ -470,7 +479,7 @@ int main(int argc, char **argv)
 		    (void)fprintf(stdout," MMSI=%9u", mmsi);
 
 		}
-		fprintf(stdout,"\n");
+		(void)fprintf(stdout,"\n");
 	    }
 
 	    // send to all UDP destinations
@@ -490,7 +499,7 @@ int main(int argc, char **argv)
     } // end for (;;)
 
     // This is an infinite loop, should never be here
-    fprintf (stderr, "gpsd2udp ERROR abnormal exit\n");
+    (void)fprintf (stderr, "gpsd2udp ERROR abnormal exit\n");
     exit (-1);
 }
 

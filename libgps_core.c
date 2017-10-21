@@ -5,6 +5,10 @@
  * This file is Copyright (c) 2010 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
+
+/* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
+#define __ISO_C_VISIBLE 1999
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -49,6 +53,10 @@ void libgps_trace(int errlevel, const char *fmt, ...)
 	(void)fputs(buf, debugfp);
     }
 }
+#else
+// Functions defined as so to furfil the API but otherwise do nothing when built with debug capability turned off
+void gps_enable_debug(int level UNUSED, FILE * fp UNUSED) {}
+void libgps_trace(int errlevel UNUSED, const char *fmt UNUSED, ...){}
 #endif /* LIBGPS_DEBUG */
 
 #ifdef SOCKET_EXPORT_ENABLE
@@ -94,7 +102,9 @@ int gps_open(const char *host,
 #endif /* SOCKET_EXPORT_ENABLE */
 
 #ifndef USES_HOST
-    fprintf(stderr, "No methods available for connnecting to %s!\n", host);
+    (void)fprintf(stderr,
+                  "No methods available for connnecting to %s!\n",
+                  host);
 #endif /* USES_HOST */
 #undef USES_HOST
 
@@ -285,7 +295,6 @@ void libgps_dump_state(struct gps_data_t *collect)
 {
     /* no need to dump the entire state, this is a sanity check */
 #ifndef USE_QT
-    /* will fail on a 32-bit machine */
     (void)fprintf(debugfp, "flags: (0x%04x) %s\n",
 		  (unsigned int)collect->set, gps_maskdump(collect->set));
 #endif
@@ -293,8 +302,9 @@ void libgps_dump_state(struct gps_data_t *collect)
 	(void)fprintf(debugfp, "ONLINE: %lf\n", collect->online);
     if (collect->set & TIME_SET)
 	(void)fprintf(debugfp, "TIME: %lf\n", collect->fix.time);
+    /* NOTE: %.7f needed for cm level accurate GPS */
     if (collect->set & LATLON_SET)
-	(void)fprintf(debugfp, "LATLON: lat/lon: %lf %lf\n",
+	(void)fprintf(debugfp, "LATLON: lat/lon: %.7lf %.7lf\n",
 		      collect->fix.latitude, collect->fix.longitude);
     if (collect->set & ALTITUDE_SET)
 	(void)fprintf(debugfp, "ALTITUDE: altitude: %lf  U: climb: %lf\n",

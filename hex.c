@@ -8,6 +8,20 @@
 
 #include "gpsd.h"
 
+/*
+ * gpsd_packetdump()
+ *
+ * if binbuf is printable, just return a copy of it
+ * otherwise) convert a binary string to a hex string and return that
+ *
+ * *scbuf   -- the buffer to fill with hex
+ * scbuflen -- sizeof(scbuf)
+ * *binbuf  -- the binary to convert to hex and place in scbuf
+ * binbuflen -- sizeof(binbuf)
+ *
+ * scbuflen needs to be 2x binbuflen to hold the hex conversion
+ */
+
 const char *gpsd_packetdump(char *scbuf, size_t scbuflen,
 			    char *binbuf, size_t binbuflen)
 {
@@ -16,8 +30,10 @@ const char *gpsd_packetdump(char *scbuf, size_t scbuflen,
 
     assert(binbuf != NULL);
     for (cp = binbuf; cp < binbuf + binbuflen; cp++)
-	if (!isprint((unsigned char) *cp) && !isspace((unsigned char) *cp))
+	if (!isprint((unsigned char) *cp) && !isspace((unsigned char) *cp)) {
 	    printable = false;
+	    break;	/* no need to keep iterating */
+        }
     if (printable)
 	return binbuf;
     else
@@ -38,7 +54,7 @@ const char *gpsd_hexdump(char *scbuf, size_t scbuflen,
     if (NULL == binbuf || 0 == binbuflen)
 	return "";
 
-    for (i = 0; i < len && i * 2 < scbuflen - 2; i++) {
+    for (i = 0; i < len && j < (scbuflen - 3); i++) {
 	scbuf[j++] = hexchar[(ibuf[i] & 0xf0) >> 4];
 	scbuf[j++] = hexchar[ibuf[i] & 0x0f];
     }

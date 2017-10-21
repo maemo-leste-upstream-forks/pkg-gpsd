@@ -14,7 +14,10 @@ PERMISSIONS
    BSD terms apply: see the file COPYING in the distribution root for details.
 
 ***************************************************************************/
-#include <time.h>            /* for time_t */
+
+/* sys/ipc.h needs _XOPEN_SOURCE, 500 means X/Open 1995 */
+#define _XOPEN_SOURCE 500
+
 #include "gpsd_config.h"
 
 #ifdef SHM_EXPORT_ENABLE
@@ -57,6 +60,8 @@ bool shm_acquire(struct gps_context_t *context)
 	context->shmexport = NULL;
 	return false;
     }
+    context->shmid = shmid;
+
     gpsd_log(&context->errout, LOG_PROG,
 	     "shmat() for SHM export succeeded, segment %d\n", shmid);
     return true;
@@ -65,8 +70,19 @@ bool shm_acquire(struct gps_context_t *context)
 void shm_release(struct gps_context_t *context)
 /* release the shared-memory segment used for export */
 {
-    if (context->shmexport != NULL)
-	(void)shmdt((const void *)context->shmexport);
+    if (context->shmexport == NULL)
+	return;
+
+    /* Mark shmid to go away when no longer used
+     * Having it linger forever is bad, and when the size enlarges
+     * it can no longer be opened
+     */
+    if (shmctl(context->shmid, IPC_RMID, NULL) == -1) {
+	gpsd_log(&context->errout, LOG_WARN,
+		 "shmctl for IPC_RMID failed, errno = %d (%s)\n",
+		 errno, strerror(errno));
+    }
+    (void)shmdt((const void *)context->shmexport);
 }
 
 void shm_update(struct gps_context_t *context, struct gps_data_t *gpsdata)

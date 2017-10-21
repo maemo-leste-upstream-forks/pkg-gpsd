@@ -9,9 +9,22 @@
  * This file is Copyright (c) 2010 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
+
+#ifdef __linux__
+/* FreeBSD chokes on this */
+/* getsid() needs _XOPEN_SOURCE, 500 means X/Open 1995 */
+#define _XOPEN_SOURCE 500
+/* isfinite() and pselect() needs  _POSIX_C_SOURCE >= 200112L */
+#define  _POSIX_C_SOURCE 200112L
+#endif /* __linux__ */
+
+/* strlcpy() needs _DARWIN_C_SOURCE */
+#define _DARWIN_C_SOURCE
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <stdbool.h>
 #include <libgen.h>
 #include <math.h>
@@ -205,40 +218,36 @@ const char *gpsd_prettydump(struct gps_device_t *session)
 }
 
 
+
+/* Define the possible hook strings here so we can get the length */
+#define HOOK_ACTIVATE "ACTIVATE"
+#define HOOK_DEACTIVATE "DEACTIVATE"
+
+#define HOOK_CMD_MAX (sizeof(DEVICEHOOKPATH) + GPS_PATH_MAX \
+                      + sizeof(HOOK_DEACTIVATE))
+
 static void gpsd_run_device_hook(struct gpsd_errout_t *errout,
 				 char *device_name, char *hook)
 {
     struct stat statbuf;
+
     if (stat(DEVICEHOOKPATH, &statbuf) == -1)
 	gpsd_log(errout, LOG_PROG,
 		 "no %s present, skipped running %s hook\n",
 		 DEVICEHOOKPATH, hook);
     else {
-	/*
-	 * We make an exception to the no-malloc rule here because
-	 * the pointer will never persist outside this small scope
-	 * and can thus never cause a leak or stale-pointer problem.
-	 */
-	size_t bufsize = strlen(DEVICEHOOKPATH) + 1 + strlen(device_name) + 1 + strlen(hook) + 1;
-	char *buf = malloc(bufsize);
-	if (buf == NULL)
-	    gpsd_log(errout, LOG_ERROR,
-		     "error allocating run-hook buffer\n");
+	int status;
+	char buf[HOOK_CMD_MAX];
+	(void)snprintf(buf, sizeof(buf), "%s %s %s",
+		       DEVICEHOOKPATH, device_name, hook);
+	gpsd_log(errout, LOG_INF, "running %s\n", buf);
+	status = system(buf);
+	if (status == -1)
+	    gpsd_log(errout, LOG_ERROR, "error running %s\n", buf);
 	else
-	{
-	    int status;
-	    (void)snprintf(buf, bufsize, "%s %s %s",
-			   DEVICEHOOKPATH, device_name, hook);
-	    gpsd_log(errout, LOG_INF, "running %s\n", buf);
-	    status = system(buf);
-	    if (status == -1)
-		gpsd_log(errout, LOG_ERROR, "error running %s\n", buf);
-	    else
-		gpsd_log(errout, LOG_INF,
-			 "%s returned %d\n", DEVICEHOOKPATH,
-			 WEXITSTATUS(status));
-	    free(buf);
-	}
+	    gpsd_log(errout, LOG_INF,
+		     "%s returned %d\n", DEVICEHOOKPATH,
+		     WEXITSTATUS(status));
     }
 }
 
@@ -361,7 +370,7 @@ void gpsd_deactivate(struct gps_device_t *session)
     if (session->mode == O_OPTIMIZE)
 	gpsd_run_device_hook(&session->context->errout,
 			     session->gpsdata.dev.path,
-			     "DEACTIVATE");
+			     HOOK_DEACTIVATE);
 #ifdef PPS_ENABLE
     session->pps_thread.report_hook = NULL; /* tell any PPS-watcher thread to die */
 #endif /* PPS_ENABLE */
@@ -548,7 +557,7 @@ int gpsd_activate(struct gps_device_t *session, const int mode)
 {
     if (mode == O_OPTIMIZE)
 	gpsd_run_device_hook(&session->context->errout,
-			     session->gpsdata.dev.path, "ACTIVATE");
+			     session->gpsdata.dev.path, HOOK_ACTIVATE);
     session->gpsdata.gps_fd = gpsd_open(session);
     if (mode != O_CONTINUE)
 	session->mode = mode;
@@ -714,7 +723,6 @@ static gps_mask_t fill_dop(const struct gpsd_errout_t *errout,
 
     memset(satpos, 0, sizeof(satpos));
 
-    gpsd_log(errout, LOG_INF, "Sats used (%d):\n", gpsdata->satellites_used);
     for (n = k = 0; k < gpsdata->satellites_visible; k++) {
 	if (gpsdata->skyview[k].used && !SBAS_PRN(gpsdata->skyview[k].PRN))
 	{
@@ -733,6 +741,9 @@ static gps_mask_t fill_dop(const struct gpsd_errout_t *errout,
 	    n++;
 	}
     }
+    /* can't use gpsdata->satellites_used as that is a counter for xxGSA,
+     * and gets cleared at odd times */
+    gpsd_log(errout, LOG_INF, "Sats used (%d):\n", n);
 
     /* If we don't have 4 satellites then we don't have enough information to calculate DOPS */
     if (n < 4) {
@@ -870,6 +881,19 @@ static void gpsd_error_model(struct gps_device_t *session,
     p_uere =
 	(session->gpsdata.status ==
 	 STATUS_DGPS_FIX ? P_UERE_WITH_DGPS : P_UERE_NO_DGPS);
+
+    /* sanity check the speed, 10,000 m/s should be a nice max */
+    if ( 9999.9 < fix->speed )
+	fix->speed = NAN;
+    else if ( -9999.9 > fix->speed )
+	fix->speed = NAN;
+
+    /* sanity check the climb, 10,000 m/s should be a nice max */
+    if ( 9999.9 < fix->climb )
+	fix->climb = NAN;
+    else if ( -9999.9 > fix->climb )
+	fix->climb = NAN;
+
 
     /*
      * OK, this is not an error computation, but we're at the right

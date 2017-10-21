@@ -155,7 +155,7 @@ static int gar_decode(const struct gps_context_t *context,
 	return -1;
     }
 
-    bzero(buf, (int)sizeof(buf));
+    memset(buf, 0, (int)sizeof(buf));
     (void)strlcpy(buf, data, length);
     gpsd_log(&context->errout, LOG_RAW + 2, "Decoded string: %s\n", buf);
 
@@ -172,6 +172,7 @@ static int gar_decode(const struct gps_context_t *context,
 	}
 	/* second character in prefix is flag for negative number */
 	if (preflen >= 2) {
+	    // cppcheck-suppress arrayIndexOutOfBounds
 	    if (buf[0] == prefix[1]) {
 		sign = -1.0;
 		break;
@@ -223,7 +224,7 @@ static int gar_int_decode(const struct gps_context_t *context,
 	return -1;
     }
 
-    bzero(buf, (int)sizeof(buf));
+    memset(buf, 0, (int)sizeof(buf));
     (void)strlcpy(buf, data, length);
     gpsd_log(&context->errout, LOG_RAW + 2, "Decoded string: %s\n", buf);
 
