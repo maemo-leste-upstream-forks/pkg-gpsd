@@ -1,4 +1,3 @@
-usr/lib/python*/*-packages/gps/*_d.so
 test_float    	usr/lib/gpsd/debug
 test_geoid	usr/lib/gpsd/debug
 test_json	usr/lib/gpsd/debug
