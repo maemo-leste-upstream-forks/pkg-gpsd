@@ -50,10 +50,11 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
  (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
  (c++)"shiftleft(unsigned char*, int, unsigned short)@Base" 3.12
- (c++)"shm_get(int, bool, bool)@Base" 3.15
- (c++)"ntp_name(int)@Base" 3.15
- (c++)"ntp_read(shmTime*, shm_stat_t*, bool)@Base" 3.15
- (c++)"ntp_write(shmTime volatile*, timedelta_t*, int, int)@Base" 3.15
+#MISSING: 3.17# (c++)"shm_get(int, bool, bool)@Base" 3.15
+#MISSING: 3.17# (c++)"ntp_name(int)@Base" 3.15
+#MISSING: 3.17# (c++)"ntp_read(shmTime*, shm_stat_t*, bool)@Base" 3.15
+#MISSING: 3.17# (c++)"ntp_write(shmTime volatile*, timedelta_t*, int, int)@Base" 3.15
+ os_daemon@Base 3.17
  (c++)"deg_to_str(deg_str_type, double)@Base" 3.5
  (c++)"export_default()@Base" 3.5
  (c++)"export_list(_IO_FILE*)@Base" 3.5
@@ -116,6 +117,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  json_device_read@Base 3.3
  json_enable_debug@Base 3.3
  json_error_string@Base 3.3
+ json_oscillator_read@Base 3.17
  json_pps_read@Base 3.10
  json_read_array@Base 3.3
  json_read_object@Base 3.3

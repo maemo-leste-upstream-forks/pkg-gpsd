@@ -65,6 +65,7 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  json_device_read@Base 3.3
  json_enable_debug@Base 3.3
  json_error_string@Base 3.3
+ json_oscillator_read@Base 3.17
  json_read_array@Base 3.3
  json_read_object@Base 3.3
  json_rtcm2_read@Base 3.3
@@ -82,16 +83,17 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  netlib_errstr@Base 3.3
  netlib_localsocket@Base 3.3
  netlib_sock2ip@Base 3.3
- ntp_name@Base 3.15
- ntp_read@Base 3.15
- ntp_write@Base 3.15
+#MISSING: 3.17# ntp_name@Base 3.15
+#MISSING: 3.17# ntp_read@Base 3.15
+#MISSING: 3.17# ntp_write@Base 3.15
+ os_daemon@Base 3.17
  putbef32@Base 3.9
  safe_atof@Base 3.3
  sbits@Base 3.5-4~
  strlcat@Base 3.3
  strlcpy@Base 3.3
  shiftleft@Base 3.12
- shm_get@Base 3.15
+#MISSING: 3.17# shm_get@Base 3.15
 #MISSING: 3.15-1~1.gbp2d150e# timespec_str@Base 3.12
  timestamp@Base 3.3
  true2magnetic@Base 3.3
