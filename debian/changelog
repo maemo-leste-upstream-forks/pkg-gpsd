@@ -1,3 +1,10 @@
+gpsd (3.17-1) unstable; urgency=medium
+
+  * [d21fbf15] Updated version 3.17 from 'upstream/3.17'
+    with Debian dir 3099dc33257e902647917f2ad7e67eec078b0b42
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 21 Oct 2017 16:12:28 +0200
+
 gpsd (3.16-4) unstable; urgency=medium
 
   * [2405f456] Fix debug symbol handling.
