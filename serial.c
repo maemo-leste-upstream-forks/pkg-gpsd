@@ -3,6 +3,9 @@
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
 
+/* cfmakeraw() needs _DEFAULT_SOURCE */
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -13,7 +16,10 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <sys/param.h>	/* defines BSD */
+#include <sys/param.h>		/* defines BSD */
+#ifdef __linux__
+#include <sys/sysmacros.h>	/* defines major() */
+#endif	/* __linux__ */
 
 #include "gpsd_config.h"
 #ifdef ENABLE_BLUEZ
@@ -244,7 +250,7 @@ bool gpsd_set_raw(struct gps_device_t * session)
     (void)cfmakeraw(&session->ttyset);
     if (tcsetattr(session->gpsdata.gps_fd, TCIOFLUSH, &session->ttyset) == -1) {
 	gpsd_log(&session->context->errout, LOG_ERROR,
-		 "error changing port attributes: %s\n", strerror(errno));
+		 "SER: error changing port attributes: %s\n", strerror(errno));
 	return false;
     }
 
@@ -255,6 +261,7 @@ void gpsd_set_speed(struct gps_device_t *session,
 		    speed_t speed, char parity, unsigned int stopbits)
 {
     speed_t rate;
+    struct timespec delay;
 
     /*
      * Yes, you can set speeds that aren't in the hunt loop.  If you
@@ -317,9 +324,18 @@ void gpsd_set_speed(struct gps_device_t *session,
 	    session->ttyset.c_cflag |= PARENB | PARODD;
 	    break;
 	}
-	if (tcsetattr(session->gpsdata.gps_fd, TCSANOW, &session->ttyset) !=
-	    0)
-	    return;
+	if (tcsetattr(session->gpsdata.gps_fd, TCSANOW, &session->ttyset) != 0) {
+	    /* strangely this fails on non-serial ports, but if
+             * we do not try, we get other failures.
+             * so ignore for now, as we always have, until it can
+             * be nailed down.
+             *
+	     * gpsd_log(&session->context->errout, LOG_ERROR,
+	     *	     "SER: error setting port attributes: %s, sourcetype: %d\n",
+	     *	     strerror(errno), session->sourcetype);
+	     * return;
+             */
+	}
 
 	/*
 	 * Serious black magic begins here.  Getting this code wrong can cause
@@ -371,11 +387,15 @@ void gpsd_set_speed(struct gps_device_t *session,
 	 * occasional failure to lock.
 	 */
 	(void)tcflush(session->gpsdata.gps_fd, TCIOFLUSH);
-	(void)usleep(200000);
+
+        /* wait 200,000 uSec */
+	delay.tv_sec = 0;
+	delay.tv_nsec = 200000000L;
+	nanosleep(&delay, NULL);
 	(void)tcflush(session->gpsdata.gps_fd, TCIOFLUSH);
     }
     gpsd_log(&session->context->errout, LOG_INF,
-	     "speed %lu, %d%c%d\n",
+	     "SER: speed %lu, %d%c%d\n",
 	     (unsigned long)gpsd_get_speed(session), 9 - stopbits, parity,
 	     stopbits);
 
@@ -431,11 +451,11 @@ int gpsd_serial_open(struct gps_device_t *session)
 	|| (session->sourcetype <= source_blockdev)) {
 	mode = (mode_t) O_RDONLY;
 	gpsd_log(&session->context->errout, LOG_INF,
-		 "opening read-only GPS data source type %d and at '%s'\n",
+		 "SER: opening read-only GPS data source type %d and at '%s'\n",
 		 (int)session->sourcetype, session->gpsdata.dev.path);
     } else {
 	gpsd_log(&session->context->errout, LOG_INF,
-		 "opening GPS data source type %d at '%s'\n",
+		 "SER: opening GPS data source type %d at '%s'\n",
 		 (int)session->sourcetype, session->gpsdata.dev.path);
     }
 #ifdef ENABLE_BLUEZ
@@ -451,44 +471,44 @@ int gpsd_serial_open(struct gps_device_t *session)
 	    if (errno != EINPROGRESS && errno != EAGAIN) {
 		(void)close(session->gpsdata.gps_fd);
 		gpsd_log(&session->context->errout, LOG_ERROR,
-			 "bluetooth socket connect failed: %s\n",
+			 "SER: bluetooth socket connect failed: %s\n",
 			 strerror(errno));
 		return UNALLOCATED_FD;
 	    }
 	    gpsd_log(&session->context->errout, LOG_ERROR,
-		     "bluetooth socket connect in progress or again : %s\n",
+		     "SER: bluetooth socket connect in progress or again : %s\n",
 		     strerror(errno));
         }
 	(void)fcntl(session->gpsdata.gps_fd, F_SETFL, (int)mode);
 	gpsd_log(&session->context->errout, LOG_PROG,
-		 "bluez device open success: %s %s\n",
+		 "SER: bluez device open success: %s %s\n",
 		 session->gpsdata.dev.path, strerror(errno));
     } else
 #endif /* BLUEZ */
     {
 	/*
-	 * We open with O_NONBLOCK because we want to now get hung if
+	 * We open with O_NONBLOCK because we want to not get hung if
 	 * the clocal flag is off, but we don't want to stay in that mode.
 	 */
+	errno = 0;
         if ((session->gpsdata.gps_fd =
 	     open(session->gpsdata.dev.path, (int)(mode | O_NONBLOCK | O_NOCTTY))) == -1) {
             gpsd_log(&session->context->errout, LOG_ERROR,
-		     "device open of %s failed: %s - retrying read-only\n",
+		     "SER: device open of %s failed: %s - retrying read-only\n",
 		     session->gpsdata.dev.path,
 		     strerror(errno));
 	    if ((session->gpsdata.gps_fd =
 		 open(session->gpsdata.dev.path, O_RDONLY | O_NONBLOCK | O_NOCTTY)) == -1) {
 		gpsd_log(&session->context->errout, LOG_ERROR,
-			 "read-only device open of %s failed: %s\n",
+			 "SER: read-only device open of %s failed: %s\n",
 			 session->gpsdata.dev.path,
 			 strerror(errno));
 		return UNALLOCATED_FD;
 	    }
 
 	    gpsd_log(&session->context->errout, LOG_PROG,
-		     "file device open of %s succeeded: %s\n",
-		     session->gpsdata.dev.path,
-		     strerror(errno));
+		     "SER: file device open of %s succeeded\n",
+		     session->gpsdata.dev.path);
 	}
     }
 
@@ -519,7 +539,7 @@ int gpsd_serial_open(struct gps_device_t *session)
 	 */
 	if (fusercount(session->gpsdata.dev.path) > 1) {
             gpsd_log(&session->context->errout, LOG_ERROR,
-		     "%s already opened by another process\n",
+		     "SER: %s already opened by another process\n",
 		     session->gpsdata.dev.path);
 	    (void)close(session->gpsdata.gps_fd);
 	    session->gpsdata.gps_fd = UNALLOCATED_FD;
@@ -535,16 +555,22 @@ int gpsd_serial_open(struct gps_device_t *session)
     if (session->saved_baud != -1) {
 	(void)cfsetispeed(&session->ttyset, (speed_t)session->saved_baud);
 	(void)cfsetospeed(&session->ttyset, (speed_t)session->saved_baud);
-	(void)tcsetattr(session->gpsdata.gps_fd, TCSANOW, &session->ttyset);
+	if (tcsetattr(session->gpsdata.gps_fd, TCSANOW, &session->ttyset) != 0) {
+	    gpsd_log(&session->context->errout, LOG_ERROR,
+		     "SER: Error setting port attributes: %s\n",
+		     strerror(errno));
+	}
 	(void)tcflush(session->gpsdata.gps_fd, TCIOFLUSH);
     }
 
     session->lexer.type = BAD_PACKET;
-    if (isatty(session->gpsdata.gps_fd) != 0) {
+    if ( 0 != isatty(session->gpsdata.gps_fd) ) {
+
 	/* Save original terminal parameters */
 	if (tcgetattr(session->gpsdata.gps_fd, &session->ttyset_old) != 0)
 	    return UNALLOCATED_FD;
 	session->ttyset = session->ttyset_old;
+        /* twiddle the speed, parity, etc. but only on real serial ports */
 	memset(session->ttyset.c_cc, 0, sizeof(session->ttyset.c_cc));
 	//session->ttyset.c_cc[VTIME] = 1;
 	/*
@@ -597,7 +623,7 @@ int gpsd_serial_open(struct gps_device_t *session)
     }
 
     gpsd_log(&session->context->errout, LOG_SPIN,
-	     "open(%s) -> %d in gpsd_serial_open()\n",
+	     "SER: open(%s) -> %d in gpsd_serial_open()\n",
 	     session->gpsdata.dev.path, session->gpsdata.gps_fd);
     return session->gpsdata.gps_fd;
 }
@@ -617,7 +643,7 @@ ssize_t gpsd_serial_write(struct gps_device_t * session,
     if (session->context->errout.debug >= LOG_IO) {
 	char scratchbuf[MAX_PACKET_LENGTH*2+1];
 	gpsd_log(&session->context->errout, LOG_IO,
-		 "=> GPS: %s%s\n",
+		 "SER: => GPS: %s%s\n",
 		 gpsd_packetdump(scratchbuf, sizeof(scratchbuf),
 				 (char *)buf, len), ok ? "" : " FAILED");
     }
@@ -730,7 +756,7 @@ void gpsd_close(struct gps_device_t *session)
 			    &session->ttyset_old);
 	}
 	gpsd_log(&session->context->errout, LOG_SPIN,
-		 "close(%d) in gpsd_close(%s)\n",
+		 "SER: close(%d) in gpsd_close(%s)\n",
 		 session->gpsdata.gps_fd, session->gpsdata.dev.path);
 	(void)close(session->gpsdata.gps_fd);
 	session->gpsdata.gps_fd = -1;

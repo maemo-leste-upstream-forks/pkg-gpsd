@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: 3
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
 .\"      Date: 14 Aug 2004
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -52,10 +52,12 @@ C:
 .BI "char *gps_data(const\ struct\ gps_data_t\ *" "gpsdata" ");"
 .HP \w'int\ gps_unpack('u
 .BI "int gps_unpack(char\ *" "buf" ", struct\ gps_data_t\ *" "gpsdata" ");"
-.HP \w'void\ gps_close('u
-.BI "void gps_close(struct\ gps_data_t\ *" "gpsdata" ");"
+.HP \w'int\ gps_close('u
+.BI "int gps_close(struct\ gps_data_t\ *" "gpsdata" ");"
 .HP \w'int\ gps_stream('u
 .BI "int gps_stream(struct\ gps_data_t\ *" "gpsdata" ", unsigned\ int" "flags" ", void\ *" "data" ");"
+.HP \w'int\ gps_mainloop('u
+.BI "int gps_mainloop(struct\ gps_data_t\ *" "gpsdata" ", int\ " "timeout" ", void\ (*" "hook" ")(struct\ gps_data_t\ *gpsdata));"
 .HP \w'const\ char\ *gps_errstr('u
 .BI "const char *gps_errstr(int\ " "err" ");"
 .sp
@@ -115,7 +117,9 @@ for values and explanations; also see
 referring to the shared\-memory export; the library will do the right thing for any of these\&.
 .PP
 \fBgps_close()\fR
-ends the session\&.
+ends the session and should only be called after a successful
+\fBgps_open()\fR\&. It returns 0 on success, \-1 on errors\&. The shared\-memory interface close always returns 0, whereas a socket close can result in an error\&. For a socket close error it will have set an errno from the call to the system\*(Aqs
+\fBclose()\fR\&.
 .PP
 \fBgps_send()\fR
 writes a command to the daemon\&. It does nothing when using the shared\-memory export\&. The second argument must be a format string containing elements from the command set documented at
@@ -137,7 +141,10 @@ on entry; you can test
 after exit to get more information about error conditions\&. Warning: under the shared\-memory interface there is a tiny race window between
 \fBgps_waiting()\fR
 and a following
-\fBgps_read()\fR; in that context, beause the latter does not block, it is probably better to write a simple read loop\&.
+\fBgps_read()\fR; in that context, because the latter does not block, it is probably better to write a simple read loop\&.
+.PP
+\fBgps_mainloop()\fR
+enables the provided hook function to be continually called whenever there is gpsd data\&. The second argument is the maximum amount of time to wait (in microseconds) on input before exiting the loop (and return a value of \-1)\&. It will also return a negative value on various errors\&.
 .PP
 \fBgps_unpack()\fR
 parses JSON from the argument buffer into the target of the session structure pointer argument\&. Included in case your application wishes to manage socket I/O itself\&.
@@ -199,7 +206,7 @@ Force issuing a W or R command and getting old\-style responses\&. Warning: this
 .PP
 WATCH_DEVICE
 .RS 4
-Restrict watching to a specified device, patch given as second argument\&.
+Restrict watching to a specified device, path given as second argument\&.
 .RE
 .PP
 \fBgps_errstr()\fR
@@ -292,7 +299,6 @@ for recent changes\&.
 .PP
 \fBgpsd\fR(8),
 \fBgps\fR(1),
-\fBlibgpsd\fR(3)\&.
 \fBlibgpsmm\fR(3)\&.
 .SH "AUTHOR"
 .PP

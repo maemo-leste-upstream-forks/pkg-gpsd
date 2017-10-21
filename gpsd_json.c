@@ -14,6 +14,17 @@ PERMISSIONS
 
 ***************************************************************************/
 
+#ifdef __linux__
+/* FreeBSD chokes on this */
+/* isascii() needs _XOPEN_SOURCE, 500 means X/Open 1995 */
+#define _XOPEN_SOURCE 500
+#endif /* __linux__ */
+
+/* vsnprintf() needs __DARWIN_C_LEVEL >= 200112L */
+#define __DARWIN_C_LEVEL 200112L
+/* strlcpy() needs _DARWIN_C_SOURCE */
+#define _DARWIN_C_SOURCE
+
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
@@ -131,6 +142,8 @@ void json_tpv_dump(const struct gps_device_t *session,
     (void)strlcpy(reply, "{\"class\":\"TPV\",", replylen);
     if (gpsdata->dev.path[0] != '\0')
 	str_appendf(reply, replylen, "\"device\":\"%s\",", gpsdata->dev.path);
+    if (gpsdata->status == STATUS_DGPS_FIX)
+	str_appendf(reply, replylen, "\"status\":2,");
     str_appendf(reply, replylen, "\"mode\":%d,", gpsdata->fix.mode);
     if (isnan(gpsdata->fix.time) == 0) {
 	char tbuf[JSON_DATE_MAX+1];
@@ -182,7 +195,7 @@ void json_tpv_dump(const struct gps_device_t *session,
 	if (policy->timing) {
 	    char rtime_str[TIMESPEC_LEN];
 	    struct timespec rtime_tmp;
-	    (int)clock_gettime(CLOCK_REALTIME, &rtime_tmp);
+	    (void)clock_gettime(CLOCK_REALTIME, &rtime_tmp);
 	    timespec_str(&rtime_tmp, rtime_str, sizeof(rtime_str));
 	    str_appendf(reply, replylen, "\"rtime\":%s,", rtime_str);
 #ifdef PPS_ENABLE
@@ -216,15 +229,16 @@ void json_tpv_dump(const struct gps_device_t *session,
 void json_noise_dump(const struct gps_data_t *gpsdata,
 		   char *reply, size_t replylen)
 {
-    char tbuf[JSON_DATE_MAX+1];
-
     assert(replylen > sizeof(char *));
     (void)strlcpy(reply, "{\"class\":\"GST\",", replylen);
     if (gpsdata->dev.path[0] != '\0')
 	str_appendf(reply, replylen, "\"device\":\"%s\",", gpsdata->dev.path);
+    if (isnan(gpsdata->fix.time) == 0) {
+	char tbuf[JSON_DATE_MAX+1];
 	str_appendf(reply, replylen,
 		   "\"time\":\"%s\",",
 		   unix_to_iso8601(gpsdata->gst.utctime, tbuf, sizeof(tbuf)));
+    }
 #define ADD_GST_FIELD(tag, field) do {                     \
     if (isnan(gpsdata->gst.field) == 0)              \
 	str_appendf(reply, replylen, "\"" tag "\":%.3f,", gpsdata->gst.field); \
@@ -1226,7 +1240,7 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 	str_appendf(buf, buflen,
 		       "\"station_id\":%u,\"desc\":\"%s\","
 		       "\"setup_id\":%u,\"serial\":\"%s\","
-		       "\"receiver\":%s,\"firmware\":\"%s\"",
+		       "\"receiver\":\"%s\",\"firmware\":\"%s\"",
 		       rtcm->rtcmtypes.rtcm3_1033.station_id,
 		       rtcm->rtcmtypes.rtcm3_1033.descriptor,
 		       INT(rtcm->rtcmtypes.rtcm3_1033.setup_id),
@@ -1467,7 +1481,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 	"Vessels may proceed. One way traffic.",
 	"Vessels may proceed. Two way traffic.",
 	"Vessels shall proceed on specific orders only.",
-	"Vessels in main channel shall not proceed."
+	"Vessels in main channel shall not proceed.",
 	"Vessels in main channel shall proceed on specific orders only.",
 	"Vessels in main channel shall proceed on specific orders only.",
 	"I = \"in-bound\" only acceptable.",
@@ -1982,16 +1996,16 @@ void json_aivdm_dump(const struct ais_t *ais,
 			       ais->type6.dac1fid20.future2,
 			       json_stringify(buf1, sizeof(buf1),
 					      ais->type6.dac1fid20.berth_name));
-            if (scaled)
-		str_appendf(buf, buflen,
+		if (scaled)
+		    str_appendf(buf, buflen,
 			       "\"berth_lon\":%.3f,"
 			       "\"berth_lat\":%.3f,"
 			       "\"berth_depth\":%.1f}\r\n",
 			       ais->type6.dac1fid20.berth_lon / AIS_LATLON3_DIV,
 			       ais->type6.dac1fid20.berth_lat / AIS_LATLON3_DIV,
 			       ais->type6.dac1fid20.berth_depth * 0.1);
-            else
-                str_appendf(buf, buflen,
+		else
+		    str_appendf(buf, buflen,
 			       "\"berth_lon\":%d,"
 			       "\"berth_lat\":%d,"
 			       "\"berth_depth\":%u}\r\n",
@@ -3366,6 +3380,21 @@ void json_att_dump(const struct gps_data_t *gpsdata,
 }
 #endif /* COMPASS_ENABLE */
 
+#ifdef OSCILLATOR_ENABLE
+void json_oscillator_dump(const struct gps_data_t *datap,
+			  char *reply, size_t replylen)
+/* dump the contents of an oscillator_t structure as JSON */
+{
+    (void)snprintf(reply, replylen,
+		   "{\"class\":\"OSC\",\"device\":\"%s\",\"running\":%s,\"reference\":%s,\"disciplined\":%s,\"delta\":%d}\r\n",
+		   datap->dev.path,
+		   JSON_BOOL(datap->osc.running),
+		   JSON_BOOL(datap->osc.reference),
+		   JSON_BOOL(datap->osc.disciplined),
+		   datap->osc.delta);
+}
+#endif /* OSCILLATOR_ENABLE */
+
 void json_data_report(const gps_mask_t changed,
 		 const struct gps_device_t *session,
 		 const struct policy_t *policy,
@@ -3418,6 +3447,12 @@ void json_data_report(const gps_mask_t changed,
 			buf+strlen(buf), buflen-strlen(buf));
     }
 #endif /* AIVDM_ENABLE */
+
+#ifdef OSCILLATOR_ENABLE
+    if ((changed & OSCILLATOR_SET) != 0) {
+	json_oscillator_dump(datap, buf+strlen(buf), buflen-strlen(buf));
+    }
+#endif /* OSCILLATOR_ENABLE */
 }
 
 #undef JSON_BOOL

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # usage: gegps [-i] [-d kmldir]
@@ -20,32 +20,40 @@
 # Modified by Chen Wei <weichen302@aol.com> for use with gpsd
 # Cleaned up and adapted for the GPSD project by Eric S. Raymond.
 
-import sys, os, getopt
+# This code runs compatibly under Python 2 and 3.x for x >= 2.
+# Preserve this property!
+from __future__ import absolute_import, print_function, division
+
+import getopt
+import os
+import sys
+
 import gps
 
 KML_OPEN_IN_GE = '''\
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.2">
 <NetworkLink>
-	<name>Realtime GPS</name>
-	<open>1</open>
-	<Link>
-		<href>Realtime_GPS.kml</href>
-		<refreshMode>onInterval</refreshMode>
-	</Link>
+        <name>Realtime GPS</name>
+        <open>1</open>
+        <Link>
+                <href>Realtime_GPS.kml</href>
+                <refreshMode>onInterval</refreshMode>
+        </Link>
 </NetworkLink>
 </kml>
 '''
 
+
 def kmlize(tpv):
     '''http://code.google.com/apis/kml/documentation/kmlreference.html
        for official kml document'''
-    latitude =  tpv['lat']
+    latitude = tpv['lat']
     longitude = tpv['lon']
-    speed_in =  tpv['speed'] # meter/second
-    speed = speed_in * gps.MPS_TO_KPH # Km/h
-    heading =   int(round(tpv['track'], 0))
-    altitude =  tpv['alt']
+    speed_in = tpv['speed']               # meter/second
+    speed = speed_in * gps.MPS_TO_KPH     # Km/h
+    heading = int(round(tpv['track'], 0))
+    altitude = tpv['alt']
 
     if speed < 1:
         heading = 0
@@ -63,7 +71,8 @@ def kmlize(tpv):
         <coordinates>%s,%s,%s</coordinates>
     </Point>
 </Placemark>
-</kml>""" % (speed,heading,longitude,latitude,longitude,latitude,altitude)
+</kml>""" % (speed, heading, longitude, latitude, longitude,
+             latitude, altitude)
 
 
 if __name__ == "__main__":
@@ -94,6 +103,6 @@ if __name__ == "__main__":
         except StopIteration:
             pass
         except KeyboardInterrupt:
-            print 'gegpsd stopped '
+            print('gegpsd stopped ')
 
 # end

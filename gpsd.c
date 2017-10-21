@@ -6,11 +6,26 @@
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
 
+#ifdef __linux__
+/* FreeBSD chokes on this */
+/* nice() needs _XOPEN_SOURCE, 500 means X/Open 1995 */
+#define _XOPEN_SOURCE 500
+/* setgroups() needs _DEFAULT_SOURCE or _BSD_SOURCE (glibc-dependent) */
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#endif /* __linux__ */
+
+/* vsnprintf() needs __DARWIN_C_LEVEL >= 200112L */
+#define __DARWIN_C_LEVEL 200112L
+/* strlcpy() needs _DARWIN_C_SOURCE */
+#define _DARWIN_C_SOURCE
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>		/* for select() */
 #include <sys/select.h>
 #include <stdio.h>
+#include <stdint.h>		/* for uint32_t, etc. */
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
@@ -143,17 +158,20 @@ static bool nowait = false;
 #else /* FORCE_NOWAIT */
 #define NOWAIT true
 #endif /* FORCE_NOWAIT */
+static bool batteryRTC = false;
 static jmp_buf restartbuf;
 static struct gps_context_t context;
 #if defined(SYSTEMD_ENABLE)
 static int sd_socket_count = 0;
 #endif
 
-/* work around the unfinished ipv6 implementation on hurd */
-#ifdef __GNU__
+/* work around the unfinished ipv6 implementation on hurd and OSX <10.6 */
 #ifndef IPV6_TCLASS
-#define IPV6_TCLASS 61
-#endif
+# if defined(__GNU__)
+#  define IPV6_TCLASS 61
+# elif defined(__APPLE__)
+#  define IPV6_TCLASS 36
+# endif
 #endif
 
 static volatile sig_atomic_t signalled;
@@ -214,28 +232,33 @@ static void typelist(void)
 
 static void usage(void)
 {
-    (void)printf("usage: gpsd [-b] [-n] [-N] [-D n] [-F sockfile] [-G] [-P pidfile] [-S port] [-h] device...\n\
+    (void)printf("usage: gpsd [-b] [-D n] [-F sockfile] [-G] [-h] [-n] [-N] [-P pidfile] [-S port] device...\n\
   Options include: \n\
   -b		     	    = bluetooth-safe: open data sources read-only\n\
-  -n			    = don't wait for client connects to poll GPS\n\
-  -N			    = don't go into background\n\
+  -D integer (default 0)    = set debug level \n\
   -F sockfile		    = specify control socket location\n"
 #ifndef FORCE_GLOBAL_ENABLE
 "  -G         		    = make gpsd listen on INADDR_ANY\n"
 #endif /* FORCE_GLOBAL_ENABLE */
-"  -P pidfile	      	    = set file to record process ID \n\
-  -D integer (default 0)    = set debug level \n\
+"  -h		     	    = help message \n"
+#ifndef FORCE_NOWAIT
+"  -n			    = don't wait for client connects to poll GPS\n"
+#endif /* FORCE_NOWAIT */
+"  -N			    = don't go into background\n\
+  -P pidfile	      	    = set file to record process ID\n\
+  -r               	    = use GPS time even if no fix\n\
   -S integer (default %s) = set port for daemon \n\
-  -h		     	    = help message \n\
-  -V			    = emit version and exit.\n\
-A device may be a local serial device for GPS input, or a URL in one \n\
+  -V			    = emit version and exit.\n"
+#ifdef NETFEED_ENABLE
+"A device may be a local serial device for GPS input, or a URL in one \n\
 of the following forms:\n\
      tcp://host[:port]\n\
      udp://host[:port]\n\
      {dgpsip|ntrip}://[user:passwd@]host[:port][/stream]\n\
      gpsd://host[:port][/device][?protocol]\n\
-in which case it specifies an input source for device, DGPS or ntrip data.\n\
-\n\
+in which case it specifies an input source for device, DGPS or ntrip data.\n"
+#endif /* NETFEED_ENABLE */
+"\n\
 The following driver types are compiled into this gpsd instance:\n",
 		 DEFAULT_GPSD_PORT);
     typelist();
@@ -294,7 +317,7 @@ static void adjust_max_fd(int fd, bool on)
 	if (fd == maxfd) {
 	    int tfd;
 
-	    for (maxfd = tfd = 0; tfd < FD_SETSIZE; tfd++)
+	    for (maxfd = tfd = 0; tfd < (int)FD_SETSIZE; tfd++)
 		if (FD_ISSET(tfd, &all_fds))
 		    maxfd = tfd;
 	}
@@ -406,10 +429,12 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
 		(void)close(s);
 		return -1;
 	    }
+#ifdef IPV6_TCLASS
 	    /* Set packet priority */
 	    if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &dscp, sizeof(dscp)) == -1)
 		gpsd_log(&context.errout, LOG_WARN,
 			 "Warning: SETSOCKOPT TOS failed\n");
+#endif /* IPV6_TCLASS */
 	}
 	break;
 #endif  /* IPV6_ENABLE */
@@ -991,6 +1016,7 @@ static void set_serial(struct gps_device_t *device,
     unsigned int stopbits = device->gpsdata.dev.stopbits;
     char parity = device->gpsdata.dev.parity;
     int wordsize = 8;
+    struct timespec delay;
 
 #ifndef __clang_analyzer__
     while (isspace((unsigned char) *modestring))
@@ -1033,7 +1059,12 @@ static void set_serial(struct gps_device_t *device,
 	     * across any given type of UART.
 	     */
 	    (void)tcdrain(device->gpsdata.gps_fd);
-	    (void)usleep(50000);
+
+	    /* wait 50,000 uSec */
+	    delay.tv_sec = 0;
+	    delay.tv_nsec = 50000000L;
+	    nanosleep(&delay, NULL);
+
 	    gpsd_set_speed(device, speed, parity, stopbits);
 	}
     }
@@ -1231,7 +1262,7 @@ static void handle_request(struct subscriber_t *sub,
 		    /* interpret defaults */
 		    if (devconf.baudrate == DEVDEFAULT_BPS)
 			devconf.baudrate =
-			    (uint) gpsd_get_speed(device);
+			    (unsigned int) gpsd_get_speed(device);
 		    if (devconf.parity == DEVDEFAULT_PARITY)
 			devconf.stopbits = device->gpsdata.dev.stopbits;
 		    if (devconf.stopbits == DEVDEFAULT_STOPBITS)
@@ -1403,7 +1434,7 @@ static void pseudonmea_report(struct subscriber_t *sub,
 	    (void)throttled_write(sub, buf, strlen(buf));
 	}
 
-	if ((changed & SATELLITE_SET) != 0) {
+	if ((changed & (SATELLITE_SET|USED_IS)) != 0) {
 	    nmea_sky_dump(device, buf, sizeof(buf));
 	    gpsd_log(&context.errout, LOG_IO,
 		     "<= GPS (binary sky) %s: %s\n",
@@ -1470,9 +1501,15 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
      * If the device provided an RTCM packet, repeat it to all devices.
      */
     if ((changed & RTCM2_SET) != 0 || (changed & RTCM3_SET) != 0) {
-	if (device->lexer.outbuflen > RTCM_MAX) {
+	if ((changed & RTCM2_SET) != 0
+                   && device->lexer.outbuflen > RTCM_MAX) {
 	    gpsd_log(&context.errout, LOG_ERROR,
 		     "overlong RTCM packet (%zd bytes)\n",
+		     device->lexer.outbuflen);
+	} else if ((changed & RTCM3_SET) != 0
+		   && device->lexer.outbuflen > RTCM3_MAX) {
+	    gpsd_log(&context.errout, LOG_ERROR,
+		     "overlong RTCM3 packet (%zd bytes)\n",
 		     device->lexer.outbuflen);
 	} else {
 	    struct gps_device_t *dp;
@@ -1501,11 +1538,11 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
 #ifdef NTP_ENABLE
     /*
      * Time is eligible for shipping to NTPD if the driver has
-     * asserted PPSTIME_IS at any point in the current cycle.
+     * asserted NTPTIME_IS at any point in the current cycle.
      */
     if ((changed & CLEAR_IS)!=0)
 	device->ship_to_ntpd = false;
-    if ((changed & PPSTIME_IS)!=0)
+    if ((changed & NTPTIME_IS)!=0)
 	device->ship_to_ntpd = true;
     /*
      * Only update the NTP time if we've seen the leap-seconds data.
@@ -1513,8 +1550,9 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
      */
     if ((changed & TIME_SET) == 0) {
 	//gpsd_log(&context.errout, LOG_PROG, "NTP: No time this packet\n");
-    } else if ( 0 >= device->fixcnt ) {
+    } else if ( 0 >= device->fixcnt && !batteryRTC ) {
         /* many GPS spew random times until a valid GPS fix */
+        /* allow override with -r optin */
 	//gpsd_log(&context.errout, LOG_PROG, "NTP: no fix\n");
     } else if (isnan(device->newdata.time)) {
 	//gpsd_log(&context.errout, LOG_PROG, "NTP: bad new time\n");
@@ -1736,6 +1774,7 @@ static void netgnss_autoconnect(struct gps_context_t *context,
 	sp->dist = DGPS_THRESHOLD;
 	sp->server[0] = '\0';
     }
+    hold.lat = hold.lon = 0;
     while (fgets(buf, (int)sizeof(buf), sfp)) {
 	char *cp = strchr(buf, '#');
 	if (cp != NULL)
@@ -1824,6 +1863,7 @@ int main(int argc, char *argv[])
     struct gps_device_t *device;
     int i, option;
     int msocks[2] = {-1, -1};
+    bool device_opened = false;
     bool go_background = true;
     volatile bool in_restart;
 
@@ -1836,7 +1876,7 @@ int main(int argc, char *argv[])
 #endif /* PPS_ENABLE && SOCKET_EXPORT_ENABLE */
 #endif /* CONTROL_SOCKET_ENABLE */
 
-    while ((option = getopt(argc, argv, "F:D:S:bGhlNnP:V")) != -1) {
+    while ((option = getopt(argc, argv, "F:D:S:bGhlNnrP:V")) != -1) {
 	switch (option) {
 	case 'D':
 	    context.errout.debug = (int)strtol(optarg, 0, 0);
@@ -1872,6 +1912,9 @@ int main(int argc, char *argv[])
 #ifndef FORCE_NOWAIT
 	    nowait = true;
 #endif /* FORCE_NOWAIT */
+	    break;
+	case 'r':
+	    batteryRTC = true;
 	    break;
 	case 'P':
 	    pid_file = optarg;
@@ -1963,9 +2006,9 @@ int main(int argc, char *argv[])
     /* might be time to daemonize */
     if (go_background) {
 	/* not SuS/POSIX portable, but we have our own fallback version */
-	if (daemon(0, 0) != 0)
+	if (os_daemon(0, 0) != 0)
 	    gpsd_log(&context.errout, LOG_ERROR,
-		     "demonization failed: %s\n",strerror(errno));
+		     "daemonization failed: %s\n",strerror(errno));
     }
 
     if (pid_file != NULL) {
@@ -2042,8 +2085,24 @@ int main(int argc, char *argv[])
 	    gpsd_log(&context.errout, LOG_ERROR,
 		     "initial GPS device %s open failed\n",
 		     argv[i]);
+	} else {
+            device_opened = true;
 	}
     }
+
+    if (
+#ifdef CONTROL_SOCKET_ENABLE
+       control_socket == NULL &&
+#endif
+#ifdef SYSTEMD_ENABLE
+       sd_socket_count <= 0 &&
+#endif
+       !device_opened) {
+       gpsd_log(&context.errout, LOG_ERROR,
+                "can't run with neither control socket nor devices open\n");
+       exit(EXIT_FAILURE);
+    }
+
 
     /* drop privileges */
     if (0 == getuid()) {
@@ -2172,12 +2231,12 @@ int main(int argc, char *argv[])
 	case AWAIT_NOT_READY:
 	    for (device = devices; device < devices + MAX_DEVICES; device++)
 		/*
-		 * The file descriptor validity check is reqiured on some ARM 
+		 * The file descriptor validity check is reqiured on some ARM
 		 * platforms to prevent a core dump.  This may be due to an
 		 * implimentation error in FD_ISSET().
 		 */
 		if (allocated_device(device)
-		    && (0 <= device->gpsdata.gps_fd && device->gpsdata.gps_fd < FD_SETSIZE)
+		    && (0 <= device->gpsdata.gps_fd && device->gpsdata.gps_fd < (socket_t)FD_SETSIZE)
 		    && FD_ISSET(device->gpsdata.gps_fd, &efds)) {
 		    deactivate_device(device);
 		    free_device(device);
@@ -2458,7 +2517,7 @@ int main(int argc, char *argv[])
 	longjmp(restartbuf, 1);
 
     gpsd_log(&context.errout, LOG_WARN,
-	     "received terminating signal %d.\n", signalled);
+	     "received terminating signal %d.\n", (int)signalled);
 shutdown:
     gpsd_terminate(&context);
 

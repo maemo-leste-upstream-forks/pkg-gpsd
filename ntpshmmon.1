@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: ntpshmmon
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
 .\"      Date: 25 Jan 2015
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -31,7 +31,7 @@
 ntpshmmon \- capture samples from GPS or other ntpd refclock sources
 .SH "SYNOPSIS"
 .HP \w'\fBntpshmmon\fR\ 'u
-\fBntpshmmon\fR [\-c\ \fIcycletime\fR] [\-h] [\-n\ \fInsamples\fR] [\-s] [\-t\ \fIseconds\fR] [\-v] [\-V]
+\fBntpshmmon\fR [\-h] [\-n\ \fInsamples\fR] [\-s] [\-t\ \fIseconds\fR] [\-v] [\-V]
 .SH "DESCRIPTION"
 .PP
 This program monitors the shared\-memory segments updated by
@@ -162,7 +162,7 @@ Set maximum number of samples to collect\&.
 .PP
 \-s
 .RS 4
-Remove all segments specified by the units argument\&. This option will normally only be of interest to GPSD developers\&.
+Remove all SHM segments used by GPSD\&. This option will normally only be of interest to GPSD developers\&.
 .RE
 .PP
 \-t
@@ -185,7 +185,7 @@ Display program version and exit\&.
 \fBgpsdctl\fR(8),
 \fBgps\fR(1),
 \fBlibgps\fR(3),
-\fBlibgpsd\fR(3),
+\fBlibgpsmm\fR(3),
 \fBgpsprof\fR(1),
 \fBgpsfake\fR(1)\&.
 .SH "AUTHOR"

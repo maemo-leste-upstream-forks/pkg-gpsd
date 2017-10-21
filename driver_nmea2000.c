@@ -4,6 +4,10 @@
  * This file is Copyright (c) 2012 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
+
+/* need this for strnlen() and struct ifreq */
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -15,10 +19,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <net/if.h>
 #include <sys/ioctl.h>
+#include <net/if.h>
 
 #include "gpsd.h"
+#include "libgps.h"
 #if defined(NMEA2000_ENABLE)
 #include "driver_nmea2000.h"
 #include "bits.h"
@@ -36,7 +41,7 @@
 #define NMEA2000_FAST_DEBUG 0
 
 static struct gps_device_t *nmea2000_units[NMEA2000_NETS][NMEA2000_UNITS];
-static char can_interface_name[NMEA2000_NETS][CAN_NAMELEN];
+static char can_interface_name[NMEA2000_NETS][CAN_NAMELEN+1];
 
 typedef struct PGN
     {
@@ -1365,18 +1370,18 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 	    struct timespec  msgTime;
 
 	    clock_gettime(CLOCK_REALTIME, &msgTime);
-	    fprintf(logFile,
-		    "(%010d.%06d) can0 %08x#",
-		    (unsigned int)msgTime.tv_sec,
-		    (unsigned int)msgTime.tv_nsec/1000,
-		    frame->can_id & 0x1ffffff);
+	    (void)fprintf(logFile,
+	                  "(%010ld.%06ld) can0 %08x#",
+	                  (long)msgTime.tv_sec,
+	                  msgTime.tv_nsec / 1000,
+	                  frame->can_id & 0x1ffffff);
 	    if ((frame->can_dlc & 0x0f) > 0) {
 		int l1;
 	        for(l1=0;l1<(frame->can_dlc & 0x0f);l1++) {
-		    fprintf(logFile, "%02x", frame->data[l1]);
+		    (void)fprintf(logFile, "%02x", frame->data[l1]);
 		}
 	    }
-	    fprintf(logFile, "\n");
+	    (void)fprintf(logFile, "\n");
 	}
 #endif /* of if LOG_FILE */
 	session->driver.nmea2000.can_msgcnt += 1;
@@ -1700,7 +1705,7 @@ int nmea2000_open(struct gps_device_t *session)
 	session->driver.nmea2000.unit = unit_number;
 	session->driver.nmea2000.unit_valid = true;
     } else {
-        strncpy(can_interface_name[can_net],
+        strlcpy(can_interface_name[can_net],
 		interface_name,
 		MIN(sizeof(can_interface_name[0]), sizeof(interface_name)));
 	session->driver.nmea2000.unit_valid = false;

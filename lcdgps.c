@@ -53,6 +53,7 @@
 #include "gps.h"
 #include "gpsdclient.h"
 #include "revision.h"
+#include "os_compat.h"
 
 /* Prototypes. */
 ssize_t sockreadline(int sockd,void *vptr,size_t maxlen);
@@ -304,6 +305,7 @@ int main(int argc, char *argv[])
 	    default:
 		(void)fprintf(stderr, "Unknown -l argument: %s\n", optarg);
 	    }
+	    break;
 	case 's':
 	    sleep(10);
 	    continue;
@@ -340,9 +342,9 @@ int main(int argc, char *argv[])
       gpsd_source_spec(NULL, &source);
 
     /* Daemonize... */
-  if (daemon(0, 0) != 0)
+  if (os_daemon(0, 0) != 0)
       (void)fprintf(stderr,
-		    "lcdgps: demonization failed: %s\n",
+		    "lcdgps: daemonization failed: %s\n",
 		    strerror(errno));
 
     /* Open the stream to gpsd. */
@@ -379,7 +381,7 @@ int main(int argc, char *argv[])
     /* coverity[uninit_use_in_call] */
     rc = bind(sd, (struct sockaddr *) &localAddr, sizeof(localAddr));
     if (rc == -1) {
-	printf("%s: cannot bind port TCP %u\n",argv[0],LCDDPORT);
+	printf("%s: cannot bind port TCP %d\n",argv[0],LCDDPORT);
 	perror("error ");
 	exit(EXIT_FAILURE);
     }
@@ -403,7 +405,7 @@ int main(int argc, char *argv[])
 
     for (;;) { /* heart of the client */
 	if (!gps_waiting(&gpsdata, 50000000)) {
-	    fprintf( stderr, "lcdgps: error while waiting\n");
+	    (void)fprintf(stderr, "lcdgps: error while waiting\n");
 	    exit(EXIT_FAILURE);
 	} else {
 	    (void)gps_read(&gpsdata);

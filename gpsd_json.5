@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsd_json
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
 .\"      Date: 28 Aug 2011
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -98,6 +98,7 @@ l l l l
 l l l l
 l l l l
 l l l l
+l l l l
 l l l l.
 T{
 class
@@ -116,6 +117,15 @@ T}:T{
 string
 T}:T{
 Name of originating device\&.
+T}
+T{
+status
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+GPS status: %d, 2=DGPS fix, otherwise not present\&.
 T}
 T{
 mode
@@ -753,7 +763,7 @@ T}
 T{
 time
 T}:T{
-Yes
+No
 T}:T{
 numeric
 T}:T{
@@ -942,7 +952,7 @@ T}:T{
 Water depth in meters\&.
 T}
 T{
-temperature
+temp
 T}:T{
 No
 T}:T{
@@ -1436,7 +1446,7 @@ T}:T{
 Count of active devices\&.
 T}
 T{
-fixes
+tpv
 T}:T{
 Yes
 T}:T{
@@ -1445,7 +1455,7 @@ T}:T{
 Comma\-separated list of TPV objects\&.
 T}
 T{
-skyviews
+sky
 T}:T{
 Yes
 T}:T{
@@ -1739,6 +1749,106 @@ Here\*(Aqs an example:
 .\}
 .RE
 .PP
+OSC
+.RS 4
+This message reports the status of a GPS\-disciplined oscillator (GPSDO)\&. The GPS PPS output (which has excellent long\-term stability) is typically used to discipline a local oscillator with much better short\-term stability (such as a rubidium atomic clock)\&.
+.sp
+An OSC object has the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table\ \&13.\ \&OSC object
+.TS
+allbox tab(:);
+lB lB lB lB.
+T{
+Name
+T}:T{
+Always?
+T}:T{
+Type
+T}:T{
+Description
+T}
+.T&
+l l l l
+l l l l
+l l l l
+l l l l
+l l l l
+l l l l.
+T{
+class
+T}:T{
+Yes
+T}:T{
+string
+T}:T{
+Fixed: "OSC"
+T}
+T{
+device
+T}:T{
+Yes
+T}:T{
+string
+T}:T{
+Name of originating device\&.
+T}
+T{
+running
+T}:T{
+Yes
+T}:T{
+boolean
+T}:T{
+If true, the oscillator is currently running\&.  Oscillators may require warm\-up time at start of day\&.
+T}
+T{
+reference
+T}:T{
+Yes
+T}:T{
+boolean
+T}:T{
+If true, the oscillator is receiving a GPS PPS signal\&.
+T}
+T{
+disciplined
+T}:T{
+Yes
+T}:T{
+boolean
+T}:T{
+If true, the GPS PPS signal is sufficiently stable and is being used to discipline the local oscillator\&.
+T}
+T{
+delta
+T}:T{
+Yes
+T}:T{
+numeric
+T}:T{
+The time difference (in nanoseconds) between the GPS\-disciplined oscillator PPS output pulse and the most recent GPS PPS input pulse\&.
+T}
+.TE
+.sp 1
+Here\*(Aqs an example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+{"class":"OSC","running":true,"device":"/dev/ttyUSB0",
+    "reference":true,"disciplined":true,"delta":67}
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.PP
 ?DEVICE
 .RS 4
 This command reports (when followed by \*(Aq;\*(Aq) the state of a device, or sets (when followed by \*(Aq=\*(Aq and a DEVICE object) device\-specific control bits, notably the device\*(Aqs speed and serial mode and the native\-mode bit\&. The parameter\-setting form will be rejected if more than one client is attached to the channel\&.
@@ -1753,7 +1863,7 @@ A DEVICE object has the following elements:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&13.\ \&DEVICE object
+.B Table\ \&14.\ \&DEVICE object
 .TS
 allbox tab(:);
 lB lB lB lB.
@@ -1914,7 +2024,7 @@ The contents of the flags field should be interpreted as follows:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&14.\ \&Device flags
+.B Table\ \&15.\ \&Device flags
 .TS
 allbox tab(:);
 lB lB lB.
@@ -1997,7 +2107,7 @@ The daemon may ship an error object in response to a syntactically invalid comma
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&15.\ \&ERROR notification object
+.B Table\ \&16.\ \&ERROR notification object
 .TS
 allbox tab(:);
 lB lB lB lB.
@@ -2087,7 +2197,7 @@ All attributes other than the device field are mandatory\&. Header attributes ar
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&16.\ \&SKY object
+.B Table\ \&17.\ \&SKY object
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2229,7 +2339,7 @@ One or more satellite objects follow the header for type 1 or type 9 messages\&.
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&17.\ \&Satellite object
+.B Table\ \&18.\ \&Satellite object
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2296,7 +2406,7 @@ User Differential Range Error values are as follows:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&18.\ \&UDRE values
+.B Table\ \&19.\ \&UDRE values
 .TS
 allbox tab(:);
 l l
@@ -2367,7 +2477,7 @@ Here are the payload members of a type 3 (Reference Station Parameters) message:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&19.\ \&Reference Station Parameters
+.B Table\ \&20.\ \&Reference Station Parameters
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2444,7 +2554,7 @@ Here are the payload members of a type 4 (Datum) message:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&20.\ \&Datum
+.B Table\ \&21.\ \&Datum
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2535,7 +2645,7 @@ Here is the format:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&21.\ \&Constellation health
+.B Table\ \&22.\ \&Constellation health
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2651,7 +2761,7 @@ Here is the format:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&22.\ \&Unknown Message
+.B Table\ \&23.\ \&Unknown Message
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2693,7 +2803,7 @@ Here is the format:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&23.\ \&Contellation health
+.B Table\ \&24.\ \&Contellation health
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2804,7 +2914,7 @@ Here are the payload members of a type 13 (Groumf Tramitter Parameters) message:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&24.\ \&Grund Transmitter Parameters
+.B Table\ \&25.\ \&Grund Transmitter Parameters
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2882,7 +2992,7 @@ Here are the payload members of a type 14 (GPS Time of Week) message:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&25.\ \&Reference Station Parameters
+.B Table\ \&26.\ \&Reference Station Parameters
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2952,7 +3062,7 @@ Here\*(Aqs an example:
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&26.\ \&Special Message
+.B Table\ \&27.\ \&Special Message
 .TS
 allbox tab(:);
 lB lB lB.
@@ -2992,7 +3102,7 @@ One or more GLONASS satellite objects follow the header for type 1 or type 9 mes
 .nr an-no-space-flag 1
 .nr an-break-flag 1
 .br
-.B Table\ \&27.\ \&Satellite object
+.B Table\ \&28.\ \&Satellite object
 .TS
 allbox tab(:);
 lB lB lB.

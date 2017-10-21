@@ -2,24 +2,51 @@
  * This file is Copyright (c) 2010 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
+
+#include "gpsd_config.h"
 #include <string.h>
 #include <fcntl.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif /* HAVE_NETDB_H */
 #ifndef AF_UNSPEC
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
 #endif /* AF_UNSPEC */
+#ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
+#endif /* HAVE_SYS_UN_H */
 #ifndef INADDR_ANY
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif /* HAVE_NETINET_IN_H */
 #endif /* INADDR_ANY */
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>     /* for htons() and friends */
+#endif /* HAVE_ARPA_INET_H */
 #include <unistd.h>
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/ip.h>
+#endif /* HAVE_NETINET_IN_H */
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #include "gpsd.h"
 #include "sockaddr.h"
+
+/* work around the unfinished ipv6 implementation on hurd and OSX <10.6 */
+#ifndef IPV6_TCLASS
+# if defined(__GNU__)
+#  define IPV6_TCLASS 61
+# elif defined(__APPLE__)
+#  define IPV6_TCLASS 36
+# endif
+#endif
 
 socket_t netlib_connectsock(int af, const char *host, const char *service,
 			    const char *protocol)
@@ -87,7 +114,11 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
 	}
 
 	if (!BAD_SOCKET(s)) {
-	    (void)close(s);
+#ifdef HAVE_WINSOCK2_H
+	  (void)closesocket(s);
+#else
+	  (void)close(s);
+#endif
 	}
     }
     freeaddrinfo(result);
@@ -116,8 +147,12 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
 #endif
 
     /* set socket to noblocking */
+#ifdef HAVE_FCNTL
     (void)fcntl(s, F_SETFL, fcntl(s, F_GETFL) | O_NONBLOCK);
-
+#elif defined(HAVE_WINSOCK2_H)
+    u_long one1 = 1;
+    (void)ioctlsocket(s, FIONBIO, &one1);
+#endif
     return s;
 }
 
@@ -145,6 +180,7 @@ const char *netlib_errstr(const int err)
 socket_t netlib_localsocket(const char *sockfile, int socktype)
 /* acquire a connection to an existing Unix-domain socket */
 {
+#ifdef HAVE_SYS_UN_H
     int sock;
 
     if ((sock = socket(AF_UNIX, socktype, 0)) < 0) {
@@ -165,16 +201,19 @@ socket_t netlib_localsocket(const char *sockfile, int socktype)
 
 	return sock;
     }
+#else
+    return -1;
+#endif /* HAVE_SYS_UN_H */
 }
 
 char *netlib_sock2ip(socket_t fd)
 /* retrieve the IP address corresponding to a socket */
 {
+    static char ip[INET6_ADDRSTRLEN];
+#ifdef HAVE_INET_NTOP
+    int r;
     sockaddr_t fsin;
     socklen_t alen = (socklen_t) sizeof(fsin);
-    static char ip[INET6_ADDRSTRLEN];
-    int r;
-
     r = getpeername(fd, &(fsin.sa), &alen);
     if (r == 0) {
 	switch (fsin.sa.sa_family) {
@@ -193,8 +232,9 @@ char *netlib_sock2ip(socket_t fd)
 	    return ip;
 	}
     }
-    if (r != 0) {
+    /* Ugh... */
+    if (r != 0)
+#endif /* HAVE_INET_NTOP */
 	(void)strlcpy(ip, "<unknown>", sizeof(ip));
-    }
     return ip;
 }

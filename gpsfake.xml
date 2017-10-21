@@ -35,11 +35,13 @@ BSD terms apply: see the file COPYING in the distribution root for details.
       <arg choice='opt'>-o <replaceable>options</replaceable></arg>
       <arg choice='opt'>-p</arg>
       <arg choice='opt'>-P <replaceable>port</replaceable></arg>
+      <arg choice='opt'>-q</arg>
       <arg choice='opt'>-r <replaceable>initcmd</replaceable></arg>
       <arg choice='opt'>-s <replaceable>speed</replaceable></arg>
       <arg choice='opt'>-S</arg>
       <arg choice='opt'>-u</arg>
       <arg choice='opt'>-t</arg>
+      <arg choice='opt'>-T</arg>
       <arg choice='opt'>-v</arg>
       <arg rep='repeat'>
             <arg choice='plain'><replaceable>logfile</replaceable></arg>
@@ -134,6 +136,9 @@ for regression-testing.</para>
 
 <para>The -P ("port") option sets the daemon's listening port.</para>
 
+<para>The <option>-q</option> tells gpsfake to suppress normal progress
+output and thus act in a quiet manner.</para>
+
 <para>The <option>-r</option> specifies an initialization command to use in pipe mode.
 The default is <command>?WATCH={"enable":true,"json":true}</command>.</para>
 
@@ -150,6 +155,9 @@ the pty layer.</para>
 rather than pty devices. Besides being a test of TCP source handling,
 this may be useful for testing from within chroot jails where access
 to pty devices is locked out.</para>
+
+<para>The <option>-T</option> makes <application>gpsfake</application> print
+some system information and then exits.</para>
 
 <para>The <option>-u</option> forces the test framework to use UDP
 rather than pty devices. Besides being a test of UDP source handling,
@@ -238,7 +246,7 @@ to the PATH environment variable</para>
 <citerefentry><refentrytitle>gpsd</refentrytitle><manvolnum>8</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gps</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>libgps</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>libgpsd</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+<citerefentry><refentrytitle>libgpsmm</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gpsctl</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gpspipe</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>gpsprof</refentrytitle><manvolnum>1</manvolnum></citerefentry>

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <syslog.h>
 #include <math.h>
 #include <time.h>
 #include <errno.h>
@@ -15,6 +14,7 @@
 #include "libgps.h"
 
 #if defined(DBUS_EXPORT_ENABLE)
+#include <syslog.h>
 
 struct privdata_t
 {
@@ -64,6 +64,8 @@ static DBusHandlerResult handle_gps_fix(DBusMessage * message)
     else
 	share_gpsdata->status = STATUS_NO_FIX;
 
+    dbus_error_free(&error);
+
     PRIVATE(share_gpsdata)->handler(share_gpsdata);
     return DBUS_HANDLER_RESULT_HANDLED;
 }
@@ -96,6 +98,7 @@ int gps_dbus_open(struct gps_data_t *gpsdata)
     connection = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
     if (dbus_error_is_set(&error)) {
 	syslog(LOG_CRIT, "%s: %s", error.name, error.message);
+	dbus_error_free(&error);
 	return 3;
     }
 
@@ -103,6 +106,7 @@ int gps_dbus_open(struct gps_data_t *gpsdata)
     if (dbus_error_is_set(&error)) {
 	syslog(LOG_CRIT, "unable to add match for signals %s: %s", error.name,
 	       error.message);
+	dbus_error_free(&error);
 	return 4;
     }
 
@@ -130,7 +134,7 @@ int gps_dbus_mainloop(struct gps_data_t *gpsdata,
     share_gpsdata = gpsdata;
     PRIVATE(share_gpsdata)->handler = (void (*)(struct gps_data_t *))hook;
     for (;;)
-	if (dbus_connection_read_write_dispatch(connection, timeout * 1000) != TRUE)
+	if (dbus_connection_read_write_dispatch(connection, (int)(timeout/1000)) != TRUE)
 	    return -1;
     return 0;
 }

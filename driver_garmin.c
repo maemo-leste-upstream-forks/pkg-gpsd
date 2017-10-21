@@ -236,6 +236,7 @@ typedef struct __attribute__((__packed__))
     union
     {
 	//int8_t chars[MAX_BUFFER_SIZE];
+	// cppcheck-suppress unusedStructMember
 	uint8_t uchars[MAX_BUFFER_SIZE];
 	cpo_pvt_data pvt;
 	cpo_sat_data sats;
@@ -499,7 +500,7 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 	     * time service.
 	     */
 	    if (session->fixcnt > 3)
-		mask |= PPSTIME_IS;
+		mask |= NTPTIME_IS;
 	}
 	gpsd_log(&session->context->errout, LOG_DATA,
 		 "Garmin: PVT_DATA: time=%.2f, lat=%.2f lon=%.2f "
@@ -1027,6 +1028,7 @@ gps_mask_t garmin_ser_parse(struct gps_device_t *session)
     unsigned char pkt_len = 0;
     unsigned char chksum = 0;
     gps_mask_t mask = 0;
+    struct timespec delay;
 
     gpsd_log(&session->context->errout, LOG_RAW, "Garmin: garmin_ser_parse()\n");
     if (6 > len) {
@@ -1158,7 +1160,11 @@ gps_mask_t garmin_ser_parse(struct gps_device_t *session)
 
     // sending ACK too soon might hang the session
     // so send ACK last, after a pause
-    (void)usleep(300);
+    /* wait 300 uSec */
+    delay.tv_sec = 0;
+    delay.tv_nsec = 300000L;
+    nanosleep(&delay, NULL);
+
     Send_ACK();
     gpsd_log(&session->context->errout, LOG_DATA,
 	     "Garmin: garmin_ser_parse( )\n");

@@ -9,18 +9,26 @@ Some hints for people building binary packages are in packaging/readme.txt.
 
 == Quick start ==
 
-Under Linux, assuming you have all your build prerequisites in place,
-this line will do:
+You can download the lastest gpsd tarball from:
+http://download.savannah.gnu.org/releases/gpsd/
 
+Under Linux, assuming you have all your build prerequisites in place,
+these lines will do:
+
+   tar -xzf gpsd-X.YY.tar.gz
+   cd gpsd-X.YY
    scons && scons check && sudo scons udev-install
 
 If you get any errors, you need to read the detailed instructions that follow.
 
 If 'scons' fails, it is possible that your target system has moved to
 Python 3 as its default 'python' interpreter, but you can work around
-it by saying "python2 /usr/bin/scons" or something similar.  GPSD's
-own Python scripts assume that "#!/usr/bin/env python2" will invoke a
-Python 2 interpreter.
+it by saying "python2 /usr/bin/scons" or something similar.
+
+Occasionally, builds may fail in completely bizarre ways due to a corrupted
+scons database.  This seems to relate to ^Cing the build at an inopportune
+moment.  If you suspect that, see "Reverting to a clean state" below and
+then try again.
 
 == Supported platforms ==
 
@@ -50,14 +58,10 @@ is included at the end of this file.
 Necessary components for any build:
 
 |============================================================================
-|C compiler         | gpsd and client library are written in C
-|Python 2.x, x >= 6 | some code is generated from python scripts
-|scons              | for executing the build recipe
+|C compiler                    | gpsd and client library are written in C
+|scons                         | for executing the build recipe
+|Python 2.x(x>=6)              | for scons and some helper scripts
 |============================================================================
-
-Note: There must be a Python 2 interpreter named 'python' in your path,
-or the regression tests will fail.  On some systems you might need to
-arrange this by putting symlink in a local directory on $PATH.
 
 === C compiler ===
 
@@ -65,7 +69,7 @@ C99 conformance is required in the compiler. The C code depends on one
 C11 feature (supported by GCC, clang, and pretty much any C compiler
 that also speaks C++): anonymous unions.  We could eliminate these,
 but the cost would be source-level interface breakage if we have to
-move structure members in and out of unions.
+move certain structure members in and out of unions.
 
 Some portions of the code using shared-memory segments are improved by
 the C11 stdatomic.h features for lockless concurrency.  These are: the
@@ -86,7 +90,8 @@ clang produces a gpsd that passes all regression tests.
 
 === Python ===
 
-You will need Python 2.5 or later for the build.
+You will need Python 2.x at minor version 6 or later or Python 3 at
+at minor version 3 or later.
 
 While Python is required to build GPSD from source (the build uses
 some code generators in Python), it is not required to run the service
@@ -99,11 +104,11 @@ extensions.  Usually these are called "python" and "python-dev". You
 will know you are missing the latter if your compilation fails
 because of a missing Python.h.
 
-The xgps test client requires the following Python extensions:
+The xgps and xgpsspeed test clients require the following Python extensions:
 
 |============================================================================
-|gobject            | GNOME object introspection library
-|pygtk              | Python bindings for GTK
+|python-gi          | Python bindings for gobject-introspection libraries
+|python-gi-cairo    | Python bindings for Cairo toolkit under GI
 |===========================================================================
 
 === Scons ===
@@ -119,7 +124,7 @@ various additional capabilities and extensions:
 |C++ compiler     | allows building libgpsmm C++ wrapper for client library
 |Qt 4.53+         | allows building libQgpsmm C++ wrapper for client library
 |libcap           | Capabilities library, allows 1PPS support under Linux
-|curses           | curses screen-painting library, allows building cgps
+|(n)curses        | curses screen-painting library, used by cgps and gpsmon
 |============================================================================
 
 If you have libusb-1.0.0 or later, the GPSD build will autodetect
@@ -188,7 +193,7 @@ These are listed in rough order of devices covered as of 2013; the
 PL23203 by itself accounts for over 70% of deployed USB mice.  We
 recommend building with pl2303, ftdi_sio, cypress_m8, and cp210x.
 
-We've receive a bug report that suggests the Python test framework
+We've received a bug report that suggests the Python test framework
 requires legacy PTY support (CONFIG_LEGACY_PTYS) from the Linux
 kernel.  You should make sure you're in the 'dialout' group in order
 to have permission to use these devices.
@@ -246,8 +251,8 @@ To enable hotplugging of USB GPSes under Linux, you may do 'scons
 udev-install' to put the appropriate udev rules and wrapper files in
 place.
 
-You will need php and php-gd installed to support the PHP web page.
-included with the distribution. To install it, copy the file
+You will need php and php-gd installed to support the PHP web page
+generator included with the distribution. To install it, copy the file
 'gpsd.php' to your HTML document directory. Then see the
 post-installation instructions in INSTALL for how to configure it.
 
@@ -330,7 +335,7 @@ client library to be available on all the Qt supported platforms.
 Please see http://qt.nokia.com/doc/4.6/supported-platforms.html for a
 status of Qt supported platforms as of version 4.6.
 
-minimal=yes: people building for extremely constrained environments
+minimal=no: people building for extremely constrained environments
 may want to set this.  It changes the default for all boolean (feature)
 options to false; thus, you get *only* the options you specify on the
 command line.  Thus, for example, if you want to turn off all features
@@ -342,6 +347,19 @@ scons minimal=yes socket_export=yes nmea0183=yes
 
 will do that.
 
+-----------------------------------------------
+scons minimal=yes gpsd=False gpsdclients=False
+-----------------------------------------------
+
+generates only libgps.a
+
+-----------------------------------------------
+scons minimal=yes shared=True gpsd=False gpsdclients=False
+-----------------------------------------------
+
+generates only libgps.so
+
+
 == Port and toolchain testing ==
 
 'scons check' will run a comprehensive regression-test suite.  You
@@ -350,14 +368,33 @@ machine type.  GPSD does enough bit-twiddling and floating point that
 it is very sensitive to toolchain problems; you'll want to be sure
 those aren't going to bite you in production.
 
-So the tests will run fast and be easy to do often, we make the test
+So that the tests will run fast and be easy to do often, we make the test
 framework shove data through the pty and socket layers *way* faster
 than would ever occur in production.  If you get regression-test
 failures that aren't repeatable and look like the test framework is
 sporadically failing to feed the last line or two of test loads, try
 using the slow=yes option with scons check.  If that fails, try
-increasing the delay constants in gps/fake.py.  If you have to do this,
+increasing the delay value via the WRITE_PAD environment variable
+(above the value reported in the test output).  If you have to do this,
 please report your experience to the GPSD maintainers.
+
+Both the builds and the tests are highly parallelizable via the scons
+-j option, which can gain a substantial speedup on a multicore machine.
+Because the output from the various jobs is interleaved, it may be more
+difficult to understand error results with multiple jobs.  In that event,
+simply rerun without the -j option for more straightforward output.
+
+If coveraging is enabled (coveraging=yes), then Python programs run
+during testing are run via Python coveraging.  This prefixes the relevant
+commands with the content of the python_coverage option, whose default
+value of "coverage run" is appropriate if the standard Python coverage
+package is installed and accessible in the command path.  It can be
+set to a different value if necessary, or set to the empty string to
+disable Python coveraging.  The latter happens automatically (with a
+message) if the tool cannot be found.  When running multiple jobs with
+"-j", if python_coverage has its default value, "--parallel" is automatically
+appended to the command.  With a non-default setting, accommodating
+parallelism is the user's responsibility.
 
 For instructions on how to live-test the software, see the file INSTALL.
 
@@ -371,10 +408,23 @@ stuff is left in place.
 If you interrupted a regression test, 'scons testclean' will remove
 generated test programs.
 
-You can run 'scons sconsclean' to temove most of the configuration
-state that scons keeps.  Be aware, however, thatr doing this can
+You can run 'scons sconsclean' to remove most of the configuration
+state that scons keeps.  Be aware, however, that doing this can
 confuse scons; you may need to run 'scons --config=force' afterwards
-to make your build succeed.
+to make your build succeed.  At the time of this writing, you can also
+remove all the scons state with "rm -rf .scon*", though that could change
+in a future release of scons.  This method does not "confuse scons".
+If you use any of these actions in combination with "scons -c", do the
+latter first, as removing scons's state may change its notions of what
+needs to be cleaned.
+
+If you're building in a clone of the git repository, you can use
+"git clean -dxf" to remove all untracked files.  Note, however, that
+this will remove any files you have created on your own, in addition
+to build products and scons temporaries.  You can alternatively use
+"git clean -dxn" to see what would be removed without actually removing
+anything, or "git clean -dxi" to remove things selectively.  Using
+"git clean" after "scons -c" usually results in a fairly short list.
 
 == Notes on Android:
 
@@ -426,7 +476,12 @@ $ git clone [...]
 Cloning into gpsd...
 [...]
 $ cd gpsd
-$ cp ../.scons-option-cache .
+----
+
+Edit .scons-options-cache (may not exist) and add lines, describing
+what your target architecture and build preferences are.
+
+----
 $ cat .scons-option-cache
 libgpsmm = False
 libQgpsmm = False

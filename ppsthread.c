@@ -57,6 +57,7 @@
 #include <errno.h>
 #include <math.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <pthread.h>		/* pacifies OpenBSD's compiler */
 
@@ -65,17 +66,25 @@
  * CONFIG_PPS=y
  * CONFIG_PPS_DEBUG=y  [optional to kernel log pulses]
  * CONFIG_PPS_CLIENT_LDISC=y
+ *
+ * Also beware that setting
+ * CONFIG_PPS_CLIENT_KTIMER=y
+ * adds a fake software-generated PPS intended for testing.  This
+ * doesn't even run at exactly 1Hz, so any attempt to use it for
+ * real timing is disastrous.  Hence we try to avoid it.
  */
+#define FAKE_PPS_NAME "ktimer"
+
 #if defined(HAVE_SYS_TIMEPPS_H)
 // include unistd.h here as it is missing on older pps-tools releases.
 // 'close' is not defined otherwise.
 #include <unistd.h>
-#include <sys/time.h>
 #include <sys/timepps.h>
 #endif
 
 #include "timespec.h"
 #include "ppsthread.h"
+#include "os_compat.h"
 
 /*
  * Tell GCC that we want thread-safe behavior with _REENTRANT;
@@ -156,6 +165,39 @@ static void thread_unlock(volatile struct pps_thread_t *pps_thread)
 }
 
 #if defined(HAVE_SYS_TIMEPPS_H)
+#ifdef __linux__
+/* Obtain contents of specified sysfs variable; null string if failure */
+static void get_sysfs_var(const char *path, char *buf, size_t bufsize)
+{
+    buf[0] = '\0';
+    int fd = open(path, O_RDONLY);
+    if ( 0 <= fd ) {
+	ssize_t r = read( fd, buf, bufsize -1);
+	if ( 0 < r ) {
+	    buf[r - 1] = '\0'; /* remove trailing \x0a */
+	}
+	(void)close(fd);
+    }
+}
+
+/* Check to see whether the named PPS source is the fake one */
+int pps_check_fake(const char *name) {
+    char path[PATH_MAX] = "";
+    char buf[32] = "";
+    snprintf(path, sizeof(path), "/sys/devices/virtual/pps/%s/name", name);
+    get_sysfs_var(path, buf, sizeof(buf));
+    return strcmp(buf, FAKE_PPS_NAME) == 0;
+}
+
+/* Get first "real" PPS device, skipping the fake, if any */
+char *pps_get_first(void)
+{
+    if (pps_check_fake("pps0"))
+	return "/dev/pps1";
+    return "/dev/pps0";
+}
+#endif /* __linux__ */
+
 static int init_kernel_pps(struct inner_context_t *inner_context)
 /* return handle for kernel pps, or -1; requires root privileges */
 {
@@ -182,15 +224,21 @@ static int init_kernel_pps(struct inner_context_t *inner_context)
 #endif /* __clang_analyzer__ */
 #ifdef __linux__
     /*
-     * Some Linuxes, like the RasbPi's, have PPS devices preexisting.
+     * Some Linuxes, like the RasPi's, have PPS devices preexisting.
      * Other OS have no way to automatically determine the proper /dev/ppsX.
      * Allow user to pass in an explicit PPS device path.
      *
      * (We use strncpy() here because this might be compiled where
      * strlcpy() is not available.)
      */
-    if (strncmp(pps_thread->devicename, "/dev/pps", 8) == 0)
-	(void)strncpy(path, pps_thread->devicename, sizeof(path));
+    if (strncmp(pps_thread->devicename, "/dev/pps", 8) == 0) {
+	if (pps_check_fake(pps_thread->devicename + 5))
+	    pps_thread->log_hook(pps_thread, THREAD_WARN,
+				 "KPPS:%s is fake PPS,"
+				 " timing will be inaccurate\n",
+				 pps_thread->devicename);
+	(void)strncpy(path, pps_thread->devicename, sizeof(path)-1);
+    }
     else {
 	char pps_num = '\0';  /* /dev/pps[pps_num] is our device */
 	size_t i;             /* to match type of globbuf.gl_pathc */
@@ -227,14 +275,7 @@ static int init_kernel_pps(struct inner_context_t *inner_context)
 
 	memset( (void *)&path, 0, sizeof(path));
 	for ( i = 0; i < globbuf.gl_pathc; i++ ) {
-	    int fd = open(globbuf.gl_pathv[i], O_RDONLY);
-	    if ( 0 <= fd ) {
-		ssize_t r = read( fd, path, sizeof(path) -1);
-		if ( 0 < r ) {
-		    path[r - 1] = '\0'; /* remove trailing \x0a */
-		}
-		(void)close(fd);
-	    }
+	    get_sysfs_var(globbuf.gl_pathv[i], path, sizeof(path));
 	    pps_thread->log_hook(pps_thread, THREAD_PROG,
 				 "KPPS:%s checking %s, %s\n",
 				 pps_thread->devicename,
@@ -268,8 +309,9 @@ static int init_kernel_pps(struct inner_context_t *inner_context)
 	char errbuf[BUFSIZ] = "unknown error";
 	(void)strerror_r(errno, errbuf, sizeof(errbuf));
 	pps_thread->log_hook(pps_thread, THREAD_INF,
-		    "KPPS:%s cannot open %s: %s\n",
+		    "KPPS:%s running as %d/%d, cannot open %s: %s\n",
 		    pps_thread->devicename,
+		    getuid(), geteuid(),
                     path, errbuf);
     	return -1;
     }
@@ -649,13 +691,17 @@ static void *gpsd_ppsmonitor(void *arg)
 #endif /* defined(HAVE_SYS_TIMEPPS_H) */
     bool not_a_tty = false;
 
+    /* Acknowledge that we've grabbed the inner_context data */
+    ((volatile struct inner_context_t *)arg)->pps_thread = NULL;
+
     /* before the loop, figure out how we can detect edges:
      * TIOMCIWAIT, which is linux specifix
      * RFC2783, a.k.a kernel PPS (KPPS)
      * or if KPPS is deficient a combination of the two */
-    if ( isatty(thread_context->devicefd) == 0 ) {
-	thread_context->log_hook(thread_context, THREAD_INF,
-            "KPPS:%s gps_fd:%d not a tty\n",
+    if ( 0 > thread_context->devicefd
+      || 0 == isatty(thread_context->devicefd) ) {
+	thread_context->log_hook(thread_context, THREAD_PROG,
+            "KPPS:%s gps_fd:%d not a tty, can not use TIOMCIWAIT\n",
             thread_context->devicename,
             thread_context->devicefd);
         /* why do we care the device is a tty? so as not to ioctl(TIO..)
@@ -747,6 +793,8 @@ static void *gpsd_ppsmonitor(void *arg)
 
 	    edge_tio = (state_tio > state_last_tio) ? 1 : 0;
 
+	    state_last_tio = state_tio;
+
             /* three things now known about the current edge:
              * clock_ts - time of the edge
              * state - the serial line input states
@@ -773,7 +821,7 @@ static void *gpsd_ppsmonitor(void *arg)
 
 	    timespec_str( &clock_ts, ts_str1, sizeof(ts_str1) );
 	    thread_context->log_hook(thread_context, THREAD_PROG,
-		    "TPPS:%s %.10s cycle: %d, duration: %d @ %s\n",
+		    "TPPS:%s %.10s, cycle: %lld, duration: %lld @ %s\n",
 		    thread_context->devicename, edge_str, cycle, duration,
                     ts_str1);
 
@@ -840,7 +888,7 @@ static void *gpsd_ppsmonitor(void *arg)
 
 	    timespec_str( &clock_ts_kpps, ts_str1, sizeof(ts_str1) );
 	    thread_context->log_hook(thread_context, THREAD_PROG,
-		"KPPS:%s %.10s cycle: %7d, duration: %7d @ %s\n",
+		"KPPS:%s %.10s cycle: %7lld, duration: %7lld @ %s\n",
 		thread_context->devicename,
 		edge_str,
 		cycle_kpps, duration_kpps, ts_str1);
@@ -882,7 +930,7 @@ static void *gpsd_ppsmonitor(void *arg)
 	    unchanged = 0;
         } else if ( (180000 < cycle &&  220000 > cycle)      /* 5Hz */
 	        ||  (900000 < cycle && 1100000 > cycle)      /* 1Hz */
-	        || (1800000 < cycle && 2200000 > cycle) ) {  /* 2Hz */
+	        || (1800000 < cycle && 2200000 > cycle) ) {  /* 0.5Hz */
 
 	    /* some pulses may be so short that state never changes
 	     * and some RFC2783 only can detect one edge */
@@ -898,7 +946,7 @@ static void *gpsd_ppsmonitor(void *arg)
 	state_last = state;
 	timespec_str( &clock_ts, ts_str1, sizeof(ts_str1) );
 	thread_context->log_hook(thread_context, THREAD_PROG,
-	    "PPS:%s %.10s cycle: %7d, duration: %7d @ %s\n",
+	    "PPS:%s %.10s cycle: %7lld, duration: %7lld @ %s\n",
 	    thread_context->devicename,
 	    edge_str,
 	    cycle, duration, ts_str1);
@@ -932,7 +980,7 @@ static void *gpsd_ppsmonitor(void *arg)
 	 *
 	 * You may think that PPS is very accurate, so the cycle time
          * valid window should be very small.  This is not the case,
-         * The Rasberry Pi clock is very coarse when it starts and chronyd
+         * The Raspberry Pi clock is very coarse when it starts and/or chronyd
          * may be doing a fast slew.  chronyd by default will slew up
          * to 8.334%!  So the cycle time as measured by the system clock
          * may be almost +/- 9%. Therefore, gpsd uses a 10% window.
@@ -942,65 +990,91 @@ static void *gpsd_ppsmonitor(void *arg)
 	log = "Unknown error";
         if ( 0 > cycle ) {
 	    log = "Rejecting negative cycle\n";
-	} else if (199000 > cycle) {
-	    // too short to even be a 5Hz pulse
+	} else if (180000 > cycle) {
+	    /* shorter than 200 milliSec - 10%
+	     * too short to even be a 5Hz pulse */
 	    log = "Too short for 5Hz\n";
 	} else if (201000 > cycle) {
-	    /* 5Hz cycle */
+	    /* longer than 200 milliSec - 10%
+	     * shorter than 200 milliSec + 10%
+	     * about 200 milliSec cycle */
 	    /* looks like 5hz PPS pulse */
 	    if (100000 > duration) {
+		/* this is the end of the long part */
 		/* BUG: how does the code know to tell ntpd
 		 * which 1/5 of a second to use?? */
 		ok = true;
 		log = "5Hz PPS pulse\n";
 	    }
 	} else if (900000 > cycle) {
-            /* Yes, 10% window.  The Rasberry Pi clock is very coarse
+	    /* longer than 200 milliSec + 10%
+             * shorter than 1.000 Sec - 10% */
+            /* Yes, 10% window.  The Raspberry Pi clock is very coarse
              * when it starts and chronyd may be doing a fast slew.
-             * chronyd by default will slew up to 8.334% !
-             * Don't worry, ntpd and chronyd will do further sanitizing.*/
+             * chronyd by default will slew up to 8.334% ! */
 	    log = "Too long for 5Hz, too short for 1Hz\n";
 	} else if (1100000 > cycle) {
+	    /* longer than 1.000 Sec - 10%
+	     * shorter than 1.000 Sec + 10% */
             /* Yes, 10% window.  */
-	    /* looks like PPS pulse or square wave */
+	    /* looks like 1Hz PPS pulse or square wave */
 	    if (0 == duration) {
 		ok = true;
 		log = "invisible pulse\n";
-	    } else if (499000 > duration) {
-		/* end of the short "half" of the cycle */
-		/* aka the trailing edge */
+	    } else if (450000 > duration) {
+	        /* pulse shorter than 500 milliSec - 10%
+		 * end of the short "half" of the cycle
+		 * aka the trailing edge */
 		log = "1Hz trailing edge\n";
-	    } else if (501000 > duration) {
-		/* looks like 1.0 Hz square wave, ignore trailing edge */
+	    } else if (555000 > duration) {
+	        /* pulse longer than 500 milliSec - 10%
+	         * pulse shorter than 500 milliSec + 10%
+		 * looks like 1.0 Hz square wave, ignore trailing edge
+		 * except we can't tell which is which, so we guess */
+		// cppcheck-suppress knownConditionTrueFalse
 		if (edge == 1) {
 		    ok = true;
 		    log = "square\n";
 		}
 	    } else {
-		/* end of the long "half" of the cycle */
-		/* aka the leading edge */
+	        /* pulse longer than 500 milliSec + 10%
+		 * end of the long "half" of the cycle
+		 * aka the leading edge,
+		 * the edge that marks the start of the second */
 		ok = true;
 		log = "1Hz leading edge\n";
 	    }
-	} else if (1999000 > cycle) {
+	} else if (1800000 > cycle) {
+	    /* cycle longer than 1.000 Sec + 10%
+	     * cycle shorter than 2.000 Sec - 10%
+	     * Too long for 1Hz, too short for 2Hz */
 	    log = "Too long for 1Hz, too short for 2Hz\n";
-	} else if (2001000 > cycle) {
-	    /* looks like 0.5 Hz square wave */
-	    if (999000 > duration) {
+	} else if (2200000 > cycle) {
+	    /* cycle longer than 2.000 Sec - 10%
+	     * cycle shorter than 2.000 Sec + 10%
+	     * looks like 0.5 Hz square wave */
+	    if (990000 > duration) {
+		 /* pulse shorter than 1.000 Sec - 10%
+		  * too short to be a 2Hx square wave */
 		log = "0.5 Hz square too short duration\n";
-	    } else if (1001000 > duration) {
+	    } else if (1100000 > duration) {
+		 /* pulse longer than 1.000 Sec - 10%
+		  * pulse shorter than 1.000 Sec + 10%
+		  * and nice 0.5Hz square wave */
 		ok = true;
 		log = "0.5 Hz square wave\n";
 	    } else {
 		log = "0.5 Hz square too long duration\n";
 	    }
 	} else {
+	    /* cycle longer than 2.000 Sec + 10%
+	     * can't be anything */
 	    log = "Too long for 0.5Hz\n";
 	}
 
 	/* end of Stage two
-         * we now know what type of PPS pulse, and if we have the
-         * leading edge
+         * we now know what type of PPS pulse, and if we have  a good
+         * leading edge or not
          */
 
 	/* Stage Three: Calculate
@@ -1018,6 +1092,8 @@ static void *gpsd_ppsmonitor(void *arg)
          * Other GPSes like some uBlox may only send PPS when time is valid.
          * It is common to get PPS, and no fixtime, while autobauding.
 	 */
+	/* FIXME, some GPS, like Skytraq, may output a the fixtime so
+         * late in the cycle as to be ambiguous. */
         if (last_fixtime.real.tv_sec == 0) {
 	    /* probably should log computed offset just for grins here */
 	    ok = false;
@@ -1129,7 +1205,7 @@ static void *gpsd_ppsmonitor(void *arg)
 #if defined(HAVE_SYS_TIMEPPS_H)
     if (inner_context.kernelpps_handle > 0) {
 	thread_context->log_hook(thread_context, THREAD_PROG,
-            "PPS:%s descriptor cleaned up\n",
+            "KPPS:%s descriptor cleaned up\n",
 	    thread_context->devicename);
 	(void)time_pps_destroy(inner_context.kernelpps_handle);
     }
@@ -1149,6 +1225,7 @@ void pps_thread_activate(volatile struct pps_thread_t *pps_thread)
 {
     int retval;
     pthread_t pt;
+    struct timespec start_delay = {0, 1000000};  /* 1 ms */
     /*
      * FIXME: this launch code is not itself thread-safe!
      * It would be if inner_context could be auto, but the monitor
@@ -1166,19 +1243,28 @@ void pps_thread_activate(volatile struct pps_thread_t *pps_thread)
 	pps_thread->log_hook(pps_thread, THREAD_INF,
 		    "KPPS:%s kernel PPS will be used\n",
 		    pps_thread->devicename);
-    } else
-#endif
-    {
+    } else {
 	pps_thread->log_hook(pps_thread, THREAD_WARN,
 		    "KPPS:%s kernel PPS unavailable, PPS accuracy will suffer\n",
 		    pps_thread->devicename);
     }
+#else
+    pps_thread->log_hook(pps_thread, THREAD_WARN,
+		"KPPS:%s no HAVE_SYS_TIMEPPS_H, PPS accuracy will suffer\n",
+		pps_thread->devicename);
+#endif
 
     memset( &pt, 0, sizeof(pt));
     retval = pthread_create(&pt, NULL, gpsd_ppsmonitor, (void *)&inner_context);
     pps_thread->log_hook(pps_thread, THREAD_PROG, "PPS:%s thread %s\n",
 	        pps_thread->devicename,
 		(retval==0) ? "launched" : "FAILED");
+    /* The monitor thread may not run immediately, particularly on a single-
+     * core machine, so we need to wait for it to acknowledge its copying
+     * of the inner_context struct before proceeding.
+     */
+    while (inner_context.pps_thread)
+	(void) nanosleep(&start_delay, NULL);
 }
 
 void pps_thread_deactivate(volatile struct pps_thread_t *pps_thread)

@@ -14,7 +14,10 @@ PERMISSIONS
    BSD terms apply: see the file COPYING in the distribution root for details.
 
 ***************************************************************************/
-#include <time.h>             /* for time_t */
+
+/* sys/ipc.h needs _XOPEN_SOURCE, 500 means X/Open 1995 */
+#define _XOPEN_SOURCE 500
+
 #include "gpsd_config.h"
 
 #ifdef SHM_EXPORT_ENABLE
@@ -60,6 +63,7 @@ int gps_shm_open(struct gps_data_t *gpsdata)
     if (PRIVATE(gpsdata)->shmseg == (void *) -1) {
 	/* attach failed for sume unknown reason */
 	free(gpsdata->privdata);
+	gpsdata->privdata = NULL;
 	return -2;
     }
 #ifndef USE_QT
@@ -133,6 +137,11 @@ int gps_shm_read(struct gps_data_t *gpsdata)
 			 (void *)&noclobber,
 			 sizeof(struct gps_data_t));
 	    gpsdata->privdata = private_save;
+#ifndef USE_QT
+	    gpsdata->gps_fd = SHM_PSEUDO_FD;
+#else
+	    gpsdata->gps_fd = (void *)(intptr_t)SHM_PSEUDO_FD;
+#endif /* USE_QT */
 	    PRIVATE(gpsdata)->tick = after;
 	    if ((gpsdata->set & REPORT_IS)!=0) {
 		if (gpsdata->fix.mode >= 2)
@@ -148,11 +157,11 @@ int gps_shm_read(struct gps_data_t *gpsdata)
 
 void gps_shm_close(struct gps_data_t *gpsdata)
 {
-    if (PRIVATE(gpsdata)->shmseg != NULL)
+    if (PRIVATE(gpsdata) && PRIVATE(gpsdata)->shmseg != NULL)
 	(void)shmdt((const void *)PRIVATE(gpsdata)->shmseg);
 }
 
-int gps_shm_mainloop(struct gps_data_t *gpsdata, int timeout UNUSED,
+int gps_shm_mainloop(struct gps_data_t *gpsdata, int timeout,
 			 void (*hook)(struct gps_data_t *gpsdata))
 /* run a shm main loop with a specified handler */
 {

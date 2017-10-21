@@ -163,14 +163,16 @@ ubx_msg_nav_sol(struct gps_device_t *session, unsigned char *buf,
 
     flags = (unsigned int)getub(buf, 11);
     mask = 0;
-    if ((flags & (UBX_SOL_VALID_WEEK | UBX_SOL_VALID_TIME)) != 0) {
+#define DATE_VALID	(UBX_SOL_VALID_WEEK | UBX_SOL_VALID_TIME)
+    if ((flags & DATE_VALID) == DATE_VALID) {
 	unsigned short gw;
 	unsigned int tow;
 	tow = (unsigned int)getleu32(buf, 0);
 	gw = (unsigned short)getles16(buf, 8);
 	session->newdata.time = gpsd_gpstime_resolve(session, gw, tow / 1000.0);
-	mask |= TIME_SET | PPSTIME_IS;
+	mask |= TIME_SET | NTPTIME_IS;
     }
+#undef DATE_VALID
 
     epx = (double)(getles32(buf, 12) / 100.0);
     epy = (double)(getles32(buf, 16) / 100.0);
@@ -204,6 +206,9 @@ ubx_msg_nav_sol(struct gps_device_t *session, unsigned char *buf,
     navmode = (unsigned char)getub(buf, 10);
     switch (navmode) {
     case UBX_MODE_TMONLY:
+	session->newdata.mode = MODE_NO_FIX;
+	mask |= GOODTIME_IS;
+	break;
     case UBX_MODE_3D:
 	session->newdata.mode = MODE_3D;
 	break;
@@ -304,7 +309,7 @@ ubx_msg_nav_timegps(struct gps_device_t *session, unsigned char *buf,
     gpsd_log(&session->context->errout, LOG_DATA,
 	     "TIMEGPS: time=%.2f leap=%d, mask={TIME}\n",
 	     session->newdata.time, session->context->leap_seconds);
-    return TIME_SET | PPSTIME_IS;
+    return TIME_SET | NTPTIME_IS;
 }
 
 /**
@@ -349,6 +354,9 @@ ubx_msg_nav_svinfo(struct gps_device_t *session, unsigned char *buf,
 	st++;
     }
 
+    /* UBX does not give us these, so recompute */
+    session->gpsdata.dop.xdop = NAN;
+    session->gpsdata.dop.ydop = NAN;
     session->gpsdata.skyview_time = NAN;
     session->gpsdata.satellites_visible = (int)st;
     session->gpsdata.satellites_used = (int)nsv;
@@ -633,12 +641,8 @@ static gps_mask_t parse_input(struct gps_device_t *session)
     if (session->lexer.type == UBX_PACKET) {
 	return ubx_parse(session, session->lexer.outbuffer,
 			 session->lexer.outbuflen);
-#ifdef NMEA0183_ENABLE
-    } else if (session->lexer.type == NMEA_PACKET) {
-	return nmea_parse((char *)session->lexer.outbuffer, session);
-#endif /* NMEA0183_ENABLE */
     } else
-	return 0;
+	return generic_parse_input(session);
 }
 
 bool ubx_write(struct gps_device_t * session,
@@ -730,6 +734,8 @@ static void ubx_event_hook(struct gps_device_t *session, event_t event)
 	 */
 	if (session->mode == O_OPTIMIZE) {
 	    ubx_mode(session, MODE_BINARY);
+	} else {
+	    ubx_mode(session, MODE_NMEA);
 	}
 #endif /* RECONFIGURE_ENABLE */
     } else if (event == event_deactivate) {

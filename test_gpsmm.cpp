@@ -9,8 +9,15 @@
 /* This simple program shows the basic functionality of the C++ wrapper class */
 #include <iostream>
 
-#include "libgpsmm.h"
+#include <getopt.h>
 
+#include "libgpsmm.h"
+#include "gpsdclient.c"
+/*     YES   --->  ^^^^
+ Using .c rather than the .h to embed gpsd_source_spec() source here
+  so that it is compiled in C++ rather than C of the gps library
+ (otherwise fails to link as the signatures are unavailable/different)
+*/
 using namespace std;
 
 /*
@@ -23,7 +30,6 @@ static void libgps_dump_state(struct gps_data_t *collect)
 {
     /* no need to dump the entire state, this is a sanity check */
 #ifndef USE_QT
-    /* will fail on a 32-bit macine */
     (void)fprintf(stdout, "flags: (0x%04x) %s\n",
 		  (unsigned int)collect->set, gps_maskdump(collect->set));
 #endif
@@ -102,16 +108,52 @@ static void libgps_dump_state(struct gps_data_t *collect)
 }
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
-    gpsmm gps_rec("localhost", DEFAULT_GPSD_PORT);
+    uint looper = UINT_MAX;
 
-    if (gps_rec.stream(WATCH_ENABLE|WATCH_JSON) == NULL) {
-        cerr << "No GPSD running.\n";
-        return 1;
+    // A typical C++ program may look to use a more native option parsing method
+    //  such as boost::program_options
+    // But for this test program we don't want extra dependencies
+    // Hence use C style getopt for (build) simplicity
+    int option;
+    while ((option = getopt(argc, argv, "l:h?")) != -1) {
+        switch (option) {
+        case 'l':
+            looper = atoi(optarg);
+            break;
+        case '?':
+        case 'h':
+        default:
+            cout << "usage: " << argv[0] << " [-l n]\n";
+            exit(EXIT_FAILURE);
+            break;
+        }
     }
 
-    for (;;) {
+    struct fixsource_t source;
+    /* Grok the server, port, and device. */
+    if (optind < argc) {
+	gpsd_source_spec(argv[optind], &source);
+    } else
+	gpsd_source_spec(NULL, &source);
+
+    //gpsmm gps_rec("localhost", DEFAULT_GPSD_PORT);
+    gpsmm gps_rec(source.server, source.port);
+
+    if ( !((std::string)source.server == (std::string)GPSD_SHARED_MEMORY ||
+	   (std::string)source.server == (std::string)GPSD_DBUS_EXPORT) ) {
+        if (gps_rec.stream(WATCH_ENABLE|WATCH_JSON) == NULL) {
+            cerr << "No GPSD running.\n";
+            return 1;
+        }
+    }
+
+    // Loop for the specified number of times
+    // If not specified then by default it loops until ll simply goes out of bounds
+    // So with the 5 second wait & a 4 byte uint - this equates to ~680 years
+    //  - long enough for a test program :)
+    for (uint ll = 0; ll < looper; ll++) {
 	struct gps_data_t* newdata;
 
 	if (!gps_rec.waiting(5000000))

@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gps
 .\"    Author: [see the "AUTHORS" section]
-.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
 .\"      Date: 9 Aug 2004
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -33,13 +33,11 @@ gps, xgps, xgpsspeed, cgps, lcdgps, gegps \- test clients for gpsd
 .HP \w'\fBxgps\fR\ 'u
 \fBxgps\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBxgpsspeed\fR\ 'u
-\fBxgpsspeed\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBxgpsspeed\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-\-nautical] [\-\-landspeed] [\-\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBcgps\fR\ 'u
 \fBcgps\fR [\-D\ \fIdebug\-level\fR] [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-m] [\-s] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBlcdgps\fR\ 'u
 \fBlcdgps\fR [\-h] [\-V] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
-.HP \w'\fBgpxlogger\fR\ 'u
-\fBgpxlogger\fR [\-D\ \fIdebug\-level\fR] [\-d] [\-e\ \fIexport\-method\fR] [\-f\ \fIfilename\fR] [\-l] [\-m\ \fIminmove\fR] [\-h] [\-V] [\-i\ \fItrack\ timeout\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBgegps\fR\ 'u
 \fBgegps\fR [\-d\ \fIdirectory\fR] [\-i]
 .SH "DESCRIPTION"
@@ -124,7 +122,10 @@ Look at port 2317 at the specified IPv6 address, collecting data from attached s
 Not all clients shipped with GPSD are documented here\&. See also the separate manual pages for
 \fBgpspipe\fR(1)
 and
-\fBgpsmon\fR(1)\&.
+\fBgpsmon\fR(1)
+and
+\fBgpxlogger\fR(1)
+\&.
 .SS "xgps"
 .PP
 xgps
@@ -139,7 +140,7 @@ xgpsspeed
 is a speedometer that uses position information from the GPS\&. It accepts an \-h option and optional argument as for
 gps, or a \-V option to dump the package version and exit\&.
 .PP
-The default display mode resembles a car speedometer\&. With the option \-\-nautical you get a more elaborate speed and track presentation modeled after a marine navigation display\&.
+The default display mode is a speed and track presentation modeled after a marine navigation display; for backward compatibility the \-\-nautical option forces this mode\&. The \-\-landspeed option produces a simple speedometer\&.
 .PP
 The \-speedunits option can be used to set the speed units for display; follow the keyword with knots for nautical miles per hour, kph for kilometres per hour, or mph for miles per hour\&. The default is miles per hour\&.
 .PP
@@ -168,46 +169,6 @@ A client that passes
 gpsd
 data to
 lcdproc, turning your car computer into a very expensive and nearly feature\-free GPS receiver\&. Currently assumes a 4x40 LCD and writes data formatted to fit that size screen\&. Also displays 4\- or 6\-character Maidenhead grid square output\&.
-.SS "gpxlogger"
-.PP
-This program collects fixes from
-gpsd
-and logs them to standard output in GPX, an XML profile for track logging\&.
-.PP
-The output may be composed of multiple tracks\&. A new track is created if there\*(Aqs no fix for an interval specified by the
-\fB\-i\fR
-and defaulting to 5 seconds\&.
-.PP
-The
-\fB\-d\fR
-option tells
-gpxlogger
-to run as a daemon in background\&. It requires the
-\fB\-f\fR
-option, which directs output to a specified logfile\&.
-.PP
-The
-\fB\-m\fR
-option sets a minimum move distance in meters (it may include a fractional decimal part)\&. Motions shorter than this will not be logged\&.
-.PP
-gpxlogger
-can use any of the export methods that
-gpsd
-supports\&. For a list of these methods, use the
-\fB\-l\fR\&. To force the method, give the
-\fB\-e\fR
-one of the colon\-terminated method names from the
-\fB\-l\fR
-table\&.
-.PP
-If D\-Bus support is available on the host, GPSD is configured to use it, and
-\fB\-e dbus\fR
-is specified, this program listens to DBUS broadcasts from
-gpsd
-via org\&.gpsd\&.fix\&.
-.PP
-With
-\fB\-e sockets\fR, or if sockets is the method defaulted to, you may give a server\-port\-device specification as arguments\&.
 .SS "gegps"
 .PP
 This program collects fixes from
@@ -227,22 +188,17 @@ in the normal way after that\&.
 .PP
 \fBgpsd\fR(8),
 \fBlibgps\fR(3),
-\fBlibgpsd\fR(3),
+\fBlibgpsmm\fR(3),
 \fBgpsfake\fR(1),
 \fBgpsctl\fR(1),
 \fBgpscat\fR(1),
 \fBgpsprof\fR(1)\&.
 \fBgpspipe\fR(1)\&.
 \fBgpsmon\fR(1)\&.
+\fBgpxlogger\fR(1)\&.
 .SH "AUTHORS"
 .PP
-Remco Treffcorn, Derrick Brashear, Russ Nelson & Eric S\&. Raymond, Jeff Francis (cgps)\&. Amaury Jacquot
-<sxpert@sxpert\&.org>
-& Petter Reinholdtsen
-<pere@hungry\&.com>
-(gpxlogger)\&. Chris Kuethe
-<chris\&.kuethe@gmail\&.com>
-(gpxlogger), Chen Wei
+Remco Treffcorn, Derrick Brashear, Russ Nelson & Eric S\&. Raymond, Jeff Francis (cgps), Chen Wei
 <weichen302@aol\&.com>
 (gegps & xgpsspeed), Robin Wittler
 <real@the\-real\&.org>

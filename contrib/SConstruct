@@ -3,11 +3,15 @@
 # won't get used on a daily basis, but someone might find them useful for
 # tinkering with their gear.
 
-ashctl = Program("ashctl", ["ashctl.c", "../strl.c"])
+# Note that ../gpsd_config.h is required and is built separately
+
+
+strl = StaticObject("strl", "../strl.c")
+
+ashctl = Program("ashctl", ["ashctl.c", strl])
 binlog = Program("binlog", "binlog.c")
 binreplay = Program("binreplay", "binreplay.c", parse_flags=['-lutil'])
 lla2ecef = Program("lla2ecef", "lla2ecef.c", parse_flags=['-lm'])
-motosend = Program("motosend", ["motosend.c", "../strl.c"])
-ppscheck = Program("ppscheck", "ppscheck.c")
+motosend = Program("motosend", ["motosend.c", strl])
 
-Default(ashctl, binlog, binreplay, lla2ecef, motosend, ppscheck)
+Default(ashctl, binlog, binreplay, lla2ecef, motosend)

@@ -4,6 +4,10 @@
  * This file is Copyright (c) 2010 by the GPSD project
  * BSD terms apply: see the file COPYING in the distribution root for details.
  */
+
+/* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
+#define __ISO_C_VISIBLE 1999
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -33,6 +37,11 @@
 
 #define BUFLEN		2048
 
+/* needed under FreeBSD */
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX	255
+#endif /* HOST_NAME_MAX */
+
 /* external capability tables */
 extern struct monitor_object_t nmea_mmt, sirf_mmt, ashtech_mmt;
 extern struct monitor_object_t garmin_mmt, garmin_bin_ser_mmt;
@@ -56,10 +65,11 @@ static WINDOW *packetwin;
 static FILE *logfile;
 static char *type_name;
 static size_t promptlen = 0;
-struct termios cooked, rare;
-struct fixsource_t source;
+static struct termios cooked, rare;
+static struct fixsource_t source;
+static char hostname[HOST_NAME_MAX];
 #ifdef NTP_ENABLE
-struct timedelta_t time_offset;
+static struct timedelta_t time_offset;
 #endif /* NTP_ENABLE */
 
 #ifdef PASSTHROUGH_ENABLE
@@ -159,6 +169,9 @@ static inline void report_unlock(void) { }
 	       " PPS " \
 	       "-------------------------------------\n"
 
+/* Dummy conditional for *display* of (possibly remote) PPS events */
+#define PPS_DISPLAY_ENABLE 1
+
 /******************************************************************************
  *
  * Visualization helpers
@@ -248,6 +261,7 @@ void toff_update(WINDOW *win, int y, int x)
 }
 #endif /* NTP_ENABLE */
 
+/* FIXME:  Decouple this reporting from local PPS monitoring. */
 #ifdef PPS_ENABLE
 void pps_update(WINDOW *win, int y, int x)
 {
@@ -344,7 +358,7 @@ static void packet_vlog(char *buf, size_t len, const char *fmt, va_list ap)
     gpsmon_report(buf2);
     report_unlock();
 }
-#endif
+#endif /* PPS_ENABLE */
 
 #ifdef RECONFIGURE_ENABLE
 static void announce_log(const char *fmt, ...)
@@ -415,7 +429,8 @@ static const char *promptgen(void)
 
     if (serial)
 	(void)snprintf(buf, sizeof(buf),
-		       "%s %u %u%c%u",
+		       "%s:%s %u %u%c%u",
+		       hostname,
 		       session.gpsdata.dev.path,
 		       session.gpsdata.dev.baudrate,
 		       9 - session.gpsdata.dev.stopbits,
@@ -519,7 +534,7 @@ static bool switch_type(const struct gps_type_t *devtype)
 	    if (devicewin)
 		delwin(devicewin);
 	    devicewin = newwin((*active)->min_y, (*active)->min_x, 1, 0);
-	    /* screen might have JSOM on it from the init sequence */
+	    /* screen might have JSON on it from the init sequence */
 	    (void)clearok(stdscr, true);
 	    (void)clear();
 	    if ((devicewin == NULL) || ((*active)->initialize != NULL && !(*active)->initialize())) {
@@ -724,7 +739,8 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 {
     char buf[BUFSIZ];
 
-#if defined(SOCKET_EXPORT_ENABLE) && defined(PPS_ENABLE)
+/* FIXME:  If the following condition is false, the display is screwed up. */
+#if defined(SOCKET_EXPORT_ENABLE) && defined(PPS_DISPLAY_ENABLE)
     if (!serial && str_starts_with((char*)device->lexer.outbuffer, "{\"class\":\"TOFF\",")) {
 	const char *end = NULL;
 	int status = json_toff_read((const char *)device->lexer.outbuffer,
@@ -759,7 +775,7 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 	    struct timespec timedelta;
 	    char timedelta_str[TIMESPEC_LEN];
 
-	    TS_SUB( &timedelta, &noclobber.pps.real, &noclobber.pps.clock);
+	    TS_SUB( &timedelta, &noclobber.pps.clock, &noclobber.pps.real);
 	    timespec_str( &timedelta, timedelta_str, sizeof(timedelta_str) );
 
 	    if (!curses_active) {
@@ -779,8 +795,10 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 	    }
 
 	    (void)snprintf(buf, sizeof(buf),
-			"------------------- PPS offset: %.20s ------\n ",
+			"------------------- PPS offset: %.20s ------\n",
 			timedelta_str);
+/* FIXME:  Decouple this from the pps_thread code. */
+#ifdef PPS_ENABLE
 	    /*
 	     * In direct mode this would be a bad idea, but we're not actually
 	     * watching for handshake events on a spawned thread here.
@@ -789,10 +807,11 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 	    session.pps_thread.pps_out = noclobber.pps;
 	    /* coverity[missing_lock] */
 	    session.pps_thread.ppsout_count++;
+#endif /* PPS_ENABLE */
 	}
     }
     else
-#endif /* PPS_ENABLE */
+#endif /* SOCKET_EXPORT_ENABLE && PPS_DISPLAY_ENABLE */
     {
 #ifdef __future__
 	if (!serial)
@@ -854,6 +873,7 @@ static bool do_command(const char *line)
 {
 #ifdef RECONFIGURE_ENABLE
     unsigned int v;
+    struct timespec delay;
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     unsigned char buf[BUFLEN];
@@ -956,7 +976,12 @@ static bool do_command(const char *line)
 		switcher->mode_switcher(&session, (int)v);
 		context.readonly = true;
 		(void)tcdrain(session.gpsdata.gps_fd);
-		(void)usleep(50000);
+
+		/* wait 50,000 uSec */
+		delay.tv_sec = 0;
+		delay.tv_nsec = 50000000L;
+		nanosleep(&delay, NULL);
+
 		/*
 		 * Session device change will be set to NMEA when
 		 * gpsmon resyncs.  So stash the current type to
@@ -1028,7 +1053,11 @@ static bool do_command(const char *line)
 		     * buffer.
 		     */
 		    (void)tcdrain(session.gpsdata.gps_fd);
-		    (void)usleep(50000);
+		    /* wait 50,000 uSec */
+		    delay.tv_sec = 0;
+		    delay.tv_nsec = 50000000L;
+		    nanosleep(&delay, NULL);
+
 		    (void)gpsd_set_speed(&session, speed,
 					 parity, stopbits);
 		} else
@@ -1154,6 +1183,7 @@ int main(int argc, char **argv)
     volatile bool nocurses = false;
     int activated = -1;
 
+    gethostname(hostname, sizeof(hostname)-1);
     (void)putenv("TZ=UTC");	// for ctime()
     gps_context_init(&context, "gpsmon");	// initialize the report mutex
     context.serial_write = gpsmon_serial_write;
@@ -1296,6 +1326,20 @@ int main(int argc, char **argv)
 	/* this guard suppresses a warning on Bluetooth devices */
 	if (session.sourcetype == source_rs232 || session.sourcetype == source_usb) {
 	    session.pps_thread.report_hook = pps_report;
+	    #ifdef MAGIC_HAT_ENABLE
+	    /*
+	     * The HAT kludge. If we're using the HAT GPS on a
+	     * Raspberry Pi or a workalike like the ODROIDC2, and
+	     * there is a static "first PPS", and we have access because
+	     * we're root, assume we want to use KPPS.
+	     */
+	    if (strcmp(session.pps_thread.devicename, MAGIC_HAT_GPS) == 0
+		|| strcmp(session.pps_thread.devicename, MAGIC_LINK_GPS) == 0) {
+		char *first_pps = pps_get_first();
+		if (access(first_pps, R_OK | W_OK) == 0)
+			session.pps_thread.devicename = first_pps;
+		}
+	    #endif /* MAGIC_HAT_ENABLE */
 	    pps_thread_activate(&session.pps_thread);
 	}
 #endif /* PPS_ENABLE */
@@ -1398,17 +1442,16 @@ int main(int argc, char **argv)
 		    ssize_t st = read(0, &inbuf, 1);
 
 		    if (st == 1) {
-#ifdef PPS_ENABLE
-			gpsd_acquire_reporting_lock();
-#endif /* PPS_ENABLE*/
+			report_lock();
 			(void)tcflush(0, TCIFLUSH);
 			(void)tcsetattr(0, TCSANOW, &cooked);
 			(void)fputs("gpsmon: ", stdout);
 			(void)fputs(promptgen(), stdout);
 			(void)fputs("> ", stdout);
 			(void)putchar(inbuf[0]);
-			cmdline = fgets(inbuf+1, (int)strlen(inbuf)-1, stdin);
-			cmdline--;
+			cmdline = fgets(inbuf+1, sizeof(inbuf)-1, stdin);
+			if (cmdline)
+			    cmdline--;
 		    }
 		}
 		if (cmdline != NULL && !do_command(cmdline))
@@ -1416,9 +1459,7 @@ int main(int argc, char **argv)
 		if (!curses_active) {
 		    (void)sleep(2);
 		    (void)tcsetattr(0, TCSANOW, &rare);
-#ifdef PPS_ENABLE
-		    gpsd_release_reporting_lock();
-#endif /* PPS_ENABLE*/
+		    report_unlock();
 		}
 	    }
 	}

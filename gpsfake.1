@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: gpsfake
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
 .\"      Date: 12 Feb 2005
 .\"    Manual: GPSD Documentation
 .\"    Source: The GPSD Project
@@ -31,7 +31,7 @@
 gpsfake \- test harness for gpsd, simulating a GPS
 .SH "SYNOPSIS"
 .HP \w'\fBgpsfake\fR\ 'u
-\fBgpsfake\fR [\-1] [\-h] [\-b] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-g] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-P\ \fIport\fR] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-S] [\-u] [\-t] [\-v] [\fIlogfile\fR...]
+\fBgpsfake\fR [\-1] [\-h] [\-b] [\-c\ \fIinterval\fR] [\-i] [\-D\ \fIdebuglevel\fR] [\-l] [\-m\ \fImonitor\fR] [\-g] [\-n] [\-o\ \fIoptions\fR] [\-p] [\-P\ \fIport\fR] [\-q] [\-r\ \fIinitcmd\fR] [\-s\ \fIspeed\fR] [\-S] [\-u] [\-t] [\-T] [\-v] [\fIlogfile\fR...]
 .SH "DESCRIPTION"
 .PP
 gpsfake
@@ -129,6 +129,10 @@ The \-p ("pipe") option sets watcher mode and dumps the NMEA and GPSD notificati
 The \-P ("port") option sets the daemon\*(Aqs listening port\&.
 .PP
 The
+\fB\-q\fR
+tells gpsfake to suppress normal progress output and thus act in a quiet manner\&.
+.PP
+The
 \fB\-r\fR
 specifies an initialization command to use in pipe mode\&. The default is
 \fB?WATCH={"enable":true,"json":true}\fR\&.
@@ -142,6 +146,12 @@ The option \-S tells gpsfake to insert realistic delays in the test input rather
 The
 \fB\-t\fR
 forces the test framework to use TCP rather than pty devices\&. Besides being a test of TCP source handling, this may be useful for testing from within chroot jails where access to pty devices is locked out\&.
+.PP
+The
+\fB\-T\fR
+makes
+gpsfake
+print some system information and then exits\&.
 .PP
 The
 \fB\-u\fR
@@ -221,10 +231,11 @@ exits with "Cannot execute gpsd: executable not found\&." the environment variab
 \fBgpsd\fR(8),
 \fBgps\fR(1),
 \fBlibgps\fR(3),
-\fBlibgpsd\fR(3),
+\fBlibgpsmm\fR(3),
 \fBgpsctl\fR(1),
 \fBgpspipe\fR(1),
-\fBgpsprof\fR(1)\fBgpsmon\fR(1)\&.
+\fBgpsprof\fR(1)
+\fBgpsmon\fR(1)\&.
 .SH "AUTHOR"
 .PP
 Eric S\&. Raymond

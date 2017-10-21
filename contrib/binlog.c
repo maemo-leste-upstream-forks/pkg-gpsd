@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+#include <time.h>  /* For nanosleep() */
 #include <unistd.h>
 
 void spinner(int );
@@ -19,6 +20,7 @@ int main(int argc, char **argv) {
 	int speed, n, ifd, ofd;
 	struct termios term;
 	char buf[BUFSIZ];
+	struct timespec delay;
 
 	if (argc != 4){
 		fprintf(stderr, "usage: binlog <speed> <port> <logfile>\n");
@@ -61,8 +63,11 @@ int main(int argc, char **argv) {
 		int l = read(ifd, buf, BUFSIZ);
 		if (l > 0)
 		    assert(write(ofd, buf, l) > 0);
-		usleep(1000);
-		bzero(buf, BUFSIZ);
+		/* wait 1,000 uSec */
+		delay.tv_sec = 0;
+		delay.tv_nsec = 1000000L;
+		nanosleep(&delay, NULL);
+		memset(buf, 0, BUFSIZ);
 		spinner( n++ );
 	}
 	/* NOTREACHED */
