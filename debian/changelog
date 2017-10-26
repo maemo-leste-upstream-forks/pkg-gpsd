@@ -1,3 +1,11 @@
+gpsd (3.17-2) unstable; urgency=medium
+
+  * Uploading to unstable.
+  * [a13df427] Fixing last changelog entry.
+    Some lines went missing, oops.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 26 Oct 2017 23:16:41 +0200
+
 gpsd (3.17-1) experimental; urgency=medium
 
   * [d21fbf15] Updated version 3.17 from 'upstream/3.17'
