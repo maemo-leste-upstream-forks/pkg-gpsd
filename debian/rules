@@ -43,7 +43,8 @@ SCONSOPTS = \
 	docdir=/usr/share/doc/gpsd \
 	libdir=/usr/lib/$(DEB_HOST_MULTIARCH) \
 	gpsd_user=gpsd \
-	gpsd_group=dialout
+	gpsd_group=dialout \
+	qt_versioned=5
 
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
