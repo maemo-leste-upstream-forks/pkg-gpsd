@@ -1,3 +1,11 @@
+gpsd (3.17-4) unstable; urgency=medium
+
+  * [cbbe97a4] Build against QT5.
+    Thanks to Lisandro Damián Nicanor Pérez Meyer (Closes: #874905)
+  * [aed76eeb] Depend on python-gi. (Closes: #885297)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 26 Dec 2017 12:35:25 +0100
+
 gpsd (3.17-3) unstable; urgency=medium
 
   * [2638b3e] Avoid duplicate ppscheck installation.
