@@ -1,3 +1,14 @@
+gpsd (3.17-5) unstable; urgency=medium
+
+  * [fd1e83f9] Add pkg-config as Build-Dependency.
+    Went missing somehow :(
+  * [6d0e69e3] Build with default compiler standard
+  * [8994d7cb] Actually change control.in, not control.
+    Needs an extra check to make sure I don't forget again :)
+  * [a744cad9] Updating debian/control from debian/control.in
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 28 Dec 2017 00:57:01 +0100
+
 gpsd (3.17-4) unstable; urgency=medium
 
   * [cbbe97a4] Build against QT5.
