@@ -64,9 +64,9 @@ PACKAGE_PY := python-gps
 PACKAGE_GPSDDBG := gpsd-dbg
 
 
-cflags := $(shell dpkg-buildflags --get CFLAGS) -std=gnu++98
+cflags := $(shell dpkg-buildflags --get CFLAGS)
 cppflags := $(shell dpkg-buildflags --get CPPFLAGS)
-cxxflags := $(shell dpkg-buildflags --get CXXFLAGS) -std=gnu++98
+cxxflags := $(shell dpkg-buildflags --get CXXFLAGS)
 ldflags := $(shell dpkg-buildflags --get LDFLAGS)
 
 SCONS_ENV := set -e ;\
