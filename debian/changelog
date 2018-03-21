@@ -1,3 +1,9 @@
+gpsd (3.17-6) unstable; urgency=medium
+
+  * [0e1dce7c] Build python3-gps. (Closes: #883286)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 21 Mar 2018 21:15:07 +0100
+
 gpsd (3.17-5) unstable; urgency=medium
 
   * [fd1e83f9] Add pkg-config as Build-Dependency.
