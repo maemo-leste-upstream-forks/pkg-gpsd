@@ -23,6 +23,7 @@ Homepage: http://www.catb.org/gpsd/
 Vcs-Browser: http://git.recluse.de/?p=debian/pkg-gpsd.git
 Vcs-Git: git://git.recluse.de/debian/pkg-gpsd.git
 X-Python-Version: >= 2.3
+X-Python3-Version: >= 3.2
 
 Package: gpsd
 Architecture: any
@@ -87,6 +88,25 @@ Recommends: gpsd
 Provides: ${python:Provides}
 Breaks: ${python:Breaks}
 Conflicts: python-json
+Description: Global Positioning System - Python libraries
+ The gpsd service daemon can monitor one or more GPS devices connected to
+ a host computer, making all data on the location and movements of the
+ sensors available to be queried on TCP port 2947.
+ .
+ This package contains a Python interface to connect to gpsd, together with
+ a module providing a controlled testing environment. It also ships two tools
+ which utilize the interface: gpsprof for latency-profiling, and gpsfake to
+ simulate a GPS by playing back a logfile.
+
+Package: python3-gps
+Architecture: any
+Section: python
+Replaces: gpsd-clients (<< 2.34.dfsg-1)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
+ python (>= 3.2)
+Recommends: gpsd
+Provides: ${python:Provides}
+Breaks: ${python:Breaks}
 Description: Global Positioning System - Python libraries
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
