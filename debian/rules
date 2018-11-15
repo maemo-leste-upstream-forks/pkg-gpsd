@@ -148,7 +148,8 @@ clean: debian/control
 	    debian/shlibs.local \
 	    leapsecond.pyc \
 	    libgps.a \
-	    $(LIBGPS_DEBIAN_FILE_TARGETS)
+	    $(LIBGPS_DEBIAN_FILE_TARGETS) \
+	    __pycache__
 	dh_clean
 
 install: install-stamp
