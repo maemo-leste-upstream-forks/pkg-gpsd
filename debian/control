@@ -21,7 +21,7 @@ Build-Depends: debhelper (>= 11),
  qtbase5-dev,
  lsb-release, bc,
  dpkg-dev (>= 1.15.6),
- scons (>= 3.0.1-2~), chrpath,
+ scons (>= 2.0.1), chrpath,
  dh-buildinfo,
  dh-python,
  dh-apparmor,
@@ -38,7 +38,7 @@ Architecture: any
 Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
  adduser (>= 3.34),
  ${shlibs:Depends}, ${misc:Depends},
- libgps23 (= ${binary:Version})
+ libgps24 (= ${binary:Version})
 Recommends: udev [linux-any], ${python:Depends}, python
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients, dbus, apparmor
@@ -59,7 +59,7 @@ Architecture: any
 Section: debug
 Suggests: gpsd-dbgsym
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
- libgps23 (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python-gps (= ${binary:Version})
+ libgps24 (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
@@ -72,7 +72,7 @@ Description: Global Positioning System - debugging symbols
 Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
- libgps23 (= ${binary:Version}),
+ libgps24 (= ${binary:Version}),
  python-gps, python3-gps, python-gtk2, python-cairo, gir1.2-gtk-3.0, python-serial, python-gi-cairo, ${python:Depends}, ${python3:Depends}
 Suggests: gpsd
 Conflicts: gps
@@ -118,7 +118,7 @@ Description: Global Positioning System - Python 3 libraries
  This package contains a Python 3 interface to connect to gpsd, together with
  a module providing a controlled testing environment.
 
-Package: libgps23
+Package: libgps24
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -140,7 +140,7 @@ Description: Global Positioning System - library
 Package: libgps-dev
 Architecture: any
 Section: libdevel
-Depends: libgps23 (= ${binary:Version}), ${misc:Depends}, pkg-config
+Depends: libgps24 (= ${binary:Version}), ${misc:Depends}, pkg-config
 Description: Global Positioning System - development files
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
@@ -149,7 +149,7 @@ Description: Global Positioning System - development files
  This package contains the header and development files needed to build
  programs and packages using libgps.
 
-Package: libqgpsmm23
+Package: libqgpsmm24
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -169,7 +169,7 @@ Package: libqgpsmm-dev
 Architecture: any
 Section: libdevel
 Depends: ${misc:Depends}, pkg-config,
- libqgpsmm23 (= ${binary:Version}),
+ libqgpsmm24 (= ${binary:Version}),
  libgps-dev (= ${binary:Version})
 Description: Global Positioning System - Qt wrapper for libgps (development)
  The gpsd service daemon can monitor one or more GPS devices connected to
