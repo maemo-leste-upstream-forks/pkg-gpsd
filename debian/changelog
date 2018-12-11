@@ -1,5 +1,6 @@
-gpsd (3.18.1-1) UNRELEASED; urgency=medium
+gpsd (3.18.1-1) experimental; urgency=medium
 
+  [ Christian Ehrhardt ]
   * Lintian/Standarts/Compat-level fixes
     - [7f88e6a6] d/copyright: update to dep-5 format and for project changes
     - [1260d1f4] d/p/series: mention the purpose of add_patch.sh
@@ -66,7 +67,28 @@ gpsd (3.18.1-1) UNRELEASED; urgency=medium
   * [d5ee2b3e] d/control[.in}, d/rules, d/usr.sbin.gpsd, d/gpsd.install: add
     apparmor profile for gpsd
 
- -- Christian Ehrhardt <christian.ehrhardt@canonical.com>  Fri, 09 Nov 2018 15:46:21 +0100
+  [ Bernd Zeimetz ]
+  * [cc886877] Depend on the fixed scons version
+  * [3ad7153a] Delete __pycache__ in clean target.
+  * [b27def48] Add the build-in-debian .travis.yml again
+
+  [ Christian Ehrhardt ]
+  * [981b512c] d/t/control: mark test to require container.
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+  * [35763ca7] d/t/control: mark all binaries we need as dependencies (expect no base system to be present)
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+  * [950c3576] d/libgpsLIBGPSSONAME.install: use generated LIBGPSSONAME version.
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+  * [d8942ba4] - d/rules, d/libgpsLIBGPSSONAME.install: replace libgps.so.LIBGPSSONAME with a quirk to avoid issues by broken fakeroot.
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+
+  [ Bernd Zeimetz ]
+  * [32ffa216] Let autopkgtest not fail build on travis.
+  * [da9c1c8a] Use $(LIBGPS_SONAME) instead of hardcoded soname.
+  * [a481720a] Updating debian/control from debian/control.in
+  * [205cf6a0] Fix scons version in control.in, too.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 11 Dec 2018 22:06:12 +0100
 
 gpsd (3.17-6) unstable; urgency=medium
 
