@@ -182,8 +182,8 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_install
 	# quirk to avoid issues by broken fakeroot misdetecting links as files and
 	# then breaking dh_install -> cp -a fatally
-	ln -s libgps.so.24.0.0 debian/libgps24/usr/lib/$(DEB_HOST_MULTIARCH)/libgps.so.24
-	rm debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libgps.so.24
+	ln -s libgps.so.$(LIBGPS_SONAME).0.0 debian/libgps$(LIBGPS_SONAME)/usr/lib/$(DEB_HOST_MULTIARCH)/libgps.so.$(LIBGPS_SONAME)
+	rm debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libgps.so.$(LIBGPS_SONAME)
 	dh_missing --fail-missing
 	# remove rpaths
 	find debian -type f -exec file {} \; |\
