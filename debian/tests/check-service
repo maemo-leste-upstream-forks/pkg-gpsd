@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# tests can't run on travis.
+if [ "${TRAVIS}" = "true" ]; then
+    echo 'Running on travis-ci.org - no systemd available'
+    exit 0
+fi
+
 # More complex functional details are already checked in testregress at build
 # time, therefore this only makes sure service integration works as expected
 
