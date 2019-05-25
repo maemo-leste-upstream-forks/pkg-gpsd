@@ -115,6 +115,16 @@ gpsd (3.18.1-1) experimental; urgency=medium
 
  -- Bernd Zeimetz <bzed@debian.org>  Tue, 11 Dec 2018 22:06:12 +0100
 
+gpsd (3.17-7) unstable; urgency=medium
+
+  [ Lisandro Damián Nicanor Pérez Meyer ]
+  * [ffb32ff8] Allow gpsd.service to be enabled by the admin at boot time.
+    Be sure to keep it disabled. The admin needs to explicitely start
+    it if needed.
+    Closes: #928681
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 25 May 2019 11:55:30 +0200
+
 gpsd (3.17-6) unstable; urgency=medium
 
   * [0e1dce7c] Build python3-gps. (Closes: #883286)
