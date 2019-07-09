@@ -1,6 +1,4 @@
-gpsd (3.19-1~1.gbp7a45f3) UNRELEASED; urgency=medium
-
-  ** SNAPSHOT build @7a45f357ff1248a3dc9e69df0de764add2eb83ce **
+gpsd (3.19-1) experimental; urgency=medium
 
   [ Christian Ehrhardt ]
   * [d61040a0] d/usr.sbin.gpsd: Relicense to BSD to match the Project.
@@ -18,8 +16,12 @@ gpsd (3.19-1~1.gbp7a45f3) UNRELEASED; urgency=medium
   * [7a45f357] Update upstream source from tag 'upstream/3.19'
     Update to upstream version '3.19'
     with Debian dir b3aea49f5d39c5eb18ffcb61a2b6cebae7f7322f
+  * [63e0cd09] snapshot changelog
+  * [5e3a1568] test script location changed
+  * [9035f8d9] add test_misc.py
+  * [6d9ccaf3] Add gpsrinex
 
- -- Bernd Zeimetz <bzed@debian.org>  Tue, 09 Jul 2019 23:06:37 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 10 Jul 2019 00:49:49 +0200
 
 gpsd (3.18.1-1) experimental; urgency=medium
 
