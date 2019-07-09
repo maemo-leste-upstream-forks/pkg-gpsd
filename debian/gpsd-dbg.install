@@ -12,3 +12,4 @@ tests/test_json  usr/lib/gpsd/debug
 tests/test_gpsmm  usr/lib/gpsd/debug
 tests/test_qgpsmm  usr/lib/gpsd/debug
 test_maidenhead.py  usr/lib/gpsd/debug
+test_misc.py  usr/lib/gpsd/debug
