@@ -1,14 +1,18 @@
 /*
- * This file is Copyright (c) 2010 by the GPSD project
- * SPDX-License-Identifier: BSD-2-clause
- *
  * Driver for the iTalk binary protocol used by FasTrax
  *
  * Week counters are not limited to 10 bits. It's unknown what
  * the firmware is doing to disambiguate them, if anything; it might just
  * be adding a fixed offset based on a hidden epoch value, in which case
  * unhappy things will occur on the next rollover.
+ *
+ * This file is Copyright (c) 2010-2018 by the GPSD project
+ * SPDX-License-Identifier: BSD-2-clause
+ *
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -31,11 +35,11 @@ static gps_mask_t decode_itk_utcionomodel(struct gps_device_t *,
 static gps_mask_t decode_itk_subframe(struct gps_device_t *, unsigned char *,
 				      size_t);
 
+/* NAVIGATION_MSG, message id 7 */
 static gps_mask_t decode_itk_navfix(struct gps_device_t *session,
 				    unsigned char *buf, size_t len)
 {
     unsigned short flags, pflags;
-    double eph;
 
     gps_mask_t mask = 0;
     if (len != 296) {
@@ -75,10 +79,13 @@ static gps_mask_t decode_itk_navfix(struct gps_device_t *session,
 		     session->newdata.ecef.vy, session->newdata.ecef.vz);
     mask |= LATLON_SET | ALTITUDE_SET | SPEED_SET | TRACK_SET | CLIMB_SET
             | ECEF_SET | VECEF_SET;
-    eph = (double)(getles32(buf, 7 + 252) / 100.0);
-    /* eph is a circular error, sqrt(epx**2 + epy**2) */
-    session->newdata.epx = session->newdata.epy = eph / sqrt(2);
+    /* this eph does not look right, badly documented.
+     * let gpsd_error_model() handle it
+     * session->newdata.eph = (double)(getles32(buf, 7 + 252) / 100.0);
+     */
     session->newdata.eps = (double)(getles32(buf, 7 + 254) / 100.0);
+    /* compute epx/epy in gpsd_error_model(), not here */
+    mask |= HERR_SET;
 
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
     session->gpsdata.satellites_used =
@@ -238,6 +245,7 @@ static gps_mask_t decode_itk_pseudo(struct gps_device_t *session,
 				      unsigned char *buf, size_t len)
 {
     unsigned short flags, n, i;
+    unsigned int tow;             /* time of week, in ms */
 
     n = (unsigned short) getleu16(buf, 7 + 4);
     if ((n < 1) || (n > MAXCHANNELS)){
@@ -256,23 +264,35 @@ static gps_mask_t decode_itk_pseudo(struct gps_device_t *session,
     if ((flags & 0x3) != 0x3)
 	return 0; // bail if measurement time not valid.
 
+    tow = (unsigned int)getleu32(buf, 7 + 38);
     session->newdata.time = gpsd_gpstime_resolve(session,
-						 (unsigned short int)getleu16((char *)buf, 7 + 8),
-	(unsigned int)getleu32(buf, 7 + 38) / 1000.0);
+        (unsigned short int)getleu16((char *)buf, 7 + 8), tow / 1000.0);
 
+    session->gpsdata.raw.mtime.tv_sec = (time_t)session->newdata.time;
+    session->gpsdata.raw.mtime.tv_nsec = (tow % 1000) * 1000000;
+
+    /* this is so we can tell which never got set */
+    for (i = 0; i < MAXCHANNELS; i++)
+        session->gpsdata.raw.meas[i].svid = 0;
     for (i = 0; i < n; i++){
-	session->gpsdata.skyview[i].PRN = getleu16(buf, 7 + 26 + (i*36)) & 0xff;
-	session->gpsdata.skyview[i].ss = getleu16(buf, 7 + 26 + (i*36 + 2)) & 0x3f;
-	session->gpsdata.raw.satstat[i] = getleu32(buf, 7 + 26 + (i*36 + 4));
-	session->gpsdata.raw.pseudorange[i] = getled64((char *)buf, 7 + 26 + (i*36 + 8));
-	session->gpsdata.raw.doppler[i] = getled64((char *)buf, 7 + 26 + (i*36 + 16));
-	session->gpsdata.raw.carrierphase[i] = getleu16(buf, 7 + 26 + (i*36 + 28));
+	session->gpsdata.skyview[i].PRN =
+            getleu16(buf, 7 + 26 + (i*36)) & 0xff;
+	session->gpsdata.skyview[i].ss =
+            getleu16(buf, 7 + 26 + (i*36 + 2)) & 0x3f;
+	session->gpsdata.raw.meas[i].satstat =
+            getleu32(buf, 7 + 26 + (i*36 + 4));
+	session->gpsdata.raw.meas[i].pseudorange =
+            getled64((char *)buf, 7 + 26 + (i*36 + 8));
+	session->gpsdata.raw.meas[i].doppler =
+            getled64((char *)buf, 7 + 26 + (i*36 + 16));
+	session->gpsdata.raw.meas[i].carrierphase =
+            getleu16(buf, 7 + 26 + (i*36 + 28));
 
-	session->gpsdata.raw.mtime[i] = session->newdata.time;
-	session->gpsdata.raw.codephase[i] = NAN;
-	session->gpsdata.raw.deltarange[i] = NAN;
+	session->gpsdata.raw.meas[i].codephase = NAN;
+	session->gpsdata.raw.meas[i].deltarange = NAN;
     }
-    return RAW_IS;
+    /* return RAW_IS; The above decode does not give reasonable results */
+    return 0;         /* do not report valid until decode is fixed */
 }
 
 static gps_mask_t italk_parse(struct gps_device_t *session,

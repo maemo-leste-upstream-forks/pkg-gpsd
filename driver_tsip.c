@@ -9,21 +9,12 @@
  * be adding a fixed offset based on a hidden epoch value, in which case
  * unhappy things will occur on the next rollover.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-#ifdef __linux__
-/* FreeBSD chokes on this */
-/* if we insist on C99, then we need this to get M_LN2 from math.h */
-/* 500 mean X/Open 1995 */
-#define _XOPEN_SOURCE 500
-/* round() needs  _POSIX_C_SOURCE >= 200112L */
-#define  _POSIX_C_SOURCE 200112L
-#endif /* __linux__ */
+#include "gpsd_config.h"  /* must be before all includes */
 
-
-#include <sys/time.h>		/* for select() */
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -34,8 +25,7 @@
 #include "gpsd.h"
 #include "bits.h"
 #include "strfuncs.h"
-
-#include <sys/select.h>
+#include "timespec.h"
 
 #define USE_SUPERPACKET	1	/* use Super Packet mode? */
 
@@ -82,8 +72,6 @@ static bool tsip_detect(struct gps_device_t *session)
     char buf[BUFSIZ];
     bool ret = false;
     int myfd;
-    fd_set fdset;
-    struct timeval to;
     speed_t old_baudrate;
     char old_parity;
     unsigned int old_stopbits;
@@ -102,11 +90,7 @@ static bool tsip_detect(struct gps_device_t *session)
     if (write(myfd, buf, 4) == 4) {
 	unsigned int n;
 	for (n = 0; n < 3; n++) {
-	    FD_ZERO(&fdset);
-	    FD_SET(myfd, &fdset);
-	    to.tv_sec = 1;
-	    to.tv_usec = 0;
-	    if (select(myfd + 1, &fdset, NULL, NULL, &to) != 1)
+	    if (!nanowait(myfd, NS_IN_SEC))
 		break;
 	    if (generic_get(session) >= 0) {
 		if (session->lexer.type == TSIP_PACKET) {
@@ -1191,7 +1175,7 @@ static bool tsip_speed_switch(struct gps_device_t *session,
     }
 
     putbyte(buf, 0, 0xff);	/* current port */
-    putbyte(buf, 1, (round(log((double)speed / 300) / M_LN2)) + 2);	/* input dev.baudrate */
+    putbyte(buf, 1, (round(log((double)speed / 300) / GPS_LN2)) + 2);	/* input dev.baudrate */
     putbyte(buf, 2, getub(buf, 1));	/* output baudrate */
     putbyte(buf, 3, 3);		/* character width (8 bits) */
     putbyte(buf, 4, parity);	/* parity (normally odd) */

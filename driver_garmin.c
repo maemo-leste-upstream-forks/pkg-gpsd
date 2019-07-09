@@ -73,11 +73,13 @@
  *
  *	?? Add probe function for Serial Binary to start PVT output.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
 #define __USE_POSIX199309 1
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -86,8 +88,6 @@
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "gpsd_config.h"
 
 #if defined(HAVE_LIBUSB)
 #include <libusb.h>
@@ -180,7 +180,7 @@ typedef struct __attribute__((__packed__))
 typedef struct __attribute__((__packed__))
 {
     float alt;			/* altitude above WGS 84 (meters) */
-    float epe;			/* estimated position error, 2 sigma (meters)  */
+    float epe;			/* estimated position error, 2 sigma (meters) */
     float eph;			/* epe, but horizontal only (meters) */
     float epv;			/* epe but vertical only (meters ) */
     int16_t fix;		/* 0 - failed integrity check
@@ -415,20 +415,22 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 	// gpsd sign is opposite of garmin sign
 	session->gpsdata.separation = -pvt->msl_hght;
 
-	// Estimated position error in meters.
-	// We follow the advice at <http://gpsinformation.net/main/errors.htm>.
-	// If this assumption changes here, it should also change in
-	// nmea_parse.c where we analyze PGRME.
-	session->gpsdata.epe = pvt->epe * (GPSD_CONFIDENCE / CEP50_SIGMA);
-	/* eph is a circular error, sqrt(epx**2 + epy**2) */
-	session->newdata.epx = session->newdata.epy =
-	    pvt->eph * (1 / sqrt(2)) * (GPSD_CONFIDENCE / CEP50_SIGMA);
+	/* Estimated position error in meters.  2 sigma
+	 * We follow the advice at <http://gpsinformation.net/main/errors.htm>.
+         * Since GPS data is not gaussian, this is marginal advice...
+	 * If this assumption changes here, it should also change in
+	 * nmea_parse.c where we analyze PGRME.
+         */
+	session->newdata.sep = pvt->epe * (GPSD_CONFIDENCE / CEP50_SIGMA);
+        /* eph, horizaontal error, 2 sigma */
+	session->newdata.eph = pvt->eph * (GPSD_CONFIDENCE / CEP50_SIGMA);
+        /* eph, horizaontal error, 2 sigma */
 	session->newdata.epv = pvt->epv * (GPSD_CONFIDENCE / CEP50_SIGMA);
 
-	// convert lat/lon to directionless speed
+	/* convert lat/lon to directionless speed */
 	session->newdata.speed = hypot(pvt->lon_vel, pvt->lat_vel);
 
-	// keep climb in meters/sec
+	/* keep climb in meters/sec */
 	session->newdata.climb = pvt->alt_vel;
 
 	track = atan2(pvt->lon_vel, pvt->lat_vel);
@@ -492,7 +494,7 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 	    /* data only valid with a fix */
 	    mask |=
 		TIME_SET | LATLON_SET | ALTITUDE_SET | STATUS_SET | MODE_SET |
-		SPEED_SET | TRACK_SET | CLIMB_SET | HERR_SET | VERR_SET | PERR_IS |
+		SPEED_SET | TRACK_SET | CLIMB_SET | HERR_SET | PERR_IS |
 		CLEAR_IS | REPORT_IS;
 	    /*
 	     * Garmin documentation says we should wait until four good fixes
@@ -505,7 +507,7 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 	gpsd_log(&session->context->errout, LOG_DATA,
 		 "Garmin: PVT_DATA: time=%.2f, lat=%.2f lon=%.2f "
 		 "speed=%.2f track=%.2f climb=%.2f "
-		 "epx=%.2f epy=%.2f epv=%.2f "
+		 "eph=%.2f sep=%.2f epv=%.2f "
 		 "mode=%d status=%d\n",
 		 session->newdata.time,
 		 session->newdata.latitude,
@@ -513,8 +515,8 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 		 session->newdata.speed,
 		 session->newdata.track,
 		 session->newdata.climb,
-		 session->newdata.epx,
-		 session->newdata.epy,
+		 session->newdata.eph,
+		 session->newdata.sep,
 		 session->newdata.epv,
 		 session->newdata.mode,
 		 session->gpsdata.status);
@@ -546,7 +548,6 @@ gps_mask_t PrintSERPacket(struct gps_device_t *session, unsigned char pkt_id,
 		 "Garmin: SAT Data Sz: %d\n", pkt_len);
 	sats = (cpo_sat_data *) buf;
 
-	session->gpsdata.satellites_visible = 0;
 	session->gpsdata.satellites_used = 0;
 	gpsd_zero_satellites(&session->gpsdata);
 	for (i = 0, j = 0; i < GARMIN_CHANNELS; i++, sats++) {

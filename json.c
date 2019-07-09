@@ -58,10 +58,12 @@ NOTE
 reusable module; search for "microjson".
 
 PERMISSIONS
-   This file is Copyright (c) 2010 by the GPSD project
+   This file is Copyright (c) 2010-2018 by the GPSD project
    SPDX-License-Identifier: BSD-2-clause
 
 ***************************************************************************/
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -117,6 +119,12 @@ static char *json_target_address(const struct json_attr_t *cursor,
     if (parent == NULL || parent->element_type != t_structobject) {
 	/* ordinary case - use the address in the cursor structure */
 	switch (cursor->type) {
+	case t_byte:
+	    targetaddr = (char *)&cursor->addr.byte[offset];
+	    break;
+	case t_ubyte:
+	    targetaddr = (char *)&cursor->addr.ubyte[offset];
+	    break;
 	case t_ignore:
 	    targetaddr = NULL;
 	    break;
@@ -181,7 +189,7 @@ static int json_internal_read_object(const char *cp,
     bool value_quoted = false;
     char uescape[5];		/* enough space for 4 hex digits and a NUL */
     const struct json_attr_t *cursor;
-    int substatus, n, maxlen = 0;
+    int substatus, maxlen = 0;
     unsigned int u;
     const struct json_enum_t *mp;
     char *lptr;
@@ -195,6 +203,12 @@ static int json_internal_read_object(const char *cp,
 	    lptr = json_target_address(cursor, parent, offset);
 	    if (lptr != NULL)
 		switch (cursor->type) {
+		case t_byte:
+		    lptr[0] = cursor->dflt.byte;
+		    break;
+		case t_ubyte:
+		    lptr[0] = cursor->dflt.ubyte;
+		    break;
 		case t_integer:
 		    memcpy(lptr, &cursor->dflt.integer, sizeof(int));
 		    break;
@@ -387,16 +401,22 @@ static int json_internal_read_object(const char *cp,
 		*pval++ = '\t';
 		break;
 	    case 'u':
-                cp++;                   /* skip the 'u' */
-		for (n = 0; n < 4 && isxdigit(*cp); n++)
-		    uescape[n] = *cp++;
-                uescape[n] = '\0';      /* terminate */
-		--cp;
-                /* ECMA-404 says JSON \u must have 4 hex digits */
-		if ((4 != n) || (1 != sscanf(uescape, "%4x", &u))) {
-		    return JSON_ERR_BADSTRING;
+                {
+                    unsigned n;
+
+		    cp++;                   /* skip the 'u' */
+                    /* NetBSD 6 wants the cast */
+		    for (n = 0; n < 4 && isxdigit((int)*cp); n++)
+			uescape[n] = *cp++;
+		    uescape[n] = '\0';      /* terminate */
+		    --cp;
+		    /* ECMA-404 says JSON \u must have 4 hex digits */
+		    if ((4 != n) || (1 != sscanf(uescape, "%4x", &u))) {
+			return JSON_ERR_BADSTRING;
+		    }
+                    /* truncate values above 0xff */
+		    *pval++ = (unsigned char)u;
                 }
-		*pval++ = (unsigned char)u;  /* truncate values above 0xff */
 		break;
 	    default:		/* handles double quote and solidus */
 		*pval++ = *cp;
@@ -482,6 +502,18 @@ static int json_internal_read_object(const char *cp,
 	    lptr = json_target_address(cursor, parent, offset);
 	    if (lptr != NULL)
 		switch (cursor->type) {
+		case t_byte:
+                    {
+			int tmp = atoi(valbuf);
+			lptr[0] = (char)tmp;
+                    }
+		    break;
+		case t_ubyte:
+                    {
+			int tmp = atoi(valbuf);
+			lptr[0] = (unsigned char)tmp;
+                    }
+		    break;
 		case t_integer:
 		    {
 			int tmp = atoi(valbuf);
@@ -553,7 +585,7 @@ static int json_internal_read_object(const char *cp,
 		    }
 		    break;
 		}
-	    __attribute__ ((fallthrough));
+	    /* FALLTHROUGH */
 	case post_element:
 	    if (isspace((unsigned char) *cp))
 		continue;
@@ -659,6 +691,21 @@ int json_read_array(const char *cp, const struct json_array_t *arr,
 	    break;
 	case t_uinteger:
 	    arr->arr.uintegers.store[offset] = (unsigned int)strtoul(cp,
+                                                                     &ep, 0);
+	    if (ep == cp)
+		return JSON_ERR_BADNUM;
+	    else
+		cp = ep;
+	    break;
+	case t_byte:
+	    arr->arr.bytes.store[offset] = (char)strtol(cp, &ep, 0);
+	    if (ep == cp)
+		return JSON_ERR_BADNUM;
+	    else
+		cp = ep;
+	    break;
+	case t_ubyte:
+	    arr->arr.ubytes.store[offset] = (unsigned char)strtoul(cp,
                                                                      &ep, 0);
 	    if (ep == cp)
 		return JSON_ERR_BADNUM;

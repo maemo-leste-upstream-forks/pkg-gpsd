@@ -1,18 +1,25 @@
 /* Structures for JSON parsing using only fixed-extent memory
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2019 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
 #include <stdbool.h>
 #include <ctype.h>
 
+/* the json_type is the type of the C variable the JSON
+ * value gets placed in.  It is NOT the JSON type as used
+ * in the JSON standard.  But it does partly specify how
+ * the JSON value is decoded.
+ *
+ * For example a t_character must be in quotes, but a t_byte
+ * is a bare number. */
 typedef enum {t_integer, t_uinteger, t_real,
 	      t_string, t_boolean, t_character,
 	      t_time,
 	      t_object, t_structobject, t_array,
 	      t_check, t_ignore,
-	      t_short, t_ushort}
+	      t_short, t_ushort, t_byte, t_ubyte}
     json_type;
 
 struct json_enum_t {
@@ -33,6 +40,12 @@ struct json_array_t {
 	    char *store;
 	    int storelen;
 	} strings;
+	struct {
+	    int *store;
+	} bytes;
+	struct {
+	    unsigned int *store;
+	} ubytes;
 	struct {
 	    int *store;
 	} integers;
@@ -59,26 +72,30 @@ struct json_attr_t {
     char *attribute;
     json_type type;
     union {
-	int *integer;
-	unsigned int *uinteger;
-	short *shortint;
-	unsigned short *ushortint;
-	double *real;
-	char *string;
 	bool *boolean;
+	char *byte;
 	char *character;
-	struct json_array_t array;
+	char *string;
+	double *real;
+	int *integer;
+	short *shortint;
 	size_t offset;
+	struct json_array_t array;
+	unsigned char *ubyte;
+	unsigned int *uinteger;
+	unsigned short *ushortint;
     } addr;
     union {
-	int integer;
-	unsigned int uinteger;
-	short shortint;
-	unsigned short ushortint;
-	double real;
 	bool boolean;
+	char byte;
 	char character;
 	char *check;
+	double real;
+	int integer;
+	short shortint;
+	unsigned char ubyte;
+	unsigned int uinteger;
+	unsigned short ushortint;
     } dflt;
     size_t len;
     const struct json_enum_t *map;

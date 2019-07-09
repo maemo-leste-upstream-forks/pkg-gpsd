@@ -12,18 +12,11 @@
  *  - IMO236 met/hydro message: Type=8, DAC=1, FI=11
  *  - IMO289 met/hydro message: Type=8, DAC=1, FI=31
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-#ifdef __linux__
-/* FreeBSD chokes on this */
-/* isascii() needs _XOPEN_SOURCE, 500 means X/Open 1995 */
-#define _XOPEN_SOURCE 500
-#endif /* __linux__ */
-
-/* strlcpy() needs _DARWIN_C_SOURCE */
-#define _DARWIN_C_SOURCE
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdlib.h>
 #include <string.h>
@@ -454,16 +447,24 @@ bool ais_binary_decode(const struct gpsd_errout_t *errout,
     case 13: /* Safety Related Acknowledge */
     {
 	unsigned int mmsi[4];
+	unsigned seqno[4];
 	RANGE_CHECK(72, 168);
 	for (u = 0; u < sizeof(mmsi)/sizeof(mmsi[0]); u++)
-	    if (bitlen > 40 + 32*u)
+	    if (bitlen > 40 + 32*u) {
 		mmsi[u] = UBITS(40 + 32*u, 30);
-	    else
+		seqno[u] = UBITS(72 + 32*u, 2);
+    } else {
 		mmsi[u] = 0;
+		seqno[u] = 0;
+	    }
 	ais->type7.mmsi1 = mmsi[0];
+	ais->type7.seqno1 = seqno[0];
 	ais->type7.mmsi2 = mmsi[1];
+	ais->type7.seqno2 = seqno[1];
 	ais->type7.mmsi3 = mmsi[2];
+	ais->type7.seqno2 = seqno[2];
 	ais->type7.mmsi4 = mmsi[3];
+	ais->type7.seqno3 = seqno[3];
 	break;
     }
     case 8: /* Binary Broadcast Message */

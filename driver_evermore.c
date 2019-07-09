@@ -120,9 +120,11 @@
  * 8d indicates that message 0x8d was sent;
  * c5 is EverMore checksum, other bytes are fixed
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -336,16 +338,20 @@ gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
 	    int prn = (int)UBITS(k, 4, 5);
 	    /* this is so we can tell which never got set */
 	    for (j = 0; j < MAXCHANNELS; j++)
-		session->gpsdata.raw.mtime[j] = 0;
+		session->gpsdata.raw[j].mtime = 0;
 	    for (j = 0; j < MAXCHANNELS; j++) {
 		if (session->gpsdata.PRN[j] == prn) {
-		    session->gpsdata.raw.codephase[j] = NAN;
-		    session->gpsdata.raw.carrierphase[j] = NAN;
-		    session->gpsdata.raw.mtime[j] = session->newdata.time;
-		    session->gpsdata.raw.satstat[j] = (unsigned)UBITS(k, 24, 8);
-		    session->gpsdata.raw.pseudorange[j] = (double)SBITS(k,40,32);
-		    session->gpsdata.raw.deltarange[j] = (double)SBITS(k,72,32);
-		    session->gpsdata.raw.doppler[j] = (double)SBITS(k, 104, 16);
+		    session->gpsdata.raw[j].codephase = NAN;
+		    session->gpsdata.raw[j].carrierphase = NAN;
+		    session->gpsdata.raw[j].mtime = session->newdata.time;
+		    session->gpsdata.raw[j].satstat = \
+                        (unsigned)UBITS(k, 24, 8);
+		    session->gpsdata.raw[j].pseudorange = \
+                        (double)SBITS(k,40,32);
+		    session->gpsdata.raw[j].deltarange = \
+                        (double)SBITS(k,72,32);
+		    session->gpsdata.raw[j].doppler = \
+                        (double)SBITS(k, 104, 16);
 		}
 	    }
 	}
@@ -543,7 +549,7 @@ static bool evermore_speed(struct gps_device_t *session,
 	     stopbits);
     /* parity and stopbit switching aren't available on this chip */
     if (parity != session->gpsdata.dev.parity
-	|| stopbits != (int)session->gpsdata.dev.parity) {
+	|| stopbits != (int)session->gpsdata.dev.stopbits) {
 	return false;
     } else {
 	unsigned char tmp8;

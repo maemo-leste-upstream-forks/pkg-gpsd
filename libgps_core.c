@@ -2,12 +2,14 @@
  *
  * Core portion of client library.  Cals helpers to handle different eports.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
 /* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
 #define __ISO_C_VISIBLE 1999
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,9 +149,15 @@ int gps_close(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED)
 	return status;
 }
 
+/* read from a gpsd connection
+ *
+ * parameters:
+ *    gps_data_t *gpsdata   -- structure for GPS data
+ *    char *message         -- NULL, or optional buffer for received JSON
+ *    int message_len       -- zero, or sizeof(message)
+ */
 int gps_read(struct gps_data_t *gpsdata CONDITIONALLY_UNUSED,
              char *message, int message_len)
-/* read from a gpsd connection */
 {
     int status = -1;
 
@@ -371,6 +379,8 @@ void libgps_dump_state(struct gps_data_t *collect)
 			  sp->used ? 'Y' : 'N');
 	}
     }
+    if (collect->set & RAW_SET)
+	(void)fprintf(debugfp, "RAW: got raw data\n");
     if (collect->set & DEVICE_SET)
 	(void)fprintf(debugfp, "DEVICE: Device is '%s', driver is '%s'\n",
 		      collect->dev.path, collect->dev.driver);

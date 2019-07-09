@@ -1,19 +1,22 @@
 /* gpsdctl.c -- communicate with the control socket of a gpsd instance
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
-#include <string.h>
+
+#include "gpsd_config.h"  /* must be before all includes */
+
+#include <assert.h>
 #include <fcntl.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <syslog.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <syslog.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <sys/socket.h>
 
 #include "gpsd.h"
 

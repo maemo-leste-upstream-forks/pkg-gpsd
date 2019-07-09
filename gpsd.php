@@ -377,8 +377,8 @@ function write_html($resp){
 	$part1 = <<<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+    "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml">
 <head>
 {$head}
 {$map_head}
@@ -506,7 +506,7 @@ EOF;
 {$footer}
 <hr/>
 <p class="administrivia">This script is distributed by the
-<a href="http://catb.org/gpsd">GPSD project</a>.</p>
+<a href="https://gpsd.io/">GPSD project</a>.</p>
 
 </body>
 </html>
@@ -553,7 +553,7 @@ function write_config(){
 \$footer = '';
 \$blurb = <<<EOT
 This is a
-<a href="http://catb.org/gpsd">gpsd</a>
+<a href="https://gpsd.io/">gpsd</a>
 server <blink><font color="red">located someplace</font></blink>.
 
 The hardware is a
@@ -573,11 +573,9 @@ EOB;
 function gen_gmap_head() {
 global $gmap_key;
 return <<<EOT
-<script src="//maps.googleapis.com/maps/api/js?sensor=false"
-        type="text/javascript">
-</script>
+<script src="//maps.googleapis.com/maps/api/js?sensor=false"/>
 
-<script type="text/javascript">
+<script>
  <!--
     function Load() {
       var map = new google.maps.Map(
@@ -603,8 +601,8 @@ EOT;
 function gen_osm_head() {
 global $GPS;
 return <<<EOT
-<script src="http://openlayers.org/api/OpenLayers.js" type="text/javascript"></script>
-<script type="text/javascript">
+<script src="http://openlayers.org/api/OpenLayers.js" />
+<script>
     <!--
 function Load() {
 	document.getElementById("map").firstChild.data = "";

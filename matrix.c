@@ -1,8 +1,11 @@
 /* matrix.c - matrix-algebra code
  *
- * This file is Copyright (c)2014 by the GPSD project
+ * This file is Copyright (c)2014-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <math.h>
 #include <stdbool.h>
 

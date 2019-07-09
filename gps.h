@@ -41,11 +41,21 @@ extern "C" {
  *       increased length of devconfig_t.subtype
  *       add gnssid:svid:sigid to satellite_t
  *       add mtime to attitude_t
+ *       changed MAXCHANNELS
+ * 8.0 - Change shape of rawdata_t.
+ *       Added values for gps_data_t->status
+ *       Remove epe from gps_data_t, it duplicates gps_fix_t eph
+ *       Added sep (estimated spherical error, 3D)
+ *       Note: Some GPS call eph as epe, others call sep as epe
+ *       Add gps_fix_t datum string, and qErr
+ *       enlarge subtype to hold ZED-F9 string
+ *       MAXCHANNELS bumped from 120 to 140
+ *       Try to make PRN be NMEA 2.x-4.0 compliant, not 4.10 or u-blox
  */
-#define GPSD_API_MAJOR_VERSION	7	/* bump on incompatible changes */
+#define GPSD_API_MAJOR_VERSION	8	/* bump on incompatible changes */
 #define GPSD_API_MINOR_VERSION	0	/* bump on compatible changes */
 
-#define MAXCHANNELS	120	/* u-blox 9 tracks 140 signals */
+#define MAXCHANNELS	140	/* u-blox 9 tracks 140 signals */
 #define MAXUSERDEVS	4	/* max devices per user */
 #define GPS_PATH_MAX	128	/* for names like /dev/serial/by-id/... */
 
@@ -80,7 +90,10 @@ extern "C" {
  * ref: https://en.wikipedia.org/wiki/Decimal_degrees
  */
 typedef double timestamp_t;	/* Unix time in seconds with fractional part */
+typedef struct timespec timespec_t;	/* Unix time as sec, nsec */
 
+/* GPS error estimates are all over the map, and often unspecified.
+ * try for 1-sigma if we can... */
 struct gps_fix_t {
     timestamp_t time;	/* Time of update */
     int    mode;	/* Mode of fix */
@@ -101,6 +114,12 @@ struct gps_fix_t {
     double eps;		/* Speed uncertainty, meters/sec */
     double climb;       /* Vertical speed, meters/sec */
     double epc;		/* Vertical speed uncertainty */
+    /* estimated postion error horizontal (2D) . meters, maybe 50%, maybe 95% */
+    /* aka estimated position error (epe) */
+    double eph;		/* estimated postion error horizontal (2D) */
+    /* sperical error probability, 3D. meters, maybe 50%, maybe 95% */
+    /* Garmin, not gpsd, calls this estimated position error (epe) */
+    double sep;
 
     double magnetic_track;  /* Course (relative to Magnetic North) */
 
@@ -111,6 +130,9 @@ struct gps_fix_t {
 	double vx, vy, vz;	/* ECEF x, y, z velocity */
 	double vAcc;            /* Velocity Accuracy Estimate, probably SEP */
     } ecef;
+    char datum[40];             /* map datum */
+    /* quantization error adjustment to PPS. aka "sawtooth" correction */
+    long qErr;                  /* offset in picoseconds (ps) */
 };
 
 /*
@@ -1233,9 +1255,13 @@ struct ais_t
 	/* Type 7 - Binary Acknowledge */
 	struct {
 	    unsigned int mmsi1;
+	    unsigned int seqno1;
 	    unsigned int mmsi2;
+	    unsigned int seqno2;
 	    unsigned int mmsi3;
+	    unsigned int seqno3;
 	    unsigned int mmsi4;
+	    unsigned int seqno4;
 	    /* spares ignored, they're only padding here */
 	} type7;
 	/* Type 8 - Broadcast Binary Message */
@@ -1806,6 +1832,17 @@ struct ais_t
     };
 };
 
+/* defines for u-blox gnssId, as used in satellite_t */
+#define GNSSID_GPS 0
+#define GNSSID_SBAS 1
+#define GNSSID_GAL 2
+#define GNSSID_BD 3
+#define GNSSID_IMES 4
+#define GNSSID_QZSS 5
+#define GNSSID_GLO 6
+#define GNSSID_IRNSS 7            /* Not defined by u-blox */
+#define GNSSID_CNT 8              /* count for array size */
+
 /* basic data, per PRN, from GPGSA and GPGSV, or GPS binary messages */
 /* FIXME: u-blox 9 no longer uses PRN */
 struct satellite_t {
@@ -1815,7 +1852,7 @@ struct satellite_t {
      * sadly there is no standard, but many different implementations of
      * how to code PRN
      */
-    short PRN;
+    short PRN;          /* PRN numbering per NMEA 2.x to 4.0, not 4.10 */
     short elevation;	/* elevation of satellite, -90 to 90 deg, -91 for n/a */
     short azimuth;	/* azimuth, 0 to 359 deg, -1 for n/a */
     /* gnssid:svid:sigid, as defined by u-blox 8/9:
@@ -1825,20 +1862,33 @@ struct satellite_t {
      *  2 = Galileo   1-36
      *  3 - BeiDou    1-37
      *  4 = IMES      1-10
-     *  5 = QZSS      1-5
-     *  6 = GLONASS   1-32, 22255
+     *  5 = QZSS      1-5       Undocumented u-blox goes to 7
+     *  6 = GLONASS   1-32, 255
+     *  x = IRNSS    1-11       Not defined by u-blox:
+     *
+     * gnssid:svid:sigid, as defined by NMEA 4.10, NOT USED HERE!
+     *  1 = GPS       1-32
+     *  1 = SBAS      33-64, 152-158
+     *  1 = QZSS      193-197  Undocuemtned u-blox goes to 199
+     *  2 = GLONASS   1-32, nul
+     *  3 = Galileo   1-36
+     *  4 - BeiDou    1-37
+     *  x = IMES                Not defined by NMEA 4.10
+     *
+     * Note: other GNSS receivers use different mappings!
      */
     unsigned char gnssid;
     /* ignore gnssid and sigid if svid is zero */
     unsigned char svid;
-    /* sigid as defined by u-blox 9
+    /* sigid as defined by u-blox 9, and used here
      * GPS:      0 = L1C/A, 3 = L2 CL, 4 = L2 CM
+     * SBAS:     0 = L1C/A, ? = L5I
      * Galileo:  0 = E1 C,  1 = E1 B,  5 = E5 bl, 6 = E5 bQ
-     * BeiDou:   0 = B1|D1, 1 = B1|D2, 2 = B2|D1, 3 = B2|D2
-     * QZSS:     0 = L1C/A
+     * BeiDou:   0 = B1I D1, 1 = B1I D2, 2 = B2I D1, 3 = B2I D2
+     * QZSS:     0 = L1C/A, 4 = L2 CM, 5 = L2 CL
      * GLONASS:  0 = L1 OF, 2 = L2 OF
      *
-     * sigid as defined by NMEA 4.1
+     * sigid as defined by NMEA 4.10, NOT used here
      * GPS:      1 = L1C/A, 6 = L2 CL, 5 = L2 CM
      * Galileo:  7 = E1 C,  7 = E1 B,  2 = E5 bl, 2 = E5 bQ
      * BeiDou:   1 = B1|D1, 1 = B1|D2, 3 = B2|D1, 3 = B2|D2
@@ -1900,21 +1950,65 @@ struct dop_t {
 };
 
 struct rawdata_t {
-    /* raw measurement data */
-    double codephase[MAXCHANNELS];	/* meters */
-    double carrierphase[MAXCHANNELS];	/* meters */
-    double pseudorange[MAXCHANNELS];	/* meters */
-    double deltarange[MAXCHANNELS];	/* meters/sec */
-    double doppler[MAXCHANNELS];	/* Hz */
-    double mtime[MAXCHANNELS];		/* sec */
-    unsigned satstat[MAXCHANNELS];	/* tracking status */
-#define SAT_ACQUIRED	0x01		/* satellite acquired */
-#define SAT_CODE_TRACK	0x02		/* code-tracking loop acquired */
-#define SAT_CARR_TRACK	0x04		/* carrier-tracking loop acquired */
-#define SAT_DATA_SYNC	0x08		/* data-bit synchronization done */
-#define SAT_FRAME_SYNC	0x10		/* frame synchronization done */
-#define SAT_EPHEMERIS	0x20		/* ephemeris collected */
-#define SAT_FIX_USED	0x40		/* used for position fix */
+    /* raw measurement data, suitable for RINEX 3 */
+    timespec_t mtime;		/* time of measurement: sec, nsec
+                                 * Note: GPS time, not UTC time */
+    struct meas_t {
+        /* gnssid see satellite_t for decode */
+        unsigned char gnssid;
+        /* svid see RINEX 3 for decode, not satellite_t */
+        unsigned char svid;
+        /* sigid see satellite_t for decode */
+        unsigned char sigid;
+        unsigned char snr;      /* SNR.  0 to 100 dB-Hz. */
+        unsigned char freqid;   /* The GLONASS (Only) frequency, 0 - 13 */
+        unsigned char lli;      /* RINEX Loss of Lock Indicator
+                                 * bit 0 - Lost Lock
+                                 * bit 1 - half-cycle ambiguity/slip possible
+                                 * bit 2 - GALILEO BOC-tracking of MBOC signal
+                                 */
+        char obs_code[4];       /* 3 char RINEX observation code */
+        /* see RINEX documenetation
+         * GPS: L1: L1C, L1S, L1L, L1X, L1P, L1W, L1N
+         *      L2: L2C, L2D, L2S, L2L, L2X, L2P, L2W, L2N
+         *      L5: L5I, L5Q
+         * GLONASS: G1: L1C, L1P
+         *          G2: L2C, L2P
+         *          G3: L3I, L3Q, L3X
+         * GALILEO: E1: L1B, L1C, L1X
+         *          E5A: L5I, L5Ql L5X
+         *          E5B: L7I, L7Q, L7X
+         *          E5(A+B): L8I, L8Q, L8X
+         *          E6: L6B, L6C, L6X
+         * QZSS: L1: L1C, L1S, L1L, L1X, L1Z
+         *       L2: L2S, L2L, L2X
+         *       L5: L5I, L5Q, L5X
+         *       LEX(6): L6S, L6L, L6X
+         * BeiDou: B1: L2I, L2Q, L2X
+         *         B2: L7I, L7Q, L7X
+         *         B3: L6I, L6Q, L6X
+         * IRNSS: L5: L5A, L5B, L5C, L5X
+         *        S: L9A, L9B, L9C, L9X
+         */
+        double codephase;	/* meters */
+        double carrierphase;	/* L1 C/A meters, RINEX L1C */
+        double pseudorange;	/* L1 C/A meters, RINEX C1C */
+        double deltarange;	/* L1 C/A meters/sec, RINEX D1C */
+        double doppler;	        /* Hz */
+#define LOCKMAX         64500   /* locktime capped at 64500 */
+        unsigned locktime;      /* Carrier Phase Locktime in ms.
+                                 * max 64,500 ms */
+        double l2c;		/* L2 C/A carrier phase meters, RINEX L2C */
+        double c2c;	        /* L2 C/A pseudo-range meters, RINEX C2C */
+        unsigned satstat;	/* tracking status */
+#define SAT_ACQUIRED	0x01	/* satellite acquired */
+#define SAT_CODE_TRACK	0x02	/* code-tracking loop acquired */
+#define SAT_CARR_TRACK	0x04	/* carrier-tracking loop acquired */
+#define SAT_DATA_SYNC	0x08	/* data-bit synchronization done */
+#define SAT_FRAME_SYNC	0x10	/* frame synchronization done */
+#define SAT_EPHEMERIS	0x20	/* ephemeris collected */
+#define SAT_FIX_USED	0x40	/* used for position fix */
+    } meas[MAXCHANNELS];
 };
 
 struct version_t {
@@ -1933,7 +2027,7 @@ struct devconfig_t {
 #define SEEN_RTCM3	0x04
 #define SEEN_AIS 	0x08
     char driver[64];
-    char subtype[96];
+    char subtype[128];                  /* 96 too small for ZED-F9 */
     /* a buffer to hold data to output to GPS */
     char hexdata[HEXDATA_MAX];
     double activated;
@@ -2041,7 +2135,8 @@ struct gps_data_t {
 #define ECEF_SET	(1llu<<36)
 #define VECEF_SET	(1llu<<37)
 #define MAGNETIC_TRACK_SET (1llu<<38)
-#define SET_HIGH_BIT	39
+#define RAW_SET         (1llu<<39)
+#define SET_HIGH_BIT	40
     timestamp_t online;		/* NZ if GPS is on line, 0 if not.
 				 *
 				 * Note: gpsd clears this time when sentences
@@ -2065,15 +2160,18 @@ struct gps_data_t {
     /* GPS status -- always valid */
     int    status;		/* Do we have a fix? */
 #define STATUS_NO_FIX	0	/* no */
-#define STATUS_FIX	1	/* yes, without DGPS */
+#define STATUS_FIX	1	/* yes, GPS, without DGPS */
 #define STATUS_DGPS_FIX	2	/* yes, with DGPS */
+#define STATUS_RTK_FIX	3	/* yes, with RTK Fixed */
+#define STATUS_RTK_FLT	4	/* yes, with RTK Float */
+#define STATUS_DR	5	/* yes, with dead reckoning */
+#define STATUS_GNSSDR	6	/* yes, with GNSS + dead reckoning */
+#define STATUS_TIME	7	/* yes, time only (surveyed in, manual) */
+#define STATUS_SIM	8	/* yes, simulated */
 
     /* precision of fix -- valid if satellites_used > 0 */
     int satellites_used;	/* Number of satellites used in solution */
     struct dop_t dop;
-
-    /* redundant with the estimate elements in the fix structure */
-    double epe;  /* spherical position error, 95% confidence (meters)  */
 
     /* satellite status -- valid when satellites_visible > 0 */
     timestamp_t skyview_time;	/* skyview timestamp */
@@ -2091,7 +2189,10 @@ struct gps_data_t {
     } devices;
 
     /* pack things never reported together to reduce structure size */
-#define UNION_SET	(RTCM2_SET|RTCM3_SET|SUBFRAME_SET|AIS_SET|ATTITUDE_SET|GST_SET|OSCILLATOR_SET|VERSION_SET|LOGMESSAGE_SET|ERROR_SET|TOFF_SET|PPS_SET)
+#define UNION_SET	(AIS_SET|ATTITUDE_SET|ERROR_SET|GST_SET| \
+			 LOGMESSAGE_SET|OSCILLATOR_SET|PPS_SET|RAW_SET| \
+			 RTCM2_SET|RTCM3_SET|SUBFRAME_SET|TOFF_SET|VERSION_SET)
+
     union {
 	/* unusual forms of sensor data that might come up the pipe */
 	struct rtcm2_t	rtcm2;
@@ -2147,7 +2248,7 @@ extern void gps_enable_debug(int, FILE *);
 extern const char *gps_maskdump(gps_mask_t);
 
 extern double safe_atof(const char *);
-extern time_t mkgmtime(register struct tm *);
+extern time_t mkgmtime(struct tm *);
 extern timestamp_t timestamp(void);
 extern timestamp_t iso8601_to_unix(char *);
 extern char *unix_to_iso8601(timestamp_t t, char[], size_t len);
@@ -2156,6 +2257,7 @@ extern double earth_distance_and_bearings(double, double, double, double,
 					  double *,
 					  double *);
 extern double wgs84_separation(double, double);
+extern void datum_code_string(int code, char *buffer, size_t len);
 
 /* some multipliers for interpreting GPS output */
 #define METERS_TO_FEET	3.2808399	/* Meters to U.S./British feet */
@@ -2174,10 +2276,16 @@ extern double wgs84_separation(double, double);
 #define RAD_2_DEG	57.2957795130823208767981548141051703
 #define DEG_2_RAD	0.0174532925199432957692369076848861271
 
+/* other mathematical constants */
+#define GPS_LN2         0.693147180559945309417232121458176568
+
+
 /* geodetic constants */
 #define WGS84A 6378137		/* equatorial radius */
 #define WGS84F 298.257223563	/* flattening */
 #define WGS84B 6356752.3142	/* polar radius */
+
+#define CLIGHT      299792458.0  /* speed of light (m/s) */
 
 /* netlib_connectsock() errno return values */
 #define NL_NOSERVICE	-1	/* can't get service entry */

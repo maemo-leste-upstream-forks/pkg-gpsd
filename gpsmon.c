@@ -1,12 +1,14 @@
 /*
  * The generic GPS packet monitor.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
 /* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
 #define __ISO_C_VISIBLE 1999
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +22,6 @@
 #include <stdarg.h>
 #include <time.h>
 #include <math.h>
-#include <sys/time.h>		/* expected to declare select(2) a la SuS */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/select.h>
@@ -314,7 +315,7 @@ void monitor_fixframe(WINDOW * win)
 static void packet_dump(const char *buf, size_t buflen)
 {
     if (packetwin != NULL) {
-	char buf2[buflen * 2];
+	char buf2[MAX_PACKET_LENGTH * 2];
 	cond_hexdump(buf2, buflen * 2, buf, buflen);
 	(void)waddstr(packetwin, buf2);
 	(void)waddch(packetwin, (chtype)'\n');
@@ -390,7 +391,7 @@ static void monitor_vcomplain(const char *fmt, va_list ap)
     (void)wmove(cmdwin, 0, (int)promptlen);
     (void)wclrtoeol(cmdwin);
     (void)wattrset(cmdwin, A_BOLD);
-    (void)vwprintw(cmdwin, (char *)fmt, ap);
+    (void)vw_printw(cmdwin, (char *)fmt, ap);
     (void)wattrset(cmdwin, A_NORMAL);
     (void)wrefresh(cmdwin);
     (void)doupdate();
@@ -417,7 +418,7 @@ void monitor_log(const char *fmt, ...)
 	va_list ap;
 	report_lock();
 	va_start(ap, fmt);
-	(void)vwprintw(packetwin, (char *)fmt, ap);
+	(void)vw_printw(packetwin, (char *)fmt, ap);
 	va_end(ap);
 	report_unlock();
     }
@@ -1492,7 +1493,7 @@ int main(int argc, char **argv)
     explanation = NULL;
     switch (bailout) {
     case TERM_SELECT_FAILED:
-	explanation = "select(2) failed\n";
+	explanation = "I/O wait on device failed\n";
 	break;
     case TERM_DRIVER_SWITCH:
 	explanation = "Driver type switch failed\n";

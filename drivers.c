@@ -1,10 +1,12 @@
 /*
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
 /* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
 #define __ISO_C_VISIBLE 1999
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +48,7 @@ gps_mask_t generic_parse_input(struct gps_device_t *session)
 
 	if ((st=nmea_parse(sentence, session)) == 0) {
 	    gpsd_log(&session->context->errout, LOG_WARN,
-		     "unknown sentence: \"%s\"\n",	sentence);
+		     "unknown sentence: \"%s\"\n", sentence);
 	}
 	for (dp = gpsd_drivers; *dp; dp++) {
 	    char *trigger = (*dp)->trigger;

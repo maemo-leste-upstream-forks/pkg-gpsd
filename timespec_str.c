@@ -1,14 +1,13 @@
 /*
- * This file is Copyright (c) 2010 by the GPSD project
- * SPDX-License-Identifier: BSD-2-clause
- */
-
-/*
  * We also need to set the value high enough to signal inclusion of
  * newer features (like clock_gettime).  See the POSIX spec for more info:
  * http://pubs.opengroup.org/onlinepubs/9699919799/functions/V2_chap02.html#tag_15_02_01_02
-*/
-#define _XOPEN_SOURCE 600
+ *
+ * This file is Copyright (c) 2010-2018 by the GPSD project
+ * SPDX-License-Identifier: BSD-2-clause
+ */
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <time.h>

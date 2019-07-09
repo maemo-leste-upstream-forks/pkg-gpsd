@@ -1,12 +1,17 @@
 /*
  * geoid.c -- ECEF to WGS84 conversions, including ellipsoid-to-MSL height
  *
+ * This code does not specify, but given the creation date, I assume it
+ * is using the EGM96 geoid revised 2004.
+ *
  * Geoid separation code by Oleg Gusev, from data by Peter Dana.
  * ECEF conversion by Rob Janssen.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <math.h>
 #include "gpsd.h"

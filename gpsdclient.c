@@ -1,17 +1,19 @@
 /*
  * gpsdclient.c -- support functions for GPSD clients
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>   /* for strcasecmp() */
-#include <math.h>
-#include <assert.h>
 
-#include "gpsd_config.h"
 #include "gps.h"
 #include "gpsdclient.h"
 #include "os_compat.h"
@@ -28,55 +30,134 @@ static struct exportmethod_t exportmethods[] = {
 #endif /* SOCKET_EXPORT_ENABLE */
 };
 
-/* convert double degrees to a static string and return a pointer to it
+/* convert value of double degrees to a buffer.
+ * add suffix_pos or suffix_neg depending on sign.
+ * buffer should be at least 20 bytes.
+ * Return a pointer to the buffer.
  *
  * deg_str_type:
- *   	deg_dd     : return DD.ddddddd
- *      deg_ddmm   : return DD MM.mmmmmm'
- *      deg_ddmmss : return DD MM' SS.sssss"
+ *   	deg_dd     : return DD.ddddddd[suffix]
+ *      deg_ddmm   : return DD MM.mmmmmm'[suffix]
+ *      deg_ddmmss : return DD MM' SS.sssss"[suffix]
  *
- * for cm level accuracy we need degrees to 7+ decimal places
+ * returns 'n/a' for 360 < f or -360 > f
+ *
+ * NOTE: 360.0 is rolled over to 0.0
+ *
+ * for cm level accuracy, at sea level, we need degrees
+ * to 7+ decimal places
  * Ref: https://en.wikipedia.org/wiki/Decimal_degrees
  *
  */
-char *deg_to_str(enum deg_str_type type, double f)
+char *deg_to_str2(enum deg_str_type type, double f,
+                  char *buf, unsigned int buf_size,
+                  const char *suffix_pos, const char *suffix_neg)
+
 {
-    static char str[40];
     int dsec, sec, deg, min;
     double fdsec, fsec, fdeg, fmin;
+    const char *suffix = "";
 
-    if (f < 0 || f > 360) {
-	(void)strlcpy(str, "nan", sizeof(str));
-	return str;
+    if (20 > buf_size) {
+	(void)strlcpy(buf, "Err", buf_size);
+	return buf;
     }
 
+    if (!isfinite(f) || 360.0 < fabs(f)) {
+	(void)strlcpy(buf, "n/a", buf_size);
+	return buf;
+    }
+
+    /* suffix? */
+    if (0.0 > f) {
+	f = -f;
+        if (NULL != suffix_neg) {
+            suffix = suffix_neg;
+        }
+    } else if (NULL != suffix_pos) {
+	suffix = suffix_pos;
+    }
+
+    /* add rounding quanta */
+    /* IEEE 754 wants round to nearest even.
+     * We cheat and just round to nearest.
+     * Intel trying to kill off round to nearest even. */
+    switch (type) {
+    default:
+        /* huh? */
+        type = deg_dd;
+        /* FALLTHROUGH */
+    case deg_dd:
+	/* DD.dddddddd */
+	f += 0.5 * 1e-8;              /* round up */
+        break;
+    case deg_ddmm:
+	/* DD MM.mmmmmm */
+	f += (0.5 * 1e-6) / 60;       /* round up */
+        break;
+    case deg_ddmmss:
+	f += (0.5 * 1e-5) / 3600;     /* round up */
+        break;
+    }
     fmin = modf(f, &fdeg);
     deg = (int)fdeg;
+    if (360 == deg) {
+	/* fix round-up roll-over */
+	deg = 0;
+	fmin = 0.0;
+    }
 
     if (deg_dd == type) {
 	/* DD.dddddddd */
+	long frac_deg = (long)(fmin * 100000000.0);
         /* cm level accuracy requires the %08ld */
-	long frac_deg = (long)(fmin * 100000000);
-	(void)snprintf(str, sizeof(str), "%3d.%08ld", deg, frac_deg);
-	return str;
+	(void)snprintf(buf, buf_size, "%3d.%08ld%s", deg, frac_deg, suffix);
+	return buf;
     }
+
     fsec = modf(fmin * 60, &fmin);
     min = (int)fmin;
 
     if (deg_ddmm == type) {
 	/* DD MM.mmmmmm */
 	sec = (int)(fsec * 1000000.0);
-	(void)snprintf(str, sizeof(str), "%3d %02d.%06d'", deg, min, sec);
-	return str;
+	(void)snprintf(buf, buf_size, "%3d %02d.%06d'%s", deg, min, sec,
+                       suffix);
+	return buf;
     }
     /* else DD MM SS.sss */
-    fdsec = modf(fsec * 60, &fsec);
+    fdsec = modf(fsec * 60.0, &fsec);
     sec = (int)fsec;
-    dsec = (int)(fdsec * 10000.0);
-    (void)snprintf(str, sizeof(str), "%3d %02d' %02d.%05d\"", deg, min, sec,
-		   dsec);
+    dsec = (int)(fdsec * 100000.0);
+    (void)snprintf(buf, buf_size, "%3d %02d' %02d.%05d\"%s", deg, min, sec,
+		   dsec, suffix);
 
-    return str;
+    return buf;
+}
+
+/* convert absolute value of double degrees to a static string.
+ * Return a pointer to the static string.
+ * WARNING: Not thread safe.
+ *
+ * deg_str_type:
+ *   	deg_dd     : return DD.ddddddd
+ *      deg_ddmm   : return DD MM.mmmmmm'
+ *      deg_ddmmss : return DD MM' SS.sssss"
+ *
+ * returns 'n/a' for 360 < f
+ *
+ * NOTE: 360.0 is rolled over to 0.0
+ *
+ * for cm level accuracy, at sea level, we need degrees
+ * to 7+ decimal places
+ * Ref: https://en.wikipedia.org/wiki/Decimal_degrees
+ *
+ */
+char *deg_to_str(enum deg_str_type type, double f)
+{
+    static char buf[20];
+
+    return deg_to_str2(type, f, buf, sizeof(buf), "", "");
 }
 
 /*
@@ -189,7 +270,7 @@ char *maidenhead(double n, double e)
 {
     /*
      * Specification at
-     * http://en.wikipedia.org/wiki/Maidenhead_Locator_System
+     * https://en.wikipedia.org/wiki/Maidenhead_Locator_System
      *
      * There's a fair amount of slop in how Maidenhead converters operate
      * that can make it look like this one is wrong.

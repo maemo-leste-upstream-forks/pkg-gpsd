@@ -1,25 +1,24 @@
 /* libgps_sock.c -- client interface library for the gpsd daemon
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <fcntl.h>
-#include <string.h>
+
+#include "gpsd_config.h"  /* must be before all includes */
+
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <math.h>
+#include <fcntl.h>
 #include <locale.h>
-#include <assert.h>
-#include <sys/time.h>	 /* expected to have a select(2) prototype a la SuS */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include "gpsd_config.h"
-#ifdef HAVE_SYS_SELECT_H
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/select.h>
-#endif /* HAVE_SYS_SELECT_H */
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #ifndef USE_QT
@@ -37,6 +36,7 @@
 #include "gpsd.h"
 #include "libgps.h"
 #include "strfuncs.h"
+#include "timespec.h"      /* for NS_IN_SEC */
 #ifdef SOCKET_EXPORT_ENABLE
 #include "gps_json.h"
 
@@ -131,22 +131,12 @@ bool gps_sock_waiting(const struct gps_data_t *gpsdata, int timeout)
 /* timeout is in uSec */
 {
 #ifndef USE_QT
-    fd_set rfds;
-    struct timeval tv;
-
     libgps_debug_trace((DEBUG_CALLS, "gps_waiting(%d): %d\n", timeout, PRIVATE(gpsdata)->waitcount++));
     if (PRIVATE(gpsdata)->waiting > 0)
 	return true;
 
-    /* we might want to check for EINTR if this returns false */
-    errno = 0;
-
-    FD_ZERO(&rfds);
-    FD_SET(gpsdata->gps_fd, &rfds);
-    tv.tv_sec = timeout / 1000000;
-    tv.tv_usec = timeout % 1000000;
     /* all error conditions return "not waiting" -- crude but effective */
-    return (select(gpsdata->gps_fd + 1, &rfds, NULL, NULL, &tv) == 1);
+    return nanowait(gpsdata->gps_fd, timeout * 1000);
 #else
     return ((QTcpSocket *) (gpsdata->gps_fd))->waitForReadyRead(timeout / 1000);
 #endif
@@ -265,16 +255,21 @@ int gps_sock_read(struct gps_data_t *gpsdata, char *message, int message_len)
     /* unpack the JSON message */
     status = gps_unpack(PRIVATE(gpsdata)->buffer, gpsdata);
 
+    /* why the 1? */
     response_length = eol - PRIVATE(gpsdata)->buffer + 1;
-    if (0 == (PRIVATE(gpsdata)->waiting - response_length)) {
-        /* no waiting data, clear the buffer, just in case */
+
+    /* calculate length of good data still in buffer */
+    PRIVATE(gpsdata)->waiting -= response_length;
+
+    if (1 > PRIVATE(gpsdata)->waiting) {
+        /* no waiting data, or overflow, clear the buffer, just in case */
         *PRIVATE(gpsdata)->buffer = '\0';
+        PRIVATE(gpsdata)->waiting = 0;
     } else {
 	memmove(PRIVATE(gpsdata)->buffer,
 		PRIVATE(gpsdata)->buffer + response_length,
-		PRIVATE(gpsdata)->waiting - response_length);
+		PRIVATE(gpsdata)->waiting);
     }
-    PRIVATE(gpsdata)->waiting -= response_length;
     gpsdata->set |= PACKET_SET;
 
     return (status == 0) ? (int)response_length : status;

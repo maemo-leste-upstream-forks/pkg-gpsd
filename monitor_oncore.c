@@ -1,9 +1,12 @@
 /*
  * OnCore object for the GPS packet monitor.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -372,7 +375,7 @@ static void oncore_update(void)
 	if (utc_offset != (unsigned char)0)
 	    (void)mvwprintw(Bowin, 2, 2, "GPS%+4d", utc_offset);
 	else
-	    (void)mvwprintw(Bowin, 2, 2, "unknown", utc_offset);
+	    (void)mvwprintw(Bowin, 2, 2, "unknown");
     }
 
 	monitor_log("Bo =");

@@ -9,32 +9,18 @@ of various core data structures in JSON.
 
 PERMISSIONS
   Written by Eric S. Raymond, 2009
-  This file is Copyright (c) 2010 by the GPSD project
+  This file is Copyright (c) 2010-2018 by the GPSD project
   SPDX-License-Identifier: BSD-2-clause
 
 ***************************************************************************/
 
-#ifdef __linux__
-/* FreeBSD chokes on this */
-/* isascii() needs _XOPEN_SOURCE, 500 means X/Open 1995 */
-#define _XOPEN_SOURCE 500
-/* isfinite() needs _POSIX_C_SOURCE >= 200112L
- * check for isfinite() not isnan().
- * isnan(+inf) returns false, isfinite(+inf) returns false.
- */
-#define _POSIX_C_SOURCE 200112L
-#endif /* __linux__ */
+#include "gpsd_config.h"  /* must be before all includes */
 
-/* vsnprintf() needs __DARWIN_C_LEVEL >= 200112L */
-#define __DARWIN_C_LEVEL 200112L
-/* strlcpy() needs _DARWIN_C_SOURCE */
-#define _DARWIN_C_SOURCE
-
-#include <stdio.h>
-#include <math.h>
 #include <assert.h>
-#include <string.h>
 #include <ctype.h>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>       /* for strcat(), strlcpy() */
 
 #include "gpsd.h"
 #include "bits.h"
@@ -146,15 +132,22 @@ void json_tpv_dump(const struct gps_device_t *session,
     assert(replylen > sizeof(char *));
     (void)strlcpy(reply, "{\"class\":\"TPV\",", replylen);
     if (gpsdata->dev.path[0] != '\0')
+	/* Note: Assumes /dev paths are always plain ASCII */
 	str_appendf(reply, replylen, "\"device\":\"%s\",", gpsdata->dev.path);
-    if (gpsdata->status == STATUS_DGPS_FIX)
-	str_appendf(reply, replylen, "\"status\":2,");
+    if (STATUS_DGPS_FIX <= gpsdata->status) {
+        /* to save rebuilding all the regressions, skip NO_FIX and FIX */
+	str_appendf(reply, replylen, "\"status\":%d,", gpsdata->status);
+    }
     str_appendf(reply, replylen, "\"mode\":%d,", gpsdata->fix.mode);
     if (isfinite(gpsdata->fix.time) != 0) {
 	char tbuf[JSON_DATE_MAX+1];
 	str_appendf(reply, replylen,
 		       "\"time\":\"%s\",",
 		       unix_to_iso8601(gpsdata->fix.time, tbuf, sizeof(tbuf)));
+    }
+    if (LEAP_SECOND_VALID == (session->context->valid & LEAP_SECOND_VALID)) {
+	str_appendf(reply, replylen, "\"leapseconds\":%d,",
+                    session->context->leap_seconds);
     }
     if (isfinite(gpsdata->fix.ept) != 0)
 	str_appendf(reply, replylen, "\"ept\":%.3f,", gpsdata->fix.ept);
@@ -175,14 +168,14 @@ void json_tpv_dump(const struct gps_device_t *session,
 	if (isfinite(gpsdata->fix.longitude) != 0)
 	    str_appendf(reply, replylen,
 			   "\"lon\":%.9f,", gpsdata->fix.longitude);
-	if (gpsdata->fix.mode >= MODE_3D && isfinite(gpsdata->fix.altitude) != 0)
+	if (0 != isfinite(gpsdata->fix.altitude))
 	    str_appendf(reply, replylen,
 			   "\"alt\":%.3f,", gpsdata->fix.altitude);
 	if (isfinite(gpsdata->fix.epx) != 0)
 	    str_appendf(reply, replylen, "\"epx\":%.3f,", gpsdata->fix.epx);
 	if (isfinite(gpsdata->fix.epy) != 0)
 	    str_appendf(reply, replylen, "\"epy\":%.3f,", gpsdata->fix.epy);
-	if ((gpsdata->fix.mode >= MODE_3D) && isfinite(gpsdata->fix.epv) != 0)
+	if (isfinite(gpsdata->fix.epv) != 0)
 	    str_appendf(reply, replylen, "\"epv\":%.3f,", gpsdata->fix.epv);
 	if (isfinite(gpsdata->fix.track) != 0)
 	    str_appendf(reply, replylen, "\"track\":%.4f,", gpsdata->fix.track);
@@ -256,6 +249,14 @@ void json_tpv_dump(const struct gps_device_t *session,
 			session->context->rollovers);
 	}
 #endif /* TIMING_ENABLE */
+        /* at the end because it is new and microjson chokes on new items */
+	if (0 != isfinite(gpsdata->fix.eph))
+	    str_appendf(reply, replylen, "\"eph\":%.3f,", gpsdata->fix.eph);
+	if (0 != isfinite(gpsdata->fix.sep))
+	    str_appendf(reply, replylen, "\"sep\":%.3f,", gpsdata->fix.sep);
+	if ('\0' != gpsdata->fix.datum[0])
+	    str_appendf(reply, replylen, "\"datum\":\"%.40s\",",
+                        gpsdata->fix.datum);
     }
     str_rstrip_char(reply, ',');
     (void)strlcat(reply, "}\r\n", replylen);
@@ -330,6 +331,13 @@ void json_sky_dump(const struct gps_data_t *datap,
 	(void)strlcat(reply, "\"satellites\":[", replylen);
 	for (i = 0; i < reported; i++) {
 	    if (datap->skyview[i].PRN) {
+                if (-90 > datap->skyview[i].elevation ||
+                    90 < datap->skyview[i].elevation ||
+                    0 > datap->skyview[i].azimuth ||
+                    360 < datap->skyview[i].azimuth) {
+                   /* do not report PRN w/o valid elevation and azimuth */
+                   continue;
+                }
 		str_appendf(reply, replylen,
                    "{\"PRN\":%d,\"el\":%d,\"az\":%d,\"ss\":%.0f,\"used\":%s",
                    datap->skyview[i].PRN,
@@ -342,6 +350,11 @@ void json_sky_dump(const struct gps_data_t *datap,
                        ",\"gnssid\":%d,\"svid\":%d",
                        datap->skyview[i].gnssid,
                        datap->skyview[i].svid);
+                }
+                if (0 != datap->skyview[i].sigid) {
+                    str_appendf(reply, replylen,
+                       ",\"sigid\":%d",
+                       datap->skyview[i].sigid);
                 }
                 (void)strlcat(reply, "},", replylen);
 	    }
@@ -716,6 +729,97 @@ void json_subframe_dump(const struct gps_data_t *datap,
 	}
     }
     (void)strlcat(buf, "}\r\n", buflen);
+}
+
+/* RAW dump - should be good enough to make a RINEX 3 file */
+void json_raw_dump(const struct gps_data_t *gpsdata,
+		   char *reply, size_t replylen)
+{
+    int i;
+
+    assert(replylen > sizeof(char *));
+    if (0 == gpsdata->raw.mtime.tv_sec) {
+        /* no data to dump */
+        return;
+    }
+    (void)strlcpy(reply, "{\"class\":\"RAW\",", replylen);
+    if (gpsdata->dev.path[0] != '\0')
+	str_appendf(reply, replylen, "\"device\":\"%s\",", gpsdata->dev.path);
+
+    str_appendf(reply, replylen, "\"time\":%ld,\"nsec\":%ld,\"rawdata\":[",
+                (long)gpsdata->raw.mtime.tv_sec, gpsdata->raw.mtime.tv_nsec);
+
+    for (i = 0; i < MAXCHANNELS; i++) {
+        bool comma = false;
+        if (0 == gpsdata->raw.meas[i].svid ||
+            255 == gpsdata->raw.meas[i].svid) {
+            /* skip empty and GLONASS 255 */
+            continue;
+        }
+        str_appendf(reply, replylen,
+                    "{\"gnssid\":%u,\"svid\":%u,\"snr\":%u,"
+                    "\"obs\":\"%s\",\"lli\":%1u,\"locktime\":%u",
+                    gpsdata->raw.meas[i].gnssid, gpsdata->raw.meas[i].svid,
+                    gpsdata->raw.meas[i].snr,
+                    gpsdata->raw.meas[i].obs_code, gpsdata->raw.meas[i].lli,
+                    gpsdata->raw.meas[i].locktime);
+        if (0 < gpsdata->raw.meas[i].sigid) {
+	    str_appendf(reply, replylen, ",\"sigid\":%u",
+			gpsdata->raw.meas[i].sigid);
+        }
+        if (GNSSID_GLO == gpsdata->raw.meas[i].gnssid) {
+	    str_appendf(reply, replylen, ",\"freqid\":%u",
+			gpsdata->raw.meas[i].freqid);
+        }
+        comma = true;
+
+        if (0 != isfinite(gpsdata->raw.meas[i].pseudorange) &&
+            1.0 < gpsdata->raw.meas[i].pseudorange) {
+            if (comma)
+                (void)strlcat(reply, ",", replylen);
+            str_appendf(reply, replylen, "\"pseudorange\":%f",
+                        gpsdata->raw.meas[i].pseudorange);
+            comma = true;
+
+	    if (0 != isfinite(gpsdata->raw.meas[i].carrierphase)) {
+		str_appendf(reply, replylen, ",\"carrierphase\":%f",
+			    gpsdata->raw.meas[i].carrierphase);
+		comma = true;
+	    }
+        }
+        if (0 != isfinite(gpsdata->raw.meas[i].doppler)) {
+            if (comma)
+                (void)strlcat(reply, ",", replylen);
+            str_appendf(reply, replylen, "\"doppler\":%f",
+                        gpsdata->raw.meas[i].doppler);
+            comma = true;
+        }
+
+        /* L2 C/A pseudo range, RINEX C2C */
+        if (0 != isfinite(gpsdata->raw.meas[i].c2c) &&
+            1.0 < gpsdata->raw.meas[i].c2c) {
+            if (comma)
+                (void)strlcat(reply, ",", replylen);
+            str_appendf(reply, replylen, "\"c2c\":%f",
+                        gpsdata->raw.meas[i].c2c);
+            comma = true;
+
+	    /* L2 C/A carrier phase, RINEX L2C */
+	    if (0 != isfinite(gpsdata->raw.meas[i].l2c)) {
+		if (comma)
+		    (void)strlcat(reply, ",", replylen);
+		str_appendf(reply, replylen, "\"l2c\":%f",
+			    gpsdata->raw.meas[i].l2c);
+		comma = true;
+	    }
+        }
+        (void)strlcat(reply, "},", replylen);
+    }
+    str_rstrip_char(reply, ',');
+    (void)strlcat(reply, "]", replylen);
+
+    str_rstrip_char(reply, ',');
+    (void)strlcat(reply, "}\r\n", replylen);
 }
 
 #if defined(RTCM104V2_ENABLE)
@@ -3464,6 +3568,10 @@ void json_data_report(const gps_mask_t changed,
 
     if ((changed & SUBFRAME_SET) != 0) {
 	json_subframe_dump(datap, buf+strlen(buf), buflen-strlen(buf));
+    }
+
+    if ((changed & RAW_IS) != 0) {
+	json_raw_dump(datap, buf+strlen(buf), buflen-strlen(buf));
     }
 
 #ifdef COMPASS_ENABLE

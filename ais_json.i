@@ -411,6 +411,14 @@
                                        .dflt.uinteger = 0},
 	{"mmsi4",         t_uinteger,  .addr.uinteger = &ais->type7.mmsi4,
                                        .dflt.uinteger = 0},
+	{"seqno1",        t_uinteger,  .addr.uinteger = &ais->type7.seqno1,
+                                       .dflt.uinteger = 0},
+	{"seqno2",        t_uinteger,  .addr.uinteger = &ais->type7.seqno2,
+                                       .dflt.uinteger = 0},
+	{"seqno3",        t_uinteger,  .addr.uinteger = &ais->type7.seqno3,
+                                       .dflt.uinteger = 0},
+	{"seqno4",        t_uinteger,  .addr.uinteger = &ais->type7.seqno4,
+                                       .dflt.uinteger = 0},
         {NULL}
     };
 

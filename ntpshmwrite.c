@@ -1,22 +1,21 @@
 /*
  * ntpshmwrite.c - put time information in SHM segment for ntpd
  *
- * This file is Copyright (c) 2010 by the GPSD project BSD terms apply:
- * see the file COPYING in the distribution root for details.
+ * This file is Copyright (c)2010-2018 by the GPSD project
+ * SPDX-License-Identifier: BSD-2-clause
  */
 
-/* sys/ipc.h needs _XOPEN_SOURCE, 500 means X/Open 1995 */
-#define _XOPEN_SOURCE 500
+#include "gpsd_config.h"  /* must be before all includes */
 
-#include <string.h>
-#include <libgen.h>
-#include <stdbool.h>
-#include <math.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
+#include <libgen.h>
+#include <math.h>
+#include <stdbool.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "ntpshm.h"

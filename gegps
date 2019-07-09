@@ -30,9 +30,16 @@ import os
 import socket     # for socket.error
 import sys
 
-import gps
+# pylint wants local modules last
+try:
+    import gps
+except ImportError as e:
+    sys.stderr.write(
+        "gegps: can't load Python gps libraries -- check PYTHONPATH.\n")
+    sys.stderr.write("%s\n" % e)
+    sys.exit(1)
 
-gps_version = '3.18.1'
+gps_version = '3.19'
 if gps.__version__ != gps_version:
     sys.stderr.write("gegps: ERROR: need gps module version %s, got %s\n" %
                      (gps_version, gps.__version__))
@@ -143,6 +150,6 @@ if __name__ == "__main__":
         except StopIteration:
             pass
         except KeyboardInterrupt:
-            print('gegpsd stopped ')
+            print('gegps stopped ')
 
 # end

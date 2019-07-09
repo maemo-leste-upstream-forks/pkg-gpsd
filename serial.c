@@ -1,27 +1,26 @@
 /*
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-/* cfmakeraw() needs _DEFAULT_SOURCE */
-#define _DEFAULT_SOURCE
+#include "gpsd_config.h"  /* must be before all includes */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/socket.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/ioctl.h>
 #include <sys/param.h>		/* defines BSD */
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #ifdef __linux__
 #include <sys/sysmacros.h>	/* defines major() */
 #endif	/* __linux__ */
 
-#include "gpsd_config.h"
 #ifdef ENABLE_BLUEZ
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
@@ -64,7 +63,7 @@ static sourcetype_t gpsd_classify(const char *path)
 #ifdef __linux__
 	/* Linux major device numbers live here
 	 *
-	 * https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devices.txt
+         * https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/admin-guide/devices.txt
 	 *
 	 * Note: This code works because Linux major device numbers are
 	 * stable and architecture-independent.  It is *not* a good model
@@ -173,8 +172,11 @@ void gpsd_tty_init(struct gps_device_t *session)
     session->reawake = (time_t)0;
 }
 
-#if defined(__CYGWIN__)
-/* Workaround for Cygwin, which is missing cfmakeraw */
+#if defined(__CYGWIN__) || defined(__sun)
+/*
+ * Local implementation of cfmakeraw (which is not specified by
+ * POSIX; see matching declaration in gpsd.h).
+ */
 /* Pasted from man page; added in serial.c arbitrarily */
 void cfmakeraw(struct termios *termios_p)
 {
@@ -292,6 +294,19 @@ void gpsd_set_speed(struct gps_device_t *session,
     else
 	rate = B230400;
 
+    /* backward-compatibility hack */
+    switch (parity) {
+    case (char)2:
+	parity = 'E';
+	break;
+    case (char)1:
+	parity = 'O';
+	break;
+    case (char)0:
+	parity = 'N';	/* without this we might emit malformed JSON */
+	break;
+    }
+
     if (rate != cfgetispeed(&session->ttyset)
 	|| parity != session->gpsdata.dev.parity
 	|| stopbits != session->gpsdata.dev.stopbits) {
@@ -315,12 +330,10 @@ void gpsd_set_speed(struct gps_device_t *session,
 	session->ttyset.c_cflag |= (stopbits == 2 ? CS7 | CSTOPB : CS8);
 	switch (parity) {
 	case 'E':
-	case (char)2:
 	    session->ttyset.c_iflag |= INPCK;
 	    session->ttyset.c_cflag |= PARENB;
 	    break;
 	case 'O':
-	case (char)1:
 	    session->ttyset.c_iflag |= INPCK;
 	    session->ttyset.c_cflag |= PARENB | PARODD;
 	    break;

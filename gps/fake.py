@@ -108,7 +108,7 @@ elif sys.platform.startswith("netbsd"):
     WRITE_PAD = 0.004
 elif sys.platform.startswith("darwin"):
     # darwin Darwin-13.4.0-x86_64-i386-64bit
-    WRITE_PAD = 0.03
+    WRITE_PAD = 0.005
 else:
     WRITE_PAD = 0.004
 
@@ -607,7 +607,8 @@ class TestSession(object):
     "Manage a session including a daemon with fake GPSes and clients."
 
     def __init__(self, prefix=None, port=None, options=None, verbose=0,
-                 predump=False, udp=False, tcp=False, slow=False):
+                 predump=False, udp=False, tcp=False, slow=False,
+                 timeout=None):
         "Initialize the test session by launching the daemon."
         self.prefix = prefix
         self.options = options
@@ -632,6 +633,7 @@ class TestSession(object):
         self.default_predicate = None
         self.fd_set = []
         self.threadlock = None
+        self.timeout = TEST_TIMEOUT if timeout is None else timeout
 
     def spawn(self):
         "Spawn daemon"
@@ -729,6 +731,8 @@ class TestSession(object):
         try:
             self.progress("gpsfake: test loop begins\n")
             while self.daemon:
+                if not self.daemon.is_alive():
+                    raise TestSessionError("daemon died")
                 # We have to read anything that gpsd might have tried
                 # to send to the GPS here -- under OpenBSD the
                 # TIOCDRAIN will hang, otherwise.
@@ -738,11 +742,11 @@ class TestSession(object):
                 had_output = False
                 chosen = self.choose()
                 if isinstance(chosen, FakeGPS):
-                    if (((chosen.exhausted and
-                         (time.time() - chosen.exhausted > TEST_TIMEOUT) and
+                    if (((chosen.exhausted and self.timeout and
+                         (time.time() - chosen.exhausted > self.timeout) and
                          chosen.byname in self.fakegpslist))):
                         sys.stderr.write(
-                            "Test timed out: increase WRITE_PAD = %s\n"
+                            "Test timed out: maybe increase WRITE_PAD (= %s)\n"
                             % GetDelay(self.slow))
                         raise SystemExit(1)
                     elif not chosen.go_predicate(chosen.index, chosen):
@@ -757,7 +761,10 @@ class TestSession(object):
                         chosen.send(chosen.enqueued)
                         chosen.enqueued = ""
                     while chosen.waiting():
-                        chosen.read()
+                        if not self.daemon or not self.daemon.is_alive():
+                            raise TestSessionError("daemon died")
+                        if chosen.read() < 0:
+                            raise TestSessionError("daemon output stopped")
                         had_output = True
                         if not chosen.valid & gps.PACKET_SET:
                             continue

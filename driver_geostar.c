@@ -6,11 +6,12 @@
  *
  * By Viktar Palstsiuk, viktar.palstsiuk@promwad.com
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-#include <sys/time.h>		/* for select() */
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <math.h>
@@ -19,8 +20,7 @@
 #include "gpsd.h"
 #include "bits.h"
 #include "strfuncs.h"
-
-#include <sys/select.h>
+#include "timespec.h"
 
 #ifdef GEOSTAR_ENABLE
 #define GEOSTAR_CHANNELS	24
@@ -86,8 +86,6 @@ static bool geostar_detect(struct gps_device_t *session)
     unsigned char buf[1 * 4];
     bool ret = false;
     int myfd;
-    fd_set fdset;
-    struct timeval to;
 
     myfd = session->gpsdata.gps_fd;
 
@@ -96,11 +94,7 @@ static bool geostar_detect(struct gps_device_t *session)
     if (geostar_write(session, 0xc1, buf, 1) == 0) {
 	unsigned int n;
 	for (n = 0; n < 3; n++) {
-	    FD_ZERO(&fdset);
-	    FD_SET(myfd, &fdset);
-	    to.tv_sec = 1;
-	    to.tv_usec = 0;
-	    if (select(myfd + 1, &fdset, NULL, NULL, &to) != 1)
+	    if (!nanowait(myfd, NS_IN_SEC))
 		break;
 	    if (generic_get(session) >= 0) {
 		if (session->lexer.type == GEOSTAR_PACKET) {

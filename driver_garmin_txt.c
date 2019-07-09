@@ -23,7 +23,7 @@
  *	magnetic variation
  *      satellite information
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
@@ -106,6 +106,8 @@ invalid data.
 
 ***************************************************/
 
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -402,9 +404,8 @@ gps_mask_t garmintxt_parse(struct gps_device_t * session)
 		       (char *)session->lexer.outbuffer + 31, 3, "", 1.0,
 		       &eph))
 	    break;
-	/* eph is a circular error, sqrt(epx**2 + epy**2) */
-	session->newdata.epx = session->newdata.epy =
-	    eph * (1 / sqrt(2)) * (GPSD_CONFIDENCE / CEP50_SIGMA);
+        /* this conversion looks dodgy... */
+	session->newdata.eph = eph * (GPSD_CONFIDENCE / CEP50_SIGMA);
 	mask |= HERR_SET;
     } while (0);
 
@@ -456,12 +457,12 @@ gps_mask_t garmintxt_parse(struct gps_device_t * session)
     } while (0);
 
     gpsd_log(&session->context->errout, LOG_DATA,
-	     "GTXT: time=%.2f, lat=%.2f lon=%.2f alt=%.2f speed=%.2f track=%.2f climb=%.2f exp=%.2f epy=%.2f mode=%d status=%d\n",
+	     "GTXT: time=%.2f, lat=%.2f lon=%.2f alt=%.2f speed=%.2f track=%.2f climb=%.2f eph=%.2f mode=%d status=%d\n",
 	     session->newdata.time, session->newdata.latitude,
 	     session->newdata.longitude, session->newdata.altitude,
 	     session->newdata.speed, session->newdata.track,
-	     session->newdata.climb, session->newdata.epx,
-	     session->newdata.epy, session->newdata.mode,
+	     session->newdata.climb, session->newdata.eph,
+	     session->newdata.mode,
 	     session->gpsdata.status);
     return mask;
 }

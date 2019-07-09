@@ -1,7 +1,4 @@
 /*
- * This file is Copyright (c) 2017 by the GPSD project
- * SPDX-License-Identifier: BSD-2-clause
- *
  * This file contains functions to deal with compatibility issues across OSes.
  *
  * The initial version of this file is a near-verbatim concatenation of the
@@ -11,9 +8,14 @@
  *     strl.c
  * History of this code prior to the creation of this file can be found
  * in the histories of those files.
+ *
+ * This file is Copyright (c)2017-2018 by the GPSD project
+ * SPDX-License-Identifier: BSD-2-clause
  */
 
-#include "os_compat.h"	/* Includes gpsd_config.h */
+#include "gpsd_config.h"  /* must be before all includes */
+
+#include "os_compat.h"
 
 #ifndef HAVE_CLOCK_GETTIME
 
@@ -113,11 +115,36 @@ int os_daemon(int nochdir, int noclose)
 #define _DEFAULT_SOURCE
 #include <unistd.h>
 
-#else /* !__linux__ */
+#elif defined(__APPLE__) /* !__linux__ */
+
+/*
+ * Avoid the OSX deprecation warning.
+ *
+ * Note that on OSX, real daemons like gpsd should run via launchd rather than
+ * self-daemonizing, but we use daemon() for other tools as well.
+ *
+ * There doesn't seem to be an easy way to avoid the warning other than by
+ * providing our own declaration to override the deprecation-flagged version.
+ * Fortunately, the function signature is pretty well frozen at this point.
+ *
+ * Until we fix the kludge where all this code has to be additionally compiled
+ * as C++ for the Qt library, we need this to be compilable as C++ as well.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int daemon(int nochdir, int noclose);
+
+#ifdef __cplusplus
+}
+#endif
+
+#else /* !__linux__ && !__APPLE__ */
 
 #include <stdlib.h>
 
-#endif /* !__linux__ */
+#endif /* !__linux__ && !__APPLE__ */
 
 int os_daemon(int nochdir, int noclose)
 {
@@ -128,7 +155,7 @@ int os_daemon(int nochdir, int noclose)
 
 /* End of daemon section */
 
-/* Provide BSD strlcat()/strlcpy() on platforms that don't have it */
+/* Provide syslog() on platforms that don't have it */
 
 #ifndef HAVE_SYSLOG_H
 #include "compiler.h"
@@ -160,7 +187,11 @@ void closelog (void)
 }
 #endif /* !HAVE_SYSLOG_H */
 
+/* End of syslog section */
+
 /*
+ * Provide BSD strlcat()/strlcpy() on platforms that don't have it
+ *
  * These versions use memcpy and strlen() because they are often
  * heavily optimized down to assembler level. Thus, likely to be
  * faster even with the function call overhead.

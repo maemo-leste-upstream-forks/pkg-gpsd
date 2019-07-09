@@ -3,7 +3,7 @@
 # Important targets:
 #
 # build      - build the software (default)
-# dist       - make distribution tarball
+# dist       - make distribution tarball (requires GNU tar)
 # install    - install programs, libraries, and manual pages
 # uninstall  - undo an install
 #
@@ -50,45 +50,58 @@ import SCons
 
 from leapsecond import conditional_leapsecond_fetch
 
-# Release identification begins here
+# Release identification begins here.
+#
+# Actual releases follow the normal X.Y or X.Y.Z scheme.  The version
+# number in git between releases has the form X.Y~dev, when it is
+# expected that X.Y will be the next actual release.  As an example,
+# when 3.18.1 is the last release, and 3.19 is the expected next
+# release, the version in git will be 3.19~dev.  Note that ~ is used,
+# because there is some precedent, ~ is an allowed version number in
+# the Debian version rules, and it does not cause confusion with
+# whether - separates components of the package name, separates the
+# name from the version, or separates version componnents.
+#
 # Keep in sync with gps/__init__.py
-gpsd_version = "3.18.1"
-
+# There are about 15 files with copies of the version number; make
+# sure to update all of them.
+#
+# package version
+gpsd_version = "3.19"
 # client library version
-libgps_version_current = 24
+libgps_version_current = 25
 libgps_version_revision = 0
 libgps_version_age = 0
-
+libgps_version = "%d.%d.%d" % (libgps_version_current, libgps_version_age,
+                               libgps_version_revision)
+#
 # Release identification ends here
 
 # Hosting information (mainly used for templating web pages) begins here
 # Each variable foo has a corresponding @FOO@ expanded in .in files.
 # There are no project-dependent URLs or references to the hosting site
 # anywhere else in the distribution; preserve this property!
-admin = "https://savannah.nongnu.org/project/admin/?group=gpsd"
 annmail = "gpsd-announce@nongnu.org"
-browserepo = "http://git.savannah.gnu.org/cgit/gpsd.git"
-bugtracker = "https://savannah.nongnu.org/bugs/?group=gpsd"
+bugtracker = "https://gitlab.com/gpsd/gpsd/issues"
 cgiupload = "root@thyrsus.com:/var/www/cgi-bin/"
-clonerepo = "https://savannah.nongnu.org/git/?group=gpsd"
+clonerepo = "git@gitlab.com:gpsd/gpsd.git"
 devmail = "gpsd-dev@lists.nongnu.org"
 download = "http://download-mirror.savannah.gnu.org/releases/gpsd/"
 formserver = "www@thyrsus.com"
-gitrepo = "git://git.savannah.nongnu.org/gpsd.git"
+gitrepo = "git@gitlab.com:gpsd/gpsd.git"
 ircchan = "irc://chat.freenode.net/#gpsd"
 mailman = "https://lists.nongnu.org/mailman/listinfo/"
-mainpage = "https://savannah.nongnu.org/projects/gpsd/"
+mainpage = "https://gpsd.io"
 scpupload = "garyemiller@dl.sv.nongnu.org:/releases/gpsd/"
-sitename = "Savannah"
-sitesearch = "catb.org"
+sitename = "GPSD"
+sitesearch = "gpsd.io"
 tiplink = "<a href='https://www.patreon.com/esr'>" \
           "leave a remittance at Patreon</a>"
 tipwidget = '<p><a href="https://www.patreon.com/esr">' \
             'Donate here to support continuing development.</a></p>'
 usermail = "gpsd-users@lists.nongnu.org"
 webform = "http://www.thyrsus.com/cgi-bin/gps_report.cgi"
-website = "http://catb.org/gpsd"
-webupload = "login.ibiblio.org:/public/html/catb/gpsd"
+website = "https://gpsd.io/"
 # Hosting information ends here
 
 # gpsd needs Scons version at least 2.3
@@ -237,6 +250,7 @@ boolopts = (
     ("slow",          False, "run tests with realistic (slow) delays"),
 )
 
+# now step on the boolopts just read from '.scons-option-cache'
 for (name, default, help) in boolopts:
     opts.Add(BoolVariable(name, help, default))
 
@@ -262,6 +276,7 @@ nonboolopts = (
     ("target_python",    "python",      "target Python version as command"),
 )
 
+# now step on the non boolopts just read from '.scons-option-cache'
 for (name, default, help) in nonboolopts:
     opts.Add(name, help, default)
 
@@ -277,6 +292,7 @@ pathopts = (
     ("udevdir",             "/lib/udev",     "udev rules directory"),
 )
 
+# now step on the path options just read from '.scons-option-cache'
 for (name, default, help) in pathopts:
     opts.Add(PathVariable(name, help, default, PathVariable.PathAccept))
 
@@ -284,19 +300,24 @@ for (name, default, help) in pathopts:
 # Environment creation
 #
 import_env = (
+    # Variables used by programs invoked during the build
     "DISPLAY",         # Required for dia to run under scons
     "GROUPS",          # Required by gpg
     "HOME",            # Required by gpg
     "LOGNAME",         # LOGNAME is required for the flocktest production.
-    "MACOSX_DEPLOYMENT_TARGET",  # Required by MacOSX 10.4 and probably earlier
     'PATH',            # Required for ccache and Coverity scan-build
-    # Pass more environment variables to pkg-config (required for crossbuilds)
+    'CCACHE_DIR',      # Required for ccache
+    'CCACHE_RECACHE',  # Required for ccache (probably there are more)
+    # pkg-config (required for crossbuilds at least, and probably pkgsrc)
     'PKG_CONFIG_LIBDIR',
-    'PKG_CONFIG_PATH',  # Set .pc file directory in a crossbuild
-    # Pass more environment variables to pkg-config (required for crossbuilds)
+    'PKG_CONFIG_PATH',
     'PKG_CONFIG_SYSROOT_DIR',
-    'STAGING_DIR',     # Required by the OpenWRT and CeroWrt builds.
-    'STAGING_PREFIX',  # Required by the OpenWRT and CeroWrt builds.
+    # Variables for specific packaging/build systems
+    "MACOSX_DEPLOYMENT_TARGET",  # MacOSX 10.4 (and probably earlier)
+    'STAGING_DIR',               # OpenWRT and CeroWrt
+    'STAGING_PREFIX',            # OpenWRT and CeroWrt
+    'CWRAPPERS_CONFIG_DIR',      # pkgsrc
+    # Variables used in testing
     'WRITE_PAD',       # So we can test WRITE_PAD values on the fly.
 )
 
@@ -444,7 +465,9 @@ if 'MORECFLAGS' in os.environ:
     env.Append(CFLAGS=Split(os.environ['MORECFLAGS']))
 
 # Don't change CCFLAGS if already set by environment.
-if 'CCFLAGS' not in os.environ:
+if 'CCFLAGS' in os.environ:
+    announce('Warning: CCFLAGS from environment overriding scons settings')
+else:
     # Should we build with profiling?
     if env['profiling']:
         env.Append(CCFLAGS=['-pg'])
@@ -462,12 +485,6 @@ if 'CCFLAGS' not in os.environ:
         env.Append(CCFLAGS=['-O0'])
     else:
         env.Append(CCFLAGS=['-O2'])
-
-# We are C99, tell the world
-# env.Append(CFLAGS=['-D_ISOC99_SOURCE'])
-
-# We are POSIX 2001, tell the world
-# env.Append(CFLAGS=['-D_POSIX_C_SOURCE=200112L'])
 
 # Cross-development
 
@@ -536,7 +553,7 @@ docbook_html_uri = docbook_url_stem + 'html/docbook.xsl'
 
 def CheckXsltproc(context):
     context.Message('Checking that xsltproc can make man pages... ')
-    ofp = open("xmltest.xml", "w")
+    ofp = open("man/xmltest.xml", "w")
     ofp.write('''
        <refentry id="foo.1">
       <refmeta>
@@ -551,21 +568,26 @@ def CheckXsltproc(context):
     </refentry>
 ''')
     ofp.close()
-    probe = "xsltproc --nonet --noout '%s' xmltest.xml" % (docbook_man_uri,)
+    probe = ("xsltproc --encoding UTF-8 --output man/foo.1 --nonet "
+             "--noout '%s' man/xmltest.xml" % (docbook_man_uri,))
     ret = context.TryAction(probe)[0]
-    os.remove("xmltest.xml")
-    if os.path.exists("foo.1"):
-        os.remove("foo.1")
+    os.remove("man/xmltest.xml")
+    if os.path.exists("man/foo.1"):
+        os.remove("man/foo.1")
+    else:
+        # failed to create output
+        ret = False
     context.Result(ret)
     return ret
 
 
 def CheckCompilerOption(context, option):
     context.Message('Checking if compiler accepts %s... ' % (option,))
-    old_CFLAGS = context.env['CFLAGS']
+    old_CFLAGS = context.env['CFLAGS'][:]  # Get a *copy* of the old list
     context.env.Append(CFLAGS=option)
     ret = context.TryLink("""
         int main(int argc, char **argv) {
+            (void) argc; (void) argv;
             return 0;
         }
     """, '.c')
@@ -583,6 +605,7 @@ def CheckHeaderDefines(context, file, define):
         #error %s is not defined
         #endif
         int main(int argc, char **argv) {
+            (void) argc; (void) argv;
             return 0;
         }
     """ % (file, define, define), '.c')
@@ -597,6 +620,7 @@ def CheckCompilerDefines(context, define):
         #error %s is not defined
         #endif
         int main(int argc, char **argv) {
+            (void) argc; (void) argv;
             return 0;
         }
     """ % (define, define), '.c')
@@ -613,6 +637,7 @@ def CheckC11(context):
         #error Not C11
         #endif
         int main(int argc, char **argv) {
+            (void) argc; (void) argv;
             return 0;
         }
     """, '.c')
@@ -626,8 +651,7 @@ def GetPythonValue(context, name, imp, expr, brief=False):
     if not env['target_python']:
         status, value = 0, str(eval(expr))
     else:
-        command = [target_python_path, '-c',
-                   '%s; print(%s)' % (imp, expr)]
+        command = [target_python_path, '-c', '%s; print(%s)' % (imp, expr)]
         try:
             status, value = _getstatusoutput(command, shell=False)
         except OSError:
@@ -636,7 +660,9 @@ def GetPythonValue(context, name, imp, expr, brief=False):
             value = value.strip()
         else:
             value = ''
-            announce("Python command failed - disabling Python.")
+            announce('Python command "%s" failed - disabling Python.\n'
+                     'Python components will NOT be installed' %
+                     command[2])
             env['python'] = False
     context.Result('failed' if status else 'ok' if brief else value)
     return value
@@ -649,6 +675,13 @@ def GetLoadPath(context):
 cleaning = env.GetOption('clean')
 helping = env.GetOption('help')
 
+# Always set up LIBPATH so that cleaning works properly.
+env.Prepend(LIBPATH=[os.path.realpath(os.curdir)])
+
+# from scons 3.0.5, any changes to env after this, until after
+# config.Finish(), will be lost.  Use config.env until then.
+
+# CheckXsltproc works, but result is incorrectly saved as "no"
 config = Configure(env, custom_tests={
     'CheckPKG': CheckPKG,
     'CheckXsltproc': CheckXsltproc,
@@ -658,26 +691,27 @@ config = Configure(env, custom_tests={
     'CheckHeaderDefines': CheckHeaderDefines,
     'GetPythonValue': GetPythonValue})
 
-# Always set up LIBPATH so that cleaning works properly.
-env.Prepend(LIBPATH=[os.path.realpath(os.curdir)])
+# Use print, rather than announce, so we see it in -s mode.
+print("This system is: %s" % sys.platform)
 
+libgps_flags = []
 if cleaning or helping:
-    dbusflags = []
-    rtlibs = []
-    usbflags = []
     bluezflags = []
-    ncurseslibs = []
     confdefs = []
-    manbuilder = False
+    dbusflags = []
     htmlbuilder = False
+    manbuilder = False
+    ncurseslibs = []
+    rtlibs = []
     tiocmiwait = True  # For cleaning, which works on any OS
+    usbflags = []
 else:
 
     # OS X aliases gcc to clang
     # clang accepts -pthread, then warns it is unused.
     if ((config.CheckCompilerOption("-pthread") and
          not sys.platform.startswith('darwin'))):
-        env.MergeFlags("-pthread")
+        config.env.MergeFlags("-pthread")
 
     confdefs = ["/* gpsd_config.h generated by scons, do not hand-hack. */\n"]
 
@@ -687,10 +721,86 @@ else:
 
     confdefs.append('#define GPSD_URL "%s"\n' % website)
 
+    # TODO: Move these into an if block only on systems with glibc.
+    # needed for isfinite(), pselect(), etc.
+    # for strnlen() before glibc 2.10
+    # glibc 2.10+ needs 200908L (or XOPEN 700+) for strnlen()
+    # on newer glibc _DEFAULT_SOURCE resets _POSIX_C_SOURCE
+    # we set it just in case
+    confdefs.append('#if !defined(_POSIX_C_SOURCE)')
+    confdefs.append('#define _POSIX_C_SOURCE 200809L')
+    confdefs.append('#endif\n')
+    # for daemon(), cfmakeraw(), strsep() and setgroups()
+    # on glibc 2.19+
+    # may also be added by pkg_config
+    confdefs.append('#if !defined(_DEFAULT_SOURCE)')
+    confdefs.append('#define _DEFAULT_SOURCE')
+    confdefs.append('#endif\n')
+
+    # sys/un.h, and more, needs __USE_MISC with glibc and osX
+    # __USE_MISC is set by _DEFAULT_SOURCE or _BSD_SOURCE
+
+    # TODO: Many of these are now specified by POSIX.  Check if
+    # defining _XOPEN_SOURCE is necessary, and limit to systems where
+    # it is.
+    # 500 means X/Open 1995
+    # getsid(), isascii(), nice(), putenv(), strdup(), sys/ipc.h need 500
+    # 600 means X/Open 2004
+    # Ubuntu and OpenBSD isfinite() needs 600
+    # 700 means X/Open 2008
+    # glibc 2.10+ needs 700+ for strnlen()
+    # Python.h wants 600 or 700
+    confdefs.append('#if !defined(_XOPEN_SOURCE)')
+    confdefs.append('#define _XOPEN_SOURCE 700')
+    confdefs.append('#endif\n')
+
+    if sys.platform.startswith('linux'):
+        # for cfmakeraw(), strsep(), etc. on CentOS 7
+        # glibc 2.19 and before
+        # sets __USE_MISC
+        confdefs.append('#if !defined(_BSD_SOURCE)')
+        confdefs.append('#define _BSD_SOURCE')
+        confdefs.append('#endif\n')
+        # for strnlen() and struct ifreq
+        # glibc before 2.10, deprecated in 2.10+
+        confdefs.append('#if !defined(_GNU_SOURCE)')
+        confdefs.append('#define _GNU_SOURCE 1')
+        confdefs.append('#endif\n')
+    elif sys.platform.startswith('darwin'):
+        # strlcpy() and SIGWINCH need _DARWIN_C_SOURCE
+        confdefs.append('#if !defined(_DARWIN_C_SOURCE)')
+        confdefs.append('#define _DARWIN_C_SOURCE 1\n')
+        confdefs.append('#endif\n')
+        # vsnprintf() needs __DARWIN_C_LEVEL >= 200112L
+        # snprintf() needs __DARWIN_C_LEVEL >= 200112L
+        # _DARWIN_C_SOURCE forces __DARWIN_C_LEVEL to 900000L
+        # see <sys/cdefs.h>
+
+        # set internal lib versions at link time.
+        libgps_flags = ["-Wl,-current_version,%s" % libgps_version,
+                        "-Wl,-compatibility_version,%s" % libgps_version,
+                        "-Wl,-install_name,%s/$TARGET" %
+                        installdir('libdir', add_destdir=False)]
+    elif (sys.platform.startswith('freebsd') or
+          sys.platform.startswith('openbsd')):
+        # required to define u_int in sys/time.h
+        confdefs.append('#if !defined(_BSD_SOURCE)')
+        confdefs.append("#define _BSD_SOURCE 1\n")
+        confdefs.append('#endif\n')
+        # required to get strlcpy(), and more, from string.h
+        confdefs.append('#if !defined(__BSD_VISIBLE)')
+        confdefs.append("#define __BSD_VISIBLE 1\n")
+        confdefs.append('#endif\n')
+    elif sys.platform.startswith('netbsd'):
+        # required to get strlcpy(), and more, from string.h
+        confdefs.append('#if !defined(_NETBSD_SOURCE)')
+        confdefs.append("#define _NETBSD_SOURCE 1\n")
+        confdefs.append('#endif\n')
+
     cxx = config.CheckCXX()
-    if not cxx and env["libgpsmm"]:
+    if not cxx and config.env["libgpsmm"]:
         announce("C++ doesn't work, suppressing libgpsmm build.")
-        env["libgpsmm"] = False
+        config.env["libgpsmm"] = False
 
     # define a helper function for pkg-config - we need to pass
     # --static for static linking, too.
@@ -711,7 +821,7 @@ else:
     # anything useful. FreeBSD does, Linux doesn't. Most likely other BSDs
     # are like FreeBSD.
     ncurseslibs = []
-    if env['ncurses']:
+    if config.env['ncurses']:
         if config.CheckPKG('ncurses'):
             ncurseslibs = pkg_config('ncurses', rpath_hack=True)
             if config.CheckPKG('tinfo'):
@@ -730,9 +840,9 @@ else:
             ncurseslibs = ['-lcurses']
         else:
             announce('Turning off ncurses support, library not found.')
-            env['ncurses'] = False
+            config.env['ncurses'] = False
 
-    if env['usb']:
+    if config.env['usb']:
         # In FreeBSD except version 7, USB libraries are in the base system
         if config.CheckPKG('libusb-1.0'):
             confdefs.append("#define HAVE_LIBUSB 1\n")
@@ -751,7 +861,7 @@ else:
     else:
         confdefs.append("/* #undef HAVE_LIBUSB */\n")
         usbflags = []
-        env["usb"] = False
+        config.env["usb"] = False
 
     if config.CheckLib('librt'):
         confdefs.append("#define HAVE_LIBRT 1\n")
@@ -761,26 +871,34 @@ else:
         confdefs.append("/* #undef HAVE_LIBRT */\n")
         rtlibs = []
 
-    if env['dbus_export'] and config.CheckPKG('dbus-1'):
+    # FreeBSD uses -lthr for pthreads
+    if config.CheckLib('libthr'):
+        confdefs.append("#define HAVE_LIBTHR 1\n")
+        # System library - no special flags
+        rtlibs += ["-lthr"]
+    else:
+        confdefs.append("/* #undef HAVE_LIBTHR */\n")
+
+    if config.env['dbus_export'] and config.CheckPKG('dbus-1'):
         confdefs.append("#define HAVE_DBUS 1\n")
         dbusflags = pkg_config("dbus-1")
-        env.MergeFlags(dbusflags)
+        config.env.MergeFlags(dbusflags)
     else:
         confdefs.append("/* #undef HAVE_DBUS */\n")
         dbusflags = []
-        if env["dbus_export"]:
+        if config.env["dbus_export"]:
             announce("Turning off dbus-export support, library not found.")
-        env["dbus_export"] = False
+        config.env["dbus_export"] = False
 
-    if env['bluez'] and config.CheckPKG('bluez'):
+    if config.env['bluez'] and config.CheckPKG('bluez'):
         confdefs.append("#define ENABLE_BLUEZ 1\n")
         bluezflags = pkg_config('bluez')
     else:
         confdefs.append("/* #undef ENABLE_BLUEZ */\n")
         bluezflags = []
-        if env["bluez"]:
+        if config.env["bluez"]:
             announce("Turning off Bluetooth support, library not found.")
-        env["bluez"] = False
+        config.env["bluez"] = False
 
     # in_port_t is not defined on Android
     if not config.CheckType("in_port_t", "#include <netinet/in.h>"):
@@ -803,7 +921,7 @@ else:
     else:
         confdefs.append("/* #undef HAVE_LINUX_CAN_H */\n")
         announce("You do not have kernel CANbus available.")
-        env["nmea2000"] = False
+        config.env["nmea2000"] = False
 
     # check for C11 or better, and __STDC__NO_ATOMICS__ is not defined
     # before looking for stdatomic.h
@@ -849,10 +967,18 @@ else:
             confdefs.append("/* #undef HAVE_MACHINE_ENDIAN_H */\n")
             announce("You do not have the endian.h header file. "
                      "RTCM V2 support disabled.")
-            env["rtcm104v2"] = False
+            config.env["rtcm104v2"] = False
 
-    for hdr in ("sys/un", "sys/socket", "sys/select", "netdb", "netinet/in",
-                "netinet/ip", "arpa/inet", "syslog", "termios", "winsock2"):
+    for hdr in ("arpa/inet",
+                "netdb",
+                "netinet/in",
+                "netinet/ip",
+                "sys/socket",
+                "sys/un",
+                "syslog",
+                "termios",
+                "winsock2"
+                ):
         if config.CheckHeader(hdr + ".h"):
             confdefs.append("#define HAVE_%s_H 1\n"
                             % hdr.replace("/", "_").upper())
@@ -870,18 +996,21 @@ else:
             confdefs.append("/* #undef HAVE_%s */\n" % f.upper())
 
     if config.CheckHeader(["sys/types.h", "sys/time.h", "sys/timepps.h"]):
-        env.MergeFlags("-DHAVE_SYS_TIMEPPS_H=1")
+        confdefs.append("#define HAVE_SYS_TIMEPPS_H 1\n")
         kpps = True
     else:
         kpps = False
-        if env["magic_hat"]:
+        if config.env["magic_hat"]:
             announce("Forcing magic_hat=no since RFC2783 API is unavailable")
-            env["magic_hat"] = False
+            config.env["magic_hat"] = False
     tiocmiwait = config.CheckHeaderDefines("sys/ioctl.h", "TIOCMIWAIT")
-    if env["pps"] and not tiocmiwait and not kpps:
+    if config.env["pps"] and not tiocmiwait and not kpps:
         announce("Forcing pps=no (neither TIOCMIWAIT nor RFC2783 "
                  "API is available)")
-        env["pps"] = False
+        config.env["pps"] = False
+        if config.env["timeservice"]:
+            announce("ERROR: timeservice specified, but no PPS available")
+            Exit(1)
 
     # Map options to libraries required to support them that might be absent.
     optionrequires = {
@@ -894,7 +1023,7 @@ else:
         + list(map(lambda x: (x[0], x[2]), pathopts))
     keys.sort()
     for (key, help) in keys:
-        value = env[key]
+        value = config.env[key]
         if value and key in optionrequires:
             for required in optionrequires[key]:
                 if not config.CheckLib(required):
@@ -918,7 +1047,7 @@ else:
                 confdefs.append("#define %s \"%s\"\n" % (key.upper(), value))
 
     # Simplifies life on hackerboards like the Raspberry Pi
-    if env['magic_hat']:
+    if config.env['magic_hat']:
         confdefs.append('''\
 /* Magic device which, if present, means to grab a static /dev/pps0 for KPPS */
 #define MAGIC_HAT_GPS   "/dev/ttyAMA0"
@@ -934,14 +1063,14 @@ else:
 ''')
 
     manbuilder = htmlbuilder = None
-    if env['manbuild']:
+    if config.env['manbuild']:
         if config.CheckXsltproc():
-            build = "xsltproc --nonet %s $SOURCE >$TARGET"
+            build = ("xsltproc --encoding UTF-8 --output $TARGET"
+                     " --nonet %s $SOURCE")
             htmlbuilder = build % docbook_html_uri
             manbuilder = build % docbook_man_uri
         elif WhereIs("xmlto"):
-            xmlto = "xmlto %s $SOURCE || mv `basename $TARGET` " \
-                    "`dirname $TARGET`"
+            xmlto = "xmlto -o `dirname $TARGET` %s $SOURCE"
             htmlbuilder = xmlto % "html-nochunks"
             manbuilder = xmlto % "man"
         else:
@@ -950,17 +1079,20 @@ else:
     else:
         announce("Build of man and HTML documentation is disabled.")
     if manbuilder:
-        env['BUILDERS']["Man"] = Builder(action=manbuilder)
-        env['BUILDERS']["HTML"] = Builder(action=htmlbuilder,
-                                          src_suffix=".xml", suffix=".html")
+        # 18.2. Attaching a Builder to a Construction Environment
+        config.env.Append(BUILDERS={"Man": Builder(action=manbuilder,
+                                                   src_suffix=".xml")})
+        config.env.Append(BUILDERS={"HTML": Builder(action=htmlbuilder,
+                                                    src_suffix=".xml",
+                                                    suffix=".html")})
 
     # Determine if Qt network libraries are present, and
     # if not, force qt to off
-    if env["qt"]:
-        qt_net_name = 'Qt%sNetwork' % env["qt_versioned"]
+    if config.env["qt"]:
+        qt_net_name = 'Qt%sNetwork' % config.env["qt_versioned"]
         qt_network = config.CheckPKG(qt_net_name)
         if not qt_network:
-            env["qt"] = False
+            config.env["qt"] = False
             announce('Turning off Qt support, library not found.')
 
     # If supported by the compiler, enable all warnings except uninitialized
@@ -970,13 +1102,27 @@ else:
     # because we can't seem to keep scons from passing these to g++.
     #
     # Do this after the other config checks, to keep warnings out of them.
-    for option in ('-Wextra', '-Wall', '-Wno-uninitialized',
-                   '-Wno-missing-field-initializers',
-                   '-Wcast-align', '-Wmissing-declarations',
+    for option in ('-Wall',
+                   '-Wcast-align',
+                   '-Wextra',
+                   # -Wimplicit-fallthrough same as
+                   # -Wimplicit-fallthrough=3, except osX hates the
+                   # second flavor
+                   '-Wimplicit-fallthrough',
+                   '-Wmissing-declarations',
                    '-Wmissing-prototypes',
-                   '-Wstrict-prototypes', '-Wpointer-arith', '-Wreturn-type'):
+                   '-Wno-missing-field-initializers',
+                   '-Wno-uninitialized',
+                   '-Wpointer-arith',
+                   '-Wreturn-type',
+                   '-Wstrict-prototypes',
+                   '-Wvla',
+                   ):
         if option not in config.env['CFLAGS']:
             config.CheckCompilerOption(option)
+
+# OSX needs to set the ID for installed shared libraries.  See if this is OSX
+# and whether we have the tool.
 
 # Set up configuration for target Python
 
@@ -1008,24 +1154,24 @@ if helping:
 
 else:
 
-    if env['python'] and env['target_python']:
+    if config.env['python'] and config.env['target_python']:
         try:
             config.CheckProg
         except AttributeError:  # Older scons versions don't have CheckProg
-            target_python_path = env['target_python']
+            target_python_path = config.env['target_python']
         else:
-            target_python_path = config.CheckProg(env['target_python'])
+            target_python_path = config.CheckProg(config.env['target_python'])
         if not target_python_path:
             announce("Target Python doesn't exist - disabling Python.")
-            env['python'] = False
-    if env['python']:
+            config.env['python'] = False
+    if config.env['python']:
         # Maximize consistency by using the reported sys.executable
         target_python_path = config.GetPythonValue('exe path',
                                                    'import sys',
                                                    'sys.executable',
                                                    brief=cleaning)
-        if env['python_libdir']:
-            python_libdir = env['python_libdir']
+        if config.env['python_libdir']:
+            python_libdir = config.env['python_libdir']
         else:
             python_libdir = config.GetPythonValue('lib dir',
                                                   PYTHON_SYSCONFIG_IMPORT,
@@ -1043,15 +1189,17 @@ else:
                                                brief=True)
 
 
-if env['python']:  # May have been turned off by error
-    env['PYTHON'] = polystr(target_python_path)
-    env['ENV']['PYTHON'] = polystr(target_python_path)  # For regress-driver
+if config.env['python']:  # May have been turned off by error
+    config.env['PYTHON'] = polystr(target_python_path)
+    # For regress-driver
+    config.env['ENV']['PYTHON'] = polystr(target_python_path)
     py_config_vars = ast.literal_eval(py_config_text.decode())
     py_config_vars = [[] if x is None else x for x in py_config_vars]
     python_config = dict(zip(PYTHON_CONFIG_NAMES, py_config_vars))
 
 
 env = config.Finish()
+# All configuration should be finished.  env can now be modified.
 
 if not (cleaning or helping):
 
@@ -1107,10 +1255,7 @@ if env['coveraging'] and env['python_coverage'] and not (cleaning or helping):
 
 # Two shared libraries provide most of the code for the C programs
 
-libgps_version_soname = libgps_version_current - libgps_version_age
-libgps_version = "%d.%d.%d" % (libgps_version_soname, libgps_version_age,
-                               libgps_version_revision)
-
+# gpsd client library
 libgps_sources = [
     "ais_json.c",
     "bits.c",
@@ -1134,6 +1279,7 @@ libgps_sources = [
 if env['libgpsmm']:
     libgps_sources.append("libgpsmm.cpp")
 
+# gpsd server library
 libgpsd_sources = [
     "bsd_base64.c",
     "crc24q.c",
@@ -1203,16 +1349,19 @@ else:
                                  SHLIBVERSION=version)
 
     def LibraryInstall(env, libdir, sources, version):
-        return env.InstallVersionedLib(libdir, sources, SHLIBVERSION=version)
+        # note: osX lib name s/b libgps.VV.dylib
+        # where VV is libgps_version_current
+        inst = env.InstallVersionedLib(libdir, sources, SHLIBVERSION=version)
+        return inst
 
-compiled_gpslib = Library(env=env,
-                          target="gps",
-                          sources=libgps_sources,
-                          version=libgps_version,
-                          parse_flags=rtlibs)
-env.Clean(compiled_gpslib, "gps_maskdump.c")
+libgps_shared = Library(env=env,
+                        target="gps",
+                        sources=libgps_sources,
+                        version=libgps_version,
+                        parse_flags=rtlibs + libgps_flags)
+env.Clean(libgps_shared, "gps_maskdump.c")
 
-static_gpslib = env.StaticLibrary("gps_static",
+libgps_static = env.StaticLibrary("gps_static",
                                   [env.StaticObject(s)
                                    for s in libgps_sources], rtlibs)
 
@@ -1222,7 +1371,7 @@ static_gpsdlib = env.StaticLibrary(
             for s in libgpsd_sources],
     parse_flags=usbflags + bluezflags)
 
-libraries = [compiled_gpslib]
+libraries = [libgps_shared]
 
 # Only attempt to create the qt library if we have shared turned on
 # otherwise we have a mismash of objects in library
@@ -1300,6 +1449,9 @@ gpsdctl = env.Program('gpsdctl', ['gpsdctl.c'],
 gpspipe = env.Program('gpspipe', ['gpspipe.c'],
                       LIBS=['gps_static'],
                       parse_flags=gpsflags)
+gpsrinex = env.Program('gpsrinex', ['gpsrinex.c'],
+                       LIBS=['gps_static'],
+                       parse_flags=gpsflags)
 gps2udp = env.Program('gps2udp', ['gps2udp.c'],
                       LIBS=['gps_static'],
                       parse_flags=gpsflags)
@@ -1323,7 +1475,15 @@ if env["gpsd"]:
     sbin_binaries += [gpsd]
 if env["gpsdclients"]:
     sbin_binaries += [gpsdctl]
-    bin_binaries += [gpsdecode, gpsctl, gpspipe, gps2udp, gpxlogger, lcdgps]
+    bin_binaries += [
+        gps2udp,
+        gpsctl,
+        gpsdecode,
+        gpspipe,
+        gpsrinex,
+        gpxlogger,
+        lcdgps
+    ]
 if env['pps'] and (env["timeservice"] or env["gpsdclients"]):
     bin_binaries += [ntpshmmon]
     if tiocmiwait:
@@ -1333,26 +1493,30 @@ if env["ncurses"]:
         bin_binaries += [cgps, gpsmon]
 
 # Test programs - always link locally and statically
-test_bits = env.Program('test_bits', ['test_bits.c'],
+test_bits = env.Program('tests/test_bits', ['tests/test_bits.c'],
                         LIBS=['gps_static'])
-test_float = env.Program('test_float', ['test_float.c'])
-test_geoid = env.Program('test_geoid', ['test_geoid.c'],
+test_float = env.Program('tests/test_float', ['tests/test_float.c'])
+test_geoid = env.Program('tests/test_geoid', ['tests/test_geoid.c'],
                          LIBS=['gpsd', 'gps_static'],
                          parse_flags=gpsdflags)
-test_matrix = env.Program('test_matrix', ['test_matrix.c'],
+test_gpsdclient = env.Program('tests/test_gpsdclient',
+                              ['tests/test_gpsdclient.c'],
+                              LIBS=['gps_static', 'm'])
+test_matrix = env.Program('tests/test_matrix', ['tests/test_matrix.c'],
                           LIBS=['gpsd', 'gps_static'],
                           parse_flags=gpsdflags)
-test_mktime = env.Program('test_mktime', ['test_mktime.c'],
-                          LIBS=['gps_static'], parse_flags=["-lm"])
-test_packet = env.Program('test_packet', ['test_packet.c'],
+test_mktime = env.Program('tests/test_mktime', ['tests/test_mktime.c'],
+                          LIBS=['gps_static'], parse_flags=["-lm"] + rtlibs)
+test_packet = env.Program('tests/test_packet', ['tests/test_packet.c'],
                           LIBS=['gpsd', 'gps_static'],
                           parse_flags=gpsdflags)
-test_timespec = env.Program('test_timespec', ['test_timespec.c'],
+test_timespec = env.Program('tests/test_timespec', ['tests/test_timespec.c'],
                             LIBS=['gpsd', 'gps_static'],
                             parse_flags=gpsdflags)
-test_trig = env.Program('test_trig', ['test_trig.c'], parse_flags=["-lm"])
+test_trig = env.Program('tests/test_trig', ['tests/test_trig.c'],
+                        parse_flags=["-lm"])
 # test_libgps for glibc older than 2.17
-test_libgps = env.Program('test_libgps', ['test_libgps.c'],
+test_libgps = env.Program('tests/test_libgps', ['tests/test_libgps.c'],
                           LIBS=['gps_static'],
                           parse_flags=["-lm"] + rtlibs + dbusflags)
 
@@ -1361,15 +1525,24 @@ if not env['socket_export']:
     test_json = None
 else:
     test_json = env.Program(
-        'test_json', ['test_json.c'],
+        'tests/test_json', ['tests/test_json.c'],
         LIBS=['gps_static'],
         parse_flags=["-lm"] + rtlibs + usbflags + dbusflags)
 
-test_gpsmm = env.Program('test_gpsmm', ['test_gpsmm.cpp'],
+# duplicate below?
+test_gpsmm = env.Program('tests/test_gpsmm', ['tests/test_gpsmm.cpp'],
                          LIBS=['gps_static'],
                          parse_flags=["-lm"] + rtlibs + dbusflags)
-testprogs = [test_bits, test_float, test_geoid, test_libgps, test_matrix,
-             test_mktime, test_packet, test_timespec, test_trig]
+testprogs = [test_bits,
+             test_float,
+             test_geoid,
+             test_gpsdclient,
+             test_libgps,
+             test_matrix,
+             test_mktime,
+             test_packet,
+             test_timespec,
+             test_trig]
 if env['socket_export']:
     testprogs.append(test_json)
 if env["libgpsmm"]:
@@ -1384,7 +1557,8 @@ if not env['python']:
     python_targets = []
 else:
     # installed python programs
-    python_progs = ["gegps", "gpscat", "gpsfake", "gpsprof"]
+    python_progs = ["gegps", "gpscat", "gpsfake", "gpsprof", "ubxtool", "zerk"]
+    python_deps = {'gpscat': 'packet'}
 
     # python misc helpers and stuff
     python_misc = [
@@ -1398,26 +1572,16 @@ else:
         "test_xgps_deps.py",
         "valgrind-audit.py"
     ]
+    python_deps['test_maidenhead.py'] = 'clienthelpers'
 
     python_manpages = {
-        "gegps.1": "gps.xml",
-        "gpscat.1": "gpscat.xml",
-        "gpsfake.1": "gpsfake.xml",
-        "gpsprof.1": "gpsprof.xml",
+        "man/gegps.1": "man/gps.xml",
+        "man/gpscat.1": "man/gpscat.xml",
+        "man/gpsfake.1": "man/gpsfake.xml",
+        "man/gpsprof.1": "man/gpsprof.xml",
+        "man/ubxtool.1": "man/ubxtool.xml",
+        "man/zerk.1": "man/zerk.xml",
     }
-
-    # check for pyserial
-    try:
-        imp.find_module('serial')
-        python_progs.extend(["ubxtool", "zerk"])
-        python_manpages.update({
-            "ubxtool.1": "ubxtool.xml",
-            "zerk.1": "zerk.xml",
-        })
-    except ImportError:
-        # no pyserial, reduced functionality in ubxtool and zerk
-        announce("WARNING: Python module serial (pyserial) not found.\n"
-                 "    ubxtool and zerk will not be installed")
 
     if env['xgps']:
         # check for pycairo
@@ -1441,9 +1605,11 @@ else:
     if env['xgps']:
         python_progs.extend(["xgps", "xgpsspeed"])
         python_manpages.update({
-            "xgps.1": "gps.xml",
-            "xgpsspeed.1": "gps.xml",
+            "man/xgps.1": "man/gps.xml",
+            "man/xgpsspeed.1": "man/gps.xml",
         })
+        python_deps['xgps'] = 'clienthelpers'
+
     python_modules = Glob('gps/*.py')
 
     # Build Python binding
@@ -1527,6 +1693,11 @@ else:
             )
         python_compiled_libs[ext] = python_env.SharedLibrary(
             ext, python_objects[ext])
+
+    # Make sure we know about compiled dependencies
+    for prog, dep in python_deps.items():
+        env.Depends(prog, python_compiled_libs['gps' + os.sep + dep])
+
     # Make PEP 241 Metadata 1.0.
     # Why not PEP 314 (V1.1) or PEP 345 (V1.2)?
     # V1.2 and V1.2 require a Download-URL to an installable binary
@@ -1551,9 +1722,10 @@ Platform: UNKNOWN
     python_targets = python_built_extensions + [python_egg_info]
 
 
-env.Command(target="packet_names.h", source="packet_states.h", action="""
+env.Command(target="packet_names.h", source="packet_states.h",
+            action="""
     rm -f $TARGET &&\
-    sed -e '/^ *\([A-Z][A-Z0-9_]*\),/s//   \"\\1\",/' <$SOURCE >$TARGET &&\
+    sed -e '/^ *\\([A-Z][A-Z0-9_]*\\),/s//   \"\\1\",/' <$SOURCE >$TARGET &&\
     chmod a-w $TARGET""")
 
 # timebase.h - always built in order to include current GPS week
@@ -1572,7 +1744,9 @@ env.AlwaysBuild(timebase)
 
 env.Textfile(target="gpsd_config.h", source=confdefs)
 
-env.Command(target="gps_maskdump.c", source=["maskaudit.py", "gps.h", "gpsd.h"], action='''
+env.Command(target="gps_maskdump.c",
+            source=["maskaudit.py", "gps.h", "gpsd.h"],
+            action='''
     rm -f $TARGET &&\
         $SC_PYTHON $SOURCE -c $SRCDIR >$TARGET &&\
         chmod a-w $TARGET''')
@@ -1660,9 +1834,7 @@ else:
 # but it doesn't seem to work in scons 1.20
 def substituter(target, source, env):
     substmap = (
-        ('@ADMIN@',      admin),
         ('@ANNOUNCE@',   annmail),
-        ('@BROWSEREPO@', browserepo),
         ('@BUGTRACKER@', bugtracker),
         ('@CGIUPLOAD@',  cgiupload),
         ('@CLONEREPO@',  clonerepo),
@@ -1689,7 +1861,6 @@ def substituter(target, source, env):
         ('@VERSION@',    gpsd_version),
         ('@WEBFORM@',    webform),
         ('@WEBSITE@',    website),
-        ('@WEBUPLOAD@',  webupload),
     )
 
     sfp = open(str(source[0]))
@@ -1722,43 +1893,55 @@ for fn in templated:
 # Documentation
 
 base_manpages = {
-    "cgps.1": "gps.xml",
-    "gps.1": "gps.xml",
-    "gps2udp.1": "gps2udp.xml",
-    "gpsctl.1": "gpsctl.xml",
-    "gpsd.8": "gpsd.xml",
-    "gpsdctl.8": "gpsdctl.xml",
-    "gpsdecode.1": "gpsdecode.xml",
-    "gpsd_json.5": "gpsd_json.xml",
-    "gpsinit.8": "gpsinit.xml",
-    "gpsmon.1": "gpsmon.xml",
-    "gpspipe.1": "gpspipe.xml",
-    "gpxlogger.1": "gpxlogger.xml",
-    "lcdgps.1": "gps.xml",
-    "libgps.3": "libgps.xml",
-    "libgpsmm.3": "libgpsmm.xml",
-    "libQgpsmm.3": "libgpsmm.xml",
-    "srec.5": "srec.xml",
+    "man/cgps.1": "man/gps.xml",
+    "man/gps.1": "man/gps.xml",
+    "man/gps2udp.1": "man/gps2udp.xml",
+    "man/gpsctl.1": "man/gpsctl.xml",
+    "man/gpsd.8": "man/gpsd.xml",
+    "man/gpsdctl.8": "man/gpsdctl.xml",
+    "man/gpsdecode.1": "man/gpsdecode.xml",
+    "man/gpsd_json.5": "man/gpsd_json.xml",
+    "man/gpsinit.8": "man/gpsinit.xml",
+    "man/gpsmon.1": "man/gpsmon.xml",
+    "man/gpspipe.1": "man/gpspipe.xml",
+    "man/gpsrinex.1": "man/gpsrinex.xml",
+    "man/gpxlogger.1": "man/gpxlogger.xml",
+    "man/lcdgps.1": "man/gps.xml",
+    "man/libgps.3": "man/libgps.xml",
+    "man/libgpsmm.3": "man/libgpsmm.xml",
+    "man/libQgpsmm.3": "man/libgpsmm.xml",
+    "man/srec.5": "man/srec.xml",
 }
 
 if env['pps'] and (env["timeservice"] or env["gpsdclients"]):
     base_manpages.update({
-        "ntpshmmon.1": "ntpshmmon.xml",
+        "man/ntpshmmon.1": "man/ntpshmmon.xml",
     })
 
 if tiocmiwait:
     base_manpages.update({
-        "ppscheck.8": "ppscheck.xml",
+        "man/ppscheck.8": "man/ppscheck.xml",
     })
 
-all_manpages = list(base_manpages.keys()) + list(python_manpages.keys())
+all_manpages = list(base_manpages.keys())
+other_manpages = [
+                  "man/gegps.1",
+                  "man/xgps.1",
+                  "man/xgpsspeed.1",
+                  ]
+
+if python_manpages:
+    all_manpages += list(python_manpages.keys())
 
 man_env = env.Clone()
 if man_env.GetOption('silent'):
     man_env['SPAWN'] = filtered_spawn  # Suppress stderr chatter
 manpage_targets = []
 if manbuilder:
-    items = list(base_manpages.items()) + list(python_manpages.items())
+    items = list(base_manpages.items())
+    if python_manpages:
+        items += list(python_manpages.items())
+
     for (man, xml) in items:
         manpage_targets.append(man_env.Man(source=xml, target=man))
 
@@ -1770,7 +1953,8 @@ build = env.Alias('build',
                    "libgps.pc", "gpsd.rules"])
 
 if qt_env:
-    test_qgpsmm = env.Program('test_qgpsmm', ['test_gpsmm.cpp'],
+    # duplicate above?
+    test_qgpsmm = env.Program('tests/test_qgpsmm', ['tests/test_gpsmm.cpp'],
                               LIBPATH=['.'],
                               OBJPREFIX='qt-',
                               LIBS=['Qgpsmm'])
@@ -1794,7 +1978,7 @@ headerinstall = [env.Install(installdir('includedir'), x)
 binaryinstall = []
 binaryinstall.append(env.Install(installdir('sbindir'), sbin_binaries))
 binaryinstall.append(env.Install(installdir('bindir'), bin_binaries))
-binaryinstall.append(LibraryInstall(env, installdir('libdir'), compiled_gpslib,
+binaryinstall.append(LibraryInstall(env, installdir('libdir'), libgps_shared,
                                     libgps_version))
 # Work around a minor bug in InstallSharedLib() link handling
 env.AddPreAction(binaryinstall, 'rm -f %s/libgps.*' % (installdir('libdir'), ))
@@ -1847,13 +2031,14 @@ if env['python']:
     maidenhead_locator_regress = UtilityWithHerald(
         'Testing the Maidenhead Locator conversion...',
         'maidenhead-locator-regress', [python_built_extensions], [
-            '$PYTHON $PYTHON_COVERAGE $SRCDIR/test_maidenhead.py >/dev/null'])
+            '$PYTHON $PYTHON_COVERAGE $SRCDIR/test_maidenhead.py '
+            ' >/dev/null'])
 
     # Sanity-check Python code.
     # Bletch.  We don't really want to suppress W0231 E0602 E0611 E1123,
     # but Python 3 syntax confuses a pylint running under Python 2.
     checkable = python_progs[:]
-    # Theres's an internal error in astroid that requires we disable some
+    # There's an internal error in astroid that requires we disable some
     # auditing. This is irritating as hell but there's no help for it short
     # of an upstream fix.
     if env['xgps']:
@@ -1891,7 +2076,7 @@ if env['python']:
     verenv['DISPLAY'] = ''  # Avoid launching X11 in X11 progs
     pp = []
     for p in python_progs:
-        pp.append("$SRCDIR/%s -V" % p)
+        pp.append("$PYTHON $SRCDIR/%s -V" % p)
     python_versions = Utility('python-versions', python_progs, pp, ENV=verenv)
 
 else:
@@ -1907,11 +2092,12 @@ if qt_env:
 
 
 maninstall = []
-for manpage in list(base_manpages.keys()) + list(python_manpages.keys()):
+for manpage in all_manpages:
     if not manbuilder and not os.path.exists(manpage):
         continue
     section = manpage.split(".")[1]
-    dest = os.path.join(installdir('mandir'), "man" + section, manpage)
+    dest = os.path.join(installdir('mandir'), "man" + section,
+                        os.path.basename(manpage))
     maninstall.append(env.InstallAs(source=manpage, target=dest))
 install = env.Alias('install', binaryinstall + maninstall + python_install +
                     pc_install + headerinstall)
@@ -1961,7 +2147,7 @@ Utility("scan-build", ["gpsd.h", "packet_names.h"],
 
 
 # Check the documentation for bogons, too
-Utility("xmllint", glob.glob("*.xml"),
+Utility("xmllint", glob.glob("man/*.xml"),
         "for xml in $SOURCES; do xmllint --nonet --noout --valid $$xml; done")
 
 # Use deheader to remove headers not required.  If the statistics line
@@ -1989,12 +2175,17 @@ audit = env.Alias('audit',
 
 # Unit-test the bitfield extractor
 bits_regress = Utility('bits-regress', [test_bits], [
-    '$SRCDIR/test_bits --quiet'
+    '$SRCDIR/tests/test_bits --quiet'
+])
+
+# Unit-test the deg_to_str() converter
+bits_regress = Utility('deg-regress', [test_gpsdclient], [
+    '$SRCDIR/tests/test_gpsdclient'
 ])
 
 # Unit-test the bitfield extractor
 matrix_regress = Utility('matrix-regress', [test_matrix], [
-    '$SRCDIR/test_matrix --quiet'
+    '$SRCDIR/tests/test_matrix --quiet'
 ])
 
 # using regress-drivers requires socket_export being enabled.
@@ -2146,37 +2337,45 @@ Utility('aivdm-makeregress', [gpsdecode], [
 packet_regress = UtilityWithHerald(
     'Testing detection of invalid packets...',
     'packet-regress', [test_packet], [
-        '$SRCDIR/test_packet | diff -u $SRCDIR/test/packet.test.chk -', ])
+        '$SRCDIR/tests/test_packet | '
+        ' diff -u $SRCDIR/test/packet.test.chk -', ])
 
 # Rebuild the packet-getter regression test
 Utility('packet-makeregress', [test_packet], [
-    '$SRCDIR/test_packet >$SRCDIR/test/packet.test.chk', ])
+    '$SRCDIR/tests/test_packet >$SRCDIR/test/packet.test.chk', ])
 
 # Rebuild the geoid test
 Utility('geoid-makeregress', [test_geoid], [
-    '$SRCDIR/test_geoid 37.371192 122.014965 >$SRCDIR/test/geoid.test.chk'])
+    '$SRCDIR/tests/test_geoid 37.371192 122.014965 '
+    ' >$SRCDIR/test/geoid.test.chk'])
 
 # Regression-test the geoid tester.
 geoid_regress = UtilityWithHerald(
     'Testing the geoid model...',
     'geoid-regress', [test_geoid], [
-        '$SRCDIR/test_geoid 37.371192 122.014965'
+        '$SRCDIR/tests/test_geoid 37.371192 122.014965'
         ' | diff -u $SRCDIR/test/geoid.test.chk -', ])
 
 # Regression-test the calendar functions
 time_regress = Utility('time-regress', [test_mktime], [
-    '$SRCDIR/test_mktime'
+    '$SRCDIR/tests/test_mktime'
 ])
 
-# Regression test the unpacking code in libgps
 if not env['python']:
     unpack_regress = None
+    misc_regress = None
 else:
+    # Regression test the unpacking code in libgps
     unpack_regress = UtilityWithHerald(
         'Testing the client-library sentence decoder...',
         'unpack-regress', [test_libgps], [
             '$SRCDIR/regress-driver $REGRESSOPTS -c'
             ' $SRCDIR/test/clientlib/*.log', ])
+    # Unit-test the bitfield extractor
+    misc_regress = Utility('misc-regress', [], [
+        '$SRCDIR/test_misc.py'
+    ])
+
 
 # Build the regression test for the sentence unpacker
 Utility('unpack-makeregress', [test_libgps], [
@@ -2188,18 +2387,29 @@ Utility('unpack-makeregress', [test_libgps], [
 if not env['socket_export']:
     json_regress = None
 else:
-    json_regress = Utility('json-regress', [test_json], ['$SRCDIR/test_json'])
+    json_regress = Utility('json-regress', [test_json],
+                           ['$SRCDIR/tests/test_json'])
 
 # Unit-test timespec math
 timespec_regress = Utility('timespec-regress', [test_timespec], [
-    '$SRCDIR/test_timespec'
+    '$SRCDIR/tests/test_timespec'
+])
+
+# Unit-test float math
+float_regress = Utility('float-regress', [test_float], [
+    '$SRCDIR/tests/test_float'
+])
+
+# Unit-test trig math
+trig_regress = Utility('trig-regress', [test_trig], [
+    '$SRCDIR/tests/test_trig'
 ])
 
 # consistency-check the driver methods
 method_regress = UtilityWithHerald(
     'Consistency-checking driver methods...',
     'method-regress', [test_packet], [
-        '$SRCDIR/test_packet -c >/dev/null', ])
+        '$SRCDIR/tests/test_packet -c >/dev/null', ])
 
 # Test the xgps/xgpsspeed dependencies
 if not env['python'] or not env['xgps']:
@@ -2235,11 +2445,13 @@ test_nondaemon = [
     aivdm_regress,
     bits_regress,
     describe,
+    float_regress,
     geoid_regress,
     json_regress,
     maidenhead_locator_regress,
     matrix_regress,
     method_regress,
+    misc_regress,
     packet_regress,
     python_compilation_regress,
     python_versions,
@@ -2247,6 +2459,7 @@ test_nondaemon = [
     test_xgps_deps,
     time_regress,
     timespec_regress,
+    # trig_regress,  # not ready
     unpack_regress,
 ]
 
@@ -2280,19 +2493,20 @@ Utility('shmclean', [], ["ipcrm  -M 0x4e545030;"
 
 # asciidoc documents
 if env.WhereIs('asciidoc'):
-    txtfiles = ['AIVDM',
-                'client-howto',
-                'gpsd-time-service-howto',
-                'NMEA',
-                'protocol-evolution',
-                'protocol-transition',
-                'time-service-intro',
-                ]
-    asciidocs = ["www/" + stem + ".html" for stem in txtfiles] \
+    adocfiles = ['AIVDM',
+                 'client-howto',
+                 'gpsd-time-service-howto',
+                 'NMEA',
+                 'ppp-howto',
+                 'protocol-evolution',
+                 'protocol-transition',
+                 'time-service-intro',
+                 ]
+    asciidocs = ["www/" + stem + ".html" for stem in adocfiles] \
         + ["www/installation.html"]
-    for stem in txtfiles:
-        env.Command('www/%s.html' % stem, 'www/%s.txt' % stem,
-                    ['asciidoc -b html5 -a toc -o www/%s.html www/%s.txt'
+    for stem in adocfiles:
+        env.Command('www/%s.html' % stem, 'www/%s.adoc' % stem,
+                    ['asciidoc -b html5 -a toc -o www/%s.html www/%s.adoc'
                      % (stem, stem)])
     env.Command("www/installation.html",
                 "INSTALL",
@@ -2312,9 +2526,11 @@ htmlpages = Split('''
     www/gpsd_json.html
     www/gpsfake.html
     www/gps.html
+    www/gpsinit.html
     www/gpsmon.html
     www/gpspipe.html
     www/gpsprof.html
+    www/gpsrinex.html
     www/gpxlogger.html
     www/hardware.html
     www/internals.html
@@ -2325,7 +2541,9 @@ htmlpages = Split('''
     www/ppscheck.html
     www/replacing-nmea.html
     www/srec.html
+    www/ubxtool.html
     www/writing-a-driver.html
+    www/zerk.html
     ''')
 
 webpages = htmlpages + asciidocs + list(map(lambda f: f[:-3],
@@ -2348,13 +2566,13 @@ def validation_list(target, source, env):
 
 Utility("validation-list", [www], validation_list)
 
-# How to update the website
+# How to update the website.  Assumes a logal GitLab pages setup.
+# See .gitlab-ci.yml
 upload_web = Utility("website", [www],
-                     ['rsync --exclude="*.in" -avz www/ ' + webupload,
-                      'scp -q README TODO NEWS ' + webupload,
-                      'chmod ug+w,a+x www/gps_report.cgi',
-                      'scp -q www/gps_report.cgi ' + cgiupload +
-                      "gps_report.cgi"])
+                     ['rsync --exclude="*.in" -avz www/ ' +
+                      os.environ.get('WEBSITE', '.public'),
+                      'cp README TODO NEWS ' +
+                      os.environ.get('WEBSITE', '.public')])
 
 # When the URL declarations change, so must the generated web pages
 for fn in glob.glob("www/*.in"):
@@ -2362,8 +2580,8 @@ for fn in glob.glob("www/*.in"):
 
 if htmlbuilder:
     # Manual pages
-    for xml in glob.glob("*.xml"):
-        env.HTML('www/%s.html' % xml[:-4], xml)
+    for xml in glob.glob("man/*.xml"):
+        env.HTML('www/%s.html' % os.path.basename(xml[:-4]), xml)
 
     # DocBook documents
     for stem in ['writing-a-driver', 'performance/performance',
@@ -2428,9 +2646,6 @@ if env['systemd']:
 
     env.AlwaysBuild(systemd_uninstall)
     env.Precious(systemd_uninstall)
-
-
-if env['systemd']:
     hotplug_wrapper_install = []
 else:
     hotplug_wrapper_install = [
@@ -2467,7 +2682,7 @@ Utility('udev-test', '', ['$SRCDIR/gpsd -N -n -F /var/run/gpsd.sock -D 5', ])
 # Dummy target for cleaning misc files
 clean_misc = env.Alias('clean-misc')
 # Since manpage targets are disabled in clean mode, we cover them here
-env.Clean(clean_misc, all_manpages)
+env.Clean(clean_misc, all_manpages + other_manpages)
 # Clean compiled Python
 env.Clean(clean_misc,
           glob.glob('*.pyc') + glob.glob('gps/*.pyc') + ['gps/__pycache__'])
@@ -2477,9 +2692,15 @@ env.Clean(clean_misc, glob.glob('*.gcno') + glob.glob('*.gcda'))
 env.Clean(clean_misc, glob.glob('.coverage*') + ['htmlcov/'])
 # Clean Qt stuff
 env.Clean(clean_misc, ['libQgpsmm.prl', 'Qgpsmm.pc'])
+# Clean shared library files
+env.Clean(clean_misc, glob.glob('*.so') + glob.glob('*.so.*'))
+# Clean old location man page files
+env.Clean(clean_misc, glob.glob('*.[0-8]'))
 # Other misc items
 env.Clean(clean_misc, ['config.log', 'contrib/ppscheck', 'contrib/clock_test',
                        'TAGS'])
+# Clean scons state files
+env.Clean(clean_misc, ['.sconf_temp', '.scons-option-cache', 'config.log'])
 
 # Nuke scons state files
 sconsclean = Utility("sconsclean", '',
@@ -2489,6 +2710,7 @@ sconsclean = Utility("sconsclean", '',
 
 if cleaning:
     env.Default(build_all, audit, clean_misc)
+    announce("You must manually remove .sconsign.dblite")
 else:
     env.Default(build)
 
@@ -2514,23 +2736,31 @@ env.Command('TAGS', sources, ['etags ' + " ".join(sources)])
 
 if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
     distfiles = _getoutput(r"git ls-files | grep -v '^www/'").split()
+    # for some reason distfiles is now a mix of byte strings and char strings
+    distfiles = [polystr(d) for d in distfiles]
+
     if ".gitignore" in distfiles:
         distfiles.remove(".gitignore")
     distfiles += generated_sources
-    distfiles += list(base_manpages.keys()) + list(python_manpages.keys())
+    distfiles += all_manpages
     if "packaging/rpm/gpsd.spec" not in distfiles:
         distfiles.append("packaging/rpm/gpsd.spec")
 
     # How to build a zip file.
     zip = env.Command('zip', distfiles, [
-        '@zip -r gpsd-${VERSION}.zip $SOURCES',
+        '@zip -ry gpsd-${VERSION}.zip $SOURCES',
         '@ls -l gpsd-${VERSION}.zip',
     ])
     env.Clean(zip, ["gpsd-${VERSION}.zip", "packaging/rpm/gpsd.spec"])
 
     # How to build a tarball.
+    # The command assume the non-portable GNU tar extension
+    # "--transform", and will thus fail if ${TAR} is not GNU tar.
+    # scons in theory has code to cope with this, but in practice this
+    # is not working.  On BSD-derived systems, install GNU tar and
+    # pass TAR=gtar in the environment.
     dist = env.Command('dist', distfiles, [
-        '@tar --transform "s:^:gpsd-${VERSION}/:" '
+        '@${TAR} --transform "s:^:gpsd-${VERSION}/:S" '
         ' -czf gpsd-${VERSION}.tar.gz $SOURCES',
         '@ls -l gpsd-${VERSION}.tar.gz',
     ])
@@ -2541,7 +2771,7 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
 
     # Make sure build-from-tarball works.
     testbuild = Utility('testbuild', [dist], [
-        'tar -xzvf gpsd-${VERSION}.tar.gz',
+        '${TAR} -xzvf gpsd-${VERSION}.tar.gz',
         'cd gpsd-${VERSION}; scons',
         'rm -fr gpsd-${VERSION}',
     ])
@@ -2596,3 +2826,4 @@ if os.path.exists("gpsd.c") and os.path.exists(".gitignore"):
 # Local Variables:
 # mode:python
 # End:
+# vim: set expandtab shiftwidth=4

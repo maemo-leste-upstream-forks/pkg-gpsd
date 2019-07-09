@@ -1,7 +1,9 @@
 /*
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include "gpsd.h"
 #if defined(DBUS_EXPORT_ENABLE)
 #include <dbus/dbus.h>
@@ -36,8 +38,6 @@ void send_dbus_fix(struct gps_device_t *channel)
     /*DBusMessageIter   iter; */
     dbus_uint32_t serial;	/* collected, but not used */
     char *gpsd_devname;
-    /* this packet format was designed before we split eph */
-    double eph;
 
     /* if the connection is non existent, return without doing anything */
     if (connection == NULL)
@@ -45,8 +45,6 @@ void send_dbus_fix(struct gps_device_t *channel)
 
     gpsdata = &(channel->gpsdata);
     gpsfix = &(gpsdata->fix);
-    /* this packet format was designed before we split eph */
-    eph = EMIX(gpsfix->epx, gpsfix->epy);
     gpsd_devname = gpsdata->dev.path;
 
     /* Send the named signal.  */
@@ -57,7 +55,7 @@ void send_dbus_fix(struct gps_device_t *channel)
 			     DBUS_TYPE_DOUBLE, &(gpsfix->ept),
 			     DBUS_TYPE_DOUBLE, &(gpsfix->latitude),
 			     DBUS_TYPE_DOUBLE, &(gpsfix->longitude),
-			     DBUS_TYPE_DOUBLE, &(eph),
+			     DBUS_TYPE_DOUBLE, &(gpsfix->eph),
 			     DBUS_TYPE_DOUBLE, &(gpsfix->altitude),
 			     DBUS_TYPE_DOUBLE, &(gpsfix->epv),
 			     DBUS_TYPE_DOUBLE, &(gpsfix->track),

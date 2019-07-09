@@ -5,6 +5,8 @@
  * Try to write guards so it is only called at higher log levels.
  */
 
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdio.h>
 #include <string.h>
 
@@ -12,7 +14,7 @@
 
 const char *gps_maskdump(gps_mask_t set)
 {
-    static char buf[222];
+    static char buf[226];
     const struct {
         gps_mask_t      mask;
         const char      *name;
@@ -55,6 +57,7 @@ const char *gps_maskdump(gps_mask_t set)
         {ECEF_SET,	"ECEF"},
         {VECEF_SET,	"VECEF"},
         {MAGNETIC_TRACK_SET,	"MAGNETIC_TRACK"},
+        {RAW_SET,	"RAW"},
         {RAW_IS,	"RAW"},
         {USED_IS,	"USED"},
         {DRIVER_IS,	"DRIVER"},

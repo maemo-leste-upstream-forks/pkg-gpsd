@@ -18,45 +18,39 @@
  *
  * Original code by: Gary E. Miller <gem@rellim.com>.  Cleanup by ESR.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
 
-/* cfmakeraw() needs _DEFAULT_SOURCE */
-#define _DEFAULT_SOURCE
+#include "gpsd_config.h"  /* must be before all includes */
 
-
-#include <time.h>               /* for time_t */
-#include "gpsd_config.h"
-
+#include <errno.h>
+#include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <errno.h>
 #include <string.h>
 #include <strings.h>
-#include <fcntl.h>
-#ifdef HAVE_TERMIOS_H
-#include <termios.h>
-#endif /* HAVE_TERMIOS_H */
+#include <sys/select.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif /* HAVE_SYS_SELECT_H */
+#include <time.h>               /* for time_t */
+#include <unistd.h>
+
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>            /* for cfmakeraw() on some OS */
+#endif /* HAVE_TERMIOS_H */
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif /* HAVE_WINSOCK2_H */
-#include <unistd.h>
 
 #include "gpsd.h"
 
-#include "gpsd_config.h"
 #include "gpsdclient.h"
 #include "revision.h"
 
@@ -125,14 +119,15 @@ static void usage(void)
 		  "-r Dump raw NMEA.\n"
 		  "-R Dump super-raw mode (GPS binary).\n"
 		  "-s [serial dev] emulate a 4800bps NMEA GPS on serial port (use with '-r').\n"
-		  "-S Set scaled flag.\n"
+		  "-S Set scaled flag. For AIS and subframe data.\n"
 		  "-T [format] set the timestamp format (strftime(3)-like; implies '-t')\n"
 		  "-t Time stamp the data.\n"
 		  "-u usec time stamp, implies -t. Use -uu to output sec.usec\n"
 		  "-v Print a little spinner.\n"
-		  "-V Print version and exit.\n\n"
+		  "-V Print version and exit.\n"
 		  "-w Dump gpsd native data.\n"
 		  "-x [seconds] Exit after given delay.\n"
+		  "-Z sets the timestamp format iso8601: implies '-t'\n"
 		  "You must specify one, or more, of -r, -R, or -w\n"
 		  "You must use -o if you use -d.\n");
 }
@@ -141,7 +136,9 @@ int main(int argc, char **argv)
 {
     char buf[4096];
     bool timestamp = false;
+    bool iso8601 = false;
     char *format = "%F %T";
+    char *zulu_format = "%FT%T";
     char tmstr[200];
     bool daemonize = false;
     bool binary = false;
@@ -164,16 +161,39 @@ int main(int argc, char **argv)
     char *outfile = NULL;
 
     flags = WATCH_ENABLE;
-    while ((option = getopt(argc, argv, "?dD:lhrRwStT:vVx:n:s:o:pPu2")) != -1) {
+    while ((option = getopt(argc, argv,
+                            "2?dD:hln:o:pPrRwSs:tT:uvVx:Z")) != -1) {
 	switch (option) {
+	case '2':
+	    flags |= WATCH_SPLIT24;
+	    break;
 	case 'D':
 	    debug = atoi(optarg);
 #ifdef CLIENTDEBUG_ENABLE
 	    gps_enable_debug(debug, stderr);
 #endif /* CLIENTDEBUG_ENABLE */
 	    break;
+	case 'd':
+	    daemonize = true;
+	    break;
+	case 'l':
+	    sleepy = true;
+	    break;
 	case 'n':
 	    count = strtol(optarg, 0, 0);
+	    break;
+	case 'o':
+	    outfile = optarg;
+	    break;
+	case 'P':
+	    flags |= WATCH_PPS;
+	    break;
+	case 'p':
+	    profile = true;
+	    break;
+	case 'R':
+	    flags |= WATCH_RAW;
+	    binary = true;
 	    break;
 	case 'r':
 	    raw = true;
@@ -183,27 +203,27 @@ int main(int argc, char **argv)
 	     */
 	    flags |= WATCH_NMEA;
 	    break;
-	case 'R':
-	    flags |= WATCH_RAW;
-	    binary = true;
+	case 'S':
+	    flags |= WATCH_SCALED;
 	    break;
-	case 'd':
-	    daemonize = true;
-	    break;
-	case 'l':
-	    sleepy = true;
-	    break;
-	case 't':
-	    timestamp = true;
+	case 's':
+	    serialport = optarg;
 	    break;
 	case 'T':
 	    timestamp = true;
 	    format = optarg;
 	    break;
+	case 't':
+	    timestamp = true;
+	    break;
 	case 'u':
 	    timestamp = true;
 	    option_u++;
 	    break;
+	case 'V':
+	    (void)fprintf(stderr, "%s: %s (revision %s)\n",
+			  argv[0], VERSION, REVISION);
+	    exit(EXIT_SUCCESS);
 	case 'v':
 	    vflag++;
 	    break;
@@ -211,30 +231,13 @@ int main(int argc, char **argv)
 	    flags |= WATCH_JSON;
 	    watch = true;
 	    break;
-	case 'S':
-	    flags |= WATCH_SCALED;
-	    break;
-	case 'p':
-	    profile = true;
-	    break;
-	case 'P':
-	    flags |= WATCH_PPS;
-	    break;
-	case 'V':
-	    (void)fprintf(stderr, "%s: %s (revision %s)\n",
-			  argv[0], VERSION, REVISION);
-	    exit(EXIT_SUCCESS);
 	case 'x':
 	    exit_timer = time(NULL) + strtol(optarg, 0, 0);
 	    break;
-	case 's':
-	    serialport = optarg;
-	    break;
-	case 'o':
-	    outfile = optarg;
-	    break;
-	case '2':
-	    flags |= WATCH_SPLIT24;
+	case 'Z':
+	    timestamp = true;
+	    format = zulu_format;
+	    iso8601 = true;
 	    break;
 	case '?':
 	case 'h':
@@ -318,14 +321,14 @@ int main(int argc, char **argv)
 
     for (;;) {
 	int r = 0;
-	struct timeval tv;
+	struct timespec tv;
 
 	tv.tv_sec = 0;
-	tv.tv_usec = 100000;
+	tv.tv_nsec = 100000000;
 	FD_ZERO(&fds);
 	FD_SET(gpsdata.gps_fd, &fds);
 	errno = 0;
-	r = select(gpsdata.gps_fd+1, &fds, NULL, NULL, &tv);
+	r = pselect(gpsdata.gps_fd+1, &fds, NULL, NULL, &tv, NULL);
 	if (r >= 0 && exit_timer && time(NULL) >= exit_timer)
 		break;
 	if (r == -1 && errno != EINTR) {
@@ -352,23 +355,34 @@ int main(int argc, char **argv)
 		if (new_line && timestamp) {
 		    char tmstr_u[40];            // time with "usec" resolution
 		    struct timespec now;
-		    struct tm *tmp_now;
+		    struct tm tmp_now;
+                    int written;
 
 		    (void)clock_gettime(CLOCK_REALTIME, &now);
-		    tmp_now = localtime((time_t *)&(now.tv_sec));
-		    (void)strftime(tmstr, sizeof(tmstr), format, tmp_now);
+		    (void)gmtime_r((time_t *)&(now.tv_sec), &tmp_now);
+		    (void)strftime(tmstr, sizeof(tmstr), format, &tmp_now);
 		    new_line = 0;
 
 		    switch( option_u ) {
 		    case 2:
+			if(iso8601){
+			    written = strlen(tmstr);
+			    tmstr[written] = 'Z';
+			    tmstr[written+1] = '\0';
+			}
 			(void)snprintf(tmstr_u, sizeof(tmstr_u),
 				       " %ld.%06ld",
 				       (long)now.tv_sec,
 				       (long)now.tv_nsec/1000);
 			break;
 		    case 1:
-			(void)snprintf(tmstr_u, sizeof(tmstr_u),
-				       ".%06ld", (long)now.tv_nsec/1000);
+                        written = snprintf(tmstr_u, sizeof(tmstr_u),
+                                           ".%06ld", (long)now.tv_nsec/1000);
+
+			if((0 < written) && (40 > written) && iso8601){
+			    tmstr_u[written-1] = 'Z';
+			    tmstr_u[written] = '\0';
+			}
 			break;
 		    default:
 			*tmstr_u = '\0';

@@ -2,64 +2,49 @@
  * This is the main sequence of the gpsd daemon. The IO dispatcher, main
  * select loop, and user command handling lives here.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-#ifdef __linux__
-/* FreeBSD chokes on this */
-/* nice() needs _XOPEN_SOURCE, 500 means X/Open 1995 */
-/* Ubuntu isfinite() needs _XOPEN_SOURCE, 600 means X/Open 2004 */
-#define _XOPEN_SOURCE 600
-/* setgroups() needs _DEFAULT_SOURCE or _BSD_SOURCE (glibc-dependent) */
-#define _DEFAULT_SOURCE
-#define _BSD_SOURCE
-#endif /* __linux__ */
+#include "gpsd_config.h"  /* must be before all includes */
 
-/* vsnprintf() needs __DARWIN_C_LEVEL >= 200112L */
-#define __DARWIN_C_LEVEL 200112L
-/* strlcpy() needs _DARWIN_C_SOURCE */
-#define _DARWIN_C_SOURCE
-
+#include <arpa/inet.h>    /* for htons() and friends */
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <grp.h>          /* for setgroups() */
+#include <math.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <pwd.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>	  /* for uint32_t, etc. */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>       /* for strlcat(), strcpy(), etc. */
+#include <syslog.h>
+#include <sys/param.h>    /* for setgroups() */
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/time.h>		/* for select() */
-#include <sys/select.h>
-#include <stdio.h>
-#include <stdint.h>		/* for uint32_t, etc. */
+#include <sys/un.h>
 #include <time.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <setjmp.h>
-#include <assert.h>
-#include <math.h>
-#include <syslog.h>
-#include <errno.h>
-#include <signal.h>
-#include <ctype.h>
-#include <pwd.h>
-#include <grp.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <netdb.h>
+#include <unistd.h>       /* for setgroups() */
+
 #ifndef AF_UNSPEC
 #include <sys/socket.h>
 #endif /* AF_UNSPEC */
 #ifndef INADDR_ANY
 #include <netinet/in.h>
 #endif /* INADDR_ANY */
-#include <sys/un.h>
-#include <arpa/inet.h>     /* for htons() and friends */
-#include <unistd.h>
-
-#include "gpsd_config.h"
 
 #include "gpsd.h"
-#include "sockaddr.h"
-#include "gps_json.h"
+#include "gps_json.h"         /* needs gpsd.h */
 #include "revision.h"
+#include "sockaddr.h"
 #include "strfuncs.h"
 
 #if defined(SYSTEMD_ENABLE)
@@ -118,9 +103,11 @@
  */
 #define NICEVAL	-10
 
-#if defined(FIXED_PORT_SPEED) || !defined(SOCKET_EXPORT_ENABLE)
+#if (defined(FIXED_PORT_SPEED) || \
+     defined(TIMESERVICE_ENABLE) || \
+     !defined(SOCKET_EXPORT_ENABLE))
     /*
-     * Force nowait in two circumstances:
+     * Force nowait in three circumstances:
      *
      * (1) If we're running with FIXED_PORT_SPEED we're some sort
      * of embedded configuration where we don't want to wait for connect
@@ -128,6 +115,8 @@
      * (2) Socket export has been disabled.  In this case we have no
      * way to know when client apps are watching the export channels,
      * so we need to be running all the time.
+     *
+     * (3) timeservice mode where we want the GPS always on for timing.
      */
 #define FORCE_NOWAIT
 #endif /* defined(FIXED_PORT_SPEED) || !defined(SOCKET_EXPORT_ENABLE) */
@@ -153,11 +142,10 @@ static int highwater;
 #ifndef FORCE_GLOBAL_ENABLE
 static bool listen_global = false;
 #endif /* FORCE_GLOBAL_ENABLE */
-#ifndef FORCE_NOWAIT
-#define NOWAIT nowait
-static bool nowait = false;
+#ifdef FORCE_NOWAIT
+static bool nowait = true;
 #else /* FORCE_NOWAIT */
-#define NOWAIT true
+static bool nowait = false;
 #endif /* FORCE_NOWAIT */
 static bool batteryRTC = false;
 static jmp_buf restartbuf;
@@ -242,7 +230,10 @@ static void usage(void)
 "  -G         		    = make gpsd listen on INADDR_ANY\n"
 #endif /* FORCE_GLOBAL_ENABLE */
 "  -h		     	    = help message \n"
-#ifndef FORCE_NOWAIT
+#ifdef FORCE_NOWAIT
+"  -n			    = don't wait for client connects to poll GPS\n"
+"                             forced on in this binary\n"
+#else
 "  -n			    = don't wait for client connects to poll GPS\n"
 #endif /* FORCE_NOWAIT */
 "  -N			    = don't go into background\n\
@@ -735,7 +726,7 @@ static bool open_device( struct gps_device_t *device)
     gpsd_log(&context.errout, LOG_INF,
 	     "device %s activated\n", device->gpsdata.dev.path);
     if ( PLACEHOLDING_FD == activated ) {
-	/* it is a /dev/ppsX, no need to select() it */
+	/* it is a /dev/ppsX, no need to wait on it */
         return true;
     }
     FD_SET(device->gpsdata.gps_fd, &all_fds);
@@ -870,7 +861,7 @@ static void handle_control(int sfd, char *buf)
 	} else {
 	    gpsd_log(&context.errout, LOG_INF,
 		     "<= control(%d): adding %s\n", sfd, stash);
-	    if (gpsd_add_device(stash, NOWAIT))
+	    if (gpsd_add_device(stash, nowait))
 		ignore_return(write(sfd, "OK\n", 3));
 	    else {
 		ignore_return(write(sfd, "ERROR\n", 6));
@@ -1915,9 +1906,7 @@ int main(int argc, char *argv[])
 #endif /* SOCKET_EXPORT_ENABLE */
 	    break;
 	case 'n':
-#ifndef FORCE_NOWAIT
 	    nowait = true;
-#endif /* FORCE_NOWAIT */
 	    break;
 	case 'r':
 	    batteryRTC = true;
@@ -2087,7 +2076,7 @@ int main(int argc, char *argv[])
      */
     in_restart = false;
     for (i = optind; i < argc; i++) {
-      if (!gpsd_add_device(argv[i], NOWAIT)) {
+      if (!gpsd_add_device(argv[i], nowait)) {
 	    gpsd_log(&context.errout, LOG_ERROR,
 		     "initial GPS device %s open failed\n",
 		     argv[i]);
@@ -2220,7 +2209,7 @@ int main(int argc, char *argv[])
      */
     if (in_restart)
 	for (i = optind; i < argc; i++) {
-	  if (!gpsd_add_device(argv[i], NOWAIT)) {
+	  if (!gpsd_add_device(argv[i], nowait)) {
 		gpsd_log(&context.errout, LOG_ERROR,
 			 "GPS device %s open failed\n",
 			 argv[i]);
@@ -2443,7 +2432,7 @@ int main(int argc, char *argv[])
 	 */
 	for (device = devices; device < devices + MAX_DEVICES; device++) {
 
-	    bool device_needed = NOWAIT;
+	    bool device_needed = nowait;
 
 	    if (!allocated_device(device))
 		continue;
