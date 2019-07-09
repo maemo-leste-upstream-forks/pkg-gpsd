@@ -7,40 +7,38 @@
  * Author: Fulup Ar Foll (directly inspired from gpspipe.c)
  * Date:   2013-03-01
  *
- * This file is Copyright (c) 2013 by the GPSD project
+ * This file is Copyright (c) 2013-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
 
-/* strsep() needs _DEFAULT_SOURCE */
-#define _DEFAULT_SOURCE
+#include "gpsd_config.h"  /* must be before all includes */
 
-#include <time.h>
-#include "gpsd_config.h"
-
+#include <arpa/inet.h>
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>        /* for gethostbyname() */
+#include <netinet/in.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <errno.h>
-#include <string.h>
+#include <string.h>      /* for strlcpy(), strsep(), etc. */
 #include <strings.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <assert.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/select.h>
+#include <termios.h>
+#include <time.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 
 #include "gpsd.h"
 #include "gpsdclient.h"
 #include "revision.h"
 #include "strfuncs.h"
+#include "timespec.h"
 
 #define MAX_TIME_LEN 80
 #define MAX_GPSD_RETRY 10
@@ -171,7 +169,7 @@ static int open_udp(char **hostport)
 	   return (-1);
        }
 
-       memcpy( &remote[channel].sin_addr, hp->h_addr, hp->h_length);
+       memcpy( &remote[channel].sin_addr, hp->h_addr_list[0], hp->h_length);
        remote[channel].sin_port = htons((in_port_t)portnum);
    }
 return (0);
@@ -230,27 +228,17 @@ static void connect2gpsd(bool restart)
 static ssize_t read_gpsd(char *message, size_t len)
 /* get data from gpsd */
 {
-    struct timeval tv;
-    fd_set fds,master;
     int ind;
     char c;
     int retry=0;
-
-    // prepare select structure */
-    FD_ZERO(&master);
-    FD_SET(gpsdata.gps_fd, &master);
 
     /* allow room for trailing NUL */
     len--;
 
     /* loop until we get some data or an error */
     for (ind = 0; ind < (int)len;) {
-	int result;
         /* prepare for a blocking read with a 10s timeout */
-        tv.tv_sec =  10;
-        tv.tv_usec = 0;
-        fds = master;
-        result = select(gpsdata.gps_fd+1, &fds, NULL, NULL, &tv);
+        int result = nanowait(gpsdata.gps_fd, 10 % NS_IN_SEC);
 
         switch (result)
 	{

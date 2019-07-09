@@ -1,13 +1,21 @@
 /*
  * Python binding for the packet.c module.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
 
 /* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
 #define __ISO_C_VISIBLE 1999
+
+#include "gpsd_config.h"  /* must be before all includes */
+
+/* Python.h insists on setting GNU_SOURCE, _POSIX_C_SOURCE and
+ * _XOPEN_SOURCE.  Without guards. */
+#undef _GNU_SOURCE
+#undef _POSIX_C_SOURCE
+#undef _XOPEN_SOURCE
 
 #include <Python.h>
 

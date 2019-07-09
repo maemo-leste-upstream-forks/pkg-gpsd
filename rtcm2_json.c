@@ -8,10 +8,12 @@ DESCRIPTION
 representations to libgps structures.
 
 PERMISSIONS
-   This file is Copyright (c) 2010 by the GPSD project
+   This file is Copyright (c) 2010-2018 by the GPSD project
    SPDX-License-Identifier: BSD-2-clause
 
 ***************************************************************************/
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <math.h>

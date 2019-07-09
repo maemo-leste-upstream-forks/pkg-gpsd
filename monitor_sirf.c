@@ -1,10 +1,13 @@
 /*
  * SiRF object for the GPS packet monitor.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -286,9 +289,11 @@ static void sirf_update(void)
 								  17) / 8);
 	/* line 3 */
 	(void)wmove(mid2win, 3, 7);
-	(void)wprintw(mid2win, "%-24s",
-			unix_to_iso8601(session.gpsdata.fix.time, tbuf, sizeof(tbuf))
-			);
+        if (isfinite(session.gpsdata.fix.time)) {
+            (void)wprintw(mid2win, "%-24s",
+			  unix_to_iso8601(session.gpsdata.fix.time, tbuf,
+                          sizeof(tbuf)));
+        }
 	(void)wmove(mid2win, 3, 38);
 	(void)wattrset(mid2win, A_UNDERLINE);
 	if (ppstime_enabled)
@@ -369,12 +374,15 @@ static void sirf_update(void)
 	break;
 
     case 0x07:			/* Response - Clock Status Data */
-	display(mid7win, 1, 5, "%2d", getub(buf, 7));	/* SVs */
-	display(mid7win, 1, 16, "%lu", getbeu32(buf, 8));	/* Clock ppstimes */
-	display(mid7win, 1, 29, "%lu", getbeu32(buf, 12));	/* Clock Bias */
-	display(mid7win, 2, 11, "%lu", getbeu32(buf, 16));	/* Estimated Time */
-	monitor_log("CSD 0x07=");
-	break;
+        display(mid7win, 1, 5, "%2d", getub(buf, 7));	/* SVs */
+        /* Clock ppstimes */
+        display(mid7win, 1, 16, "%lu", (unsigned long)getbeu32(buf, 8));
+        display(mid7win, 1, 29, "%lu", (unsigned long)getbeu32(buf, 12));
+        /* Clock Bias */
+        display(mid7win, 2, 11, "%lu", (unsigned long)getbeu32(buf, 16));
+        /* Estimated Time */
+        monitor_log("CSD 0x07=");
+        break;
 
     case 0x08:			/* 50 BPS data */
 	ch = (int)getub(buf, 1);

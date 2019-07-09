@@ -1,32 +1,23 @@
 /* gpsctl.c -- tweak the control settings on a GPS
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
 
-#ifdef __linux__
-/* FreeBSD chokes on this */
-/* sys/ipc.h needs _XOPEN_SOURCE, 500 means X/Open 1995 */
-#define _XOPEN_SOURCE 500
-/* pselect() needs _POSIX_C_SOURCE >= 200112L */
-#define _POSIX_C_SOURCE 200112L
-#endif /* __linux__ */
+#include "gpsd_config.h"  /* must be before all includes */
 
-/* strlcpy() needs _DARWIN_C_SOURCE */
-#define _DARWIN_C_SOURCE
-
+#include <assert.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <assert.h>
-#include <signal.h>
-#include <time.h>
-#include <sys/time.h>
+#include <string.h>       /* for strlcat() and strlcpy() */
 #include <sys/select.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "gpsd.h"
@@ -436,6 +427,12 @@ int main(int argc, char **argv)
 	    }
 
 	    while (devcount > 0) {
+		/* Wait for input data */
+		if (!gps_waiting(&gpsdata, timeout * 1000000)) {
+			gpsd_log(&context.errout, LOG_ERROR, "timed out waiting for device\n");
+			(void)gps_close(&gpsdata);
+			exit(EXIT_FAILURE);
+		}
 		errno = 0;
 		if (gps_read(&gpsdata, NULL, 0) == -1) {
 		    gpsd_log(&context.errout, LOG_ERROR, "data read failed.\n");

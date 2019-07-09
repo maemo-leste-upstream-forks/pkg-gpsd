@@ -1,9 +1,10 @@
 /*
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-#include "gpsd_config.h"
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <string.h>
 #include <fcntl.h>
 #ifdef HAVE_NETDB_H
@@ -139,7 +140,7 @@ socket_t netlib_connectsock(int af, const char *host, const char *service,
      * This is a good performance enhancement when the socket is going to
      * be used to pass a lot of short commands.  It prevents them from being
      * delayed by the Nagle algorithm until they can be aggreagated into
-     * a large packet.  See http://en.wikipedia.org/wiki/Nagle%27s_algorithm
+     * a large packet.  See https://en.wikipedia.org/wiki/Nagle%27s_algorithm
      * for discussion.
      */
     if (type == SOCK_STREAM)

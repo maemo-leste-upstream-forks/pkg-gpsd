@@ -1,6 +1,6 @@
 /* gpsutils.c -- code shared between low-level and high-level interfaces
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
@@ -8,20 +8,24 @@
  * We also need to set the value high enough to signal inclusion of
  * newer features (like clock_gettime).  See the POSIX spec for more info:
  * http://pubs.opengroup.org/onlinepubs/9699919799/functions/V2_chap02.html#tag_15_02_01_02 */
-#define _XOPEN_SOURCE 600
 
+#include "gpsd_config.h"  /* must be before all includes */
+
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
 #include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <errno.h>
-#include <ctype.h>
+#include <sys/select.h>	 /* for to have a pselect(2) prototype a la POSIX */
+#include <sys/time.h>
+#include <sys/time.h>	 /* for to have a pselect(2) prototype a la SuS */
+#include <time.h>
 
 #include "gps.h"
 #include "libgps.h"
 #include "os_compat.h"
+#include "timespec.h"
 
 #ifdef USE_QT
 #include <QDateTime>
@@ -64,8 +68,8 @@ double safe_atof(const char *string)
 
     bool sign, expSign = false;
     double fraction, dblExp, *d;
-    register const char *p;
-    register int c;
+    const char *p;
+    int c;
     int exp = 0;		/* Exponent read from "EX" field. */
     int fracExp = 0;		/* Exponent that derives from the fractional
 				 * part.  Under normal circumstatnces, it is
@@ -238,22 +242,24 @@ void gps_clear_fix(struct gps_fix_t *fixp)
 /* stuff a fix structure with recognizable out-of-band values */
 {
     memset(fixp, 0, sizeof(struct gps_fix_t));
-    fixp->time = NAN;
-    fixp->mode = MODE_NOT_SEEN;
-    fixp->latitude = NAN;
-    fixp->longitude = NAN;
-    fixp->track = NAN;
-    fixp->magnetic_track = NAN;
-    fixp->speed = NAN;
-    fixp->climb = NAN;
     fixp->altitude = NAN;
+    fixp->climb = NAN;
+    fixp->epc = NAN;
+    fixp->epd = NAN;
+    fixp->eph = NAN;
+    fixp->eps = NAN;
     fixp->ept = NAN;
+    fixp->epv = NAN;
     fixp->epx = NAN;
     fixp->epy = NAN;
-    fixp->epv = NAN;
-    fixp->epd = NAN;
-    fixp->eps = NAN;
-    fixp->epc = NAN;
+    fixp->latitude = NAN;
+    fixp->longitude = NAN;
+    fixp->magnetic_track = NAN;
+    fixp->mode = MODE_NOT_SEEN;
+    fixp->sep = NAN;
+    fixp->speed = NAN;
+    fixp->time = NAN;
+    fixp->track = NAN;
     /* clear ECEF too */
     fixp->ecef.x = NAN;
     fixp->ecef.y = NAN;
@@ -320,12 +326,26 @@ void gps_merge_fix(struct gps_fix_t *to,
 	to->climb = from->climb;
     if ((transfer & TIMERR_SET) != 0)
 	to->ept = from->ept;
-    if ((transfer & HERR_SET) != 0) {
+    if (0 != isfinite(from->epx) &&
+        0 != isfinite(from->epy)) {
 	to->epx = from->epx;
 	to->epy = from->epy;
     }
-    if ((transfer & VERR_SET) != 0)
+    if (0 != isfinite(from->epd)) {
+	to->epd = from->epd;
+    }
+    if (0 != isfinite(from->eph)) {
+	to->eph = from->eph;
+    }
+    if (0 != isfinite(from->eps)) {
+	to->eps = from->eps;
+    }
+    if (0 != isfinite(from->sep)) {
+	to->sep = from->sep;
+    }
+    if (0 != isfinite(from->epv)) {
 	to->epv = from->epv;
+    }
     if ((transfer & SPEEDERR_SET) != 0)
 	to->eps = from->eps;
     if ((transfer & ECEF_SET) != 0) {
@@ -340,6 +360,12 @@ void gps_merge_fix(struct gps_fix_t *to,
 	to->ecef.vz = from->ecef.vz;
 	to->ecef.vAcc = from->ecef.vAcc;
     }
+    if ('\0' != from->datum[0]) {
+        strlcpy(to->datum, from->datum, sizeof(to->datum));
+    }
+    if (0 != from->qErr) {
+	to->qErr = from->qErr;
+    }
 }
 
 /* NOTE: timestamp_t is a double, so this is only precise to
@@ -351,11 +377,15 @@ timestamp_t timestamp(void)
      return (timestamp_t)(ts.tv_sec + ts.tv_nsec * 1e-9);
 }
 
-time_t mkgmtime(register struct tm * t)
-/* struct tm to seconds since Unix epoch */
+/* mkgmtime(tm)
+ * convert struct tm, as UTC, to seconds since Unix epoch
+ * This differs from mktime() from libc.
+ * mktime() takes struct tm as localtime.
+ */
+time_t mkgmtime(struct tm * t)
 {
-    register int year;
-    register time_t result;
+    int year;
+    time_t result;
     static const int cumdays[MONTHSPERYEAR] =
 	{ 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
@@ -374,8 +404,10 @@ time_t mkgmtime(register struct tm * t)
     result += t->tm_min;
     result *= 60;
     result += t->tm_sec;
-    if (t->tm_isdst == 1)
-	result -= 3600;
+    /* this is UTC, no DST
+     * if (t->tm_isdst == 1)
+     * result -= 3600;
+     */
     return (result);
 }
 
@@ -499,11 +531,9 @@ timestamp_t iso8601_to_unix(char *isotime)
 #endif /* __clang_analyzer__ */
 }
 
-/* *INDENT-OFF* */
-char *unix_to_iso8601(timestamp_t fixtime,
-				     char isotime[], size_t len)
 /* Unix UTC time to ISO8601, no timezone adjustment */
 /* example: 2007-12-11T23:38:51.033Z */
+char *unix_to_iso8601(timestamp_t fixtime, char isotime[], size_t len)
 {
     struct tm when;
     double integral, fractional;
@@ -511,7 +541,17 @@ char *unix_to_iso8601(timestamp_t fixtime,
     char timestr[30];
     char fractstr[10];
 
+    if (!isfinite(fixtime)) {
+        return strncpy(isotime, "NaN", len);
+    }
     fractional = modf(fixtime, &integral);
+    /* snprintf rounding of %3f can get ugly, so pre-round */
+    if ( 0.999499999 < fractional) {
+        /* round up */
+        integral++;
+        /* give the fraction a nudge to ensure rounding */
+        fractional += 0.0005;
+    }
     intfixtime = (time_t) integral;
 #ifdef HAVE_GMTIME_R
     (void)gmtime_r(&intfixtime, &when);
@@ -531,7 +571,6 @@ char *unix_to_iso8601(timestamp_t fixtime,
     (void)snprintf(isotime, len, "%s%sZ",timestr, strchr(fractstr,'.'));
     return isotime;
 }
-/* *INDENT-ON* */
 
 #define Deg2Rad(n)	((n) * DEG_2_RAD)
 
@@ -613,4 +652,62 @@ double earth_distance(double lat1, double lon1, double lat2, double lon2)
 	return earth_distance_and_bearings(lat1, lon1, lat2, lon2, NULL, NULL);
 }
 
+bool nanowait(int fd, int nanoseconds)
+{
+    fd_set fdset;
+    struct timespec to;
+
+    FD_ZERO(&fdset);
+    FD_SET(fd, &fdset);
+    to.tv_sec = nanoseconds / NS_IN_SEC;
+    to.tv_nsec = nanoseconds % NS_IN_SEC;
+    return pselect(fd + 1, &fdset, NULL, NULL, &to, NULL) == 1;
+}
+
+/* Accept a datum code, return matching string
+ *
+ * There are a ton of these, only a few are here
+ *
+ */
+void datum_code_string(int code, char *buffer, size_t len)
+{
+    const char *datum_str;
+
+    switch (code) {
+    case 0:
+        datum_str = "WGS84";
+        break;
+    case 21:
+        datum_str = "WGS84";
+        break;
+    case 178:
+        datum_str = "Tokyo Mean";
+        break;
+    case 179:
+        datum_str = "Tokyo-Japan";
+        break;
+    case 180:
+        datum_str = "Tokyo-Korea";
+        break;
+    case 181:
+        datum_str = "Tokyo-Okinawa";
+        break;
+    case 182:
+        datum_str = "PZ90.11";
+        break;
+    case 999:
+        datum_str = "User Defined";
+        break;
+    default:
+        datum_str = NULL;
+        break;
+    }
+
+    if (NULL == datum_str) {
+        /* Fake it */
+        snprintf(buffer, len, "%d", code);
+    } else {
+	strlcpy(buffer, datum_str, len);
+    }
+}
 /* end */

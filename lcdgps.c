@@ -12,6 +12,10 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * This file is Copyright (c) 2010-2018 by the GPSD project
+ * SPDX-License-Identifier: BSD-2-clause
+ *
  */
 
 /*
@@ -33,22 +37,25 @@
 
 #define CLIMB 3
 
-#include <netdb.h>
+#include "gpsd_config.h"  /* must be before all includes */
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <math.h>
+#include <netdb.h>        /* for gethostbyname() */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #ifndef AF_UNSPEC
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #endif /* AF_UNSPEC */
 #ifndef INADDR_ANY
 #include <netinet/in.h>
 #endif /* INADDR_ANY */
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <errno.h>
-#include <stdio.h>
 
 #include "gps.h"
 #include "gpsdclient.h"
@@ -185,12 +192,16 @@ static void update_lcd(struct gps_data_t *gpsdata)
     int track;
     char *s;
 
-    s = deg_to_str(deg_type,  fabs(gpsdata->fix.latitude));
-    snprintf(tmpbuf, sizeof(tmpbuf) - 1, "widget_set gpsd one 1 1 {Lat: %s %c}\n", s, (gpsdata->fix.latitude < 0) ? 'S' : 'N');
+    s = deg_to_str(deg_type, gpsdata->fix.latitude);
+    snprintf(tmpbuf, sizeof(tmpbuf) - 1,
+             "widget_set gpsd one 1 1 {Lat: %s %c}\n", s,
+             (gpsdata->fix.latitude < 0) ? 'S' : 'N');
     send_lcd(tmpbuf);
 
-    s = deg_to_str(deg_type,  fabs(gpsdata->fix.longitude));
-    snprintf(tmpbuf, sizeof(tmpbuf) - 1, "widget_set gpsd two 1 2 {Lon: %s %c}\n", s, (gpsdata->fix.longitude < 0) ? 'W' : 'E');
+    s = deg_to_str(deg_type, gpsdata->fix.longitude);
+    snprintf(tmpbuf, sizeof(tmpbuf) - 1,
+             "widget_set gpsd two 1 2 {Lon: %s %c}\n", s,
+             (gpsdata->fix.longitude < 0) ? 'W' : 'E');
     send_lcd(tmpbuf);
 
     /* As a pilot, a heading of "0" gives me the heebie-jeebies (ie, 0
@@ -332,7 +343,7 @@ int main(int argc, char *argv[])
             (void)fprintf(stderr, "Unknown -u argument: %s\n", optarg);
             break;
 	case 'V':
-	    (void)fprintf(stderr, "lcdgs revision " REVISION "\n");
+	    (void)fprintf(stderr, "lcdgps revision " REVISION "\n");
 	    exit(EXIT_SUCCESS);
 	}
     }

@@ -32,9 +32,12 @@
  * packet.c
  * packet_states.h
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -235,6 +238,7 @@ _proto__msg_raw(struct gps_device_t *session, unsigned char *buf, size_t data_le
 {
     unsigned char i, st, nchan, nsv;
     unsigned int tow;
+    double t_intp;
 
     if (data_len != RAW_MSG_LEN )
 	return 0;
@@ -260,16 +264,22 @@ _proto__msg_raw(struct gps_device_t *session, unsigned char *buf, size_t data_le
 	return 0;
     }
 
+    session->gpsdata.raw.mtime.tv_nsec =
+        modf(session->newdata.time, &t_intp) * 10e8;
+    session->gpsdata.raw.mtime.tv_sec = (time_t)t_intp;
+
+    /* this is so we can tell which never got set */
+    for (i = 0; i < MAXCHANNELS; i++)
+        session->gpsdata.raw.meas[i].svid = 0;
     for (i = 0; i < n; i++){
 	session->gpsdata.PRN[i] = GET_PRN();
 	session->gpsdata.ss[i] = GET_SIGNAL()
-	session->gpsdata.raw.satstat[i] = GET_FLAGS();
-	session->gpsdata.raw.pseudorange[i] = GET_PSEUDORANGE();
-	session->gpsdata.raw.doppler[i] = GET_DOPPLER();
-	session->gpsdata.raw.carrierphase[i] = GET_CARRIER_PHASE();
-	session->gpsdata.raw.mtime[i] = GET_MEASUREMENT_TIME();
-	session->gpsdata.raw.codephase[i] = GET_CODE_PHASE();
-	session->gpsdata.raw.deltarange[i] = GET_DELTA_RANGE();
+	session->gpsdata.raw.meas[i].satstat = GET_FLAGS();
+	session->gpsdata.raw.meas[i].pseudorange = GET_PSEUDORANGE();
+	session->gpsdata.raw.meas[i].doppler = GET_DOPPLER();
+	session->gpsdata.raw.meas[i].carrierphase = GET_CARRIER_PHASE();
+	session->gpsdata.raw.meas[i].codephase = GET_CODE_PHASE();
+	session->gpsdata.raw.meas[i].deltarange = GET_DELTA_RANGE();
     }
     return RAW_IS;
 }

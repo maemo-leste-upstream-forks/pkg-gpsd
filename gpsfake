@@ -23,10 +23,17 @@ import socket
 import sys
 import time
 
-import gps
-import gps.fake as gpsfake   # The "as" pacifies pychecker
+# pylint wants local modules last
+try:
+    import gps
+    import gps.fake as gpsfake   # The "as" pacifies pychecker
+except ImportError as e:
+    sys.stderr.write(
+        "gpsfake: can't load Python gps libraries -- check PYTHONPATH.\n")
+    sys.stderr.write("%s\n" % e)
+    sys.exit(1)
 
-gps_version = '3.18.1'
+gps_version = '3.19'
 if gps.__version__ != gps_version:
     sys.stderr.write("gpsfake: ERROR: need gps module version %s, got %s\n" %
                      (gps_version, gps.__version__))
@@ -128,34 +135,38 @@ if __name__ == '__main__':
     def usage():
         "Print usage and exit"
         sys.stderr.write("""usage: gpsfake [OPTIONS] logfile...
-    [-1]
-    [-b]
-    [-c cycle]
-    [-D debug]
-    [-g]
-    [-h]
-    [-i]
-    [-l]
-    [-m monitor]
-    [-n]
-    [-o options]
-    [-p]
-    [-P port]
-    [-q]
-    [-r initcmd]
-    [-S]
-    [-s speed]
-    [-t]
-    [-T]
-    [-v]
-    [-V]
-    [-x]
+    [-1]         logfile is interpreted once only rather than repeatedly
+    [-b]         enable a twirling-baton progress indicator
+    [-c cycle]   sets the delay between sentences in seconds
+    [-D debug]   passes a -D option to the daemon
+    [-g]         run the gpsd instance within gpsfake under control of gdb
+    [-G]         run the gpsd instance within gpsfake under control of lldb
+    [-h]         print a usage message and exit
+    [-i]         single-stepping through logfile
+    [-l]         dump a line or packet number just before each sentence
+    [-m monitor] specifies a monitor program under which the daemon is run
+    [-n]         start the daemon reading the GPS without waiting for a client
+    [-o options] specifies options to pass to the daemon
+    [-p]         sets watcher mode and dump to stdout
+    [-P port]    sets the daemon's listening port
+    [-q]         act in a quiet manner
+    [-r initcmd] specifies an initialization command to use in pipe mode
+    [-S]         insert realistic delays in the test input
+    [-s speed]   sets the baud rate for the slave tty
+    [-t]         force TCP
+    [-T]         print some system information and exit
+    [-v]         verbose
+    [-V]         Version
+    [-W]         specify timeout (default 60s), 0 means none
+    [-x]         dump packets as gpsfake gathers them
 """)
         raise SystemExit(0)
 
     try:
-        (options, arguments) = getopt.getopt(sys.argv[1:],
-                                             "1bc:D:ghilm:no:pP:qr:s:StTuvxV")
+        (options, arguments) = getopt.getopt(
+            sys.argv[1:],
+            "1bc:D:gGhilm:no:pP:qr:s:StTuvxVW:"
+            )
     except getopt.GetoptError as msg:
         print("gpsfake: " + str(msg))
         raise SystemExit(1)
@@ -177,6 +188,7 @@ if __name__ == '__main__':
     verbose = 0
     slow = False
     quiet = False
+    timeout = None  # Really means default
     for (switch, val) in options:
         if switch == '-1':
             singleshot = True
@@ -188,6 +200,10 @@ if __name__ == '__main__':
             doptions += " -D " + val
         elif switch == '-g':
             monitor = "xterm -e gdb -tui --args "
+            timeout = 0
+        elif switch == '-G':
+            monitor = "xterm -e lldb -- "
+            timeout = 0
         elif switch == '-h':
             usage()
         elif switch == '-i':
@@ -226,6 +242,12 @@ if __name__ == '__main__':
         elif switch == '-V':
             sys.stderr.write("gpsfake: Version %s\n" % gps_version)
             sys.exit(0)
+        elif switch == '-W':
+            try:
+                timeout = int(val)
+            except:
+                sys.stderr.write("gpsfake: bad timeout value.\n")
+                raise SystemExit(1)
         elif switch == '-x':
             predump = True
 
@@ -250,7 +272,7 @@ if __name__ == '__main__':
 
     test = gpsfake.TestSession(prefix=monitor, port=port, options=doptions,
                                tcp=tcp, udp=udp, verbose=verbose,
-                               predump=predump, slow=slow)
+                               predump=predump, slow=slow, timeout=timeout)
 
     if pipe:
         test.reporter = bytesout.write

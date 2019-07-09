@@ -14,9 +14,11 @@
  * that is configurable. A future improvement could change to read the
  * information in [MF] Message Format.
  *
- * This file is Copyright (c) 2017 Virgin Orbit
+ * This file is Copyright (c) 2017-2018 Virgin Orbit
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <assert.h>
 #include <math.h>
@@ -93,6 +95,7 @@ static gps_mask_t greis_msg_RT(struct gps_device_t *session,
     }
 
     session->driver.greis.rt_tod = getleu32(buf, 0);
+    memset(&session->gpsdata.raw, 0, sizeof(session->gpsdata.raw));
 
     session->driver.greis.seen_rt = true;
     session->driver.greis.seen_az = false;
@@ -164,6 +167,7 @@ static gps_mask_t greis_msg_UO(struct gps_device_t *session,
 static gps_mask_t greis_msg_GT(struct gps_device_t *session,
 			       unsigned char *buf, size_t len)
 {
+    double t_intp;
     uint32_t tow;	     /* Time of week [ms] */
     uint16_t wn;	     /* GPS week number (modulo 1024) [dimensionless] */
 
@@ -187,6 +191,16 @@ static gps_mask_t greis_msg_GT(struct gps_device_t *session,
     gpsd_log(&session->context->errout, LOG_DATA,
 	     "GREIS: GT, tow: %u, wn: %u, time: %.2f\n", tow, wn,
 	     session->newdata.time);
+
+    /* save raw.mtime, just in case */
+    session->gpsdata.raw.mtime.tv_nsec =
+	modf(session->newdata.time, &t_intp) * 1e9;
+    session->gpsdata.raw.mtime.tv_sec = (time_t)t_intp + \
+	session->context->leap_seconds;
+    gpsd_log(&session->context->errout, LOG_DATA,
+	     "GREIS: GT, RAW @ %ld.%09ld\n",
+	     (long)session->gpsdata.raw.mtime.tv_sec,
+	     session->gpsdata.raw.mtime.tv_nsec);
 
     return TIME_SET | NTPTIME_IS | ONLINE_SET;
 }
@@ -259,7 +273,7 @@ static gps_mask_t greis_msg_PV(struct gps_device_t *session,
 	     session->newdata.longitude, session->newdata.altitude,
 	     solution_type);
 
-    return LATLON_SET | ALTITUDE_SET | CLIMB_SET | TRACK_SET | SPEED_SET |
+   return LATLON_SET | ALTITUDE_SET | CLIMB_SET | TRACK_SET | SPEED_SET |
 	MODE_SET | STATUS_SET | ECEF_SET | VECEF_SET;
 }
 
@@ -287,25 +301,21 @@ static gps_mask_t greis_msg_SG(struct gps_device_t *session,
 
     /*
      * All errors are RMS which can be approximated as 1 sigma, so we can just
-     * multiply to get the length used for GPSD confidence level.
+     * use them directly.
      *
-     * Make the simplifying assumption that error is the same for latitude and
-     * longitude, since GREIS does not provide those as precomputed components.
-     * A future improvement might be to compute the individual errors from the
-     * position covariance matrix, but only if this proves insufficient.
+     * Compute missing items in gpsd_error_model(), not here.
      */
-    session->newdata.epx = session->newdata.epy =
-	hpos * (1 / sqrt(2)) * GPSD_CONFIDENCE;
-    session->newdata.epv = vpos * GPSD_CONFIDENCE;
-    session->newdata.eps = hvel * GPSD_CONFIDENCE;
-    session->newdata.epc = vvel * GPSD_CONFIDENCE;
+    session->newdata.eph = hpos;
+    session->newdata.epv = vpos;
+    session->newdata.eps = hvel;
+    session->newdata.epc = vvel;
 
     gpsd_log(&session->context->errout, LOG_DATA,
-	     "GREIS: SG, epx: %.2f, epy: %.2f, eps: %.2f, epc: %.2f\n",
-	     session->newdata.epx, session->newdata.epy,
+	     "GREIS: SG, eph: %.2f, eps: %.2f, epc: %.2f\n",
+	     session->newdata.eph,
 	     session->newdata.eps, session->newdata.epc);
 
-    return HERR_SET | VERR_SET | SPEEDERR_SET | CLIMBERR_SET;
+    return HERR_SET | SPEEDERR_SET | CLIMBERR_SET;
 }
 
 /**
@@ -397,6 +407,20 @@ static gps_mask_t greis_msg_SI(struct gps_device_t *session,
             session->gpsdata.skyview[i].gnssid = 3;
             session->gpsdata.skyview[i].svid = PRN - 210;
         }
+	session->gpsdata.raw.meas[i].obs_code[0] = '\0';
+	session->gpsdata.raw.meas[i].gnssid =
+            session->gpsdata.skyview[i].gnssid;
+	session->gpsdata.raw.meas[i].svid =
+            session->gpsdata.skyview[i].svid;
+        /* GREIS does not report locktime, so assume max */
+	session->gpsdata.raw.meas[i].locktime = LOCKMAX;
+	/* Make sure the unused raw fields are set consistently */
+	session->gpsdata.raw.meas[i].sigid = 0;
+	session->gpsdata.raw.meas[i].snr = 0;
+	session->gpsdata.raw.meas[i].freqid = 0;
+	session->gpsdata.raw.meas[i].lli = 0;
+	session->gpsdata.raw.meas[i].codephase = NAN;
+	session->gpsdata.raw.meas[i].deltarange = NAN;
     }
 
     session->driver.greis.seen_si = true;
@@ -487,6 +511,46 @@ static gps_mask_t greis_msg_AZ(struct gps_device_t *session,
 }
 
 /**
+ * Handle the message [DC] Doppler (CA/L1)
+ */
+static gps_mask_t greis_msg_DC(struct gps_device_t *session,
+			       unsigned char *buf, size_t len)
+{
+    int i;
+    long int_doppler;
+    size_t len_needed = (session->gpsdata.satellites_visible * 4) + 1;
+
+    if (!session->driver.greis.seen_si) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: can't use DC until after SI provides indices\n");
+	return 0;
+    }
+
+    /* check against number of satellites + checksum */
+    if (len < len_needed) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: DC bad len %zu, needed at least %zu\n", len,
+		 len_needed);
+	return 0;
+    }
+
+    for (i = 0; i < session->gpsdata.satellites_visible; i++) {
+	int_doppler = getles32((char *)buf, i * 4);
+        if (0x7fffffff == int_doppler) {
+            /* out of range */
+	    session->gpsdata.raw.meas[i].doppler = NAN;
+        } else {
+	    session->gpsdata.raw.meas[i].doppler = int_doppler * 1e-4;
+        }
+    }
+
+    session->driver.greis.seen_raw = true;
+    gpsd_log(&session->context->errout, LOG_DATA, "GREIS: DC\n");
+
+    return 0;
+}
+
+/**
  * Handle the message [EC] SNR (CA/L1).
  * EC really outputs CNR, but what gpsd refers to as SNR _is_ CNR.
  */
@@ -514,6 +578,144 @@ static gps_mask_t greis_msg_EC(struct gps_device_t *session,
 
     session->driver.greis.seen_ec = true;
     gpsd_log(&session->context->errout, LOG_DATA, "GREIS: EC\n");
+
+    return 0;
+}
+
+
+/**
+ * Handle the message [P3] CA/L2 Carrier Phases, RINEX L2C
+ */
+static gps_mask_t greis_msg_P3(struct gps_device_t *session,
+			       unsigned char *buf, size_t len)
+{
+    int i;
+    size_t len_needed = (session->gpsdata.satellites_visible * 8) + 1;
+
+    if (!session->driver.greis.seen_si) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: can't use P3 until after SI provides indices\n");
+	return 0;
+    }
+
+    /* check against number of satellites + checksum */
+    if (len < len_needed) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: P3 bad len %zu, needed at least %zu\n", len,
+		 len_needed);
+	return 0;
+    }
+
+    for (i = 0; i < session->gpsdata.satellites_visible; i++) {
+	session->gpsdata.raw.meas[i].l2c = getled64((char *)buf, i * 8);
+    }
+
+    session->driver.greis.seen_raw = true;
+    gpsd_log(&session->context->errout, LOG_DATA, "GREIS: P3\n");
+
+    return 0;
+}
+
+/**
+ * Handle the message [PC] CA/L1 Carrier Phases, RINEX L1C
+ */
+static gps_mask_t greis_msg_PC(struct gps_device_t *session,
+			       unsigned char *buf, size_t len)
+{
+    int i;
+    size_t len_needed = (session->gpsdata.satellites_visible * 8) + 1;
+
+    if (!session->driver.greis.seen_si) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: can't use PC until after SI provides indices\n");
+	return 0;
+    }
+
+    /* check against number of satellites + checksum */
+    if (len < len_needed) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: PC bad len %zu, needed at least %zu\n", len,
+		 len_needed);
+	return 0;
+    }
+
+    for (i = 0; i < session->gpsdata.satellites_visible; i++) {
+	session->gpsdata.raw.meas[i].carrierphase = getled64((char *)buf,
+                                                            i * 8);
+    }
+
+    session->driver.greis.seen_raw = true;
+    gpsd_log(&session->context->errout, LOG_DATA, "GREIS: PC\n");
+
+    return 0;
+}
+
+/**
+ * Handle the message [R3] CA/L2 Pseudo-range, RINEX C2C
+ */
+static gps_mask_t greis_msg_R3(struct gps_device_t *session,
+			       unsigned char *buf, size_t len)
+{
+    int i;
+    size_t len_needed = (session->gpsdata.satellites_visible * 8) + 1;
+
+    if (!session->driver.greis.seen_si) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: can't use R3 until after SI provides indices\n");
+	return 0;
+    }
+
+    /* check against number of satellites + checksum */
+    if (len < len_needed) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: R3 bad len %zu, needed at least %zu\n", len,
+		 len_needed);
+	return 0;
+    }
+
+    for (i = 0; i < session->gpsdata.satellites_visible; i++) {
+        /* get, and convert to meters */
+	session->gpsdata.raw.meas[i].c2c = \
+            getled64((char *)buf, i * 8) * CLIGHT;
+    }
+
+    session->driver.greis.seen_raw = true;
+    gpsd_log(&session->context->errout, LOG_DATA, "GREIS: R3\n");
+
+    return 0;
+}
+
+/**
+ * Handle the message [RC] Pseudo-range CA/L1, RINEX C1C
+ */
+static gps_mask_t greis_msg_RC(struct gps_device_t *session,
+			       unsigned char *buf, size_t len)
+{
+    int i;
+    size_t len_needed = (session->gpsdata.satellites_visible * 8) + 1;
+
+    if (!session->driver.greis.seen_si) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: can't use RC until after SI provides indices\n");
+	return 0;
+    }
+
+    /* check against number of satellites + checksum */
+    if (len < len_needed) {
+	gpsd_log(&session->context->errout, LOG_WARN,
+		 "GREIS: RC bad len %zu, needed at least %zu\n", len,
+		 len_needed);
+	return 0;
+    }
+
+    for (i = 0; i < session->gpsdata.satellites_visible; i++) {
+        /* get, and convert to meters */
+	session->gpsdata.raw.meas[i].pseudorange = \
+            getled64((char *)buf, i * 8) * CLIGHT;
+    }
+
+    session->driver.greis.seen_raw = true;
+    gpsd_log(&session->context->errout, LOG_DATA, "GREIS: RC\n");
 
     return 0;
 }
@@ -618,7 +820,17 @@ static gps_mask_t greis_msg_ET(struct gps_device_t *session,
 	 session->driver.greis.seen_el && session->driver.greis.seen_si)) {
         /* Skyview seen, update it.  Go even if no seen_ss or none visible */
         mask |= SATELLITE_SET;
+
+	if (session->driver.greis.seen_raw) {
+	    mask |= RAW_IS;
+	} else {
+	    session->gpsdata.raw.mtime.tv_sec = 0;
+	    session->gpsdata.raw.mtime.tv_nsec = 0;
+        }
+
     } else {
+	session->gpsdata.raw.mtime.tv_sec = 0;
+	session->gpsdata.raw.mtime.tv_nsec = 0;
 	gpsd_log(&session->context->errout, LOG_WARN,
 		 "GREIS: ET: missing satellite details in this epoch\n");
     }
@@ -649,11 +861,16 @@ struct dispatch_table_entry {
 static struct dispatch_table_entry dispatch_table[] = {
     {':', ':', greis_msg_ET},
     {'A', 'Z', greis_msg_AZ},
+    {'D', 'C', greis_msg_DC},
     {'D', 'P', greis_msg_DP},
     {'E', 'C', greis_msg_EC},
     {'E', 'R', greis_msg_ER},
     {'E', 'L', greis_msg_EL},
     {'G', 'T', greis_msg_GT},
+    {'R', '3', greis_msg_R3},
+    {'R', 'C', greis_msg_RC},
+    {'P', '3', greis_msg_P3},
+    {'P', 'C', greis_msg_PC},
     {'P', 'V', greis_msg_PV},
     {'R', 'E', greis_msg_RE},
     {'S', 'G', greis_msg_SG},
@@ -906,8 +1123,8 @@ static bool greis_set_speed(struct gps_device_t *session,
 	return false;
     }
 
-    (void)snprintf(command, sizeof(command) - 1, "%s%u && %s%s && %s%d",
-	     set_rate, speed, set_parity, selected_parity,
+    (void)snprintf(command, sizeof(command) - 1, "%s%lu && %s%s && %s%d",
+	     set_rate, (unsigned long)speed, set_parity, selected_parity,
 	     set_stops, stopbits);
     return (bool)greis_write(session, command, strlen(command));
 }

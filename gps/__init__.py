@@ -13,10 +13,10 @@ from .misc import *
 # Keep in sync with GPSD_PROTO_MAJOR_VERSION and GPSD_PROTO_MINOR_VERSION in
 # gpsd.h
 api_major_version = 3   # bumped on incompatible changes
-api_minor_version = 13  # bumped on compatible changes
+api_minor_version = 14  # bumped on compatible changes
 
 # keep in sync with gpsd_version in SConstruct
-__version__ = '3.18.1'
+__version__ = '3.19'
 
 # The 'client' module exposes some C utility functions for Python clients.
 # The 'packet' module exposes the packet getter via a Python interface.

@@ -10,13 +10,10 @@ notifications.  But both client and daemon will avoid all the marshalling and
 unmarshalling overhead.
 
 PERMISSIONS
-   This file is Copyright (c) 2010 by the GPSD project
+   This file is Copyright (c) 2010-2018 by the GPSD project
    SPDX-License-Identifier: BSD-2-clause
 
 ***************************************************************************/
-
-/* sys/ipc.h needs _XOPEN_SOURCE, 500 means X/Open 1995 */
-#define _XOPEN_SOURCE 500
 
 #include "gpsd_config.h"
 
@@ -59,6 +56,7 @@ int gps_shm_open(struct gps_data_t *gpsdata)
     if (gpsdata->privdata == NULL)
 	return -1;
 
+    PRIVATE(gpsdata)->tick = 0;
     PRIVATE(gpsdata)->shmseg = shmat(shmid, 0, 0);
     if (PRIVATE(gpsdata)->shmseg == (void *) -1) {
 	/* attach failed for sume unknown reason */
@@ -144,10 +142,6 @@ int gps_shm_read(struct gps_data_t *gpsdata)
 #endif /* USE_QT */
 	    PRIVATE(gpsdata)->tick = after;
 	    if ((gpsdata->set & REPORT_IS)!=0) {
-		if (gpsdata->fix.mode >= 2)
-		    gpsdata->status = STATUS_FIX;
-		else
-		    gpsdata->status = STATUS_NO_FIX;
 		gpsdata->set = STATUS_SET;
 	    }
 	    return (int)sizeof(struct gps_data_t);

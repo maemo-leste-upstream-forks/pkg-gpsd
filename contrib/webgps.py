@@ -37,6 +37,9 @@ If this file is present on start of webgps.py, it is loaded. This allows to
 restart webgps.py without losing accumulated satellite tracks.
 """
 
+# This file is Copyright (c) 2010-2018 by the GPSD project
+# SPDX-License-Identifier: BSD-2-clause
+
 from __future__ import absolute_import, print_function, division
 
 import math
@@ -47,7 +50,7 @@ import time
 
 from gps import *
 
-gps_version = '3.18.1'
+gps_version = '3.19'
 if gps.__version__ != gps_version:
     sys.stderr.write("webgps.py: ERROR: need gps module version %s, got %s\n" %
                      (gps_version, gps.__version__))
@@ -191,7 +194,7 @@ class SatTracks(gps):
 \t\t\t\t\t<p>Your browser needs HTML5 &lt;canvas> support to display
  the satellite view correctly.</p>
 \t\t\t\t</canvas>
-\t\t\t\t<script type='text/javascript'>draw_satview();</script>
+\t\t\t\t<script>draw_satview();</script>
 \t\t\t</td>
 \t\t</tr>
 \t</table>

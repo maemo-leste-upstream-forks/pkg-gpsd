@@ -52,19 +52,18 @@ PROG_NAME = 'zerk'
 try:
     import serial
 except ImportError:
-    # treat serial as special since it is not part of standard Python
-    sys.stderr.write("%s: failed to import pyserial\n" % PROG_NAME)
-    sys.exit(2)
+    serial = None  # Defer complaining until we know we need it.
 
 try:
     import gps
+    import gps.misc      # for polybyte() polystr()
 except ImportError:
     # PEP8 says local imports last
     sys.stderr.write("%s: failed to import gps, check PYTHON_PATH\n" %
                      PROG_NAME)
     sys.exit(2)
 
-gps_version = '3.18.1'
+gps_version = '3.19'
 if gps.__version__ != gps_version:
     sys.stderr.write("%s: ERROR: need gps module version %s, got %s\n" %
                      (PROG_NAME, gps_version, gps.__version__))
@@ -304,13 +303,14 @@ class greis(object):
         u = struct.unpack_from('<f', payload, 0)
         return " acc %.3e\n" % u[0]
 
-    def msg_DC(self, payload):
-        "[DC] decode, P/L1 Doppler"
+    def msg_D_(self, payload):
+        """[D?] decode, Doppler"""
 
         s = " dp"
         for i in range(0, len(payload) - 1, 4):
-            u = struct.unpack_from('<L', payload, i)
-            s += " %d" % (u[0])
+            # This is dopple in Hz * 1e4
+            u = struct.unpack_from('<l', payload, i)
+            s += " " + self.i4_s(u[0])
 
         return s + '\n'
 
@@ -469,6 +469,17 @@ class greis(object):
                 (chr(u[0]), chr(u[1]), chr(u[2]), chr(u[3]),
                  chr(u[4]), chr(u[5]), chr(u[6])))
 
+    def msg_P_(self, payload):
+        "[P?] decode, Carrier Phases"
+
+        s = " cp"
+        for i in range(0, len(payload) - 1, 8):
+            # carrier phases in cycles
+            u = struct.unpack_from('<d', payload, i)
+            s += " " + self.f8_s(u[0])
+
+        return s + '\n'
+
     def msg_PM(self, payload):
         "[PM] parameters"
 
@@ -486,6 +497,17 @@ class greis(object):
                 (self.f8_s(u[0]), self.f8_s(u[1]), self.f8_s(u[2]),
                  self.f4_s(u[3]), self.f4_s(u[4]), self.f4_s(u[5]),
                  self.f4_s(u[6]), self.f4_s(u[7]), self.soltypes[u[8]]))
+
+    def msg_R_(self, payload):
+        """[R?] decode, Pseudo-ranges"""
+
+        s = " pr"
+        for i in range(0, len(payload) - 1, 8):
+            # psuedo in seconds
+            u = struct.unpack_from('<d', payload, i)
+            s += " %s" % self.f8_s(u[0])
+
+        return s + '\n'
 
     def msg_RD(self, payload):
         "[RD] decode, Receiver Date"
@@ -699,9 +721,15 @@ class greis(object):
         '[cp]': (msg__p, 1),
         '[cr]': (msg__r, 1),
         '[CS]': (msg_S_, 8),
-        '[DC]': (msg_DC, 1),
+        '[D1]': (msg_D_, 1),
+        '[D2]': (msg_D_, 1),
+        '[D3]': (msg_D_, 1),
+        '[D5]': (msg_D_, 1),
+        '[DC]': (msg_D_, 1),
+        '[Dl]': (msg_D_, 1),
         '[DO]': (msg_DO, 6),
         '[DP]': (msg_DP, 18),
+        '[DX]': (msg_D_, 1),
         '[E1]': (msg_E_, 1),
         '[E2]': (msg_E_, 1),
         '[E3]': (msg_E_, 1),
@@ -732,26 +760,38 @@ class greis(object):
         '[Is]': (msg_S_, 8),
         '[ld]': (msg__d, 1),
         '[lE]': (msg__E, 1),
+        '[LO]': (msg_LO, 1),
         '[lp]': (msg__p, 1),
         '[lr]': (msg__r, 1),
-        '[LO]': (msg_LO, 1),
         '[MF]': (msg_MF, 9),
         '[::]': (msg_ET, 4),
         '[~~]': (msg_RT, 4),
         '[NS]': (msg_S_, 8),
+        '[P1]': (msg_P_, 1),
+        '[P2]': (msg_P_, 1),
+        '[P3]': (msg_P_, 1),
+        '[P5]': (msg_P_, 1),
+        '[PC]': (msg_P_, 1),
+        '[Pl]': (msg_P_, 1),
         '[PM]': (msg_PM, 0),
         '[PV]': (msg_PV, 46),
         '[QA]': (msg__A, 47),
         '[QE]': (msg__E1, 123),
         '[QS]': (msg_S_, 8),
         '[r1]': (msg_r, 1),
+        '[R1]': (msg_R_, 1),
         '[r2]': (msg_r, 1),
+        '[R2]': (msg_R_, 1),
         '[r3]': (msg_r, 1),
+        '[R3]': (msg_R_, 1),
         '[r5]': (msg_r, 1),
+        '[R5]': (msg_R_, 1),
         '[rc]': (msg_r, 1),
+        '[RC]': (msg_R_, 1),
         '[RD]': (msg_RD, 6),
         '[RE]': (msg_RE, 1),
         '[rl]': (msg_r, 1),
+        '[Rl]': (msg_R_, 1),
         '[rx]': (msg_r, 1),
         '[SE]': (msg_SE, 6),
         '[SG]': (msg_SG, 18),
@@ -859,7 +899,7 @@ class greis(object):
                     # Got newline or linefeed
                     # GREIS terminates messages on <CR> or <LF>
                     # Done, got a full message
-                    if b'{"class":"ERROR"' in comment:
+                    if '{"class":"ERROR"' in comment:
                         # always print gpsd errors
                         print(comment)
                     elif VERB_DECODE <= opts['verbosity']:
@@ -1227,6 +1267,21 @@ class greis(object):
             # disable
             self.gps_send(b"%nmea%dm,," + messages)
 
+    def send_able_raw(self, able):
+        """dis/enable Raw mode messages"""
+        self.expect_statement_identifier = 'raw'
+
+        messages = (b"jps/{RT,UO,GT,PV,SG,DP,SI,EL,AZ,EC,SS,"
+                    b"PC,P1,P2,P3,P5,Pl,"
+                    b"RC,R1,R2,R3,R5,Rl,"
+                    b"DC,D1,D2,D3,D5,Dl,"
+                    b"ET}")
+
+        if able:
+            self.gps_send(b"%raw%em,," + messages + b":1")
+        else:
+            self.gps_send(b"%raw%dm,," + messages)
+
     def send_able_sbas(self, able):
         "dis/enable SBAS"
         self.expect_statement_identifier = 'cons'
@@ -1278,6 +1333,9 @@ class greis(object):
         # en/disable NMEA 4.1e
         "NMEA": {"command": send_able_nmea41,
                  "help": "basic messages NMEA 4.1 at 4Hz"},
+        # en/disable Psuedo Range, Carrier Phase and Doppler messages
+        "RAW": {"command": send_able_raw,
+                "help": "Raw mode messages"},
         # en/disable SBAS
         "SBAS": {"command": send_able_sbas,
                  "help": "SBAS"},
@@ -1398,10 +1456,11 @@ class gps_io(object):
     ser = None
     input_is_device = False
 
-    def __init__(self, serial_class):
+    def __init__(self):
         "Initialize class"
 
-        Serial = serial_class
+        Serial = serial
+        Serial_v3 = Serial and Serial.VERSION.split('.')[0] >= '3'
         # buffer to hold read data
         self.out = b''
 
@@ -1460,6 +1519,10 @@ class gps_io(object):
             # configure the serial connections (the parameters refer to
             # the device you are connecting to)
 
+            # pyserial Ver 3.0+ changes writeTimeout to write_timeout
+            # Using the wrong one causes an error
+            write_timeout_arg = ('write_timeout'
+                                 if Serial_v3 else 'writeTimeout')
             try:
                 self.ser = Serial.Serial(
                     baudrate=opts['input_speed'],
@@ -1470,11 +1533,11 @@ class gps_io(object):
                     stopbits=Serial.STOPBITS_ONE,
                     # read timeout
                     timeout=0.05,
-                    # pyserial Ver 3.0+ changes writeTimeout to write_timeout
-                    # just set both
-                    write_timeout=0.5,
-                    writeTimeout=0.5,
+                    **{write_timeout_arg: 0.5}
                 )
+            except AttributeError:
+                sys.stderr.write('%s: failed to import pyserial\n' % PROG_NAME)
+                sys.exit(2)
             except Serial.serialutil.SerialException:
                 # this exception happens on bad serial port device name
                 sys.stderr.write('%s: failed to open serial port "%s"\n'
@@ -1490,6 +1553,8 @@ class gps_io(object):
                 sys.exit(1)
 
             # flush input buffer, discarding all its contents
+            # pyserial 3.0+ deprecates flushInput() in favor of
+            # reset_input_buffer(), but flushInput() is still present.
             self.ser.flushInput()
 
         else:
@@ -1546,7 +1611,8 @@ class gps_io(object):
                 while read_opts['input_wait'] > (time.clock() - start):
                     # First priority is to be sure the input buffer is read.
                     # This is to prevent input buffer overuns
-                    # pyserial 3.0 replaces inWaiting() with in_waiting
+                    # pyserial 3.0+ deprecates inWaiting() in favor of
+                    # in_waiting, but inWaiting() is still present.
                     if 0 < self.ser.inWaiting():
                         # We have serial input waiting, get it
                         # 1024 is comfortably large, almost always the
@@ -1789,7 +1855,7 @@ try:
             sys.exit(1)
 
     # create the I/O instance
-    io_handle = gps_io(serial)
+    io_handle = gps_io()
 
     # keep it simple, only one of -O, -c -d -e or -S
     if opts['oaf_name'] is not None:

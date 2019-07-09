@@ -1,6 +1,6 @@
 /* bits.c - bitfield extraction code
  *
- * This file is Copyright (c)2010 by the GPSD project
+ * This file is Copyright (c)2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  * Bitfield extraction functions.  In each, start is a bit index  - not
@@ -10,6 +10,8 @@
  * The sbits() function assumes twos-complement arithmetic. ubits()
  * and sbits() assume no padding in integers.
  */
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>

@@ -2,13 +2,35 @@
 
 #ifndef GPSD_CONFIG_H
 
-#define VERSION "3.18.1"
+#define VERSION "3.19"
 
-#define GPSD_URL "http://catb.org/gpsd"
+#define GPSD_URL "https://gpsd.io/"
+
+#if !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
+#if !defined(_DEFAULT_SOURCE)
+#define _DEFAULT_SOURCE
+#endif
+
+#if !defined(_XOPEN_SOURCE)
+#define _XOPEN_SOURCE 700
+#endif
+
+#if !defined(_BSD_SOURCE)
+#define _BSD_SOURCE
+#endif
+
+#if !defined(_GNU_SOURCE)
+#define _GNU_SOURCE 1
+#endif
 
 #define HAVE_LIBUSB 1
 
 #define HAVE_LIBRT 1
+
+/* #undef HAVE_LIBTHR */
 
 #define HAVE_DBUS 1
 
@@ -24,11 +46,7 @@
 
 /* #undef HAVE_SYS_ENDIAN_H */
 
-#define HAVE_SYS_UN_H 1
-
-#define HAVE_SYS_SOCKET_H 1
-
-#define HAVE_SYS_SELECT_H 1
+#define HAVE_ARPA_INET_H 1
 
 #define HAVE_NETDB_H 1
 
@@ -36,7 +54,9 @@
 
 #define HAVE_NETINET_IP_H 1
 
-#define HAVE_ARPA_INET_H 1
+#define HAVE_SYS_SOCKET_H 1
+
+#define HAVE_SYS_UN_H 1
 
 #define HAVE_SYSLOG_H 1
 
@@ -61,6 +81,8 @@
 #define HAVE_FCNTL 1
 
 #define HAVE_FORK 1
+
+#define HAVE_SYS_TIMEPPS_H 1
 
 /* AIVDM support */
 #define AIVDM_ENABLE 1
@@ -90,7 +112,7 @@
 #define DBUS_EXPORT_ENABLE 1
 
 /* include debug information in build */
-/* #undef DEBUG_ENABLE */
+#define DEBUG_ENABLE 1
 
 /* documents directory */
 #define DOCDIR "share/doc"
@@ -312,7 +334,7 @@
 /* #undef TIMESERVICE_ENABLE */
 
 /* latency timing support */
-/* #undef TIMING_ENABLE */
+#define TIMING_ENABLE 1
 
 /* True North Technologies support */
 #define TNT_ENABLE 1

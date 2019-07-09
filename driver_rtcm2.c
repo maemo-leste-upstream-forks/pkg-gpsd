@@ -51,10 +51,12 @@ message types 4, 5, 6, 7, and 13 has not been checked. Message types
 8, 10-12, 15-27, 28-30 (undefined), 31-37, 38-58 (undefined), and
 60-63 are not yet supported.
 
-This file is Copyright (c) 2010 by the GPSD project
+This file is Copyright (c) 2010-2018 by the GPSD project
 SPDX-License-Identifier: BSD-2-clause
 
 *****************************************************************************/
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <string.h>

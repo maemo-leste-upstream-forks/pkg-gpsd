@@ -23,10 +23,13 @@ connected to the Garmin kernel driver.  But we need to be able to tell the
 others apart and distinguish them from baud barf.
 
 PERMISSIONS
-   This file is Copyright (c) 2010 by the GPSD project
+   This file is Copyright (c) 2010-2018 by the GPSD project
    SPDX-License-Identifier: BSD-2-clause
 
 ***************************************************************************/
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -1062,7 +1065,9 @@ static bool nextstate(struct gps_lexer_t *lexer, unsigned char c)
 	    lexer->state = GROUND_STATE;
 	    break;
 	}
-	__attribute__ ((fallthrough));
+        /* give up */
+	lexer->state = GROUND_STATE;
+	break;
 #endif /* TSIP_ENABLE */
 #ifdef NAVCOM_ENABLE
     case NAVCOM_LEADER_1:

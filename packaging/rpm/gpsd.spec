@@ -1,20 +1,19 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name: gpsd
-Version: 3.18~dev
+Version: 3.19
 Release: 1%{?dist}
 Summary: Service daemon for mediating access to a GPS
 
 Group: System Environment/Daemons
 License: BSD
-URL: https://savannah.nongnu.org/projects/gpsd/
+URL: https://gpsd.io
 Source0: http://download-mirror.savannah.gnu.org/releases/gpsd//%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: bluez-libs-devel
 BuildRequires: chrpath
 BuildRequires: dbus-devel
-BuildRequires: dbus-glib-devel
 BuildRequires: desktop-file-utils
 BuildRequires: gcc-c++
 BuildRequires: libXaw-devel

@@ -1,12 +1,12 @@
 /* gpssnmp - poll local gpsd for SNMP variables
  * 
+ * To build this:
+ *     gcc -o gpssnmp gpssnmp.c -lgps
+ *
  * Copyright (c) 2016 David Taylor <gpsd@david.taylor.name>
  *
  * Copyright (c)2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
- *
- * To build this:
- *     gcc -o gpssnmp gpssnmp.c -lgps
  *
  */
 
@@ -52,7 +52,7 @@ int main (int argc, char **argv) {
     int status, used, visible;
 
     status = gps_open (GPSD_SHARED_MEMORY, DEFAULT_GPSD_PORT, &gpsdata);
-    status = gps_read (&gpsdata);
+    status = gps_read (&gpsdata, NULL, 0);
     used  = gpsdata.satellites_used;
     visible = gpsdata.satellites_visible;
     for(i=0; i<=used; i++) {

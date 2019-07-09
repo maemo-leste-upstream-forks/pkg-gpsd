@@ -96,7 +96,7 @@ various additional features have additional prerequisites:
 |Qt + qmake                   | libQgpsmm depends on this
 |python2.x(x>=6) or 3.y(y>=2) | required for various clients and utilities
 |python-GI bindings           | the test clients xgps and xgpsspeed, need this
-|pyserial                     | ubxtool and zerk need this
+|pyserial                     | for ubxtool and zerk in direct-serial mode
 |===============================================================================
 
 Some ncurses packages contain the terminfo library; some break it out
@@ -183,16 +183,19 @@ GPSD Time Service HOWTO in the distribution or on the web.
 
 == Special Notes for OS X Installation ==
 
-gpsd will build, install and run on OS X.  The easiest way to do so is
-to first install the MacPorts package.  Follow their install procedure
-at: http://www.macports.org/install.php
+gpsd will build, install and run on OS X (osX).  The easiest way to
+do so is to first install the MacPorts package.  Follow their install
+procedure at: http://www.macports.org/install.php
 
-Then use their port command to install scons, and optionally git if you
-want to access the development source.
+Then use their port command to install scons.  Optionally git if you
+want to access the development source.  Optionally install libxslt and
+xmlto to build the documentation.
 
 --------------------------------------------------------------
 # port install scons
 # port install git
+# port install libxslt
+# port install xmlto
 --------------------------------------------------------------
 
 While running gpsd, or scons check, you may run out of shared memory
@@ -273,7 +276,7 @@ and testing gpsd:
 You need scons at 2.3.0 or higher to build.
 If your scons is less than 2.3.0 you will need to get a newer scons
 from wheezy-backport.  Partial instructions are detailed here:
-http://backports.debian.org/Instructions/
+https://backports.debian.org/Instructions/
 
 Basically you need to add this line to /etc/apt/sources.list:
 
@@ -399,12 +402,53 @@ fudge 127.127.28.2 refid PPS
 
 Now proceed as for any other operating system to use gpsd.
 
-Warning, the pps_gpio driver in all linux kernels up to the current
-3.19 only reports one edge.  Be sure to validate that your PPS signal
-is not offset by the pulse width.
+Be sure to validate that your PPS signal is not offset by the pulse
+width.  That would mean gpsd is using the wrong edge.
 
 Detailed instructions are available from their web site:
 https://learn.adafruit.com/adafruit-ultimate-gps-hat-for-raspberry-pi/
 
 You will need to dig deeper to make the PPS work, here is a good reference:
 http://www.satsignal.eu/ntp/Raspberry-Pi-NTP.html
+
+== Special Notes for FreeBSD Installation ==
+
+gpsd will build, install and run on FreeBSD.
+
+Use their pkg command to install scons, and optionally git if you
+want to access the development source.
+
+--------------------------------------------------------------
+# pkg install scons
+# pkg install git
+# git clone ssh://git@gitlab.com/gpsd/gpsd.git
+# cd gpsd
+# scons --config=force && scons install
+--------------------------------------------------------------
+
+== Special Notes for CentOS 7 Installation ==
+
+gpsd currently will build, install and run on CentOS 7.
+
+Install the gcc compiler and tools.  Install EPEL.
+
+Note: there is no EPEL for i386.
+
+Use the yum command to install git if you
+want to access the development source.
+
+--------------------------------------------------------------
+# yum group install "Development Tools" 
+# yum install git
+# yum install \
+   https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+# yum install scons
+# yum install python-devel
+# yum install ncurses-devel
+# yum install pps-tools-devel
+# git clone https://gitlab.com/gpsd/gpsd.git
+# cd gpsd
+# scons
+--------------------------------------------------------------
+
+

@@ -1,3 +1,10 @@
+/*
+ * This file is Copyright (c)2010-2018 by the GPSD project
+ * SPDX-License-Identifier: BSD-2-clause
+ */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -10,7 +17,6 @@
 #include <unistd.h>
 
 #include "gps.h"
-#include "gpsd_config.h"
 #include "libgps.h"
 
 #if defined(DBUS_EXPORT_ENABLE)
@@ -35,8 +41,6 @@ static DBusConnection *connection;
 static DBusHandlerResult handle_gps_fix(DBusMessage * message)
 {
     DBusError error;
-    /* this packet format was designed before we split eph */
-    double eph;
     const char *gpsd_devname = NULL;
 
     dbus_error_init(&error);
@@ -48,7 +52,7 @@ static DBusHandlerResult handle_gps_fix(DBusMessage * message)
 			  DBUS_TYPE_DOUBLE, &share_gpsdata->fix.ept,
 			  DBUS_TYPE_DOUBLE, &share_gpsdata->fix.latitude,
 			  DBUS_TYPE_DOUBLE, &share_gpsdata->fix.longitude,
-			  DBUS_TYPE_DOUBLE, &eph,
+			  DBUS_TYPE_DOUBLE, &share_gpsdata->fix.eph,
 			  DBUS_TYPE_DOUBLE, &share_gpsdata->fix.altitude,
 			  DBUS_TYPE_DOUBLE, &share_gpsdata->fix.epv,
 			  DBUS_TYPE_DOUBLE, &share_gpsdata->fix.track,

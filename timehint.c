@@ -4,20 +4,11 @@
  * Note that for easy debugging all logging from this file is prefixed
  * with PPS or NTP.
  *
- * This file is Copyright (c) 2010 by the GPSD project BSD terms apply:
- * see the file COPYING in the distribution root for details.
+ * This file is Copyright (c)2010-2018 by the GPSD project
+ * SPDX-License-Identifier: BSD-2-clause
  */
 
-#ifdef __linux__
-/* FreeBSD chokes on this */
-/* nice() needs _XOPEN_SOURCE, 500 means X/Open 1995 */
-#define _XOPEN_SOURCE 500
-#endif /* __linux__ */
-
-/* snprintf() needs __DARWIN_C_LEVEL >= 200112L */
-#define __DARWIN_C_LEVEL 200112L
-/* snprintf() needs _DARWIN_C_SOURCE */
-#define _DARWIN_C_SOURCE
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <string.h>
 #include <libgen.h>
@@ -333,7 +324,7 @@ static void chrony_send(struct gps_device_t *session, struct timedelta_t *td)
      * NTP expects leap pending for only 1 month prior to insertion
      * Per http://bugs.ntp.org/1090
      *
-     * ITU-R TF.460-6, Section 2.1, says lappe seconds can be primarily
+     * ITU-R TF.460-6, Section 2.1, says leap seconds can be primarily
      * in Jun/Dec but may be in March or September
      */
     (void)gmtime_r( &(td->real.tv_sec), &tm);

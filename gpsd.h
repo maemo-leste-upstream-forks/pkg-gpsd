@@ -22,8 +22,10 @@ extern "C" {
 #include <termios.h>
 #endif
 #ifdef HAVE_WINSOCK2_H
-#include <winsock2.h> /* for fd_set */
-#endif
+#include <winsock2.h>      /* for fd_set */
+#else /* !HAVE_WINSOCK2_H */
+#include <sys/select.h>    /* for fd_set */
+#endif /* !HAVE_WINSOCK2_H */
 #include <time.h>    /* for time_t */
 
 #include "gps.h"
@@ -52,10 +54,17 @@ extern "C" {
  * 3.12 OSC message added to repertoire.
  * 3.13 gnssid:svid added to SAT
  *      time added to ATT
+ * 3.19 Added RAW message class.
+ *      Add cfg_stage and cfg_step, for initialization
+ *      Add oldfix2 for better oldfix
+ *      Make subtype longer
+ *      Add ubx.protver, ubx.last_msgid and more to gps_device_t.ubx
+ *      MAX_PACKET_LENGTH 516 -> 9216
+ *      Add stuff to gps_device_t.nmea for NMEA 4.1
  */
 /* Keep in sync with api_major_version and api_minor gps/__init__.py */
 #define GPSD_PROTO_MAJOR_VERSION	3   /* bump on incompatible changes */
-#define GPSD_PROTO_MINOR_VERSION	13  /* bump on compatible changes */
+#define GPSD_PROTO_MINOR_VERSION	14  /* bump on compatible changes */
 
 #define JSON_DATE_MAX	24	/* ISO8601 timestamp with 2 decimal places */
 
@@ -134,8 +143,9 @@ enum isgpsstat_t {
  * Data packet (188 bytes). Then it had to be big enough for a UBX SVINFO
  * packet (206 bytes). Now it turns out that a couple of ITALK messages are
  * over 512 bytes. I know we like verbose output, but this is ridiculous.
+ * Whoopie! The u-blox 8 UBX-RXM-RAWX packet is 8214 byte long!
  */
-#define MAX_PACKET_LENGTH	516	/* 7 + 506 + 3 */
+#define MAX_PACKET_LENGTH	9216	/* 4 + 16 + (256 * 32) + 2 + fudge */
 
 /*
  * UTC of second 0 of week 0 of the first rollover period of GPS time.
@@ -146,7 +156,7 @@ enum isgpsstat_t {
  * choosing this as the cutoff, we'll never reject historical GPS logs
  * that are actually valid.
  */
-#define GPS_EPOCH	315964800	/* 6 Jan 1981 00:00:00 UTC */
+#define GPS_EPOCH	315964800	/* 6 Jan 1980 00:00:00 UTC */
 
 /* time constant */
 #define SECS_PER_DAY	(60*60*24)		/* seconds per day */
@@ -467,6 +477,7 @@ struct ntrip_stream_t
 	fmt_rtcm3_0,
 	fmt_rtcm3_1,
 	fmt_rtcm3_2,
+	fmt_rtcm3_3,
 	fmt_unknown
     } format;
     int carrier;
@@ -489,8 +500,10 @@ struct gps_device_t {
 /* session object, encapsulates all global state */
     struct gps_data_t gpsdata;
     const struct gps_type_t *device_type;
-    unsigned int driver_index;		/* numeric index of current driver */
-    unsigned int drivers_identified;	/* bitmask; what drivers have we seen? */
+    unsigned int driver_index;	      /* numeric index of current driver */
+    unsigned int drivers_identified;  /* bitmask; what drivers have we seen? */
+    unsigned int cfg_stage;	/* configuration stage counter */
+    unsigned int cfg_step;	/* configuration step counter */
 #ifdef RECONFIGURE_ENABLE
     const struct gps_type_t *last_controller;
 #endif /* RECONFIGURE_ENABLE */
@@ -508,7 +521,8 @@ struct gps_device_t {
     struct gps_lexer_t lexer;
     int badcount;
     int subframe_count;
-    char subtype[96];			/* firmware version or subtype ID */
+    /* firmware version or subtype ID, 96 too small for ZED-F9 */
+    char subtype[128];
     time_t opentime;
     time_t releasetime;
     bool zerokill;
@@ -542,6 +556,7 @@ struct gps_device_t {
     bool cycle_end_reliable;		/* does driver signal REPORT_MASK */
     int fixcnt;				/* count of fixes from this device */
     struct gps_fix_t newdata;		/* where drivers put their data */
+    struct gps_fix_t lastfix;		/* not qute yet ready for oldfix */
     struct gps_fix_t oldfix;		/* previous fix for error modeling */
 #ifdef NMEA0183_ENABLE
     struct {
@@ -554,11 +569,16 @@ struct gps_device_t {
 	/* detect receivers that ship GGA with non-advancing timestamp */
 	bool latch_mode;
 	char last_gga_timestamp[16];
-	bool seen_glgsv;
+	char last_gga_talker;
+        /* GSV stuff */
 	bool seen_bdgsv;
-	bool seen_qzss;
 	bool seen_gagsv;
+	bool seen_glgsv;
+	bool seen_gpgsv;
+	bool seen_qzss;
 	char last_gsv_talker;
+	unsigned char last_gsv_sigid;           /* NMEA 4.1 */
+        /* GSA stuff */
 	bool seen_glgsa;
 	bool seen_gngsa;
 	bool seen_bdgsa;
@@ -575,8 +595,8 @@ struct gps_device_t {
 	 */
 	timestamp_t this_frac_time, last_frac_time;
 	bool latch_frac_time;
-	unsigned int lasttag;
-	unsigned int cycle_enders;
+	int lasttag;              /* index into nmea_phrase[] */
+	uint64_t cycle_enders;    /* bit map into nmea_phrase{} */
 	bool cycle_continue;
     } nmea;
 #endif /* NMEA0183_ENABLE */
@@ -609,12 +629,13 @@ struct gps_device_t {
 	    bool seen_az;		/* true if seen AZ message */
 	    bool seen_ec;		/* true if seen EC message */
 	    bool seen_el;		/* true if seen EL message */
+            /* true if seen a raw measurement message */
+	    bool seen_raw;
 	} greis;
 #endif /* GREIS_ENABLE */
 #ifdef SIRF_ENABLE
 	struct {
 	    unsigned int need_ack;	/* if NZ we're awaiting ACK */
-	    unsigned int cfg_stage;	/* configuration stage counter */
 	    unsigned int driverstate;	/* for private use */
 #define SIRF_LT_231	0x01		/* SiRF at firmware rev < 231 */
 #define SIRF_EQ_231     0x02            /* SiRF at firmware rev == 231 */
@@ -687,14 +708,13 @@ struct gps_device_t {
 	struct {
 	    unsigned char port_id;
 	    unsigned char sbas_in_use;
-	    /*
-	     * NAV-* message order is not defined, thus we handle them isochronously
-	     * and store the latest data into these variables rather than expect
-	     * some messages to arrive in order. NAV-SOL handler picks up these values
-	     * and inserts them into the fix structure in one go.
-	     */
-	    double last_herr;
-	    double last_verr;
+	    unsigned char protver;              /* u-blox protocol version */
+	    unsigned int last_msgid;            /* last class/ID */
+            timestamp_t last_time;              /* time of last_msgid */
+	    unsigned int end_msgid;             /* cycle ender class/ID */
+            /* iTOW, and last_iTOW, in ms, used for cycle end detect. */
+            int64_t iTOW;
+            int64_t last_iTOW;
     	} ubx;
 #endif /* UBLOX_ENABLE */
 #ifdef NAVCOM_ENABLE
@@ -879,6 +899,8 @@ extern void gpsd_time_init(struct gps_context_t *, time_t);
 extern void gpsd_set_century(struct gps_device_t *);
 extern timestamp_t gpsd_gpstime_resolve(struct gps_device_t *,
 			      const unsigned short, const double);
+extern timespec_t gpsd_gpstime_resolv(struct gps_device_t *,
+			      const unsigned short, const timespec_t);
 extern timestamp_t gpsd_utc_resolve(struct gps_device_t *);
 extern void gpsd_century_update(struct gps_device_t *, int);
 
@@ -1023,13 +1045,20 @@ PRINTF_FUNC(3, 4) void gpsd_log(const struct gpsd_errout_t *, const int, const c
 
 #define NITEMS(x) ((int) (sizeof(x) / sizeof(x[0]) + COMPILE_CHECK_IS_ARRAY(x)))
 
-/* Ugh - required for build on Solaris */
+/*
+ * C99 requires NAN to be defined if the implementation supports quiet
+ * NANs.  At one point, it seems Solaris did not define NAN; it is not
+ * clear if this is still true.
+ */
 #ifndef NAN
 #define NAN (0.0f/0.0f)
 #endif
 
-/* Cygwin, in addition to NAN, doesn't have cfmakeraw */
-#if defined(__CYGWIN__)
+#if defined(__CYGWIN__) || defined(__sun)
+/*
+ * POSIX does not specify cfmakeraw, but it is pretty common.  We
+ * provide an implementation in serial.c for systems that lack it.
+ */
 void cfmakeraw(struct termios *);
 #endif /* defined(__CYGWIN__) */
 

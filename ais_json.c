@@ -7,7 +7,11 @@ DESCRIPTION
    This module uses the generic JSON parser to get data from AIS
 representations to libgps structures.
 
+This file is Copyright (c)2010-2018 by the GPSD project
+SPDX-License-Identifier: BSD-2-clause
 ***************************************************************************/
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <string.h>
@@ -16,7 +20,6 @@ representations to libgps structures.
 #include <stddef.h>
 #include <time.h>
 
-#include "gpsd_config.h"
 #include "gps.h"
 #include "json.h"
 #ifdef SOCKET_EXPORT_ENABLE

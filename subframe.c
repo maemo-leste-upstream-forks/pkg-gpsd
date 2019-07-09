@@ -1,8 +1,11 @@
 /* subframe.c -- interpret satellite subframe data.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <math.h>
 
 #include "gpsd.h"

@@ -25,12 +25,13 @@ usage: xgps [-?] [-D level] [-h] [-l degmfmt] [-r rotation] [-u units] [-V]
 # Preserve this property!
 from __future__ import absolute_import, print_function, division
 
+import cairo
 import math
+import os
 import socket
 import sys
 import time
 
-import cairo
 
 # Gtk3 imports.  Gtk3 requires the require_version(), which then causes
 # pylint to complain about the subsequent "non-top" imports.
@@ -38,7 +39,7 @@ import gi
 try:
     gi.require_version('Gtk', '3.0')
 except ValueError:
-    # Gtk2 may be installed, has no equire_version()
+    # Gtk2 may be installed, has no require_version()
     sys.stderr.write("xgps: ERROR Unsupported Gtk version\n")
     exit(1)
 
@@ -48,10 +49,17 @@ from gi.repository import Gdk  # pylint: disable=wrong-import-position
 from gi.repository import Pango  # pylint: disable=wrong-import-position
 
 # pylint wants local modules last
-import gps
-import gps.clienthelpers
+try:
+    import gps
+    import gps.clienthelpers
+except ImportError as e:
+    sys.stderr.write(
+        "xgps: can't load Python gps libraries -- check PYTHONPATH.\n")
+    sys.stderr.write("%s\n" % e)
+    sys.exit(1)
 
-gps_version = '3.18.1'
+
+gps_version = '3.19'
 if gps.__version__ != gps_version:
     sys.stderr.write("xgps: ERROR: need gps module version %s, got %s\n" %
                      (gps_version, gps.__version__))
@@ -443,6 +451,16 @@ class SkyView(Gtk.DrawingArea):
                 # Bad elevation, skip.  Allow just below horizon
                 continue
 
+            # The Navika-100 reports el/az of 0/0 for SBAS satellites,
+            # causing them to appear inappropriately at the "north point".
+            # Although this value isn't technically illegal (and hence not
+            # filtered above), excluding this one specific case has a very
+            # low probability of excluding legitimate cases, while avoiding
+            # the improper display in this case.
+            # Note that this only excludes them from the map, not the list.
+            if sat.az == 0 and sat.el == 0:
+                continue
+
             (x, y) = self.pol2cart(sat.az, sat.el)
             # colorize by signal to noise ratio
             # RINEX 3 uses 9 steps: 1 to 9.  Corresponding to
@@ -615,7 +633,6 @@ class AISView(object):
             latsuff = "N"
         else:
             latsuff = ""
-        lat = abs(lat)
         lat = gps.clienthelpers.deg_to_str(self.deg_type, lat)
         if lon < 0:
             lonsuff = "W"
@@ -623,7 +640,6 @@ class AISView(object):
             lonsuff = "E"
         else:
             lonsuff = ""
-        lon = abs(lon)
         lon = gps.clienthelpers.deg_to_str(gps.clienthelpers.deg_ddmmss, lon)
         return lat + latsuff + "/" + lon + lonsuff
 
@@ -969,7 +985,7 @@ class Base(object):
     def update_latitude(self, data):
         "Update latitude"
         if data.mode >= gps.MODE_2D and hasattr(data, "lat"):
-            lat = gps.clienthelpers.deg_to_str(self.deg_type, abs(data.lat))
+            lat = gps.clienthelpers.deg_to_str(self.deg_type, data.lat)
             if data.lat < 0:
                 ns = 'S'
             else:
@@ -981,7 +997,7 @@ class Base(object):
     def update_longitude(self, data):
         "Update longitude"
         if data.mode >= gps.MODE_2D and hasattr(data, "lon"):
-            lon = gps.clienthelpers.deg_to_str(self.deg_type, abs(data.lon))
+            lon = gps.clienthelpers.deg_to_str(self.deg_type, data.lon)
             if data.lon < 0:
                 ew = 'W'
             else:
@@ -1021,7 +1037,7 @@ class Base(object):
         "Update track"
         if hasattr(data, "track"):
             return "%14s °" % (
-                gps.clienthelpers.deg_to_str(self.deg_type, abs(data.track)))
+                gps.clienthelpers.deg_to_str(self.deg_type, data.track))
 
         return "n/a"
 
@@ -1165,7 +1181,16 @@ class Base(object):
             for i in range(data.satellites_seen, MAXCHANDISP):
                 for j in range(0, 6):
                     self.set_satlist_field(i, j, "")
-            self.skyview.redraw(satellites)
+        else:
+            # clear all of the list
+            for i in range(0, MAXCHANDISP):
+                for j in range(0, 6):
+                    self.set_satlist_field(i, j, "")
+            satellites = ()
+
+        # repaint Skyview
+        self.skyview.redraw(satellites)
+
 
         # the first 21 fields are updated using TPV data
         # the next 7 fields are updated using SKY data
@@ -1288,9 +1313,14 @@ if __name__ == "__main__":
         else:
             target = ""
 
+        if 'DISPLAY' not in os.environ:
+            sys.stderr.write("xgps: ERROR: DISPLAY not set\n")
+            exit(1)
+
         base = Base(deg_type=degreefmt, rotation=rotate, title=target)
         base.set_units(unit_system)
         try:
+            sys.stderr.write("xgps: host %s port %s\n" % (host, port))
             daemon = gps.gps(host=host,
                              port=port,
                              mode=(gps.WATCH_ENABLE | gps.WATCH_JSON |

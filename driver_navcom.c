@@ -31,9 +31,11 @@
  * be adding a fixed offset based on a hidden epoch value, in which case
  * unhappy things will occur on the next rollover.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -370,8 +372,7 @@ static gps_mask_t handle_0xb1(struct gps_device_t *session)
     /* Resolution of velocity values (2.0^-10) */
 #define VEL_RES (0.0009765625)
     double track;
-    uint8_t fom, gdop, pdop, hdop, vdop, tdop, tfom;
-    double eph;
+    uint8_t gdop, pdop, hdop, vdop, tdop;
     /* This value means "undefined" */
 #define DOP_UNDEFINED (255)
 
@@ -447,20 +448,15 @@ static gps_mask_t handle_0xb1(struct gps_device_t *session)
     session->newdata.climb = vel_up * VEL_RES;
 
     /* Quality indicators */
-    fom = getub(buf, 40);
+    /* UNUSED fom = getub(buf, 40);     * FOM is DRMS */
     gdop = getub(buf, 41);
     pdop = getub(buf, 42);
     hdop = getub(buf, 43);
     vdop = getub(buf, 44);
     tdop = getub(buf, 45);
-    tfom = getub(buf, 46);    /* tfom == 10 * TDOP */
+    /* UNUSED tfom = getub(buf, 46);    * tfom == 10 * TDOP */
 
-    /* Get two-sigma horizontal circular error estimate */
-    eph = fom / 100.0 * 1.96;
-    /* approximate epx and epy errors from it */
-    session->newdata.epx = session->newdata.epy = eph / sqrt(2);
-    /* this next does not seem a correct way to get to seconds */
-    session->newdata.ept = tfom * 1.96; /* Two sigma */
+    /* let gpsd_error_model() do the error estimates */
 
     if (gdop != DOP_UNDEFINED)
 	session->gpsdata.dop.gdop = gdop / 10.0;
@@ -496,13 +492,12 @@ static gps_mask_t handle_0xb1(struct gps_device_t *session)
 #undef DOP_UNDEFINED
 
     mask = LATLON_SET | ALTITUDE_SET | CLIMB_SET | SPEED_SET | TRACK_SET
-	| STATUS_SET | MODE_SET | USED_IS | HERR_SET | VERR_SET
+	| STATUS_SET | MODE_SET | USED_IS | HERR_SET
 	| TIMERR_SET | DOP_SET
 	| TIME_SET | NTPTIME_IS;
     gpsd_log(&session->context->errout, LOG_DATA,
 	     "PVT 0xb1: time=%.2f, lat=%.2f lon=%.2f alt=%.f "
 	     "speed=%.2f track=%.2f climb=%.2f mode=%d status=%d "
-	     "epx=%.2f epy=%.2f epv=%.2f "
 	     "gdop=%.2f pdop=%.2f hdop=%.2f vdop=%.2f tdop=%.2f "
 	     "mask={LATLON|ALTITUDE|CLIMB|SPEED|TRACK|TIME|STATUS|MODE|"
 	     "USED|HERR|VERR|TIMERR|DOP}\n",
@@ -515,9 +510,6 @@ static gps_mask_t handle_0xb1(struct gps_device_t *session)
 	     session->newdata.climb,
 	     session->newdata.mode,
 	     session->gpsdata.status,
-	     session->newdata.epx,
-	     session->newdata.epy,
-	     session->newdata.epv,
 	     session->gpsdata.dop.gdop,
 	     session->gpsdata.dop.pdop,
 	     session->gpsdata.dop.hdop,
@@ -884,12 +876,13 @@ static gps_mask_t handle_0xb5(struct gps_device_t *session)
 	char *buf = (char *)session->lexer.outbuffer + 3;
 	uint16_t week = getleu16(buf, 3);
 	uint32_t tow = getleu32(buf, 5);
-	double rms = getled64(buf, 9);
 #ifdef __UNUSED__
+	double rms = getled64(buf, 9);
 	/* Reason why it's unused is these figures do not agree
 	 * with those obtained from the PVT report (handle_0xb1).
 	 * The figures from 0xb1 do agree with the values reported
 	 * by Navcom's PC utility */
+        /* let gpsd_error_model() handle this */
 	//double ellips_maj = getled64(buf, 17);
 	//double ellips_min = getled64(buf, 25);
 	//double ellips_azm = getled64(buf, 33);
@@ -897,13 +890,11 @@ static gps_mask_t handle_0xb5(struct gps_device_t *session)
 	double lon_sd = getled64(buf, 49);
 	double alt_sd = getled64(buf, 57);
 	double hrms = sqrt(pow(lat_sd, 2) + pow(lon_sd, 2));
-#endif /*  __UNUSED__ */
-	session->gpsdata.epe = rms * 1.96;
-	mask |= PERR_IS;
-#ifdef __UNUSED__
+        /* Navcom doc unclear, this is likely sep? */
+	session->newdata.sep = rms * 1.96;
 	session->newdata.eph = hrms * 1.96;
 	session->newdata.epv = alt_sd * 1.96;
-	mask |= (HERR_SET | VERR_SET);
+	mask |= HERR_SET;
 #endif /*  __UNUSED__ */
 	session->newdata.time = gpsd_gpstime_resolve(session,
 						  (unsigned short)week,
@@ -911,7 +902,7 @@ static gps_mask_t handle_0xb5(struct gps_device_t *session)
 	gpsd_log(&session->context->errout, LOG_PROG,
 		 "Navcom: received packet type 0xb5 (Pseudorange Noise Statistics)\n");
 	gpsd_log(&session->context->errout, LOG_DATA,
-		 "Navcom: epe = %f\n", session->gpsdata.epe);
+		 "Navcom: sep = %f\n", session->newdata.sep);
 	return mask;
     } else {
 	/* Ignore this message block */

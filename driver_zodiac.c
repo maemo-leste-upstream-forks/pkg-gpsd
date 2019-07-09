@@ -6,20 +6,11 @@
  * be adding a fixed offset based on a hidden epoch value, in which case
  * unhappy things will occur on the next rollover.
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-#ifdef __linux__
-/* FreeBSD chokes on this */
-/* if we insist on C99, then we need this to get M_LN2 from math.h */
-/* if we insisnt on C99, then we need this to get M_LN2 from math.h */
-/* 500 means X/Open 1995 */
-#define _XOPEN_SOURCE 500
-/* round() needs  _POSIX_C_SOURCE >= 200112L */
-#define  _POSIX_C_SOURCE 200112L
-#endif /* __linux__ */
-
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -152,6 +143,8 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     gps_mask_t mask;
     double subseconds;
     struct tm unpacked_date;
+    int datum;
+
     /* ticks                      = getzlong(6); */
     /* sequence                   = getzword(8); */
     /* measurement_sequence       = getzword(9); */
@@ -190,13 +183,14 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     session->newdata.track = (int)getzword(36) * RAD_2_DEG * 1e-3;
     session->mag_var = ((short)getzword(37)) * RAD_2_DEG * 1e-4;
     session->newdata.climb = ((short)getzword(38)) * 1e-2;
-    /* map_datum                   = getzword(39); */
+    datum = getzword(39);
+    datum_code_string(datum, session->newdata.datum,
+                      sizeof(session->newdata.datum));
     /*
      * The manual says these are 1-sigma.  Device reports only eph, circular
-     * error; no harm in assigning it to both x and y components.
+     * error.  Let gpsd_model_error() do the rest
      */
-    session->newdata.epx = session->newdata.epy =
-	(int)getzlong(40) * 1e-2 * (1 / sqrt(2)) * GPSD_CONFIDENCE;
+    session->newdata.eph = (int)getzlong(40) * 1e-2 * GPSD_CONFIDENCE;
     session->newdata.epv = (int)getzlong(42) * 1e-2 * GPSD_CONFIDENCE;
     session->newdata.ept = (int)getzlong(44) * 1e-2 * GPSD_CONFIDENCE;
     session->newdata.eps = (int)getzword(46) * 1e-2 * GPSD_CONFIDENCE;
@@ -205,9 +199,9 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     /* clock_drift                 = (int)getzlong(51) * 1e-2; */
     /* clock_drift_sd              = (int)getzlong(53) * 1e-2; */
 
-    mask =
-	TIME_SET | NTPTIME_IS | LATLON_SET | ALTITUDE_SET | CLIMB_SET | SPEED_SET |
-	TRACK_SET | STATUS_SET | MODE_SET;
+    mask = TIME_SET | NTPTIME_IS | LATLON_SET | ALTITUDE_SET | CLIMB_SET |
+           SPEED_SET | TRACK_SET | STATUS_SET | MODE_SET |
+           HERR_SET | SPEEDERR_SET | VERR_SET;
     gpsd_log(&session->context->errout, LOG_DATA,
 	     "1000: time=%.2f lat=%.2f lon=%.2f alt=%.2f track=%.2f speed=%.2f climb=%.2f mode=%d status=%d\n",
 	     session->newdata.time, session->newdata.latitude,
@@ -444,7 +438,7 @@ static bool zodiac_speed_switch(struct gps_device_t *session,
     data[2] = (unsigned short)parity;	/* port 1 character width (8 bits) */
     data[3] = (unsigned short)(stopbits - 1);	/* port 1 stop bits (1 stopbit) */
     data[4] = 0;		/* port 1 parity (none) */
-    data[5] = (unsigned short)(round(log((double)speed / 300) / M_LN2) + 1);	/* port 1 speed */
+    data[5] = (unsigned short)(round(log((double)speed / 300) / GPS_LN2) + 1);	/* port 1 speed */
     data[14] = zodiac_checksum(data, 14);
 
     (void)zodiac_spew(session, 1330, data, 15);

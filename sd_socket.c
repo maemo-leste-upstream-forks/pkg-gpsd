@@ -1,7 +1,9 @@
 /*
- * This file is Copyright (c) 2011 by Eckhart Wörner
+ * This file is Copyright (c) 2011-2018 by Eckhart Wörner
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "gpsd_config.h"  /* must be before all includes */
 
 #include <limits.h>
 #include <stdlib.h>

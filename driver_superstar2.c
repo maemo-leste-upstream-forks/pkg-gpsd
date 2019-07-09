@@ -1,7 +1,9 @@
 /*
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright (c) 2010-2018 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+#include "gpsd_config.h"  /* must be before all includes */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
@@ -285,7 +287,7 @@ superstar2_msg_measurement(struct gps_device_t *session, unsigned char *buf,
 {
     gps_mask_t mask = 0;
     int i, n;
-    double t;
+    double t, t_intp;
 
     gpsd_log(&session->context->errout, LOG_PROG,
 	     "superstar2 #23 - measurement block\n");
@@ -297,21 +299,30 @@ superstar2_msg_measurement(struct gps_device_t *session, unsigned char *buf,
 	return 0;
     }
     t = getled64((char *)buf, 7);		/* measurement time */
+    session->gpsdata.raw.mtime.tv_nsec = modf(t, &t_intp) * 10e9;
+    session->gpsdata.raw.mtime.tv_sec = (time_t)t_intp;
+
+    /* this is so we can tell which never got set */
+    for (i = 0; i < MAXCHANNELS; i++)
+        session->gpsdata.raw.meas[i].svid = 0;
     for (i = 0; i < n; i++) {
 	unsigned long ul;
-	session->gpsdata.raw.mtime[i] = t;
-	session->gpsdata.skyview[i].PRN = (short)(getub(buf, 11 * i + 15) & 0x1f);
-	session->gpsdata.skyview[i].ss = (double)getub(buf, 11 * i * 15 + 1) / 4.0;
-	session->gpsdata.raw.codephase[i] =
+	session->gpsdata.skyview[i].PRN =
+            (short)(getub(buf, 11 * i + 15) & 0x1f);
+	session->gpsdata.skyview[i].ss =
+            (double)getub(buf, 11 * i * 15 + 1) / 4.0;
+	session->gpsdata.raw.meas[i].codephase =
 	    (double)getleu32(buf, 11 * i * 15 + 2);
 	ul = (unsigned long)getleu32(buf, 11 * i * 15 + 6);
 
-	session->gpsdata.raw.satstat[i] = (unsigned int)(ul & 0x03L);
-	session->gpsdata.raw.carrierphase[i] = (double)((ul >> 2) & 0x03ffL);
-	session->gpsdata.raw.pseudorange[i] = (double)(ul >> 12);
+	session->gpsdata.raw.meas[i].satstat = (unsigned int)(ul & 0x03L);
+	session->gpsdata.raw.meas[i].carrierphase =
+            (double)((ul >> 2) & 0x03ffL);
+	session->gpsdata.raw.meas[i].pseudorange = (double)(ul >> 12);
     }
 
-    mask |= RAW_IS;
+    /*The above decode does not look correct, do not report */
+    /* mask |= RAW_IS; */
     return mask;
 }
 
