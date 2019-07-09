@@ -1,3 +1,26 @@
+gpsd (3.19-1~1.gbp7a45f3) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @7a45f357ff1248a3dc9e69df0de764add2eb83ce **
+
+  [ Christian Ehrhardt ]
+  * [d61040a0] d/usr.sbin.gpsd: Relicense to BSD to match the Project.
+    As the Author of the profile I'm relicensing the apparmor profile
+    to the BSD License to match the (majority) of the rest of the
+    GPSD project licenses.
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+
+  [ Lisandro Damián Nicanor Pérez Meyer ]
+  * [5de17f0c] Allow gpsd.service to be enabled by the admin at boot time.
+    Be sure to keep it disabled. The admin needs to explicitely start
+    it if needed. (Closes: #928681)
+
+  [ Bernd Zeimetz ]
+  * [7a45f357] Update upstream source from tag 'upstream/3.19'
+    Update to upstream version '3.19'
+    with Debian dir b3aea49f5d39c5eb18ffcb61a2b6cebae7f7322f
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 09 Jul 2019 23:06:37 +0200
+
 gpsd (3.18.1-1) experimental; urgency=medium
 
   [ Christian Ehrhardt ]
