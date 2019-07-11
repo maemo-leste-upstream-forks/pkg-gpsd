@@ -20,8 +20,9 @@ gpsd (3.19-1) experimental; urgency=medium
   * [5e3a1568] test script location changed
   * [9035f8d9] add test_misc.py
   * [6d9ccaf3] Add gpsrinex
+  * [764bfeaa] Updating symbol files
 
- -- Bernd Zeimetz <bzed@debian.org>  Wed, 10 Jul 2019 00:49:49 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 11 Jul 2019 10:01:16 +0200
 
 gpsd (3.18.1-1) experimental; urgency=medium
 
