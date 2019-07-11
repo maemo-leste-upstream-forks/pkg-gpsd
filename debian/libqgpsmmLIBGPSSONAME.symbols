@@ -56,6 +56,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
 #MISSING: 3.17# (c++)"ntp_write(shmTime volatile*, timedelta_t*, int, int)@Base" 3.15
  os_daemon@Base 3.17
  (c++)"deg_to_str(deg_str_type, double)@Base" 3.5
+ (c++)"deg_to_str2(deg_str_type, double, char*, unsigned int, char const*, char const*)@Base" 3.19
  (c++)"export_default()@Base" 3.5
  (c++)"export_list(_IO_FILE*)@Base" 3.5
  (c++)"export_lookup(char const*)@Base" 3.5
@@ -85,6 +86,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"getled64(char const*, int)@Base" 3.9
  (c++)"getlef32(char const*, int)@Base" 3.9
  (c++)"putbef32(char*, int, float)@Base" 3.9
+ (c++)"nanowait(int, int)@Base" 3.19
 #MISSING: 3.5-1# deg_to_str@Base 3.3
  earth_distance@Base 3.3
  earth_distance_and_bearings@Base 3.3
@@ -146,3 +148,4 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  timestamp@Base 3.3
 #MISSING: 3.5-1# true2magnetic@Base 3.3
  unix_to_iso8601@Base 3.3
+ datum_code_string@Base 3.19

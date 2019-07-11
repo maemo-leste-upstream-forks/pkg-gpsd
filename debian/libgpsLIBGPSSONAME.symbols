@@ -100,3 +100,6 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  true2magnetic@Base 3.3
  ubits@Base 3.5-4~
  unix_to_iso8601@Base 3.3
+ datum_code_string@Base 3.19
+ deg_to_str2@Base 3.19
+ nanowait@Base 3.19
