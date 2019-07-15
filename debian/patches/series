@@ -2,3 +2,4 @@
 # add_patch.sh
 full-systemd-support
 gpsd_hotplug_rules_disable_generic_serial_converters
+remove-broken-sconstruct-envhandling
