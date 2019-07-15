@@ -1,3 +1,14 @@
+gpsd (3.19-2~1.gbp809c6c) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @809c6c4af84cbca9671e1dbfb639f4ca996d8642 **
+
+  * [06ae5582] Add debian/.gitlab-ci.yml
+  * [b200620e] Update Vcs-Git Urls
+  * [1991f99e] git is not available on buildds.
+  * [809c6c4a] Remove weird env flag overrides
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 15 Jul 2019 22:01:15 +0200
+
 gpsd (3.19-1) experimental; urgency=medium
 
   [ Christian Ehrhardt ]
