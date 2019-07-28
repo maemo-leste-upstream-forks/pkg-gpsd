@@ -79,11 +79,6 @@ SCONS_ENV := set -e ;\
 		export CXXFLAGS="$(cxxflags)" ;\
 		export CPPFLAGS="$(cppflags)";
 
-SCONSOPTS += LDFLAGS="$(ldflags)"
-SCONSOPTS += CFLAGS="$(cflags)"
-SCONSOPTS += CXXFLAGS="$(cxxflags)"
-SCONSOPTS += CPPFLAGS="$(cppflags)"
-
 
 $(LIBGPS_DEBIAN_FILE_TARGETS): $(LIBGPS_DEBIAN_FILE_SOURCES)
 	for source in $(LIBGPS_DEBIAN_FILE_SOURCES); do \
