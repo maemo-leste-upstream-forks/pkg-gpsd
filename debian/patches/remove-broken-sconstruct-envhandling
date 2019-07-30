@@ -25,7 +25,7 @@
 +for i in ["LDFLAGS", "SHLINKFLAGS", "CPPFLAGS", "CCFLAGS", "LINKFLAGS"]:
      if i in os.environ:
 -        env.MergeFlags({flag: Split(os.getenv(flag))})
-+        env.MergeFlags(Split(os.getenv(flag)))
++        env.MergeFlags(Split(os.getenv(i)))
  
  
  # Keep scan-build options in the environment
