@@ -59,7 +59,7 @@ Architecture: any
 Section: debug
 Suggests: gpsd-dbgsym
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
- libgpsLIBGPSSONAME (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python-gps (= ${binary:Version})
+ libgpsLIBGPSSONAME (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python3-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
@@ -73,11 +73,9 @@ Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgpsLIBGPSSONAME (= ${binary:Version}),
- python-gps, python3-gps, python-gtk2, python-cairo, gir1.2-gtk-3.0, python-serial, python-gi-cairo, ${python:Depends}, ${python3:Depends}
+ python3-gps, python3-gtk2, python3-cairo, gir1.2-gtk-3.0, python3-serial, python3-gi-cairo, ${python3:Depends}
 Suggests: gpsd
 Conflicts: gps
-Breaks: ${python:Breaks}, python-gps (<<3.18.1-1)
-Replaces: python-gps (<<3.18.1-1)
 Description: Global Positioning System - clients
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
