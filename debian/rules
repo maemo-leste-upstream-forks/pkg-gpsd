@@ -13,7 +13,7 @@ LIBGPS_DEBIAN_FILE_SOURCES := $(strip $(shell ls -1 debian/*LIBGPSSONAME* ))
 LIBGPS_DEBIAN_FILE_TARGETS := $(strip $(shell echo $(LIBGPS_DEBIAN_FILE_SOURCES) | sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g'))
 
 #python versions
-PYTHONS := $(shell pyversions -r) $(shell py3versions -r)
+PYTHONS := $(shell py3versions -r)
 PYTHON3 := $(shell py3versions -d)
 
 #debhelper version and settings needed for udev
@@ -115,7 +115,7 @@ ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	# disable tests on hurd due to weird ipv6 errors
 	# http://deb.li/4C46AEAC.7040906@bzed.de
 ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
-	-$(SCONS_ENV) /usr/bin/scons check
+	-$(SCONS_ENV) $(PYTHON3) /usr/bin/scons check
 endif
 endif
 	# ensure the test tools are built
@@ -211,12 +211,7 @@ binary: install-stamp
 	dh_installinit --no-start
 	dh_installsystemd -pgpsd --restart-after-upgrade
 	dh_installexamples
-	chmod 755 debian/$(PACKAGE_PY)/usr/lib/python2*/*-packages/gps/gps.py
 	chmod 755 debian/$(PACKAGE_PY3)/usr/lib/python3*/*-packages/gps/gps.py
-	dh_python2 -Ngpsd -Ngpsd-clients -Ngpsd-dbg
-	dh_python2 -pgpsd-dbg usr/lib/gpsd/debug
-	dh_python2 -pgpsd-clients usr/bin
-	dh_python2 -pgpsd lib/udev/
 	dh_python3 -Ngpsd -Ngpsd-clients -Ngpsd-dbg
 	dh_python3 -pgpsd-dbg usr/lib/gpsd/debug
 	dh_python3 -pgpsd-clients usr/bin

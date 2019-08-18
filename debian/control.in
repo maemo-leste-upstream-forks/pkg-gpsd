@@ -4,14 +4,14 @@ Priority: optional
 Maintainer: Bernd Zeimetz <bzed@debian.org>
 Build-Depends: debhelper (>= 11),
  po-debconf,
- python-all-dev (>= 2.6.6-3),
- python-all-dbg (>= 2.6.6-3),
+ python3-all-dev (>= 2.6.6-3),
+ python3-all-dbg (>= 2.6.6-3),
  python3-all-dev,
- python-cairo-dev,
  python3-cairo-dev,
- python-serial,
+ python3-cairo-dev,
  python3-serial,
- python-gi,
+ python3-serial,
+ python3-gi,
  python3-gi,
  xsltproc, docbook-xsl, docbook-xml,
  libncurses-dev,
@@ -85,23 +85,6 @@ Description: Global Positioning System - clients
  .
  This package contains auxiliary tools and example clients for monitoring,
  testing, latency-profiling, device configuration and simulating gpsd.
-
-Package: python-gps
-Architecture: any
-Section: python
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
- python (>= 2.6) | python-simplejson
-Recommends: gpsd
-Provides: ${python:Provides}
-Breaks: ${python:Breaks}, gpsd-clients (<<3.18.1-1)
-Conflicts: python-json
-Description: Global Positioning System - Python 2 libraries
- The gpsd service daemon can monitor one or more GPS devices connected to
- a host computer, making all data on the location and movements of the
- sensors available to be queried on TCP port 2947.
- .
- This package contains a Python 2 interface to connect to gpsd, together with
- a module providing a controlled testing environment.
 
 Package: python3-gps
 Architecture: any
