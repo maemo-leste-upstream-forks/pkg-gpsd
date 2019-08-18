@@ -14,6 +14,7 @@ LIBGPS_DEBIAN_FILE_TARGETS := $(strip $(shell echo $(LIBGPS_DEBIAN_FILE_SOURCES)
 
 #python versions
 PYTHONS := $(shell pyversions -r) $(shell py3versions -r)
+PYTHON3 := $(shell py3versions -d)
 
 #debhelper version and settings needed for udev
 DH_VERSION := $(shell dpkg -s debhelper | grep '^Version' | awk '{print $$2}')
@@ -118,7 +119,7 @@ ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
 endif
 endif
 	# ensure the test tools are built
-	$(SCONS_ENV) python /usr/bin/scons $(SCONSOPTS) $(shell grep test_ debian/gpsd-dbg.install | grep -v '\.py' | awk '{print $$1}')
+	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) $(shell grep test_ debian/gpsd-dbg.install | grep -v '\.py' | awk '{print $$1}')
 	touch $@
 
 build-static-stamp: SConstruct.deb_revision
@@ -132,7 +133,7 @@ clean: debian/control
 	    for py in $(PYTHONS); do \
 	    	$(SCONS_ENV) $${py} /usr/bin/scons $(SCONSOPTS) target_python=$${py} --clean ; \
 	    done
-	$(SCONS_ENV) python /usr/bin/scons $(SCONSOPTS) sconsclean || true
+	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) sconsclean || true
 	# revert revision changes in SConstruct
 	if [ -f SConstruct.deb_revision ]; then \
 	    mv SConstruct.deb_revision SConstruct; \
