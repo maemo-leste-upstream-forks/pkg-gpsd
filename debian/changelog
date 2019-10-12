@@ -1,13 +1,33 @@
-gpsd (3.19-2~1.gbp809c6c) UNRELEASED; urgency=medium
-
-  ** SNAPSHOT build @809c6c4af84cbca9671e1dbfb639f4ca996d8642 **
+gpsd (3.19-2) unstable; urgency=medium
 
   * [06ae5582] Add debian/.gitlab-ci.yml
   * [b200620e] Update Vcs-Git Urls
   * [1991f99e] git is not available on buildds.
   * [809c6c4a] Remove weird env flag overrides
+  * [85c4fbb7] snapshot changelog
+  * [24e0be41] try again
+  * [ede12b7b] Merge branch 'master' of salsa.debian.org:debian-gps-team/pkg-gpsd
+  * [29fe8717] Remove options only used by the init script.
+  * [0232f523] Scons ignores hardening-flags and others, try this.
+  * [d163bdcd] Revert "Scons ignores hardening-flags and others, try this."
+    This reverts commit 0232f52302f65f545118f653f787daf2429d0c0a.
+  * [27d27ef5] A better try to fix scons env handling
+  * [fc43714a] More fixes for the env-handling.
+  * [9b34a869] Fix the broken fix
+  * [6fd99707] Also merge CFLAGS/CXXFLAGS/...
+  * [200cf80c] Also try to fix python cflags handling
+  * [0dd50707] Use python3 for default scons things.
+    After building the first version with python 3, the pickle version of
+    the cached scons data will be too old.
+  * [bbf652ee] Remove python2 support.
+    Building both python versions got impossible since recent python3
+    versions use a new picke version and scons stores its state in a pickle
+    file...
+  * [8eee1d20] Also remove dependencies on python-gps
+  * [e3b30066] Updating debian/control from debian/control.in
+  * [0332c8e5] Remove duplicate build-deps
 
- -- Bernd Zeimetz <bzed@debian.org>  Mon, 15 Jul 2019 22:01:15 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 12 Oct 2019 20:22:43 +0200
 
 gpsd (3.19-1) experimental; urgency=medium
 
