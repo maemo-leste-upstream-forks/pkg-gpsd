@@ -26,8 +26,16 @@ gpsd (3.19-2) unstable; urgency=medium
   * [8eee1d20] Also remove dependencies on python-gps
   * [e3b30066] Updating debian/control from debian/control.in
   * [0332c8e5] Remove duplicate build-deps
+  * [62b43a57] Updating changelog
+  * [a8bbbce5] Use python3 for gpsd-clients
+  * [288e9075] gpsd-clients breaks/replaces python-gps
+  * [2f21db33] use aptly
+  * [fd092a4d] Use python3-gi instead of python3-gtk
+  * [0be9eebd] changes need to go into control.in
+  * [a620b1d5] Depend on python3
+  * [cbf832dd] Updating debian/control from debian/control.in
 
- -- Bernd Zeimetz <bzed@debian.org>  Sat, 12 Oct 2019 20:22:43 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 13 Oct 2019 21:56:20 +0200
 
 gpsd (3.19-1) experimental; urgency=medium
 
