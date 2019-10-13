@@ -8,10 +8,7 @@ Build-Depends: debhelper (>= 11),
  python3-all-dbg (>= 2.6.6-3),
  python3-all-dev,
  python3-cairo-dev,
- python3-cairo-dev,
  python3-serial,
- python3-serial,
- python3-gi,
  python3-gi,
  xsltproc, docbook-xsl, docbook-xml,
  libncurses-dev,
@@ -73,7 +70,8 @@ Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version}),
- python3-gps, python3-gi, python3-cairo, gir1.2-gtk-3.0, python3-serial, python3-gi-cairo, ${python3:Depends}
+ python3-gps, python3-gi, python3-cairo, gir1.2-gtk-3.0, python3-serial, python3-gi-cairo, ${python3:Depends},
+ python3
 Suggests: gpsd
 Breaks: python-gps
 Replaces: python-gps
