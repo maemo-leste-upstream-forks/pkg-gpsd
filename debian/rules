@@ -142,6 +142,7 @@ clean: debian/control
 	    .sconf_temp \
 	    .scons-option-cache \
 	    .sconsign.dblite \
+	    .sconsign.*.dblite \
 	    gps/*.pyc \
 	    TROUBLESHOOTING \
 	    debian/buildinfo.gz \
