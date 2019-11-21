@@ -1,3 +1,10 @@
+gpsd (3.19-3) unstable; urgency=medium
+
+  * [ba252b48] Use one sconsign file per pickle version.
+    Thanks to Graham Inggs (Closes: #945238)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 21 Nov 2019 19:51:42 +0100
+
 gpsd (3.19-2) unstable; urgency=medium
 
   * [06ae5582] Add debian/.gitlab-ci.yml
