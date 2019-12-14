@@ -27,8 +27,7 @@
   network stream,
 
   # common serial paths to GPS devices
-  /dev/tty{,S,USB,AMA}[0-9]*    rw,
-  /dev/ACM[0-9]*    rw,
+  /dev/tty{,S,USB,AMA,ACM}[0-9]*    rw,
   /sys/dev/char     r,
   /sys/dev/char/**  r,
 
