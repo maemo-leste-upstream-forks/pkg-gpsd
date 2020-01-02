@@ -165,7 +165,7 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	    done
 	# install static lib
 	cp libgps.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)
-	cp INSTALL TROUBLESHOOTING
+	cp INSTALL.adoc TROUBLESHOOTING.adoc
 	# install systemd files
 	mkdir -p debian/tmp/lib/systemd/system
 	cp systemd/* debian/tmp/lib/systemd/system
