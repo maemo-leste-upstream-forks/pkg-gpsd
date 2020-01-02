@@ -1,3 +1,14 @@
+gpsd (3.20-1) unstable; urgency=medium
+
+  * [9edad156] It is /dev/ttyACM[0-9]+, not /dev/ACM[0-9]+.
+    Fix the apparmor profile. (Closes: #944521)
+  * [13daa71f] Update upstream source from tag 'upstream/3.20'
+    Update to upstream version '3.20'
+    with Debian dir d2e29602486466a54dcd800a73e727aa3ef129ce
+  * [51f56687] Refreshing patches.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 02 Jan 2020 19:57:38 +0100
+
 gpsd (3.19-3) unstable; urgency=medium
 
   * [ba252b48] Use one sconsign file per pickle version.
