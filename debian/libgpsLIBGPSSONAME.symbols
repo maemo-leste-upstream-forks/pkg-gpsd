@@ -61,7 +61,8 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  gpsd_source_spec@Base 3.3
  gpsd_units@Base 3.3
  hex_escapes@Base 3.3
- iso8601_to_unix@Base 3.3
+ iso8601_to_timespec@Base 3.20
+#MISSING: 3.20# iso8601_to_unix@Base 3.3
  json_ais_read@Base 3.3
  json_device_read@Base 3.3
  json_enable_debug@Base 3.3
@@ -84,6 +85,7 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  netlib_errstr@Base 3.3
  netlib_localsocket@Base 3.3
  netlib_sock2ip@Base 3.3
+ now_to_iso8601@Base 3.20
 #MISSING: 3.17# ntp_name@Base 3.15
 #MISSING: 3.17# ntp_read@Base 3.15
 #MISSING: 3.17# ntp_write@Base 3.15
@@ -95,11 +97,12 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  strlcpy@Base 3.3
  shiftleft@Base 3.12
 #MISSING: 3.17# shm_get@Base 3.15
-#MISSING: 3.15-1~1.gbp2d150e# timespec_str@Base 3.12
- timestamp@Base 3.3
- true2magnetic@Base 3.3
+ timespec_str@Base 3.20
+ timespec_to_iso8601@Base 3.20
+#MISSING: 3.20# timestamp@Base 3.3
+#MISSING: 3.20# true2magnetic@Base 3.3
  ubits@Base 3.5-4~
- unix_to_iso8601@Base 3.3
+#MISSING: 3.20# unix_to_iso8601@Base 3.3
  datum_code_string@Base 3.19
  deg_to_str2@Base 3.19
  nanowait@Base 3.19
