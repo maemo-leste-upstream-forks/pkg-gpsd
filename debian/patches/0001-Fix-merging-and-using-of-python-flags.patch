@@ -11,7 +11,7 @@ also fix the handling of python build flags.
 
 --- a/SConstruct
 +++ b/SConstruct
-@@ -1128,7 +1128,7 @@ else:
+@@ -1197,7 +1197,7 @@ else:
  
  PYTHON_LIBDIR_CALL = 'sysconfig.get_python_lib()'
  
@@ -20,7 +20,7 @@ also fix the handling of python build flags.
                         'CCSHARED', 'LDSHARED', 'SO', 'INCLUDEPY', 'LDFLAGS']
  PYTHON_CONFIG_QUOTED = ["'%s'" % s for s in PYTHON_CONFIG_NAMES]
  PYTHON_CONFIG_CALL = ('sysconfig.get_config_vars(%s)'
-@@ -1668,14 +1668,17 @@ else:
+@@ -1774,14 +1774,17 @@ else:
      ldshared = ldshared.replace('-fPIE', '')
      ldshared = ldshared.replace('-pie', '')
      python_env.Replace(SHLINKFLAGS=[],
