@@ -1,19 +1,7 @@
 /*
  * Copyright (c) 2005 Jeff Francis <jeff@gritch.org>
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- * This file is Copyright (c) 2010-2018 by the GPSD project
+ * This file is Copyright (c) 2010-20189 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  *
  */
@@ -209,7 +197,8 @@ static void update_lcd(struct gps_data_t *gpsdata)
     track=(int)(gpsdata->fix.track);
     if (track == 0) track = 360;
 
-    snprintf(tmpbuf, sizeof(tmpbuf) - 1, "widget_set gpsd three 1 3 {%.1f %s %d deg}\n",
+    snprintf(tmpbuf, sizeof(tmpbuf) - 1,
+             "widget_set gpsd three 1 3 {%.1f %s %d deg}\n",
              gpsdata->fix.speed*speedfactor, speedunits,
              track);
     send_lcd(tmpbuf);
@@ -229,8 +218,10 @@ static void update_lcd(struct gps_data_t *gpsdata)
     avgclimb=0.0;
     for(n=0;n<CLIMB;n++) avgclimb+=climb[n];
     avgclimb/=CLIMB;
-    snprintf(tmpbuf, sizeof(tmpbuf) - 1, "widget_set gpsd four 1 4 {%d %s %s %d fpm       }\n",
-            (int)(gpsdata->fix.altitude*altfactor), altunits, gridsquare, (int)(avgclimb * METERS_TO_FEET * 60));
+    snprintf(tmpbuf, sizeof(tmpbuf) - 1,
+             "widget_set gpsd four 1 4 {%d %s %s %d fpm       }\n",
+            (int)(gpsdata->fix.altMSL * altfactor), altunits,
+            gridsquare, (int)(avgclimb * METERS_TO_FEET * 60));
   } else {
     snprintf(tmpbuf, sizeof(tmpbuf) - 1, "widget_set gpsd four 1 4 {n/a}\n");
   }
@@ -248,10 +239,10 @@ static void usage( char *prog)
         "                m = DD MM.mmmm'\n"
         "                s = DD MM' SS.sss\"\n"
         "  -s          Sleep for 10 seconds before starting\n"
-        "  -u {i|m|n}  Select Units\n"
+        "  -u {i|m|m}  Select Units\n"
         "                i = Imperial (default)\n"
-        "                m = Metric'\n"
-        "                n = Nautical\"\n"
+        "                n = Nautical\n"
+        "                m = Metric\n"
         "  -V          Show version, then exit\n"
         , prog);
 

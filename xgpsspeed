@@ -11,22 +11,39 @@
 # Preserve this property!
 from __future__ import absolute_import, print_function, division
 
+import argparse
+import cairo
 from math import pi
 from math import cos
 from math import sin
 from math import sqrt
 from math import radians
+import os
 from socket import error as SocketError
+import sys
 
-import cairo
 
 # Gtk3 imports.  Gtk3 requires the require_version(), which then causes
 # pylint to complain about the subsequent "non-top" imports.
-import gi
-gi.require_version('Gtk', '3.0')
+try:
+    import gi
+    gi.require_version('Gtk', '3.0')
+
+except ImportError as err:
+    # ModuleNotFoundError needs Python 3.6
+    sys.stderr.write("xgps: ERROR %s\n" % err)
+    exit(1)
+
+except ValueError as err:
+    # Gtk2 may be installed, has no require_version()
+    sys.stderr.write("xgps: ERROR %s\n" % err)
+    exit(1)
+
+
 from gi.repository import Gtk      # pylint: disable=wrong-import-position
 from gi.repository import Gdk      # pylint: disable=wrong-import-position
-from gi.repository import GObject  # pylint: disable=wrong-import-position
+from gi.repository import GLib  # pylint: disable=wrong-import-position
+
 
 # pylint wants local modules last
 try:
@@ -37,7 +54,7 @@ except ImportError as e:
     sys.stderr.write("%s\n" % e)
     sys.exit(1)
 
-gps_version = '3.19'
+gps_version = '3.20'
 if gps.__version__ != gps_version:
     sys.stderr.write("xgpsspeed: ERROR: need gps module version %s, got %s\n" %
                      (gps_version, gps.__version__))
@@ -101,8 +118,14 @@ class LandSpeedometer(Speedometer):
         self.width = allocation.width
         self.height = allocation.height
 
-    def draw_s(self, _unused, _event, _empty=None):
-        self.cr = self.get_window().cairo_create()
+    def draw_s(self, widget, _event, _empty=None):
+        "Top level draw"
+
+        window = widget.get_window()
+        region = window.get_clip_region()
+        context = window.begin_draw_frame(region)
+        self.cr = context.get_cairo_context()
+
         self.cr.rectangle(0, 0, self.width, self.height)
         self.cr.clip()
         x, y = self.get_x_y()
@@ -112,6 +135,8 @@ class LandSpeedometer(Speedometer):
         self.draw_arc_and_ticks(width, height, radius, x, y)
         self.draw_needle(self.last_speed, radius, x, y)
         self.draw_speed_text(self.last_speed, radius, x, y)
+        self.cr = None
+        window.end_draw_frame(context)
 
     def draw_arc_and_ticks(self, width, height, radius, x, y):
         self.cr.set_source_rgb(1.0, 1.0, 1.0)
@@ -275,6 +300,7 @@ class NauticalSpeedometer(Speedometer):
         self.last_heading = 0
         self.maxspeed = int(maxspeed)
         self.rotate = radians(rotate)
+        self.cr = None
 
     def polar2xy(self, radius, angle, polex, poley):
         '''convert Polar coordinate to Cartesian coordinate system
@@ -295,8 +321,14 @@ class NauticalSpeedometer(Speedometer):
         self.width = allocation.width
         self.height = allocation.height
 
-    def draw_s(self, _unused, _event, _empty=None):
-        self.cr = self.get_window().cairo_create()
+    def draw_s(self, widget, _event, _empty=None):
+        "Top level draw"
+
+        window = widget.get_window()
+        region = window.get_clip_region()
+        context = window.begin_draw_frame(region)
+        self.cr = context.get_cairo_context()
+
         self.cr.rectangle(0, 0, self.width, self.height)
         self.cr.clip()
         x, y = self.get_x_y()
@@ -309,6 +341,8 @@ class NauticalSpeedometer(Speedometer):
             self.draw_sat(sat, radius * NauticalSpeedometer.HEADING_SAT_GAP,
                           x, y)
         self.draw_speed(radius, x, y)
+        self.cr = None
+        window.end_draw_frame(context)
 
     def draw_text(self, x, y, text, fontsize=10):
         '''draw text at given location
@@ -484,11 +518,10 @@ class NauticalSpeedometer(Speedometer):
 
     def set_color(self, spec):
         '''Set foreground color for drawing.'''
-        gdkcolor = Gdk.color_parse(spec)
-        r = gdkcolor.red / 65535.0
-        g = gdkcolor.green / 65535.0
-        b = gdkcolor.blue / 65535.0
-        self.cr.set_source_rgb(r, g, b)
+
+        color = Gdk.RGBA()
+        color.parse(spec)
+        Gdk.cairo_set_source_rgba(self.cr, color)
 
     def draw_sat(self, satsoup, radius, x, y):
         """Given a sat's elevation, azimuth, SNR, draw it on the skyview
@@ -571,87 +604,179 @@ class Main(object):
         self.maxspeed = maxspeed
         self.nautical = nautical
         self.rotate = rotate
-        self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+        self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         if not self.window.get_display():
             raise Exception("Can't open display")
-        if len(target):
+        if target:
             target = " " + target
         self.window.set_title('xgpsspeed' + target)
+        self.window.connect("delete-event", self.delete_event)
+
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
+        self.window.add(vbox)
+
+        # menubar
+        menubar = Gtk.MenuBar()
+        vbox.pack_start(menubar, False, False, 0)
+        agr = Gtk.AccelGroup()
+        self.window.add_accel_group(agr)
+
+        # need the widget before the menu as the menu building
+        # calls the widget
+        self.window.set_size_request(400, 450)
         if self.nautical:
-            self.window.set_size_request(500, 550)
             self.widget = NauticalSpeedometer(
                 speed_unit=self.speed_unit,
                 maxspeed=self.maxspeed,
                 rotate=self.rotate)
         else:
             self.widget = LandSpeedometer(speed_unit=self.speed_unit)
+
+        self.speedframe = Gtk.Frame()
+        self.speedframe.add(self.widget)
+        vbox.add(self.speedframe)
+
         self.window.connect('delete-event', self.delete_event)
         self.window.connect('destroy', self.destroy)
-        self.widget.show()
-        vbox = Gtk.VBox(False, 0)
-        self.window.add(vbox)
-
         self.window.present()
-        self.uimanager = Gtk.UIManager()
-        self.accelgroup = self.uimanager.get_accel_group()
-        self.window.add_accel_group(self.accelgroup)
-        self.actiongroup = Gtk.ActionGroup('gpsspeed-ng')
-        self.actiongroup.add_actions(
-            [
-                ('Quit', Gtk.STOCK_QUIT, '_Quit', None,
-                    'Quit the Program', lambda unused: Gtk.main_quit()),
-                ('File', None, '_File'),
-                ('Units', None, '_Units')]
-        )
-        self.actiongroup.add_radio_actions(
-            [
-                ('Imperial', None, '_Imperial', '<Control>i',
-                    'Imperial Units', 0),
-                ('Metric', None, '_Metric', '<Control>m',
-                    'Metrical Units', 1),
-                ('Nautical', None, '_Nautical', '<Control>n',
-                    'Nautical Units', 2)
-            ],
-            0, lambda a, unused: setattr(
-                self.widget, 'speed_unit',
-                ['mph', 'kmh', 'knots'][a.get_current_value()])
-        )
 
-        self.uimanager.insert_action_group(self.actiongroup, 0)
-        self.uimanager.add_ui_from_string('''
-<ui>
-    <menubar name='MenuBar'>
-        <menu action='File'>
-            <menuitem action='Quit'/>
-        </menu>
-        <menu action='Units'>
-            <menuitem action='Imperial'/>
-            <menuitem action='Metric'/>
-            <menuitem action='Nautical'/>
-        </menu>
-    </menubar>
-</ui>
-''')
-        self.active_unit_map = {
-            'mph': '/MenuBar/Units/Imperial',
-            'kmh': '/MenuBar/Units/Metric',
-            'knots': '/MenuBar/Units/Nautical'
-        }
-        menubar = self.uimanager.get_widget('/MenuBar')
-        self.uimanager.get_widget(
-            self.active_unit_map.get(self.speed_unit)
-        ).set_active(True)
-        vbox.pack_start(menubar, False, False, 0)
-        vbox.add(self.widget)
+        # File
+        topmenu = Gtk.MenuItem(label="File")
+        menubar.append(topmenu)
+        submenu = Gtk.Menu()
+        topmenu.set_submenu(submenu)
+        menui = Gtk.MenuItem(label="Quit")
+        key, mod = Gtk.accelerator_parse("<Control>Q")
+        menui.add_accelerator("activate", agr, key, mod,
+                              Gtk.AccelFlags.VISIBLE)
+        menui.connect("activate", Gtk.main_quit)
+        submenu.append(menui)
+
+        # View
+        topmenu = Gtk.MenuItem(label="View")
+        menubar.append(topmenu)
+        submenu = Gtk.Menu()
+        topmenu.set_submenu(submenu)
+
+        views = [["Nautical", False, "0", "Nautical"],
+                 ["Land", False, "1", "Land"],
+                 ]
+
+        if self.nautical:
+            views[0][1] = True
+        else:
+            views[1][1] = True
+
+        menui = None
+        for name, active, acc, handle in views:
+            menui = Gtk.RadioMenuItem(group=menui, label=name)
+            menui.set_active(active)
+            menui.connect("activate", self.view_toggle, handle)
+            if acc:
+                key, mod = Gtk.accelerator_parse(acc)
+                menui.add_accelerator("activate", agr, key, mod,
+                                      Gtk.AccelFlags.VISIBLE)
+            submenu.append(menui)
+
+        # Units
+        topmenu = Gtk.MenuItem(label="Units")
+        menubar.append(topmenu)
+        submenu = Gtk.Menu()
+        topmenu.set_submenu(submenu)
+
+        units = [["Imperial", True, "i", 'mph'],
+                 ["Nautical", False, "n", 'knots'],
+                 ["Metric", False, "m", 'kmh'],
+                 ]
+
+        menui = None
+        for name, active, acc, handle in units:
+            menui = Gtk.RadioMenuItem(group=menui, label=name)
+            menui.set_active(active)
+            menui.connect("activate", self.set_units, handle)
+            if acc:
+                key, mod = Gtk.accelerator_parse(acc)
+                menui.add_accelerator("activate", agr, key, mod,
+                                      Gtk.AccelFlags.VISIBLE)
+            submenu.append(menui)
+
+        # Help
+        topmenu = Gtk.MenuItem(label="Help")
+        menubar.append(topmenu)
+        submenu = Gtk.Menu()
+        topmenu.set_submenu(submenu)
+
+        menui = Gtk.MenuItem(label="About")
+        menui.connect("activate", self.about)
+        submenu.append(menui)
+
+        # vbox.pack_start(menubar, False, False, 0)
+        # vbox.add(self.speedframe)
         self.window.show_all()
+
+    def about(self, _unused):
+        "Show about dialog"
+
+        about = Gtk.AboutDialog()
+        about.set_program_name("xgpsspeed")
+        about.set_version("Versions:\n"
+                          "xgpspeed %s\n"
+                          "PyGObject Version %d.%d.%d" %
+                          (gps_version,  gi.version_info[0],
+                           gi.version_info[1], gi.version_info[2]))
+        about.set_copyright("Copyright 2004-2019 by The GPSD Project")
+        about.set_website("https://www.gpsd.io")
+        about.set_website_label("https://www.gpsd.io")
+        about.set_license("BSD-2-clause")
+
+        about.run()
+        about.destroy()
+
+    def delete_event(self, _widget, _event, _data=None):
+        "Say goodbye nicely"
+        Gtk.main_quit()
+        return False
+
+    def set_units(self, _unused, handle):
+        "Change the display units."
+
+        # print("set_units:", handle, self)
+        self.widget.speed_unit = handle
 
     def watch(self, daemon, device):
         self.daemon = daemon
         self.device = device
-        GObject.io_add_watch(daemon.sock, GObject.IO_IN, self.handle_response)
-        GObject.io_add_watch(daemon.sock, GObject.IO_ERR, self.handle_hangup)
-        GObject.io_add_watch(daemon.sock, GObject.IO_HUP, self.handle_hangup)
+        GLib.io_add_watch(daemon.sock, GLib.PRIORITY_DEFAULT,
+                          GLib.IO_IN, self.handle_response)
+        GLib.io_add_watch(daemon.sock, GLib.PRIORITY_DEFAULT,
+                          GLib.IO_ERR, self.handle_hangup)
+        GLib.io_add_watch(daemon.sock, GLib.PRIORITY_DEFAULT,
+                          GLib.IO_HUP, self.handle_hangup)
         return True
+
+    def view_toggle(self, action, name):
+        "Toggle widget view"
+
+        if not action.get_active() or not name:
+            # nothing to do
+            return
+
+        parent = self.widget.get_parent()
+
+        if 'Nautical' == name:
+            self.nautical = True
+            widget = NauticalSpeedometer(
+                speed_unit=self.speed_unit,
+                maxspeed=self.maxspeed,
+                rotate=self.rotate)
+        else:
+            self.nautical = False
+            widget = LandSpeedometer(speed_unit=self.speed_unit)
+
+        parent.remove(self.widget)
+        parent.add(widget)
+        self.widget = widget
+        self.widget.show()
 
     def handle_response(self, source, condition):
         if self.daemon.read() == -1:
@@ -668,8 +793,8 @@ class Main(object):
     def handle_hangup(self, _dummy, _unused):
         w = Gtk.MessageDialog(
             parent=self.window,
-            type=Gtk.MessageType.ERROR,
-            flags=Gtk.DialogFlags.DESTROY_WITH_PARENT,
+            message_type=Gtk.MessageType.ERROR,
+            destroy_with_parent=True,
             buttons=Gtk.ButtonsType.OK
         )
         w.connect("destroy", lambda unused: Gtk.main_quit())
@@ -709,10 +834,6 @@ class Main(object):
                              (sys.argv[0], ver.proto_major, ver.proto_minor,
                               gps.api_major_version, gps.api_minor_version))
 
-    def delete_event(self, _widget, _event, _data=None):
-        # Someday, handle all cleanup operations here
-        return False
-
     def destroy(self, _unused, _empty=None):
         Gtk.main_quit()
 
@@ -729,8 +850,8 @@ class Main(object):
         except SocketError:
             w = Gtk.MessageDialog(
                 parent=self.window,
-                type=Gtk.MessageType.ERROR,
-                flags=Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                message_type=Gtk.MessageType.ERROR,
+                destroy_with_parent=True,
                 buttons=Gtk.ButtonsType.OK
             )
             w.set_title('socket error')
@@ -740,93 +861,95 @@ class Main(object):
             w.run()
             w.destroy()
         except KeyboardInterrupt:
-            self.window.emit('delete_event', Gdk.Event(Gdk.NOTHING))
+            pass
 
 
 if __name__ == '__main__':
-    import sys
-    from os.path import basename
-    from optparse import OptionParser
-    prog = basename(sys.argv[0])
-    usage = ('%s [OPTIONS] [host [:port [:device]]]') % (prog)
-    epilog = 'BSD terms apply: see the file COPYING in the distribution root' \
-             ' for details.'
 
-    parser = OptionParser(usage=usage, epilog=epilog)
-    parser.add_option(
+    usage = '%(prog)s [OPTIONS] [host[:port[:device]]]'
+    epilog = ('BSD terms apply: see the file COPYING in the distribution root'
+              ' for details.')
+
+    parser = argparse.ArgumentParser(usage=usage, epilog=epilog)
+    parser.add_argument(
+        '-D',
         '--debug',
         dest='debug',
         default=0,
-        action='store',
-        type='int',
-        help='Set level of debug. Must be integer. [Default 0]'
+        type=int,
+        help='Set level of debug. Must be integer. [Default %(default)s)]'
     )
-    parser.add_option(
+    parser.add_argument(
         '--device',
         dest='device',
-        default=None,
-        help='The device to connect. [Default None]'
+        default='',
+        help='The device to connect. [Default %(default)s)]'
     )
-    parser.add_option(
+    parser.add_argument(
         '--host',
         dest='host',
-        default=None,
-        help='The host to connect. [Default localhost]'
+        default='localhost',
+        help='The host to connect. [Default %(default)s)]'
     )
-    parser.add_option(
+    parser.add_argument(
         '--landspeed',
         dest='nautical',
         default=True,
         action='store_false',
         help='Enable dashboard-style speedometer.'
     )
-    parser.add_option(
+    parser.add_argument(
         '--maxspeed',
         dest='maxspeed',
         default='50',
-        help='Max speed of the speedmeter [Default 50]'
+        help='Max speed of the speedmeter [Default %(default)s]'
     )
-    parser.add_option(
+    parser.add_argument(
         '--nautical',
         dest='nautical',
         default=True,
         action='store_true',
         help='Enable nautical-style speed and track display.'
     )
-    parser.add_option(
+    parser.add_argument(
         '--port',
         dest='port',
-        default=None,
-        help='The port to connect. [Default %s]' % gps.GPSD_PORT
+        default=gps.GPSD_PORT,
+        help='The port to connect. [Default %(default)s)]'
     )
-    parser.add_option(
+    parser.add_argument(
+        '-r',
         '--rotate',
         dest='rotate',
         default=0,
-        action='store',
-        type='float',
-        help='Rotation of skyview ("up" direction) in degrees. [Default 0]'
+        type=float,
+        help='Rotation of skyview ("up" direction) in degrees. '
+             ' [Default %(default)s)]'
     )
-    parser.add_option(
+    parser.add_argument(
         '--speedunits',
         dest='speedunits',
         default='mph',
-        help='The unit of speed. Possible units are: mph, kmh, knots. '
-             '[Default mph]'
+        choices=['mph', 'kmh', 'knots'],
+        help='The unit of speed. [Default %(default)s)]'
     )
-    parser.add_option(
+    parser.add_argument(
         '-V', '--version',
-        action='store_true',
-        default=False,
+        action='version',
+        version="%(prog)s: Version " + gps_version + "\n",
         help='Output version to stderr, then exit'
     )
-    (options, args) = parser.parse_args()
-    if options.version:
-        sys.stderr.write("xgpsspeed: Version %s\n" % gps_version)
-        sys.exit(0)
+    parser.add_argument(
+        'target',
+        nargs='?',
+        help='[host[:port[:device]]]'
+    )
+    options = parser.parse_args()
 
-    if args:
-        arg = args[0].split(':')
+    # the options host, port, device are set by the defaults
+    if options.target:
+        # override with target
+        arg = options.target.split(':')
         len_arg = len(arg)
         if len_arg == 1:
             (options.host,) = arg
@@ -837,19 +960,18 @@ if __name__ == '__main__':
         else:
             parser.print_help()
             sys.exit(0)
-        target = ':'.join(args[0:])
-    elif options.host or options.port or options.device:
-        ltarget = [options.host or 'localhost']
-        if options.port or options.device:
-            ltarget += [options.port or '']
-        if options.device:
-            ltarget += [options.device]
-        target = ':'.join(ltarget)
-    else:
-        target = ""
+        target = ':'.join(options.target[0:])
+
+    ltarget = [options.host, options.port, options.device]
+    target = ':'.join(ltarget)
+
+    if 'DISPLAY' not in os.environ:
+        sys.stderr.write("xgps: ERROR: DISPLAY not set\n")
+        exit(1)
+
     Main(
-        host=options.host or 'localhost',
-        port=options.port or gps.GPSD_PORT,
+        host=options.host,
+        port=options.port,
         device=options.device,
         speed_unit=options.speedunits,
         maxspeed=options.maxspeed,

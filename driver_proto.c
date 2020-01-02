@@ -75,7 +75,7 @@ _proto__msg_navsol(struct gps_device_t *session, unsigned char *buf, size_t data
     if (data_len != _PROTO__NAVSOL_MSG_LEN)
 	return 0;
 
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "_proto_ NAVSOL - navigation data\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -92,12 +92,7 @@ _proto__msg_navsol(struct gps_device_t *session, unsigned char *buf, size_t data
     session->newdata.ecef.vx,
     session->newdata.ecef.vy,
     session->newdata.ecef.vz] = GET_ECEF_FIX();
-    ecef_to_wgs84fix(&session->newdata,  &session->gpsdata.separation,
-		     session->newdata.ecef.x, session->newdata.ecef.y,
-		     session->newdata.ecef.z, session->newdata.ecef.vx,
-		     session->newdata.ecef.vy, session->newdata.ecef.vz);
-    mask |= LATLON_SET | ALTITUDE_SET | SPEED_SET | TRACK_SET | CLIMB_SET
-            | ECEF_SET | VECEF_SET  ;
+    mask |= ECEF_SET | VECEF_SET;
 
     session->newdata.epx = GET_LONGITUDE_ERROR();
     session->newdata.epy = GET_LATITUDE_ERROR();
@@ -132,12 +127,14 @@ _proto__msg_navsol(struct gps_device_t *session, unsigned char *buf, size_t data
      * the fields it potentially set and the transfer mask. Doing this
      * makes it relatively easy to track down data-management problems.
      */
-    gpsd_log(&session->context->errout, LOG_DATA,
-	     "NAVSOL: time=%.2f, lat=%.2f lon=%.2f alt=%.2f mode=%d status=%d\n",
+    GPSD_LOG(LOG_DATA, &session->context->errout,
+	     "NAVSOL: time=%.2f, ecef x:%.2f y: %.2f z: %.2f mode=%d "
+             "status=%d\n",
 	     session->newdata.time,
-	     session->newdata.latitude,
+	     session->newdata.ecef.x,
+	     session->newdata.ecef.y,
+	     session->newdata.ecef.z,
 	     session->newdata.longitude,
-	     session->newdata.altitude,
 	     session->newdata.mode,
 	     session->gpsdata.status);
 
@@ -155,7 +152,7 @@ _proto__msg_utctime(struct gps_device_t *session, unsigned char *buf, size_t dat
     if (data_len != UTCTIME_MSG_LEN)
 	return 0;
 
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "_proto_ UTCTIME - navigation data\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -165,7 +162,7 @@ _proto__msg_utctime(struct gps_device_t *session, unsigned char *buf, size_t dat
     tow = GET_MS_TIMEOFWEEK();
     gps_week = GET_WEEKNUMBER();
     session->context->leap_seconds = GET_GPS_LEAPSECONDS();
-    session->newdata.time = gpsd_gpstime_resolve(session, gps_week, tow / 1000.0);
+    session->newdata.time = gpsd_gpstime_resolv(session, gps_week, tow);
 
     return TIME_SET | NTPTIME_IS | ONLINE_SET;
 }
@@ -182,7 +179,7 @@ _proto__msg_svinfo(struct gps_device_t *session, unsigned char *buf, size_t data
     if (data_len != SVINFO_MSG_LEN )
 	return 0;
 
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "_proto_ SVINFO - navigation data\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -198,7 +195,7 @@ _proto__msg_svinfo(struct gps_device_t *session, unsigned char *buf, size_t data
      */
     nchan = GET_NUMBER_OF_CHANNELS();
     if ((nchan < 1) || (nchan > MAXCHANNELS)) {
-	gpsd_log(&session->context->errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &session->context->errout,
 		 "too many channels reported\n");
 	return 0;
     }
@@ -223,7 +220,7 @@ _proto__msg_svinfo(struct gps_device_t *session, unsigned char *buf, size_t data
     session->gpsdata.skyview_time = NaN;
     session->gpsdata.satellites_used = nsv;
     session->gpsdata.satellites_visible = st;
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "SVINFO: visible=%d used=%d mask={SATELLITE|USED}\n",
 	     session->gpsdata.satellites_visible,
 	     session->gpsdata.satellites_used);
@@ -238,12 +235,11 @@ _proto__msg_raw(struct gps_device_t *session, unsigned char *buf, size_t data_le
 {
     unsigned char i, st, nchan, nsv;
     unsigned int tow;
-    double t_intp;
 
     if (data_len != RAW_MSG_LEN )
 	return 0;
 
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "_proto_ RAW - raw measurements\n");
     /* if this protocol has a way to test message validity, use it */
     flags = GET_FLAGS();
@@ -259,14 +255,12 @@ _proto__msg_raw(struct gps_device_t *session, unsigned char *buf, size_t data_le
      */
     nchan = GET_NUMBER_OF_CHANNELS();
     if ((nchan < 1) || (nchan > MAXCHANNELS)) {
-	gpsd_log(&session->context->errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &session->context->errout,
 		 "too many channels reported\n");
 	return 0;
     }
 
-    session->gpsdata.raw.mtime.tv_nsec =
-        modf(session->newdata.time, &t_intp) * 10e8;
-    session->gpsdata.raw.mtime.tv_sec = (time_t)t_intp;
+    DTONS(&session->raw.mtime, GET_TIME());
 
     /* this is so we can tell which never got set */
     for (i = 0; i < MAXCHANNELS; i++)
@@ -309,7 +303,7 @@ gps_mask_t _proto__dispatch(struct gps_device_t *session, unsigned char *buf, si
     type = GET_MESSAGE_TYPE();
 
     /* we may need to dump the raw packet */
-    gpsd_log(&session->context->errout, LOG_RAW,
+    GPSD_LOG(LOG_RAW, &session->context->errout,
 	     "raw _proto_ packet type 0x%02x\n", type);
 
     switch (type)
@@ -317,7 +311,7 @@ gps_mask_t _proto__dispatch(struct gps_device_t *session, unsigned char *buf, si
 	/* Deliver message to specific decoder based on message type */
 
     default:
-	gpsd_log(&session->context->errout, LOG_WARN,
+	GPSD_LOG(LOG_WARN, &session->context->errout,
 		 "unknown packet id %d length %d\n", type, len);
 	return 0;
     }
@@ -365,8 +359,7 @@ static ssize_t _proto__control_send(struct gps_device_t *session,
    (void)memcpy(session->msgbuf, msg, msglen);
 
    /* we may need to dump the message */
-    return gpsd_write(session, session->msgbuf, session->msgbuflen);
-   gpsd_log(&session->context->errout, LOG_PROG,
+   GPSD_LOG(LOG_PROG, &session->context->errout,
 	       "writing _proto_ control type %02x\n");
    return gpsd_write(session, session->msgbuf, session->msgbuflen);
 }
@@ -465,12 +458,10 @@ static void _proto__set_mode(struct gps_device_t *session, int mode)
 	/* send a mode switch control string */
     } else {
 	/* send a mode switch control string */
-	session->back_to_nmea = false;
     }
 }
 #endif /* RECONFIGURE_ENABLE */
 
-#ifdef TIMEHINT_ENABLE
 static double _proto_time_offset(struct gps_device_t *session)
 {
     /*
@@ -485,7 +476,6 @@ static double _proto_time_offset(struct gps_device_t *session)
      */
     return MAGIC_CONSTANT;
 }
-#endif /* TIMEHINT_ENABLE */
 
 static void _proto__wrapup(struct gps_device_t *session)
 {
@@ -544,9 +534,7 @@ const struct gps_type_t driver__proto__binary = {
     /* Control string sender - should provide checksum and headers/trailer */
     .control_send   = _proto__control_send,
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = _proto_time_offset,
-#endif /* TIMEHINT_ENABLE */
 /* *INDENT-ON* */
 };
 #endif /* defined(_PROTO__ENABLE) && defined(BINARY_ENABLE) */

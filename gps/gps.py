@@ -12,7 +12,7 @@ now live in a different module.
 '''
 
 #
-# This file is Copyright (c) 2010 by the GPSD project
+# This file is Copyright (c) 2010-2019 by the GPSD project
 # BSD terms apply: see the file COPYING in the distribution root for details.
 #
 
@@ -74,6 +74,13 @@ UNION_SET = (RTCM2_SET | RTCM3_SET | SUBFRAME_SET | AIS_SET | VERSION_SET |
 STATUS_NO_FIX = 0
 STATUS_FIX = 1
 STATUS_DGPS_FIX = 2
+STATUS_RTK_FIX = 3
+STATUS_RTK_FLT = 4
+STATUS_DR = 5
+STATUS_GNSSDR = 6
+STATUS_TIME = 7
+STATUS_SIM = 8
+STATUS_PPS_FIX = 9
 MODE_NO_FIX = 1
 MODE_2D = 2
 MODE_3D = 3
@@ -87,21 +94,47 @@ class gpsfix(object):
     def __init__(self):
         "Init class gpsfix"
 
-        self.altitude = NaN         # Meters
+        self.altitude = NaN         # Meters DEPRECATED
+        self.altHAE = NaN           # Meters
+        self.altMSL = NaN           # Meters
         self.climb = NaN            # Meters per second
+        self.datum = ""
+        self.dgpsAge = -1
+        self.dgpsSta = ""
+        self.depth = NaN
+        self.device = ""
+        self.ecefx = NaN
+        self.ecefy = NaN
+        self.ecefz = NaN
+        self.ecefvx = NaN
+        self.ecefvy = NaN
+        self.ecefvz = NaN
+        self.ecefpAcc = NaN
+        self.ecefvAcc = NaN
         self.epc = NaN
         self.epd = NaN
+        self.eph = NaN
         self.eps = NaN
         self.ept = NaN
         self.epv = NaN
         self.epx = NaN
         self.epy = NaN
+        self.geoidSep = NaN        # Meters
         self.latitude = self.longitude = 0.0
+        self.magtrack = NaN
+        self.magvar = NaN
         self.mode = MODE_NO_FIX
+        self.relN = NaN
+        self.relE = NaN
+        self.relD = NaN
+        self.sep = NaN              # a.k.a. epe
         self.speed = NaN            # Knots
         self.status = STATUS_NO_FIX
         self.time = NaN
         self.track = NaN            # Degrees from true north
+        self.velN = NaN
+        self.velE = NaN
+        self.velD = NaN
 
 
 class gpsdata(object):
@@ -153,10 +186,10 @@ class gpsdata(object):
     def __repr__(self):
         st = "Time:     %s (%s)\n" % (self.utc, self.fix.time)
         st += "Lat/Lon:  %f %f\n" % (self.fix.latitude, self.fix.longitude)
-        if not isfinite(self.fix.altitude):
-            st += "Altitude: ?\n"
+        if not isfinite(self.fix.altHAE):
+            st += "Altitude HAE: ?\n"
         else:
-            st += "Altitude: %f\n" % (self.fix.altitude)
+            st += "Altitude HAE: %f\n" % (self.fix.altHAE)
         if not isfinite(self.fix.speed):
             st += "Speed:    ?\n"
         else:
@@ -182,7 +215,7 @@ class gps(gpscommon, gpsdata, gpsjson):
     "Client interface to a running gpsd instance."
 
     # module version, would be nice to automate the version
-    __version__ = "3.19"
+    __version__ = "3.20"
 
     def __init__(self, host="127.0.0.1", port=GPSD_PORT, verbose=0, mode=0,
                  reconnect=False):
@@ -200,7 +233,7 @@ class gps(gpscommon, gpsdata, gpsjson):
         if mode:
             self.stream(mode)
 
-    def __oldstyle_shim(self):
+    def _oldstyle_shim(self):
         # The rest is backwards compatibility for the old interface
         def default(k, dflt, vbit=0):
             "Return default for key"
@@ -234,7 +267,9 @@ class gps(gpscommon, gpsdata, gpsjson):
                 # self.utc is always iso 8601 string
                 # just copy to fix.time
                 self.fix.time = self.utc
-            self.fix.altitude = default("alt", NaN, ALTITUDE_SET)
+            self.fix.altitude = default("alt", NaN, ALTITUDE_SET)  # DEPRECATED
+            self.fix.altHAE = default("altHAE", NaN, ALTITUDE_SET)
+            self.fix.altMSL = default("altMSL", NaN, ALTITUDE_SET)
             self.fix.climb = default("climb", NaN, CLIMB_SET)
             self.fix.epc = default("epc", NaN, CLIMBERR_SET)
             self.fix.epd = default("epd", NaN)
@@ -257,6 +292,12 @@ class gps(gpscommon, gpsdata, gpsjson):
             if "satellites" in self.data.keys():
                 self.satellites = []
                 for sat in self.data['satellites']:
+                    if 'el' not in sat:
+                        sat['el'] = -999
+                    if 'az' not in sat:
+                        sat['az'] = -999
+                    if 'ss' not in sat:
+                        sat['ss'] = -999
                     self.satellites.append(gps.satellite(PRN=sat['PRN'],
                                            elevation=sat['el'],
                                            azimuth=sat['az'], ss=sat['ss'],
@@ -283,7 +324,7 @@ class gps(gpscommon, gpsdata, gpsjson):
             return status
         if self.response.startswith("{") and self.response.endswith("}\r\n"):
             self.unpack(self.response)
-            self.__oldstyle_shim()
+            self._oldstyle_shim()
             self.valid |= PACKET_SET
         return 0
 
@@ -308,7 +349,7 @@ class gps(gpscommon, gpsdata, gpsjson):
 
 def is_sbas(prn):
     "Is this the NMEA ID of an SBAS satellite?"
-    return prn >= 120 and prn <= 158
+    return 120 <= prn <= 158
 
 
 if __name__ == '__main__':

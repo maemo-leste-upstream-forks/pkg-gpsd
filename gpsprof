@@ -37,7 +37,7 @@ except ImportError as e:
     sys.stderr.write("%s\n" % e)
     sys.exit(1)
 
-gps_version = '3.19'
+gps_version = '3.20'
 if gps.__version__ != gps_version:
     sys.stderr.write("gpsprof: ERROR: need gps module version %s, got %s\n" %
                      (gps_version, gps.__version__))
@@ -101,7 +101,6 @@ class Baton(object):
         self.count = 0
         self.endmsg = endmsg
         self.time = time.time()
-        return
 
     def twirl(self, ch=None):
         "Twirl the baton"
@@ -123,7 +122,6 @@ class Baton(object):
         if self.stream:
             self.stream.write("...(%2.2f sec) %s.\n"
                               % (time.time() - self.time, msg))
-        return
 
 
 class stats(object):
@@ -360,12 +358,12 @@ class spaceplot(plotter):
                 if sat.used:
                     sats_used += 1
 
-            if 'alt' not in self.session.data:
-                self.session.data['alt'] = gps.NaN
+            if 'altHAE' not in self.session.data:
+                self.session.data['altHAE'] = gps.NaN
 
             self.fixes.append((self.session.data['lat'],
                                self.session.data['lon'],
-                               self.session.data['alt'], sats_used))
+                               self.session.data['altHAE'], sats_used))
         return True
 
     def header(self):
@@ -374,7 +372,7 @@ class spaceplot(plotter):
 
     def postprocess(self):
         "Postprocess the sample data"
-        pass
+        return
 
     def data(self):
         "Format data for dump"
@@ -476,6 +474,10 @@ class spaceplot(plotter):
         alt_fixes_r = []
         latlon_data = ""
         alt_data = ""
+        # init calcualted hep, sep and mrse
+        calc_hep = gps.NaN
+        calc_sep = gps.NaN
+        calc_mrse = gps.NaN
 
         # grab and format the fixes as gnuplot will use them
         for i in range(len(self.recentered)):
@@ -538,10 +540,10 @@ class spaceplot(plotter):
                                   stat_lon_r.sigma ** 2 +
                                   stat_alt_r.sigma ** 2)
 
-            fmt_lab11a = ('hep = %.3f meters\\n'
-                          'sep = %.3f meters\\n'
-                          'mrse = %.3f meters\\n'
-                          ) % (calc_hep, calc_sep, calc_mrse)
+        fmt_lab11a = ('hep = %.3f meters\\n'
+                      'sep = %.3f meters\\n'
+                      'mrse = %.3f meters\\n'
+                      ) % (calc_hep, calc_sep, calc_mrse)
 
         if self.centroid[0] < 0.0:
             latstring = "%.9fS" % -self.centroid[0]
@@ -608,7 +610,7 @@ class spaceplot(plotter):
                 '\\n'
                 'Lat\\n'
                 'Lon\\n'
-                'Alt\\n'
+                'AltHAE\\n'
                 'Used"\n')
 
         # mean
@@ -682,7 +684,7 @@ class spaceplot(plotter):
             fmt += ('set ytics nomirror\n'
                     'set y2tics\n'
                     'set format y2 "%.3f"\n')
-            fmt += (('set y2label "Altitude from %.3f meters"\n') %
+            fmt += (('set y2label "AltHAE from %.3f meters"\n') %
                     (stat_alt.mean))
 
             # add ep(50)s
@@ -721,7 +723,7 @@ class spaceplot(plotter):
             # add plot of altitude
             fmt += (', "-" using ( %.3f ):( $1 - %.3f ) '
                     'axes x1y2 with points ls 2 lc "green"'
-                    ' title " %d Altitude fixes"'
+                    ' title " %d AltHAE fixes"'
                     ) % (cep100_meters * 1.1, stat_alt.mean, len(alt_fixes))
 
             # altitude EPs
@@ -784,7 +786,7 @@ class polarplot(plotter):
 
     def postprocess(self):
         "Postprocess the sample data"
-        pass
+        return
 
     def data(self):
         "Format data for dump"
@@ -866,33 +868,35 @@ set style line 11 pt 2 ps 2 #set the line style for the plot
 
 set style fill transparent solid 0.8 noborder
 
+# set rmargin then put colorbox in the margin.
+set lmargin at screen .08
+set rmargin at screen .85
 set cbrange [10:60]
 set palette defined (100 "blue", 200 "green", 300 "red")
+set colorbox user origin .92, .15 size .03, .6
+set label 10 at screen 0.89, screen 0.13 "SNR dBHz"
 '''
 
         count = len(self.fixes)
         fmt += '''\
-set label 10 at screen 0.01, screen 0.15 "%s plot, samples %d"
+set label 11 at screen 0.01, screen 0.15 "%s plot, samples %d"
+set label 12 at screen 0.01, screen 0.10 "\\nSS\\nSeen\\nUsed"
 ''' % (self.name, count)
 
         fmt += '''\
-set label 11 at screen 0.01, screen 0.10 "\\nSS\\nSeen\\nUsed"
-'''
-
-        fmt += '''\
-set label 12 at screen 0.11, screen 0.10 "min\\n%d\\n%d\\n%d" right
+set label 13 at screen 0.11, screen 0.10 "min\\n%d\\n%d\\n%d" right
 ''' % (stat_ss.min, stat_seen.min, stat_used.min)
 
         fmt += '''\
-set label 13 at screen 0.21, screen 0.10 "max\\n%d\\n%d\\n%d" right
+set label 14 at screen 0.21, screen 0.10 "max\\n%d\\n%d\\n%d" right
 ''' % (stat_ss.max, stat_seen.max, stat_used.max)
 
         fmt += '''\
-set label 14 at screen 0.31, screen 0.10 "mean\\n%.1f\\n%.1f\\n%.1f" right
+set label 15 at screen 0.31, screen 0.10 "mean\\n%.1f\\n%.1f\\n%.1f" right
 ''' % (stat_ss.mean, stat_seen.mean, stat_used.mean)
 
         fmt += '''\
-set label 15 at screen 0.41, screen 0.10 "sigma\\n%.1f\\n%.1f\\n%.1f" right
+set label 16 at screen 0.41, screen 0.10 "sigma\\n%.1f\\n%.1f\\n%.1f" right
 ''' % (stat_ss.sigma, stat_seen.sigma, stat_used.sigma)
 
         fmt += '''\
@@ -939,7 +943,7 @@ class timeplot(plotter):
 
     def postprocess(self):
         "Postprocess the sample data"
-        pass
+        return
 
     def data(self):
         "Format data for dump"
@@ -984,7 +988,7 @@ class uninstrumented(plotter):
 
     def postprocess(self):
         "Postprocess the sample data"
-        pass
+        return
 
     def data(self):
         "Format data for dump"
@@ -1038,7 +1042,7 @@ class instrumented(plotter):
 
     def postprocess(self):
         "Postprocess the sample data"
-        pass
+        return
 
     def data(self):
         "Format data for dump"
@@ -1192,8 +1196,13 @@ if __name__ == '__main__':
                              " 800,950\n"
                              % terminal)
         # double quotes on title so \n is parsed by gnuplot
-        sys.stdout.write('set title noenhanced "%s"\n' % title)
+        sys.stdout.write('set title noenhanced "%s\\n\\n"\n' % title)
         sys.stdout.write(plot.plot())
+    except getopt.GetoptError as error:
+        print(error)
+        print("")
+        usage()
+        exit(1)
     except KeyboardInterrupt:
         pass
 

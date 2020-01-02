@@ -23,26 +23,29 @@ PERMISSIONS
 #include "gpsd.h"
 #ifdef SOCKET_EXPORT_ENABLE
 #include "gps_json.h"
+#include "timespec.h"
 
 int json_device_read(const char *buf,
 		     struct devconfig_t *dev,
 		     const char **endptr)
 {
-    char tbuf[JSON_DATE_MAX+1];
+    double d_cycle, d_mincycle;
     /* *INDENT-OFF* */
     const struct json_attr_t json_attrs_device[] = {
 	{"class",      t_check,      .dflt.check = "DEVICE"},
 
         {"path",       t_string,     .addr.string  = dev->path,
 	                                .len = sizeof(dev->path)},
-	{"activated",  t_string,     .addr.string = tbuf,
-			                .len = sizeof(tbuf)},
-	{"activated",  t_real,       .addr.real = &dev->activated},
+        // odd, device->gpsdata.online is sent, but put in dev->activated?
+	{"activated",  t_time,       .addr.ts = &dev->activated,
+				        .dflt.ts = {0, 0}},
 	{"flags",      t_integer,    .addr.integer = &dev->flags},
 	{"driver",     t_string,     .addr.string  = dev->driver,
 	                                .len = sizeof(dev->driver)},
 	{"subtype",    t_string,     .addr.string  = dev->subtype,
 	                                .len = sizeof(dev->subtype)},
+	{"subtype1",   t_string,     .addr.string  = dev->subtype1,
+	                                .len = sizeof(dev->subtype1)},
         {"hexdata",    t_string,     .addr.string  = dev->hexdata,
 	                                .len = sizeof(dev->hexdata)},
 	{"native",     t_integer,    .addr.integer = &dev->driver_mode,
@@ -53,25 +56,30 @@ int json_device_read(const char *buf,
                                         .dflt.character = DEVDEFAULT_PARITY},
 	{"stopbits",   t_uinteger,   .addr.uinteger = &dev->stopbits,
 				        .dflt.uinteger = DEVDEFAULT_STOPBITS},
-	{"cycle",      t_real,       .addr.real = &dev->cycle,
+	{"cycle",      t_real,       .addr.real = &d_cycle,
 				        .dflt.real = NAN},
-	{"mincycle",   t_real,       .addr.real = &dev->mincycle,
+	{"mincycle",   t_real,       .addr.real = &d_mincycle,
 				        .dflt.real = NAN},
 	{NULL},
     };
     /* *INDENT-ON* */
     int status;
 
-    tbuf[0] = '\0';
     status = json_read_object(buf, json_attrs_device, endptr);
     if (status != 0)
 	return status;
 
-    if (isfinite(dev->activated) == 0) {
-	if (tbuf[0] == '\0')
-	    dev->activated = NAN;
-	else
-	    dev->activated = iso8601_to_unix(tbuf);
+    if (0 == isfinite(d_cycle)) {
+	dev->cycle.tv_sec = 0;
+	dev->cycle.tv_nsec = 0;
+    } else {
+	DTOTS(&dev->cycle, d_cycle);
+    }
+    if (0 == isfinite(d_mincycle)) {
+	dev->mincycle.tv_sec = 0;
+	dev->mincycle.tv_nsec = 0;
+    } else {
+	DTOTS(&dev->cycle, d_mincycle);
     }
 
     return 0;

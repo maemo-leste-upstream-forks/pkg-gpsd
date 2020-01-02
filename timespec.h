@@ -6,6 +6,7 @@
 #ifndef GPSD_TIMESPEC_H
 #define GPSD_TIMESPEC_H
 
+#include <math.h>          /* for modf() */
 #include <stdbool.h>       /* for bool */
 
 /* normalize a timespec
@@ -27,9 +28,9 @@
 /* return the difference between timespecs in nanoseconds
  * int may be too small, 32 bit long is too small, floats are too imprecise,
  * doubles are not quite precise enough 
- * MUST be long long to maintain precision on 32 bit code */
+ * MUST be at least int64_t to maintain precision on 32 bit code */
 #define timespec_diff_ns(x, y) \
-    (long long)((((x).tv_sec-(y).tv_sec)*NS_IN_SEC)+(x).tv_nsec-(y).tv_nsec)
+    (int64_t)((((x).tv_sec-(y).tv_sec)*NS_IN_SEC)+(x).tv_nsec-(y).tv_nsec)
 
 static inline void TS_NORM( struct timespec *ts)
 {
@@ -95,15 +96,60 @@ static inline void TS_NORM( struct timespec *ts)
         TS_NORM( r ); \
     } while (0)
 
+/* subtract two timespec, return a double */
+#define TS_SUB_D(ts1, ts2) \
+    ((double)((ts1)->tv_sec - (ts2)->tv_sec) + \
+      ((double)((ts1)->tv_nsec - (ts2)->tv_nsec) * 1e-9))
+
+// true if normalized timespec is non zero
+#define TS_NZ(ts) (0 != (ts)->tv_sec || 0 != (ts)->tv_nsec)
+
+// true if normalized timespec equal or greater than zero
+#define TS_GEZ(ts) (0 <= (ts)->tv_sec && 0 <= (ts)->tv_nsec)
+
+// true if normalized timespec greater than zero
+#define TS_GZ(ts) (0 < (ts)->tv_sec || 0 < (ts)->tv_nsec)
+
+// true if normalized timespec1 greater than timespec2
+#define TS_GT(ts1, ts2) ((ts1)->tv_sec > (ts2)->tv_sec || \
+                         ((ts1)->tv_sec == (ts2)->tv_sec && \
+                          (ts1)->tv_nsec > (ts2)->tv_nsec))
+
+// true if normalized timespec1 greater or equal to timespec2
+#define TS_GE(ts1, ts2) ((ts1)->tv_sec > (ts2)->tv_sec || \
+                         ((ts1)->tv_sec == (ts2)->tv_sec && \
+                          (ts1)->tv_nsec >= (ts2)->tv_nsec))
+
+// true if normalized timespec1 equal to timespec2
+#define TS_EQ(ts1, ts2) ((ts1)->tv_sec == (ts2)->tv_sec && \
+                         (ts1)->tv_nsec == (ts2)->tv_nsec)
+
 /* convert a timespec to a double.
  * if tv_sec > 2, then inevitable loss of precision in tv_nsec
  * so best to NEVER use TSTONS() 
  * WARNING replacing 1e9 with NS_IN_SEC causes loss of precision */
 #define TSTONS(ts) ((double)((ts)->tv_sec + ((ts)->tv_nsec / 1e9)))
 
+/* convert a double to a timespec_t
+ * if D > 2, then inevitable loss of precision in nanoseconds
+ */
+#define DTOTS(ts, d) \
+    do { \
+        double int_part; \
+	(ts)->tv_nsec = (long)(modf(d, &int_part) * 1e9); \
+	(ts)->tv_sec = (time_t)int_part; \
+    } while (0)
+
+/* convert integer (64 bit for full range) ms to a timespec_t */
+#define MSTOTS(ts, ms) \
+    do { \
+	(ts)->tv_sec = (time_t)(ms / 1000); \
+	(ts)->tv_nsec = (long)((ms % 1000) * 1000000L); \
+    } while (0)
+
 #define TIMESPEC_LEN	22	/* required length of a timespec buffer */
 
-extern void timespec_str(const struct timespec *, char *, size_t);
+extern const char *timespec_str(const struct timespec *, char *, size_t);
 
 bool nanowait(int, int);
 

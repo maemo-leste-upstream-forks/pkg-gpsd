@@ -73,7 +73,7 @@ gpsd\&.
 gpsrinex
 print a usage message and exit\&.
 .PP
-\-i [interval] wait [interval] seconds between epochs\&. OPUS accepts intervals of 1, 2, 3, 5, 10, 15 or,30 seconds\&. OPUS then reduces the data to 30 second intervals\&.
+\-i [interval] wait [interval] seconds between epochs\&. OPUS accepts intervals of 1, 2, 3, 5, 10, 15 or,30 seconds\&. OPUS then reduces the data to 30 second intervals\&. Defeault is 30\&.
 .PP
 \-n [count] causes [count] epochs to be output\&. OPUS requires a minimum af 15 minutes, and a maximum of 48 hours, of data\&.
 .PP
@@ -136,7 +136,7 @@ Verify the constellations enabled:
 .RS 4
 .\}
 .nf
-ubxtool \-p GNSS
+ubxtool \-p CFG\-GNSS
 .fi
 .if n \{\
 .RE

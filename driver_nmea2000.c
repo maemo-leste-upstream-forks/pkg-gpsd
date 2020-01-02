@@ -29,6 +29,7 @@
 #include "libgps.h"
 #include "driver_nmea2000.h"
 #include "bits.h"
+#include "timespec.h"
 
 
 #define LOG_FILE 1
@@ -85,7 +86,7 @@ static void print_data(struct gps_context_t *context,
 	ptr += l2;
         for (l1=0;l1<len;l1++) {
             if (((l1 % 20) == 0) && (l1 != 0)) {
-	        gpsd_log(&context->errout, LOG_IO,"%s\n", bu);
+	        GPSD_LOG(LOG_IO, &context->errout, "%s\n", bu);
 		ptr = 0;
                 l2 = sprintf(&bu[ptr], "                   : ");
 		ptr += l2;
@@ -93,7 +94,7 @@ static void print_data(struct gps_context_t *context,
             l2 = sprintf(&bu[ptr], "%02ux ", (unsigned int)buffer[l1]);
 	    ptr += l2;
         }
-        gpsd_log(&context->errout, LOG_IO,"%s\n", bu);
+        GPSD_LOG(LOG_IO, &context->errout, "%s\n", bu);
     }
 #else
     (void)context;
@@ -127,7 +128,7 @@ static int decode_ais_header(struct gps_context_t *context,
 	ais->repeat = (unsigned int) ((bu[0] >> 6) & 0x03);
 	ais->mmsi   = (unsigned int)  getleu32(bu, 1);
 	ais->mmsi  &= mask;
-	gpsd_log(&context->errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &context->errout,
 		 "NMEA2000 AIS  message type %u, MMSI %09d:\n",
 		 ais->type, ais->mmsi);
 	return(1);
@@ -135,7 +136,7 @@ static int decode_ais_header(struct gps_context_t *context,
         ais->type   =  0;
 	ais->repeat =  0;
 	ais->mmsi   =  0;
-	gpsd_log(&context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context->errout,
 		 "NMEA2000 AIS  message type %u, too short message.\n",
 		 ais->type);
     }
@@ -196,7 +197,7 @@ static double ais_direction(unsigned int val, double scale)
 static gps_mask_t hnd_059392(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -208,7 +209,7 @@ static gps_mask_t hnd_059392(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_060928(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -220,7 +221,7 @@ static gps_mask_t hnd_060928(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_126208(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -232,7 +233,7 @@ static gps_mask_t hnd_126208(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_126464(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -244,7 +245,7 @@ static gps_mask_t hnd_126464(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_126996(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -252,11 +253,19 @@ static gps_mask_t hnd_126996(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
 /*
  *   PGN 127258: GNSS Magnetic Variation
+ *
+ *   1 Sequence ID
+ *   2 Variation Source
+ *   3 Reserved Bits
+ *   4 Age of Service (Date)
+ *   5 Variation
+ *   6 Reserved B
  */
 static gps_mask_t hnd_127258(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    /* FIXME?  Get magnetic variation */
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -268,7 +277,7 @@ static gps_mask_t hnd_127258(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_129025(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     session->newdata.latitude = getles32(bu, 0) * 1e-7;
@@ -284,7 +293,7 @@ static gps_mask_t hnd_129025(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_129026(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     session->driver.nmea2000.sid[0]  =  bu[0];
@@ -301,17 +310,20 @@ static gps_mask_t hnd_129026(unsigned char *bu, int len, PGN *pgn, struct gps_de
  */
 static gps_mask_t hnd_126992(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
-    //uint8_t        sid;
-    //uint8_t        source;
+    // uint8_t        sid;
+    // uint8_t        source;
+    uint32_t msecs;       /* time in ms */
 
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
-    //sid        = bu[0];
-    //source     = bu[1] & 0x0f;
+    // sid        = bu[0];
+    // source     = bu[1] & 0x0f;
 
-    session->newdata.time = getleu16(bu, 2)*24*60*60 + getleu32(bu, 4)/1e4;
+    msecs = getleu32(bu, 4);
+    MSTOTS(&session->newdata.time, msecs);
+    session->newdata.time.tv_sec += (time_t)(getleu16(bu, 2) * 24 * 60 * 60);
 
     return TIME_SET | get_mode(session);
 }
@@ -330,7 +342,7 @@ static gps_mask_t hnd_129539(unsigned char *bu, int len, PGN *pgn, struct gps_de
     unsigned int act_mode;
 
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     mask                             = 0;
@@ -353,7 +365,7 @@ static gps_mask_t hnd_129539(unsigned char *bu, int len, PGN *pgn, struct gps_de
     session->gpsdata.dop.tdop        = getleu16(bu, 6) * 1e-2;
     mask                            |= DOP_SET;
 
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d): sid:%02x hdop:%5.2f vdop:%5.2f tdop:%5.2f\n",
 	     pgn->pgn,
 	     session->driver.nmea2000.unit,
@@ -374,7 +386,7 @@ static gps_mask_t hnd_129540(unsigned char *bu, int len, PGN *pgn, struct gps_de
     int         l1;
 
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     session->driver.nmea2000.sid[2]           = bu[0];
@@ -406,27 +418,51 @@ static gps_mask_t hnd_129540(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
 
 /*
- *   PGN 129029: GNSS Positition Data
+ *   PGN 129029: GNSS Position Data
  */
 static gps_mask_t hnd_129029(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
+    /* field  description
+     *  1     SID
+     *  2     Position Date
+     *  3     Position time
+     *  4     Latitude
+     *  5     Longitude
+     *  6     Altitude (what kind?  probably WGS84?)
+     *  7     Type of System
+     *  8     Method, GNSS
+     *  9     Integrity
+     * 10     reserved
+     * 11     Number of SVs
+     * 12     HDOP
+     * 13     PDOP
+     * 14     Geoidal Separation
+     * 15     # of reference stations
+     * 16     REf station 1 type
+     * 17     REf station 1 ID
+     * 18     REf station 1 DGNSS correction age
+     * [ last 3 repeated]
+     */
     gps_mask_t mask;
+    uint32_t msecs;    /* time in ms */
 
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     mask                             = 0;
     session->driver.nmea2000.sid[3]  = bu[0];
 
-    session->newdata.time            = getleu16(bu,1) * 24*60*60 + getleu32(bu, 3)/1e4;
+    msecs = getleu32(bu, 3);
+    MSTOTS(&session->newdata.time, msecs);
+    session->newdata.time.tv_sec += (time_t)(getleu16(bu,1) * 24 * 60 * 60);
     mask                            |= TIME_SET;
 
     session->newdata.latitude        = getles64(bu, 7) * 1e-16;
     session->newdata.longitude       = getles64(bu, 15) * 1e-16;
     mask                            |= LATLON_SET;
 
-    session->newdata.altitude        = getles64(bu, 23) * 1e-6;
+    session->newdata.altHAE         = getles64(bu, 23) * 1e-6;
     mask                            |= ALTITUDE_SET;
 
 //  printf("mode %x %x\n", (bu[31] >> 4) & 0x0f, bu[31]);
@@ -451,8 +487,7 @@ static gps_mask_t hnd_129029(unsigned char *bu, int len, PGN *pgn, struct gps_de
     }
     mask                            |= STATUS_SET;
 
-    session->gpsdata.separation      = getles32(bu, 38) / 100.0;
-    session->newdata.altitude       -= session->gpsdata.separation;
+    session->newdata.geoid_sep       = getles32(bu, 38) / 100.0;
 
     session->gpsdata.satellites_used = (int)bu[33];
 
@@ -473,7 +508,7 @@ static gps_mask_t hnd_129038(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -506,7 +541,7 @@ static gps_mask_t hnd_129039(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -545,7 +580,7 @@ static gps_mask_t hnd_129040(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -603,7 +638,7 @@ static gps_mask_t hnd_129793(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -663,7 +698,7 @@ static gps_mask_t hnd_129794(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -791,7 +826,7 @@ static gps_mask_t hnd_129798(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -826,7 +861,7 @@ static gps_mask_t hnd_129802(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0x3fffffff) != 0) {
@@ -854,7 +889,7 @@ static gps_mask_t hnd_129809(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -862,7 +897,7 @@ static gps_mask_t hnd_129809(unsigned char *bu, int len, PGN *pgn, struct gps_de
 	int                   index   = session->driver.aivdm.context[0].type24_queue.index;
 	struct ais_type24a_t *saveptr = &session->driver.aivdm.context[0].type24_queue.ships[index];
 
-	gpsd_log(&session->context->errout, LOG_PROG,
+	GPSD_LOG(LOG_PROG, &session->context->errout,
 		 "NMEA2000: AIS message 24A from %09u stashed.\n",
 		 ais->mmsi);
 
@@ -897,7 +932,7 @@ static gps_mask_t hnd_129810(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     ais =  &session->gpsdata.ais;
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
 
     if (decode_ais_header(session->context, bu, len, ais, 0xffffffffU) != 0) {
@@ -948,7 +983,7 @@ static gps_mask_t hnd_129810(unsigned char *bu, int len, PGN *pgn, struct gps_de
 		}
 		ais->type24.shipname[AIS_SHIPNAME_MAXLEN] = (char) 0;
 
-		gpsd_log(&session->context->errout, LOG_PROG,
+		GPSD_LOG(LOG_PROG, &session->context->errout,
 			 "NMEA2000: AIS 24B from %09u matches a 24A.\n",
 			    ais->mmsi);
 		/* prevent false match if a 24B is repeated */
@@ -994,7 +1029,7 @@ static gps_mask_t hnd_129810(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_127506(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1006,7 +1041,7 @@ static gps_mask_t hnd_127506(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_127508(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1018,7 +1053,7 @@ static gps_mask_t hnd_127508(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_127513(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1030,7 +1065,7 @@ static gps_mask_t hnd_127513(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_127245(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1058,7 +1093,7 @@ static gps_mask_t hnd_127250(unsigned char *bu, int len, PGN *pgn, struct gps_de
     }
 //  printf("ATT 2:%8.3f %6x\n",session->gpsdata.attitude.heading, aux);
 
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(ONLINE_SET | ATTITUDE_SET);
 }
@@ -1070,7 +1105,7 @@ static gps_mask_t hnd_127250(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_128259(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1085,7 +1120,7 @@ static gps_mask_t hnd_128267(unsigned char *bu, int len, PGN *pgn, struct gps_de
 
     session->gpsdata.attitude.depth = getleu32(bu, 1) *.01;
 
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(ONLINE_SET | ATTITUDE_SET);
 }
@@ -1097,7 +1132,7 @@ static gps_mask_t hnd_128267(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_128275(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1109,7 +1144,7 @@ static gps_mask_t hnd_128275(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_129283(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1121,7 +1156,7 @@ static gps_mask_t hnd_129283(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_129284(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1133,7 +1168,7 @@ static gps_mask_t hnd_129284(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_129285(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1145,7 +1180,7 @@ static gps_mask_t hnd_129285(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_130306(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1157,7 +1192,7 @@ static gps_mask_t hnd_130306(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_130310(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1169,7 +1204,7 @@ static gps_mask_t hnd_130310(unsigned char *bu, int len, PGN *pgn, struct gps_de
 static gps_mask_t hnd_130311(unsigned char *bu, int len, PGN *pgn, struct gps_device_t *session)
 {
     print_data(session->context, bu, len, pgn);
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "pgn %6d(%3d):\n", pgn->pgn, session->driver.nmea2000.unit);
     return(0);
 }
@@ -1311,7 +1346,7 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
     session->driver.nmea2000.workpgn = NULL;
     can_net = session->driver.nmea2000.can_net;
     if (can_net > (NMEA2000_NETS-1)) {
-        gpsd_log(&session->context->errout, LOG_ERROR,
+        GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "NMEA2000 find_pgn: Invalid can network %d.\n", can_net);
         return;
     }
@@ -1332,8 +1367,8 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 
 	    clock_gettime(CLOCK_REALTIME, &msgTime);
 	    (void)fprintf(logFile,
-	                  "(%010ld.%06ld) can0 %08x#",
-	                  (long)msgTime.tv_sec,
+	                  "(%010lld.%06ld) can0 %08x#",
+	                  (long long)msgTime.tv_sec,
 	                  msgTime.tv_nsec / 1000,
 	                  frame->can_id & 0x1ffffff);
 	    if ((frame->can_dlc & 0x0f) > 0) {
@@ -1413,7 +1448,7 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 	        if (work->fast == 0) {
 		    size_t l2;
 
-		    gpsd_log(&session->context->errout, LOG_DATA,
+		    GPSD_LOG(LOG_DATA, &session->context->errout,
 			     "pgn %6d:%s \n", work->pgn, work->name);
 		    session->driver.nmea2000.workpgn = (void *) work;
 		    session->lexer.outbuflen =  frame->can_dlc & 0x0f;
@@ -1426,7 +1461,7 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 		    session->driver.nmea2000.fast_packet_len = frame->data[1];
 		    session->driver.nmea2000.idx = frame->data[0];
 #if NMEA2000_FAST_DEBUG
-		    gpsd_log(&session->context->errout, LOG_ERROR,
+		    GPSD_LOG(LOG_ERROR, &session->context->errout,
 			     "Set idx    %2x    %2x %2x %6d\n",
 			     frame->data[0],
 			     session->driver.nmea2000.unit,
@@ -1438,7 +1473,7 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 		    for (l2=2;l2<8;l2++) {
 		        session->lexer.inbuffer[session->lexer.inbuflen++] = frame->data[l2];
 		    }
-		    gpsd_log(&session->context->errout, LOG_DATA,
+		    GPSD_LOG(LOG_DATA, &session->context->errout,
 			     "pgn %6d:%s \n", work->pgn, work->name);
 		} else if (frame->data[0] == session->driver.nmea2000.idx) {
 		    unsigned int l2;
@@ -1450,7 +1485,7 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 		    }
 		    if (session->lexer.inbuflen == session->driver.nmea2000.fast_packet_len) {
 #if NMEA2000_FAST_DEBUG
-		        gpsd_log(&session->context->errout, LOG_ERROR,
+		        GPSD_LOG(LOG_ERROR, &session->context->errout,
 				 "Fast done  %2x %2x %2x %2x %6d\n",
 				 session->driver.nmea2000.idx,
 				                                                   frame->data[0],
@@ -1468,7 +1503,7 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 		        session->driver.nmea2000.idx += 1;
 		    }
 		} else {
-		    gpsd_log(&session->context->errout, LOG_ERROR,
+		    GPSD_LOG(LOG_ERROR, &session->context->errout,
 			     "Fast error %2x %2x %2x %2x %6d\n",
 			     session->driver.nmea2000.idx,
 			     frame->data[0],
@@ -1477,7 +1512,7 @@ static void find_pgn(struct can_frame *frame, struct gps_device_t *session)
 				                                               source_pgn);
 		}
 	    } else {
-	        gpsd_log(&session->context->errout, LOG_WARN,
+	        GPSD_LOG(LOG_WARN, &session->context->errout,
 			 "PGN not found %08d %08x \n",
 			 source_pgn, source_pgn);
 	    }
@@ -1566,7 +1601,7 @@ int nmea2000_open(struct gps_device_t *session)
 	}
 	if (unit_ptr != NULL) {
 	    if (isdigit(interface_name[l]) == 0) {
-	        gpsd_log(&session->context->errout, LOG_ERROR,
+	        GPSD_LOG(LOG_ERROR, &session->context->errout,
 			 "NMEA2000 open: Invalid character in unit number.\n");
 	        return -1;
 	    }
@@ -1576,7 +1611,7 @@ int nmea2000_open(struct gps_device_t *session)
     if (unit_ptr != NULL) {
         unit_number = atoi(unit_ptr);
 	if ((unit_number < 0) || (unit_number > (NMEA2000_UNITS-1))) {
-	    gpsd_log(&session->context->errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &session->context->errout,
 		     "NMEA2000 open: Unit number out of range.\n");
 	    return -1;
 	}
@@ -1589,7 +1624,7 @@ int nmea2000_open(struct gps_device_t *session)
 	    }
 	}
 	if (can_net < 0) {
-	    gpsd_log(&session->context->errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &session->context->errout,
 		     "NMEA2000 open: CAN device not open: %s .\n", interface_name);
 	    return -1;
 	}
@@ -1598,7 +1633,9 @@ int nmea2000_open(struct gps_device_t *session)
 	    if (strncmp(can_interface_name[l],
 			interface_name,
 			MIN(sizeof(interface_name), sizeof(can_interface_name[l]))) == 0) {
-	        gpsd_log(&session->context->errout, LOG_ERROR, "NMEA2000 open: CAN device duplicate open: %s .\n", interface_name);
+	        GPSD_LOG(LOG_ERROR, &session->context->errout,
+                         "NMEA2000 open: CAN device duplicate open: %s .\n",
+                         interface_name);
 		return -1;
 	    }
 	}
@@ -1609,7 +1646,7 @@ int nmea2000_open(struct gps_device_t *session)
 	    }
 	}
 	if (can_net < 0) {
-	    gpsd_log(&session->context->errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &session->context->errout,
 		     "NMEA2000 open: Too many CAN networks open.\n");
 	    return -1;
 	}
@@ -1619,14 +1656,14 @@ int nmea2000_open(struct gps_device_t *session)
     sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 
     if (BAD_SOCKET(sock)) {
-        gpsd_log(&session->context->errout, LOG_ERROR,
+        GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "NMEA2000 open: can not get socket.\n");
 	return -1;
     }
 
     status = fcntl(sock, F_SETFL, O_NONBLOCK);
     if (status != 0) {
-        gpsd_log(&session->context->errout, LOG_ERROR,
+        GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "NMEA2000 open: can not set socket to O_NONBLOCK.\n");
 	close(sock);
 	return -1;
@@ -1638,7 +1675,7 @@ int nmea2000_open(struct gps_device_t *session)
 					       * with that device's index */
 
     if (status != 0) {
-        gpsd_log(&session->context->errout, LOG_ERROR,
+        GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "NMEA2000 open: can not find CAN device.\n");
 	close(sock);
 	return -1;
@@ -1649,7 +1686,7 @@ int nmea2000_open(struct gps_device_t *session)
     addr.can_ifindex = ifr.ifr_ifindex;
     status = bind(sock, (struct sockaddr*)&addr, sizeof(addr) );
     if (status != 0) {
-        gpsd_log(&session->context->errout, LOG_ERROR,
+        GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "NMEA2000 open: bind failed.\n");
 	close(sock);
 	return -1;
@@ -1684,7 +1721,7 @@ int nmea2000_open(struct gps_device_t *session)
 void nmea2000_close(struct gps_device_t *session)
 {
     if (!BAD_SOCKET(session->gpsdata.gps_fd)) {
-	gpsd_log(&session->context->errout, LOG_SPIN,
+	GPSD_LOG(LOG_SPIN, &session->context->errout,
 		 "close(%d) in nmea2000_close(%s)\n",
 		 session->gpsdata.gps_fd, session->gpsdata.dev.path);
 	(void)close(session->gpsdata.gps_fd);
@@ -1724,14 +1761,13 @@ const struct gps_type_t driver_nmea2000 = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no rate switcher */
-    .min_cycle      = 1,		/* nominal 1-per-second GPS cycle */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = NULL,		/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 

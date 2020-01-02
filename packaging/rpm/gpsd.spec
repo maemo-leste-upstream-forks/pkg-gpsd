@@ -1,7 +1,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name: gpsd
-Version: 3.19
+Version: 3.20
 Release: 1%{?dist}
 Summary: Service daemon for mediating access to a GPS
 
@@ -200,7 +200,7 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%doc README INSTALL COPYING
+%doc README.adoc INSTALL.adoc COPYING
 %config(noreplace) %{_sysconfdir}/init.d/%{name}
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %config(noreplace) %{_sysconfdir}/udev/rules.d/*

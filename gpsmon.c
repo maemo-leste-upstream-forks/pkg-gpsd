@@ -5,27 +5,24 @@
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-/* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
-#define __ISO_C_VISIBLE 1999
-
 #include "gpsd_config.h"  /* must be before all includes */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <ctype.h>
 #include <assert.h>
-#include <setjmp.h>
+#include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <math.h>
+#include <setjmp.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <time.h>
-#include <math.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/select.h>
-#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "gpsd.h"
@@ -69,9 +66,7 @@ static size_t promptlen = 0;
 static struct termios cooked, rare;
 static struct fixsource_t source;
 static char hostname[HOST_NAME_MAX];
-#ifdef NTP_ENABLE
 static struct timedelta_t time_offset;
-#endif /* NTP_ENABLE */
 
 #ifdef PASSTHROUGH_ENABLE
 /* no methods, it's all device window */
@@ -151,7 +146,6 @@ static jmp_buf terminate;
 #define TERM_QUIT		6
 
 /* PPS monitoring */
-#if defined(PPS_ENABLE)
 static inline void report_lock(void)
 {
     gpsd_acquire_reporting_lock();
@@ -161,10 +155,6 @@ static inline void report_unlock(void)
 {
     gpsd_release_reporting_lock();
 }
-#else
-static inline void report_lock(void) { }
-static inline void report_unlock(void) { }
-#endif /* PPS_ENABLE */
 
 #define PPSBAR "-------------------------------------" \
 	       " PPS " \
@@ -179,7 +169,6 @@ static inline void report_unlock(void) { }
  *
  ******************************************************************************/
 
-#ifdef PPS_ENABLE
 static void visibilize(char *buf2, size_t len2, const char *buf)
 /* string is mostly printable, dress up the nonprintables a bit */
 {
@@ -194,7 +183,6 @@ static void visibilize(char *buf2, size_t len2, const char *buf)
 	    (void)snprintf(buf2 + strlen(buf2), 6, "\\x%02x",
 			   (unsigned)(*sp & 0xff));
 }
-#endif /* PPS_ENABLE */
 
 static void cond_hexdump(char *buf2, size_t len2,
 			 const char *buf, size_t len)
@@ -229,7 +217,6 @@ static void cond_hexdump(char *buf2, size_t len2,
     }
 }
 
-#ifdef NTP_ENABLE
 void toff_update(WINDOW *win, int y, int x)
 {
     assert(win != NULL);
@@ -249,21 +236,20 @@ void toff_update(WINDOW *win, int y, int x)
 	for (i = 0; i < TIMESPEC_LEN-4 && x + i < xmax - 1; i++)
 	    (void)waddch(win, ' ');
 	TS_SUB(&timedelta, &time_offset.clock, &time_offset.real);
-	if ( 86400 < (long)labs(timedelta.tv_sec) ) {
+        // (long long) for 32-bit CPU with 64-bit time_t
+	if ( 86400 < llabs(timedelta.tv_sec) ) {
 	    /* more than one day off, overflow */
 	    /* need a bigger field to show it */
 	    (void)mvwaddstr(win, y, x, "> 1 day");
 	} else {
 	    char buf[TIMESPEC_LEN];
-	    timespec_str(&timedelta, buf, sizeof(buf));
-	    (void)mvwaddstr(win, y, x, buf);
+	    (void)mvwaddstr(win, y, x,
+                            timespec_str(&timedelta, buf, sizeof(buf)));
 	}
     }
 }
-#endif /* NTP_ENABLE */
 
 /* FIXME:  Decouple this reporting from local PPS monitoring. */
-#ifdef PPS_ENABLE
 void pps_update(WINDOW *win, int y, int x)
 {
     struct timedelta_t ppstimes;
@@ -280,19 +266,19 @@ void pps_update(WINDOW *win, int y, int x)
 	for (i = 0; i < TIMESPEC_LEN-4 && x + i < xmax - 1; i++)
 	    (void)waddch(win, ' ');
 	TS_SUB( &timedelta, &ppstimes.clock, &ppstimes.real);
-        if ( 86400 < (long)labs(timedelta.tv_sec) ) {
+        // (long long) for 32-bit CPU with 64-bit time_t
+        if ( 86400 < llabs(timedelta.tv_sec) ) {
 	    /* more than one day off, overflow */
             /* need a bigger field to show it */
 	    (void)mvwaddstr(win, y, x, "> 1 day");
         } else {
 	    char buf[TIMESPEC_LEN];
-	    timespec_str(&timedelta, buf, sizeof(buf));
-	    (void)mvwaddstr(win, y, x, buf);
+	    (void)mvwaddstr(win, y, x,
+	                    timespec_str(&timedelta, buf, sizeof(buf)));
         }
 	(void)wnoutrefresh(win);
     }
 }
-#endif /* PPS_ENABLE */
 
 /******************************************************************************
  *
@@ -347,7 +333,6 @@ static void gpsmon_report(const char *buf)
 	(void)fputs(buf, logfile);
 }
 
-#ifdef PPS_ENABLE
 static void packet_vlog(char *buf, size_t len, const char *fmt, va_list ap)
 {
     char buf2[BUFSIZ];
@@ -359,7 +344,6 @@ static void packet_vlog(char *buf, size_t len, const char *fmt, va_list ap)
     gpsmon_report(buf2);
     report_unlock();
 }
-#endif /* PPS_ENABLE */
 
 #ifdef RECONFIGURE_ENABLE
 static void announce_log(const char *fmt, ...)
@@ -668,7 +652,6 @@ static char *curses_get_command(void)
  *
  ******************************************************************************/
 
-#ifdef PPS_ENABLE
 static void packet_log(const char *fmt, ...)
 {
     char buf[BUFSIZ];
@@ -679,7 +662,6 @@ static void packet_log(const char *fmt, ...)
     packet_vlog(buf, sizeof(buf), fmt, ap);
     va_end(ap);
 }
-#endif /* PPS_ENABLE */
 
 static ssize_t gpsmon_serial_write(struct gps_device_t *session,
 		   const char *buf,
@@ -739,6 +721,8 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 /* per-packet hook */
 {
     char buf[BUFSIZ];
+    char ts_buf1[TIMESPEC_LEN];
+    char ts_buf2[TIMESPEC_LEN];
 
 /* FIXME:  If the following condition is false, the display is screwed up. */
 #if defined(SOCKET_EXPORT_ENABLE) && defined(PPS_DISPLAY_ENABLE)
@@ -748,19 +732,17 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 				   &session.gpsdata,
 				   &end);
 	if (status != 0) {
-	    complain("Ill-formed TOFF packet: %d (%s)", status, json_error_string(status));
+	    complain("Ill-formed TOFF packet: %d (%s)", status,
+                     json_error_string(status));
 	    return;
 	} else {
 	    if (!curses_active)
-		(void)fprintf(stderr,
-			      "TOFF=%ld.%09ld real=%ld.%09ld\n",
-			      (long)session.gpsdata.toff.clock.tv_sec,
-			      (long)session.gpsdata.toff.clock.tv_nsec,
-			      (long)session.gpsdata.toff.real.tv_sec,
-			      (long)session.gpsdata.toff.real.tv_nsec);
-#ifdef NTP_ENABLE
+		(void)fprintf(stderr, "TOFF=%s real=%s\n",
+                              timespec_str(&session.gpsdata.toff.clock,
+                                           ts_buf1, sizeof(ts_buf1)),
+                              timespec_str(&session.gpsdata.toff.real,
+                                           ts_buf2, sizeof(ts_buf2)));
 	    time_offset = session.gpsdata.toff;
-#endif /* NTP_ENABLE */
 	    return;
 	}
     } else if (!serial && str_starts_with((char*)device->lexer.outbuffer, "{\"class\":\"PPS\",")) {
@@ -770,23 +752,24 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 				   &noclobber,
 				   &end);
 	if (status != 0) {
-	    complain("Ill-formed PPS packet: %d (%s)", status, json_error_string(status));
+	    complain("Ill-formed PPS packet: %d (%s)", status,
+                     json_error_string(status));
 	    return;
 	} else {
 	    struct timespec timedelta;
 	    char timedelta_str[TIMESPEC_LEN];
 
 	    TS_SUB( &timedelta, &noclobber.pps.clock, &noclobber.pps.real);
-	    timespec_str( &timedelta, timedelta_str, sizeof(timedelta_str) );
+	    timespec_str(&timedelta, timedelta_str, sizeof(timedelta_str));
 
 	    if (!curses_active) {
 		char pps_clock_str[TIMESPEC_LEN];
 		char pps_real_str[TIMESPEC_LEN];
 
-		timespec_str( &noclobber.pps.clock, pps_clock_str,
-			sizeof(pps_clock_str) );
-		timespec_str( &noclobber.pps.real, pps_real_str,
-			sizeof(pps_real_str) );
+		timespec_str(&noclobber.pps.clock, pps_clock_str,
+			     sizeof(pps_clock_str));
+		timespec_str(&noclobber.pps.real, pps_real_str,
+			     sizeof(pps_real_str));
 
 		(void)fprintf(stderr,
 			      "PPS=%.20s clock=%.20s offset=%.20s\n",
@@ -799,7 +782,6 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 			"------------------- PPS offset: %.20s ------\n",
 			timedelta_str);
 /* FIXME:  Decouple this from the pps_thread code. */
-#ifdef PPS_ENABLE
 	    /*
 	     * In direct mode this would be a bad idea, but we're not actually
 	     * watching for handshake events on a spawned thread here.
@@ -808,7 +790,6 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 	    session.pps_thread.pps_out = noclobber.pps;
 	    /* coverity[missing_lock] */
 	    session.pps_thread.ppsout_count++;
-#endif /* PPS_ENABLE */
 	}
     }
     else
@@ -856,18 +837,15 @@ static void gpsmon_hook(struct gps_device_t *device, gps_mask_t changed UNUSED)
 
     report_unlock();
 
-#ifdef NTP_ENABLE
     /* Update the last fix time seen for PPS if we've actually seen one,
      * and it is a new second. */
-    if ( 0 == isfinite(device->newdata.time)) {
+    if (0 >= device->newdata.time.tv_sec) {
 	// "NTP: bad new time
-#if defined(PPS_ENABLE)
-    } else if (device->newdata.time <= device->pps_thread.fix_in.real.tv_sec) {
+    } else if (device->newdata.time.tv_sec <=
+               device->pps_thread.fix_in.real.tv_sec) {
 	// "NTP: Not a new time
-#endif /* PPS_ENABLE */
     } else
 	ntp_latch(device, &time_offset);
-#endif /* NTP_ENABLE */
 }
 
 static bool do_command(const char *line)
@@ -1145,13 +1123,11 @@ static bool do_command(const char *line)
     return true;
 }
 
-#ifdef PPS_ENABLE
 static char *pps_report(volatile struct pps_thread_t *pps_thread UNUSED,
 			struct timedelta_t *td UNUSED) {
     packet_log(PPSBAR);
     return "gpsmon";
 }
-#endif /* PPS_ENABLE */
 
 static jmp_buf assertbuf;
 
@@ -1330,7 +1306,6 @@ int main(int argc, char **argv)
 
 
     if (serial) {
-#ifdef PPS_ENABLE
 	/* this guard suppresses a warning on Bluetooth devices */
 	if (session.sourcetype == source_rs232 || session.sourcetype == source_usb) {
 	    session.pps_thread.report_hook = pps_report;
@@ -1350,7 +1325,6 @@ int main(int argc, char **argv)
 	    #endif /* MAGIC_HAT_ENABLE */
 	    pps_thread_activate(&session.pps_thread);
 	}
-#endif /* PPS_ENABLE */
     }
     else {
 	if (source.device != NULL)
@@ -1476,11 +1450,9 @@ int main(int argc, char **argv)
   quit:
     /* we'll fall through to here on longjmp() */
 
-#ifdef PPS_ENABLE
     /* Shut down PPS monitoring. */
     if (serial)
        (void)pps_thread_deactivate(&session.pps_thread);
-#endif /* PPS_ENABLE*/
 
     gpsd_close(&session);
     if (logfile)

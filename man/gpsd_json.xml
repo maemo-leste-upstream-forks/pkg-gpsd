@@ -143,10 +143,26 @@ try to compute the value from the skyview.</para>
         is not 2 or 3.</entry>
 </row>
 <row>
+	<entry>altHAE</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Altitude, height above allipsoid, in meters.  Probably
+WGS84. Present if mode is 3.
+</entry>
+</row>
+<row>
+	<entry>altMSL</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>MSL Altitude in meters.  The geoid used is rarely specified
+and is often inacurate.  See the comments below on geoidSep.  Present if
+ mode is 3.  altMSL is altHAE - geoidSep.</entry>
+</row>
+<row>
 	<entry>alt</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Altitude in meters. Present if mode is 3.</entry>
+        <entry>Deprecated.  Undefined.  Use altHAE or altMSL.</entry>
 </row>
 <row>
 	<entry>climb</entry>
@@ -160,6 +176,24 @@ try to compute the value from the skyview.</para>
 	<entry>No</entry>
 	<entry>string</entry>
         <entry>Current datum.</entry>
+</row>
+<row>
+	<entry>depth</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Depth in meters.  Probably depth below the keel..</entry>
+</row>
+<row>
+	<entry>dgpsAge</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Age of DGPS data. In seconds</entry>
+</row>
+<row>
+	<entry>dgpsSta</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Station of DGPS data.</entry>
 </row>
 <row>
 	<entry>epc</entry>
@@ -254,6 +288,15 @@ try to compute the value from the skyview.</para>
         <entry>Course over ground, degrees magnetic.</entry>
 </row>
 <row>
+	<entry>magvar</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Magnetic variation, degrees.  Also known as
+the magnetic declination (the direction of the horizontal component of
+the magnetic field measured clockwise from north) in degrees,
+Positive is West variation.  Negative is East variation.</entry>
+</row>
+<row>
 	<entry>speed</entry>
 	<entry>No</entry>
 	<entry>numeric</entry>
@@ -316,6 +359,55 @@ try to compute the value from the skyview.</para>
         view. Assumed to be 95% confidence, but many GPS do not specify.
         </entry>
 </row>
+<row>
+	<entry>relN</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>North component of relative position vector in meters.</entry>
+</row>
+<row>
+	<entry>relE</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>East component of relative position vector in meters.</entry>
+</row>
+<row>
+	<entry>relD</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Down component of relative position vector in meters.</entry>
+</row>
+<row>
+	<entry>velN</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>North velocity component in meters.</entry>
+</row>
+<row>
+	<entry>velE</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>wEast velocity component in meters.</entry>
+</row>
+<row>
+	<entry>velD</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Down velocity component in meters.</entry>
+</row>
+<row>
+	<entry>geoidSep</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Geoid separation is the difference between the WGS84
+reference elipsoid and the geoid (Mean Sea Level) in meters.  Almost no
+GNSS receiver specifies how they compute their geoid. gpsd interpolates the
+geoid from a 5x5 degree table of EGM2008 values when the receiver does
+not supply a geoid separation.  The gpsd computed geoidSep is usually
+within one meter of the "true" value, but can be off as much as 12 meters.
+</entry>
+
+</row>
 
 </tbody>
 </tgroup>
@@ -324,6 +416,9 @@ try to compute the value from the skyview.</para>
 <para>When the C client library parses a response of this kind, it
 will assert validity bits in the top-level set member for each
 field actually received; see gps.h for bitmask names and values.</para>
+
+<para>Invalid or known floating point values will be set to NAN.
+</para>
 
 <para>Here's an example:</para>
 
@@ -475,21 +570,21 @@ error modeling than the covariance calculation.</para>
 </row>
 <row>
 	<entry>az</entry>
-	<entry>Yes</entry>
+	<entry>No</entry>
 	<entry>numeric</entry>
         <entry>Azimuth, degrees from true north.</entry>
 </row>
 <row>
 	<entry>el</entry>
-	<entry>Yes</entry>
+	<entry>No</entry>
 	<entry>numeric</entry>
         <entry>Elevation in degrees.</entry>
 </row>
 <row>
 	<entry>ss</entry>
-	<entry>Yes</entry>
+	<entry>No</entry>
 	<entry>numeric</entry>
-        <entry>Signal strength in dB.</entry>
+        <entry>Signal to Noise ratio in dBHz.</entry>
 </row>
 <row>
 	<entry>used</entry>
@@ -519,6 +614,21 @@ error modeling than the covariance calculation.</para>
 	<entry>numeric</entry>
         <entry>The signal ID of this signal.  As defined by u-blox, not
         NMEA. See u-blox doc for details.</entry>
+</row>
+<row>
+	<entry>freqid</entry>
+	<entry>no</entry>
+	<entry>numeric</entry>
+        <entry>For GLONASS satellites only: the frequency ID of the signal.
+As defined by u-blox, range 0 to 13.  The freqid is the frequency slot
+plus 7.</entry>
+</row>
+<row>
+	<entry>health</entry>
+	<entry>no</entry>
+	<entry>numeric</entry>
+        <entry>The health of this satellite.  0 is unknown, 1 is
+OK, and 2 is unhealthy.</entry>
 </row>
 </tbody>
 </tgroup>
@@ -1428,6 +1538,13 @@ time derived from the start of the GPS cycle can have offsets of
 	<entry>numeric</entry>
         <entry>NTP style estimate of PPS precision</entry>
 </row>
+<row>
+	<entry>qErr</entry>
+	<entry>No</entry>
+	<entry>numeric</entry>
+        <entry>Quantization error of the PPS, in pico seconds.  Sometimes
+called the "sawtooth" error.</entry>
+</row>
 </tbody>
 </tgroup>
 </table>
@@ -1614,10 +1731,15 @@ backup battery.</para>
 </row>
 <row>
 	<entry>subtype</entry>
-	<entry>When the daemon sees a delayed response to a probe for
-	subtype or firmware-version information.</entry>
+	<entry>No</entry>
 	<entry>string</entry>
-	<entry>Whatever version information the device returned.</entry>
+	<entry>Whatever version information the device driver returned.</entry>
+</row>
+<row>
+	<entry>subtype1</entry>
+	<entry>No</entry>
+	<entry>string</entry>
+	<entry>More version information the device driver returned.</entry>
 </row>
 <row>
 	<entry>bps</entry>

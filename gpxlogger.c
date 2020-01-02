@@ -21,6 +21,7 @@
 #include "gpsdclient.h"
 #include "revision.h"
 #include "os_compat.h"
+#include "timespec.h"
 
 static char *progname;
 static struct fixsource_t source;
@@ -44,14 +45,20 @@ static void print_gpx_header(void)
 {
     char tbuf[CLIENT_DATE_MAX+1];
 
-    (void)fprintf(logfile,"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-    (void)fprintf(logfile,"<gpx version=\"1.1\" creator=\"GPSD %s - %s\"\n", VERSION, GPSD_URL);
-    (void)fprintf(logfile,"        xmlns:xsi=\"https://www.w3.org/2001/XMLSchema-instance\"\n");
-    (void)fprintf(logfile,"        xmlns=\"http://www.topografix.com/GPX/1/1\"\n");
-    (void)fprintf(logfile,"        xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1\n");
-    (void)fprintf(logfile,"        http://www.topografix.com/GPX/1/1/gpx.xsd\">\n");
-    (void)fprintf(logfile," <metadata>\n");
-    (void)fprintf(logfile,"  <time>%s</time>\n", unix_to_iso8601((timestamp_t)time(NULL), tbuf, sizeof(tbuf)));
+    (void)fprintf(logfile, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+    (void)fprintf(logfile, "<gpx version=\"1.1\" creator=\"GPSD %s - %s\"\n",
+                  VERSION, GPSD_URL);
+    (void)fprintf(logfile,
+         "        xmlns:xsi=\"https://www.w3.org/2001/XMLSchema-instance\"\n");
+    (void)fprintf(logfile,
+         "        xmlns=\"http://www.topografix.com/GPX/1/1\"\n");
+    (void)fprintf(logfile
+         ,"        xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1\n");
+    (void)fprintf(logfile
+         ,"        http://www.topografix.com/GPX/1/1/gpx.xsd\">\n");
+    (void)fprintf(logfile, " <metadata>\n");
+    (void)fprintf(logfile, "  <time>%s</time>\n",
+         now_to_iso8601(tbuf, sizeof(tbuf)));
     (void)fprintf(logfile," </metadata>\n");
     (void)fflush(logfile);
 }
@@ -79,16 +86,17 @@ static void print_gpx_trk_start(void)
     (void)fflush(logfile);
 }
 
-static void print_fix(struct gps_data_t *gpsdata, double time)
+static void print_fix(struct gps_data_t *gpsdata, timespec_t ts_time)
 {
     char tbuf[CLIENT_DATE_MAX+1];
 
+    /* lat/lon/ele are all WGS84, no altMSL */
     (void)fprintf(logfile,"   <trkpt lat=\"%f\" lon=\"%f\">\n",
 		 gpsdata->fix.latitude, gpsdata->fix.longitude);
-    if ((isfinite(gpsdata->fix.altitude) != 0))
-	(void)fprintf(logfile,"    <ele>%f</ele>\n", gpsdata->fix.altitude);
+    if ((isfinite(gpsdata->fix.altHAE) != 0))
+	(void)fprintf(logfile,"    <ele>%f</ele>\n", gpsdata->fix.altHAE);
     (void)fprintf(logfile,"    <time>%s</time>\n",
-		 unix_to_iso8601(time, tbuf, sizeof(tbuf)));
+		 timespec_to_iso8601(ts_time, tbuf, sizeof(tbuf)));
     if (gpsdata->status == STATUS_DGPS_FIX)
 	(void)fprintf(logfile,"    <fix>dgps</fix>\n");
     else
@@ -122,16 +130,16 @@ static void print_fix(struct gps_data_t *gpsdata, double time)
 
 static void conditionally_log_fix(struct gps_data_t *gpsdata)
 {
-    static double int_time, old_int_time;
+    static timespec_t ts_time, old_ts_time, ts_diff;
     static double old_lat, old_lon;
     static bool first = true;
 
-    int_time = gpsdata->fix.time;
-    if ((int_time == old_int_time) || gpsdata->fix.mode < MODE_2D)
+    ts_time = gpsdata->fix.time;
+    if (TS_EQ(&ts_time, &old_ts_time) || gpsdata->fix.mode < MODE_2D)
 	return;
 
     /* may not be worth logging if we've moved only a very short distance */
-    if (minmove>0 && !first && earth_distance(
+    if (0 < minmove && !first && earth_distance(
 					gpsdata->fix.latitude,
 					gpsdata->fix.longitude,
 					old_lat, old_lon) < minmove)
@@ -144,7 +152,8 @@ static void conditionally_log_fix(struct gps_data_t *gpsdata)
      * backward when gpsd is submitting junk on the
      * dbus.
      */
-    if (fabs(int_time - old_int_time) > timeout && !first) {
+    TS_SUB(&ts_diff, &ts_time, &old_ts_time);
+    if (labs((long)ts_diff.tv_sec) > timeout && !first) {
 	print_gpx_trk_end();
 	intrack = false;
     }
@@ -156,12 +165,12 @@ static void conditionally_log_fix(struct gps_data_t *gpsdata)
 	    first = false;
     }
 
-    old_int_time = int_time;
-    if (minmove > 0) {
+    old_ts_time = ts_time;
+    if (0 < minmove) {
 	old_lat = gpsdata->fix.latitude;
 	old_lon = gpsdata->fix.longitude;
     }
-    print_fix(gpsdata, int_time);
+    print_fix(gpsdata, ts_time);
 }
 
 static void quit_handler(int signum)

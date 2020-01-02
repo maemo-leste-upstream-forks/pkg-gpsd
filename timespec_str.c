@@ -9,14 +9,14 @@
 
 #include "gpsd_config.h"  /* must be before all includes */
 
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
 #include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <errno.h>
-#include <ctype.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "timespec.h"
 
@@ -39,17 +39,21 @@
  * date --date='@9999999999' is: Sat Nov 20 09:46:39 PST 2286
  *
  */
-void timespec_str(const struct timespec *ts, char *buf, size_t buf_size)
+const char *timespec_str(const struct timespec *ts, char *buf, size_t buf_size)
 {
     char sign = ' ';
 
-    if ( (0 > ts->tv_nsec ) || ( 0 > ts->tv_sec ) ) {
+    if (!TS_GEZ(ts)) {
 	sign = '-';
     }
-    (void) snprintf( buf, buf_size, "%c%lld.%09ld",
-			  sign,
-			  (long long)llabs(ts->tv_sec),
-			  (long)labs(ts->tv_nsec));
+
+    /* %lld and (long long) because some time_t is bigger than a long
+     * mostly on 32-bit systems. */
+    (void)snprintf(buf, buf_size, "%c%lld.%09ld",
+		   sign,
+		   (long long)llabs(ts->tv_sec),
+		   (long)labs(ts->tv_nsec));
+    return  buf;
 }
 
 /* end */

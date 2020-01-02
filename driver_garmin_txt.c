@@ -153,13 +153,13 @@ static int gar_decode(const struct gps_context_t *context,
     long int intresult;
 
     if (length >= sizeof(buf)) {
-	gpsd_log(&context->errout, LOG_ERROR, "internal buffer too small\n");
+	GPSD_LOG(LOG_ERROR, &context->errout, "internal buffer too small\n");
 	return -1;
     }
 
     memset(buf, 0, (int)sizeof(buf));
     (void)strlcpy(buf, data, length);
-    gpsd_log(&context->errout, LOG_RAW + 2, "Decoded string: %s\n", buf);
+    GPSD_LOG(LOG_RAW, &context->errout, "Decoded string: %s\n", buf);
 
     if (strchr(buf, '_') != NULL) {
 	/* value is not valid, ignore it */
@@ -187,14 +187,14 @@ static int gar_decode(const struct gps_context_t *context,
 		break;
 	    }
 	}
-	gpsd_log(&context->errout, LOG_WARN,
+	GPSD_LOG(LOG_WARN, &context->errout,
 		 "Unexpected char \"%c\" in data \"%s\"\n",
 		 buf[0], buf);
 	return -1;
     } while (0);
 
     if (strspn(buf + offset, "0123456789") != length - offset) {
-	gpsd_log(&context->errout, LOG_WARN, "Invalid value %s\n", buf);
+	GPSD_LOG(LOG_WARN, &context->errout, "Invalid value %s\n", buf);
 	return -1;
     }
 
@@ -222,13 +222,13 @@ static int gar_int_decode(const struct gps_context_t *context,
     unsigned int res;
 
     if (length >= sizeof(buf)) {
-	gpsd_log(&context->errout, LOG_ERROR, "internal buffer too small\n");
+	GPSD_LOG(LOG_ERROR, &context->errout, "internal buffer too small\n");
 	return -1;
     }
 
     memset(buf, 0, (int)sizeof(buf));
     (void)strlcpy(buf, data, length);
-    gpsd_log(&context->errout, LOG_RAW + 2, "Decoded string: %s\n", buf);
+    GPSD_LOG(LOG_RAW, &context->errout, "Decoded string: %s\n", buf);
 
     if (strchr(buf, '_') != NULL) {
 	/* value is not valid, ignore it */
@@ -236,7 +236,7 @@ static int gar_int_decode(const struct gps_context_t *context,
     }
 
     if (strspn(buf, "0123456789") != length) {
-	gpsd_log(&context->errout, LOG_WARN, "Invalid value %s\n", buf);
+	GPSD_LOG(LOG_WARN, &context->errout, "Invalid value %s\n", buf);
 	return -1;
     }
 
@@ -245,7 +245,7 @@ static int gar_int_decode(const struct gps_context_t *context,
 	*result = res;
 	return 0;		/* SUCCESS */
     } else {
-	gpsd_log(&context->errout, LOG_WARN,
+	GPSD_LOG(LOG_WARN, &context->errout,
 		 "Value %u out of range <%u, %u>\n", res, min,
 		 max);
 	return -1;
@@ -265,13 +265,14 @@ gps_mask_t garmintxt_parse(struct gps_device_t * session)
 
     gps_mask_t mask = 0;
 
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "Garmin Simple Text packet, len %zd: %s\n",
 	     session->lexer.outbuflen, (char*)session->lexer.outbuffer);
 
     if (session->lexer.outbuflen < 54) {
-	/* trailing CR and LF can be ignored; ('@' + 54x 'DATA' + '\r\n') has length 57 */
-	gpsd_log(&session->context->errout, LOG_WARN,
+	/* trailing CR and LF can be ignored; ('@' + 54x 'DATA' + '\r\n')
+         * has length 57 */
+	GPSD_LOG(LOG_WARN, &session->context->errout,
 		 "Message is too short, rejected.\n");
 	return ONLINE_SET;
     }
@@ -281,50 +282,51 @@ gps_mask_t garmintxt_parse(struct gps_device_t * session)
     /* only one message, set cycle start */
     session->cycle_end_reliable = true;
     do {
+	struct tm gdate;		/* date part of last sentence time */
 	unsigned int result;
 	char *buf = (char *)session->lexer.outbuffer + 1;
-	gpsd_log(&session->context->errout, LOG_PROG, "Timestamp: %.12s\n", buf);
+	GPSD_LOG(LOG_PROG, &session->context->errout,
+                 "Timestamp: %.12s\n", buf);
 
 	/* year */
 	if (0 != gar_int_decode(session->context,
 				buf + 0, 2, 0, 99, &result))
 	    break;
-	session->driver.garmintxt.date.tm_year =
-	    (session->context->century + (int)result) - 1900;
+	gdate.tm_year = (session->context->century + (int)result) - 1900;
 	/* month */
 	if (0 != gar_int_decode(session->context,
 				buf + 2, 2, 1, 12, &result))
 	    break;
-	session->driver.garmintxt.date.tm_mon = (int)result - 1;
+	gdate.tm_mon = (int)result - 1;
 	/* day */
 	if (0 != gar_int_decode(session->context,
 				buf + 4, 2, 1, 31, &result))
 	    break;
-	session->driver.garmintxt.date.tm_mday = (int)result;
+	gdate.tm_mday = (int)result;
 	/* hour */
 	if (0 != gar_int_decode(session->context,
 				buf + 6, 2, 0, 23, &result))
 	    break;
-	session->driver.garmintxt.date.tm_hour = (int)result;	/* mday update?? */
+        /* mday update?? */
+	gdate.tm_hour = (int)result;
 	/* minute */
 	if (0 != gar_int_decode(session->context,
 				buf + 8, 2, 0, 59, &result))
 	    break;
-	session->driver.garmintxt.date.tm_min = (int)result;
+	gdate.tm_min = (int)result;
 	/* second */
 	/* second value can be even 60, occasional leap second */
 	if (0 != gar_int_decode(session->context,
 				buf + 10, 2, 0, 60, &result))
 	    break;
-	session->driver.garmintxt.date.tm_sec = (int)result;
-	session->driver.garmintxt.subseconds = 0;
-	session->newdata.time =
-	    (timestamp_t)mkgmtime(&session->driver.garmintxt.date) +
-	    session->driver.garmintxt.subseconds;
+	gdate.tm_sec = (int)result;
+	session->newdata.time.tv_sec = mkgmtime(&gdate);
+	session->newdata.time.tv_nsec = 0;
 	mask |= TIME_SET;
     } while (0);
 
-    /* assume that possition is unknown; if the position is known we will fix status information later */
+    /* assume that position is unknown; if the position is known we
+     * will fix status information later */
     session->newdata.mode = MODE_NO_FIX;
     session->gpsdata.status = STATUS_NO_FIX;
     mask |= MODE_SET | STATUS_SET | CLEAR_IS | REPORT_IS;
@@ -367,6 +369,7 @@ gps_mask_t garmintxt_parse(struct gps_device_t * session)
 	    break;
 	lon += degfrag * 100.0 / 60.0 / 100000.0;
 	session->newdata.longitude = lon;
+        session->newdata.geoid_sep = wgs84_separation(lat, lon);
 
 	/* fix mode, GPS status, [gGdDS_] */
 	status = (char)session->lexer.outbuffer[30];
@@ -417,50 +420,41 @@ gps_mask_t garmintxt_parse(struct gps_device_t * session)
 		       (char *)session->lexer.outbuffer + 34, 6, "+-", 1.0,
 		       &alt))
 	    break;
-	session->newdata.altitude = alt;
+        /* alt is MSL */
+	session->newdata.altMSL = alt;
+	/* Let gpsd_error_model() deal with altHAE */
 	mask |= ALTITUDE_SET;
     } while (0);
 
-    /* Velocity */
+    /* Velocities, meters per second */
     do {
-	double ewvel, nsvel, speed, track;
-	if (0 !=
-	    gar_decode(session->context,
-		       (char *)session->lexer.outbuffer + 40, 5, "EW", 10.0,
-		       &ewvel))
-	    break;
-	if (0 !=
-	    gar_decode(session->context,
-		       (char *)session->lexer.outbuffer + 45, 5, "NS", 10.0,
-		       &nsvel))
-	    break;
-	speed = sqrt(ewvel * ewvel + nsvel * nsvel);	/* is this correct formula? Result is in mps */
-	session->newdata.speed = speed;
-	track = atan2(ewvel, nsvel) * RAD_2_DEG;	/* is this correct formula? Result is in degrees */
-	if (track < 0.0)
-	    track += 360.0;
-	session->newdata.track = track;
-	mask |= SPEED_SET | TRACK_SET;
-    } while (0);
-
-
-    /* Climb (vertical velocity) */
-    do {
+	double ewvel, nsvel;
 	double climb;
-	if (0 !=
-	    gar_decode(session->context,
-		       (char *)session->lexer.outbuffer + 50, 5, "UD", 100.0,
-		       &climb))
+
+	if (0 != gar_decode(session->context,
+		            (char *)session->lexer.outbuffer + 40, 5,
+                            "EW", 10.0, &ewvel))
 	    break;
-	session->newdata.climb = climb;	/* climb in mps */
-	mask |= CLIMB_SET;
+	if (0 != gar_decode(session->context,
+		            (char *)session->lexer.outbuffer + 45, 5,
+                            "NS", 10.0, &nsvel))
+	    break;
+	if (0 != gar_decode(session->context,
+		            (char *)session->lexer.outbuffer + 50, 5,
+                            "UD", 100.0, &climb))
+	    break;
+
+        session->newdata.NED.velN = ewvel;
+        session->newdata.NED.velE = nsvel;
+        session->newdata.NED.velD = -climb;
+	mask |= VNED_SET;
     } while (0);
 
-    gpsd_log(&session->context->errout, LOG_DATA,
-	     "GTXT: time=%.2f, lat=%.2f lon=%.2f alt=%.2f speed=%.2f track=%.2f climb=%.2f eph=%.2f mode=%d status=%d\n",
-	     session->newdata.time, session->newdata.latitude,
-	     session->newdata.longitude, session->newdata.altitude,
-	     session->newdata.speed, session->newdata.track,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
+	     "GTXT: time=%lld, lat=%.2f lon=%.2f altMSL=%.2f "
+             "climb=%.2f eph=%.2f mode=%d status=%d\n",
+	     (long long)session->newdata.time.tv_sec, session->newdata.latitude,
+	     session->newdata.longitude, session->newdata.altMSL,
 	     session->newdata.climb, session->newdata.eph,
 	     session->newdata.mode,
 	     session->gpsdata.status);

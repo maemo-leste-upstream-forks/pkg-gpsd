@@ -17,7 +17,7 @@ usage: ubxtool [OPTIONS] [server[:port[:device]]]
 #    the CLI options.  A handy place to put your '-f /dev/ttyXX -s SPEED'
 #
 # To see what constellations are enabled:
-#       ubxtool -p GNSS -f /dev/ttyXX
+#       ubxtool -p CFG-GNSS -f /dev/ttyXX
 #
 # To disable GALILEO and enable GALILEO:
 #       ubxtool -d GLONASS -f /dev/ttyXX
@@ -27,7 +27,7 @@ usage: ubxtool [OPTIONS] [server[:port[:device]]]
 #       ubxtool -v 2 -f test/daemon/ublox-neo-m8n.log
 #
 # References:
-#   [1] IS-GPS-200J
+#   [1] IS-GPS-200K
 
 from __future__ import absolute_import, print_function, division
 
@@ -54,11 +54,11 @@ try:
     import gps
 except ImportError:
     # PEP8 says local imports last
-    sys.stderr.write("%s: failed to import gps, check PYTHON_PATH\n" %
+    sys.stderr.write("%s: failed to import gps, check PYTHONPATH\n" %
                      PROG_NAME)
     sys.exit(2)
 
-gps_version = '3.19'
+gps_version = '3.20'
 if gps.__version__ != gps_version:
     sys.stderr.write("%s: ERROR: need gps module version %s, got %s\n" %
                      (PROG_NAME, gps_version, gps.__version__))
@@ -133,13 +133,13 @@ opts = {
 def unpack_s11(word, pos):
     """Grab a signed 11 bits from offset pos of word"""
 
-    bytes = bytearray(2)
-    bytes[0] = (word >> pos) & 0xff
-    bytes[1] = (word >> (pos + 8)) & 0x07
-    if 0x04 & bytes[1]:
+    ubytes = bytearray(2)
+    ubytes[0] = (word >> pos) & 0xff
+    ubytes[1] = (word >> (pos + 8)) & 0x07
+    if 0x04 & ubytes[1]:
         # extend the sign
-        bytes[1] |= 0xf8
-    u = struct.unpack_from('<h', bytes, 0)
+        ubytes[1] |= 0xf8
+    u = struct.unpack_from('<h', ubytes, 0)
     return u[0]
 
 
@@ -155,123 +155,123 @@ def unpack_s11s(word):
 def unpack_s14(word, pos):
     """Grab a signed 14 bits from offset pos of word"""
 
-    bytes = bytearray(2)
-    bytes[0] = (word >> pos) & 0xff
-    bytes[1] = (word >> (pos + 8)) & 0x3f
-    if 0x20 & bytes[1]:
+    ubytes = bytearray(2)
+    ubytes[0] = (word >> pos) & 0xff
+    ubytes[1] = (word >> (pos + 8)) & 0x3f
+    if 0x20 & ubytes[1]:
         # extend the sign
-        bytes[1] |= 0xc0
-    u = struct.unpack_from('<h', bytes, 0)
+        ubytes[1] |= 0xc0
+    u = struct.unpack_from('<h', ubytes, 0)
     return u[0]
 
 
 def unpack_s16(word, pos):
     """Grab a signed two bytes from offset pos of word"""
 
-    bytes = bytearray(2)
-    bytes[0] = (word >> pos) & 0xff
-    bytes[1] = (word >> (pos + 8)) & 0xff
-    u = struct.unpack_from('<h', bytes, 0)
+    ubytes = bytearray(2)
+    ubytes[0] = (word >> pos) & 0xff
+    ubytes[1] = (word >> (pos + 8)) & 0xff
+    u = struct.unpack_from('<h', ubytes, 0)
     return u[0]
 
 
 def unpack_u16(word, pos):
     """Grab a unsigned two bytes from offset pos of word"""
 
-    bytes = bytearray(2)
-    bytes[0] = (word >> pos) & 0xff
-    bytes[1] = (word >> (pos + 8)) & 0xff
-    u = struct.unpack_from('<H', bytes, 0)
+    ubytes = bytearray(2)
+    ubytes[0] = (word >> pos) & 0xff
+    ubytes[1] = (word >> (pos + 8)) & 0xff
+    u = struct.unpack_from('<H', ubytes, 0)
     return u[0]
 
 
 def unpack_s22(word, pos):
     """Grab a signed 22 bits from offset pos of word"""
 
-    bytes = bytearray(4)
-    bytes[0] = (word >> pos) & 0xff
-    bytes[1] = (word >> (pos + 8)) & 0xff
-    bytes[2] = (word >> (pos + 16)) & 0x3f
-    bytes[3] = 0
-    if 0x20 & bytes[2]:
+    ubytes = bytearray(4)
+    ubytes[0] = (word >> pos) & 0xff
+    ubytes[1] = (word >> (pos + 8)) & 0xff
+    ubytes[2] = (word >> (pos + 16)) & 0x3f
+    ubytes[3] = 0
+    if 0x20 & ubytes[2]:
         # extend the sign
-        bytes[2] |= 0xc0
-        bytes[3] = 0xff
+        ubytes[2] |= 0xc0
+        ubytes[3] = 0xff
 
-    u = struct.unpack_from('<l', bytes, 0)
+    u = struct.unpack_from('<l', ubytes, 0)
     return u[0]
 
 
 def unpack_s24(word, pos):
     """Grab a signed 24 bits from offset pos of word"""
 
-    bytes = bytearray(4)
-    bytes[0] = (word >> pos) & 0xff
-    bytes[1] = (word >> (pos + 8)) & 0xff
-    bytes[2] = (word >> (pos + 16)) & 0xff
-    bytes[3] = 0
-    if 0x80 & bytes[2]:
+    ubytes = bytearray(4)
+    ubytes[0] = (word >> pos) & 0xff
+    ubytes[1] = (word >> (pos + 8)) & 0xff
+    ubytes[2] = (word >> (pos + 16)) & 0xff
+    ubytes[3] = 0
+    if 0x80 & ubytes[2]:
         # extend the sign
-        bytes[3] = 0xff
+        ubytes[3] = 0xff
 
-    u = struct.unpack_from('<l', bytes, 0)
+    u = struct.unpack_from('<l', ubytes, 0)
     return u[0]
 
 
 def unpack_u24(word, pos):
     """Grab an unsigned 24 bits from offset pos of word"""
 
-    bytes = bytearray(4)
-    bytes[0] = (word >> pos) & 0xff
-    bytes[1] = (word >> (pos + 8)) & 0xff
-    bytes[2] = (word >> (pos + 16)) & 0xff
-    bytes[3] = 0
+    ubytes = bytearray(4)
+    ubytes[0] = (word >> pos) & 0xff
+    ubytes[1] = (word >> (pos + 8)) & 0xff
+    ubytes[2] = (word >> (pos + 16)) & 0xff
+    ubytes[3] = 0
 
-    u = struct.unpack_from('<L', bytes, 0)
+    u = struct.unpack_from('<L', ubytes, 0)
     return u[0]
 
 
 def unpack_s32s(word, word1):
     """Grab an signed 32 bits from weird split word, word1"""
 
-    bytes = bytearray(4)
-    bytes[0] = (word >> 6) & 0xff
-    bytes[1] = (word >> 14) & 0xff
-    bytes[2] = (word >> 22) & 0xff
-    bytes[3] = (word1 >> 6) & 0xff
+    ubytes = bytearray(4)
+    ubytes[0] = (word >> 6) & 0xff
+    ubytes[1] = (word >> 14) & 0xff
+    ubytes[2] = (word >> 22) & 0xff
+    ubytes[3] = (word1 >> 6) & 0xff
 
-    u = struct.unpack_from('<l', bytes, 0)
+    u = struct.unpack_from('<l', ubytes, 0)
     return u[0]
 
 
 def unpack_u32s(word, word1):
     """Grab an unsigned 32 bits from weird split word, word1"""
 
-    bytes = bytearray(4)
-    bytes[0] = (word >> 6) & 0xff
-    bytes[1] = (word >> 14) & 0xff
-    bytes[2] = (word >> 22) & 0xff
-    bytes[3] = (word1 >> 6) & 0xff
+    ubytes = bytearray(4)
+    ubytes[0] = (word >> 6) & 0xff
+    ubytes[1] = (word >> 14) & 0xff
+    ubytes[2] = (word >> 22) & 0xff
+    ubytes[3] = (word1 >> 6) & 0xff
 
-    u = struct.unpack_from('<L', bytes, 0)
+    u = struct.unpack_from('<L', ubytes, 0)
     return u[0]
 
 
 def unpack_s8(word, pos):
     """Grab a signed byte from offset pos of word"""
 
-    bytes = bytearray(1)
-    bytes[0] = (word >> pos) & 0xff
-    u = struct.unpack_from('<b', bytes, 0)
+    ubytes = bytearray(1)
+    ubytes[0] = (word >> pos) & 0xff
+    u = struct.unpack_from('<b', ubytes, 0)
     return u[0]
 
 
 def unpack_u8(word, pos):
     """Grab an unsigned byte from offset pos of word"""
 
-    bytes = bytearray(1)
-    bytes[0] = (word >> pos) & 0xff
-    u = struct.unpack_from('<B', bytes, 0)
+    ubytes = bytearray(1)
+    ubytes[0] = (word >> pos) & 0xff
+    u = struct.unpack_from('<B', ubytes, 0)
     return u[0]
 
 
@@ -1748,17 +1748,17 @@ class ubx(object):
 
         # not found, build a fake item, guess on decode
         name = "CFG-%u-%u" % ((key >> 16) & 0xff, ket & 0xff)
-        map = {0: "Z0",
-               1: "L",
-               2: "U1",
-               3: "U2",
-               4: "U4",
-               5: "U8",
-               6: "Z6",
-               7: "Z7",
-               }
+        kmap = {0: "Z0",
+                1: "L",
+                2: "U1",
+                3: "U2",
+                4: "U4",
+                5: "U8",
+                6: "Z6",
+                7: "Z7",
+                }
         size = (key >> 28) & 0x07
-        item = (name, key, map[size], 1, "Unk", "Unknown")
+        item = (name, key, kmap[size], 1, "Unk", "Unknown")
 
         return item
 
@@ -1812,52 +1812,91 @@ class ubx(object):
         """UBX-ACK-ACK decode"""
 
         # NOTE: Not all messages to u-blox GPS are ACKed...
-        m_len = len(buf)
-        if 2 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BB', buf, 0)
-        return ' ACK to %s' % self.class_id_s(u[0], u[1])
+        return '  ACK to %s' % self.class_id_s(u[0], u[1])
+
+    def ack_nak(self, buf):
+        """UBX-ACK-NAK decode"""
+
+        # NOTE: Not all messages to u-blox GPS are ACKed...
+
+        u = struct.unpack_from('<BB', buf, 0)
+        return '  NAK to %s' % self.class_id_s(u[0], u[1])
 
     # UBX-ACK-
-    ack_ids = {0: {'str': 'NAK', 'dec': ack_ack, 'name': 'UBX-ACK-NAK'},
-               1: {'str': 'ACK', 'dec': ack_ack, 'name': 'UBX-ACK-ACK'}}
+    ack_ids = {0: {'str': 'NAK', 'dec': ack_nak, 'minlen': 2,
+                   'name': 'UBX-ACK-NAK'},
+               1: {'str': 'ACK', 'dec': ack_ack, 'minlen': 2,
+                   'name': 'UBX-ACK-ACK'}}
 
     # UBX-AID-
     def aid_alm(self, buf):
         """UBX-AID-ALM decode, GPS Aiding Almanac Data"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request all"
 
         if 1 == m_len:
-            return " Poll request svid %u" % buf[0]
+            return "  Poll request svid %u" % buf[0]
 
         if 8 > m_len:
-            return " Bad Length %s" % m_len
+            return "  Bad Length %s" % m_len
 
         u = struct.unpack_from('<LL', buf, 0)
         s = ' svid %u week %u ' % u
 
-        if 0 != u[1] and 8 < m_len and 40 >= m_len:
+        if 0 != u[1] and 8 < m_len <= 40:
             u = struct.unpack_from('<LLLLLLLL', buf, 8)
             s += ('\n dwrd %08x %08x %08x %08x'
                   '\n      %08x %08x %08x %08x' % u)
 
         return s
 
+    def aid_alp(self, buf):
+        """UBX-AID-ALP decode, AlmanacPlus"""
+
+        # u-blox 6, protVer 6 to 7
+
+        m_len = len(buf)
+        if 1 == m_len(buf):
+            # different meaning for in and out
+            u = struct.unpack_from('<B', buf, 0)
+            return '  dummy/ack  %u' % u
+
+        if 24 == m_len(buf):
+            # different meaning for in and out
+            u = struct.unpack_from('LLlHHLBBH', buf, 0)
+            return ('  predTow %u predDur %u age %d predWno %u almWno %u\n'
+                    '  res1 %u svs %u res23 %u %u' % u)
+
+        # else
+        s = '  alpData len %u' % u
+
+        # FIXME: partial decode
+
+        return s
+
+    def aid_alpsrv(self, buf):
+        """UBX-AID-ALPSRV decode, AlmanacPlus"""
+
+        # u-blox 6, protVer 6 to 7
+
+        u = struct.unpack_from('<BBHHH', buf, 0)
+        s = ' idSize %u type %u ofx %u size %u fileId %u' % u
+
+        # FIXME: partial decode
+
+        return s
+
     def aid_aop(self, buf):
         """UBX-AID-AOP decode, AssistNow Autonomous data"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request all"
 
         if 1 == m_len:
-            return " Poll request svid %u" % buf[0]
+            return "  Poll request svid %u" % buf[0]
 
         # length 2 is undocumented...
         if 2 > m_len:
-            return " Bad Length %s" % m_len
+            return "  Bad Length %s" % m_len
 
         u = struct.unpack_from('<BB', buf, 0)
         s = ' gnssid %u svid %u' % u
@@ -1865,22 +1904,28 @@ class ubx(object):
 
         return s
 
+    def aid_data(self, buf):
+        """UBX-AID-DATA decode, Poll all GPS Initial Aiding Data"""
+
+        # u-blox 6
+        # If this poll is received, the messages AID-INI, AID-HUI,
+        # AID-EPH and AID-ALM are sent.
+        return "  Poll all GPS Initial Aiding Data"
+
     def aid_eph(self, buf):
         """UBX-AID-EPH decode, GPS Aiding Ephemeris Data"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request all"
 
         if 1 == m_len:
-            return " Poll request svid %u" % buf[0]
+            return "  Poll request svid %u" % buf[0]
 
         if 8 > m_len:
-            return " Bad Length %s" % m_len
+            return "  Bad Length %s" % m_len
 
         u = struct.unpack_from('<LL', buf, 0)
         s = ' svid %u how x%x ' % u
 
-        if 0 != u[1] and 8 < m_len and 104 >= m_len:
+        if 0 != u[1] and 8 < m_len <= 104:
             u = struct.unpack_from('<LLLLLLLLLLLLLLLLLLLLLLLL', buf, 8)
             s += ('\n sf1d %08x %08x %08x %08x'
                   '\n      %08x %08x %08x %08x'
@@ -1893,12 +1938,6 @@ class ubx(object):
 
     def aid_hui(self, buf):
         """UBX-AID-HUI decode, GPS Heatlh, UTC, Ionosphere"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request all"
-
-        if 72 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LddlhhhhhhffffffffL', buf, 0)
         s = (' health x%x utcAo %e utcA1 %e utcTOW %d'
@@ -1911,12 +1950,6 @@ class ubx(object):
 
     def aid_ini(self, buf):
         """UBX-AID-INI decode, Aiding position, time, frequency, clock drift"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 48 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<lllLHHLlLLlLL', buf, 0)
         s = (' ecefXOrLat %d ecefYOrLon %d ecefZOrAlt %d posAcc %u'
@@ -1926,12 +1959,34 @@ class ubx(object):
 
         return s
 
+    def aid_req(self, buf):
+        """UBX-AID-REQ decode, Sends a poll for all GPS Aiding Data"""
+
+        return "  poll (AID-DATA) for all GPS Aiding Data"
+
     # All UBX-AID messages are deprecated; use UBX-MGA messages instead
-    aid_ids = {0x01: {'str': 'INI', 'dec': aid_ini, 'name': 'UBX-AID-INI'},
-               0x02: {'str': 'HUI', 'dec': aid_hui, 'name': 'UBX-AID-HUI'},
-               0x30: {'str': 'ALM', 'dec': aid_alm, 'name': 'UBX-AID-ALM'},
-               0x31: {'str': 'EPH', 'dec': aid_eph, 'name': 'UBX-AID-EPH'},
-               0x33: {'str': 'AOP', 'dec': aid_aop, 'name': 'UBX-AID-AOP'},
+    aid_ids = {
+               # u-blox 6
+               0x00: {'str': 'REQ', 'dec': aid_req, 'minlen': 0,
+                      'name': 'UBX-AID-REQ'},
+               0x01: {'str': 'INI', 'dec': aid_ini, 'minlen': 48,
+                      'name': 'UBX-AID-INI'},
+               0x02: {'str': 'HUI', 'dec': aid_hui, 'minlen': 72,
+                      'name': 'UBX-AID-HUI'},
+               # u-blox 6
+               0x10: {'str': 'DATA', 'dec': aid_data, 'minlen': 0,
+                      'name': 'UBX-AID-DATA'},
+               0x30: {'str': 'ALM', 'dec': aid_alm, 'minlen': 1,
+                      'name': 'UBX-AID-ALM'},
+               0x31: {'str': 'EPH', 'dec': aid_eph, 'minlen': 1,
+                      'name': 'UBX-AID-EPH'},
+               # u-blox 6
+               0x32: {'str': 'ALPSRV', 'dec': aid_alpsrv, 'minlen': 8,
+                      'name': 'UBX-AID-ALPSRV'},
+               0x33: {'str': 'AOP', 'dec': aid_aop, 'minlen': 1,
+                      'name': 'UBX-AID-AOP'},
+               0x50: {'str': 'ALP', 'dec': aid_alp, 'minlen': 1,
+                      'name': 'UBX-AID-ALP'},
                }
 
     cfg_ant_pins = {
@@ -1944,12 +1999,6 @@ class ubx(object):
 
     def cfg_ant(self, buf):
         """UBX-CFG-ANT decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return "Poll request all"
-
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<HH', buf, 0)
         s = ' flags x%x pins x%x ' % u
@@ -1958,6 +2007,25 @@ class ubx(object):
                u[1] >> 15))
         if VERB_DECODE <= opts['verbosity']:
             s += ('\n      flags (%s)' % flag_s(u[0], self.cfg_ant_pins))
+
+        return s
+
+    cfg_batch_flags = {
+        1: 'enable',
+        4: 'extraPvt',
+        8: 'extraOdo',
+        0x20: 'pioEnable',
+        0x40: 'pioActiveLow',
+        }
+
+    def cfg_batch(self, buf):
+        """UBX-CFG-BATCH decode"""
+
+        u = struct.unpack_from('<BBHHBB', buf, 0)
+        s = ("  version %u flags x%x bufsize %u notifThrs %u\n"
+             "  pioId %u reserved1 %u" % u)
+        if VERB_DECODE <= opts['verbosity']:
+            s += ('\n      flags (%s)' % flag_s(u[1], self.cfg_batch_flags))
 
         return s
 
@@ -1984,24 +2052,60 @@ class ubx(object):
     def cfg_cfg(self, buf):
         """UBX-CFG-CFG decode"""
         m_len = len(buf)
-        if 12 > m_len:
-            return "Bad Length %s" % m_len
 
         if 12 == m_len:
             u = struct.unpack_from('<LLL', buf, 0)
         else:
             u = struct.unpack_from('<LLLB', buf, 0)
 
-        s = (' clearMask: %#x (%s)\n' %
+        s = ('  clearMask: %#x (%s)\n' %
              (u[0], flag_s(u[0], self.cfg_cfg_mask)))
-        s += (' saveMask: %#x (%s)\n' %
+        s += ('  saveMask: %#x (%s)\n' %
               (u[1], flag_s(u[1], self.cfg_cfg_mask)))
-        s += (' loadMask: %#x (%s)\n' %
+        s += ('  loadMask: %#x (%s)\n' %
               (u[2], flag_s(u[2], self.cfg_cfg_mask)))
 
         if 13 <= m_len:
-            s += (' deviceMask: %#x (%s)\n' %
+            s += ('  deviceMask: %#x (%s)\n' %
                   (u[3], flag_s(u[3], self.cfg_cfg_dev)))
+
+        return s
+
+    def cfg_dat(self, buf):
+        """UBX-CFG-DAT decode, Standard Datum configuration"""
+
+        # u-blox 5 to 9, protVer 4.00 to 29
+        m_len = len(buf)
+
+        if 2 == m_len:
+            # standard datum
+            u = struct.unpack_from('<H', buf, 0)
+            s = "  datumNum %u" % u
+
+        elif 44 > m_len:
+            s = "  Bad Length %d" % m_len
+
+        elif 44 == m_len:
+            # set user defined datum
+            u = struct.unpack_from('<ddfffffff', buf, 0)
+            s = ("  majA %.1f flat %.1f dX %.1f dY %.1f dZ %.1f\n"
+                 "  rotX %.1f rotY %.1f rotZ %.1f scale %.1f" % u)
+
+        elif 52 > m_len:
+            s = "  Bad Length %d" % m_len
+
+        elif 52 <= m_len:
+            # get user defined datum
+            u = struct.unpack_from('<HBBBBBBddfffffff', buf, 0)
+            s = ("  datumNum %u datumNam %u %u %u %u %u %u\n"
+                 "  majA %.1f flat %.1f dX %.1f dY %.1f dZ %.1f\n"
+                 "  rotX %.1f rotY %.1f rotZ %.1f scale %.1f" % u)
+            if VERB_DECODE <= opts['verbosity']:
+                s += ('\n   datumName (%s)' %
+                      gps.polystr(buf[2:8]).rstrip('\0'))
+
+        else:
+            s = "I'm confused..."
 
         return s
 
@@ -2012,12 +2116,6 @@ class ubx(object):
 
     def cfg_dgnss(self, buf):
         """UBX-CFG-DGNSS decode, DGNSS configuration"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return "Poll request"
-
-        if 4 > m_len:
-            return "Bad Length %d" % m_len
 
         u = struct.unpack_from('<BBBB', buf, 0)
         s = (" dgnssMode %u (%s) reserved1 %u %u %u" % u
@@ -2027,43 +2125,59 @@ class ubx(object):
     def cfg_dosc(self, buf):
         """UBX-CFG-DOSC decode, Disciplined oscillator configuration"""
 
-        m_len = len(buf)
-        if 0 == m_len:
-            return "Poll request"
-
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
-
         u = struct.unpack_from('<BBBB', buf, 0)
         s = " version %u numOsc %u reserved1 %u" % u
         # FIXME, partial decode
+        return s
+
+    def cfg_dynseed(self, buf):
+        """UBX-CFG-DYNSEED decode,
+Programming the dynamic seed for host interface signature"""
+
+        # u-blox 8 only, protVer 18 to 23
+        u = struct.unpack_from('<BBHLL', buf, 0)
+        s = " version %u reserved1 %u %u seedHi %u seedLo %u" % u
         return s
 
     def cfg_esrc(self, buf):
         """UBX-CFG-ESRC decode, External synchronization source
         configuration"""
 
-        m_len = len(buf)
-        if 0 == m_len:
-            return "Poll request"
-
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
-
         u = struct.unpack_from('<BBBB', buf, 0)
-        s = " version %u numSources %u reserved1 %u" % u
+        s = "  version %u numSources %u reserved1 %u" % u
         # FIXME, partial decode
+        return s
+
+    def cfg_fixseed(self, buf):
+        """UBX-CFG-FIXSEED decode,
+Programming the fixed seed for host interface signature"""
+
+        # u-blox 8 only, protVer 18 to 23
+        u = struct.unpack_from('<BBHLL', buf, 0)
+        s = " version %u length %u reserved1 %u seedHi %u seedLo %u" % u
+        # FIXME, partial decode
+        return s
+
+    cfg_fxn_flags = {
+        2: "sleep Float",
+        8: "absAlign",
+        0x10: "onOff",
+        }
+
+    def cfg_fxn(self, buf):
+        """UBX-CFG-FXN decode, FXN FixNOW configuration"""
+
+        # Antaris 4, u-blox 5, protVer 6.00 to 6.02
+        u = struct.unpack_from('<LLLLLLLLL', buf, 0)
+        s = ("  flags x%x tReacq %u tAcq %u tReacqOff %u\n"
+             "  tAcqOff %u tOn %u tOff %u res %u baseTow %u\n" % u)
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n    flags (%s)" %
+                  (flag_s(u[0], self.cfg_fxn_flags)))
         return s
 
     def cfg_geofence(self, buf):
         """UBX-CFG-GEOFENCE decode, Geofencing configuration"""
-
-        m_len = len(buf)
-        if 0 == m_len:
-            return "Poll request"
-
-        if 8 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBBBBB', buf, 0)
         s = (" version %u numFences %u confLvl %u reserved1 %u\n"
@@ -2094,12 +2208,6 @@ class ubx(object):
 
     def cfg_gnss(self, buf):
         """UBX-CFG-GNSS decode, GNSS system configuration"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return "Poll request"
-
-        if 4 > m_len:
-            return "Bad Length %d" % m_len
 
         u = struct.unpack_from('<BBBB', buf, 0)
         s = " msgVer %u  numTrkChHw %u numTrkChUse %u numConfigBlocks %u" % u
@@ -2125,10 +2233,6 @@ class ubx(object):
     def cfg_hnr(self, buf):
         """UBX-CFG-HNR decode, High Navigation Rate Settings"""
 
-        m_len = len(buf)
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
-
         u = struct.unpack_from('<BBBb', buf, 0)
         s = " highNavRate %u reserved %u %u" % u
         return s
@@ -2136,17 +2240,22 @@ class ubx(object):
     cfg_inf_protid = {
         0: "UBX",
         1: "NMEA",
+        3: "Unk3",      # undocumented, used by u-center
+        12: "Unk12",    # undocumented, used by u-center
+        13: "Unk13",    # undocumented, used by u-center
+        14: "Unk14",    # undocumented, used by u-center
+        15: "Unk15",    # undocumented, used by u-center
         }
 
     def cfg_inf(self, buf):
         """UBX-CFG-INF decode, Poll configuration for one protocol"""
         m_len = len(buf)
         if 1 == m_len:
-            return ("Poll request: %s" %
+            return ("  Poll request: %s" %
                     index_s(buf[0], self.cfg_inf_protid))
 
         if 10 < m_len:
-            return "Bad Length %d" % m_len
+            return "  Bad Length %d" % m_len
 
         u = struct.unpack_from('<BBBBBBBBBB', buf, 0)
         s = (" protocolId %u reserved1 %u %u %u\n"
@@ -2172,13 +2281,6 @@ class ubx(object):
     def cfg_itfm(self, buf):
         """UBX-CFG-ITFM decode, Jamming/Interference Monitor configuration"""
 
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return "Bad Length %s" % m_len
-
         u = struct.unpack_from('<LL', buf, 0)
         s = " config x%x config2 x%x" % u
         if VERB_DECODE <= opts['verbosity']:
@@ -2190,6 +2292,26 @@ class ubx(object):
                    flag_s(buf[1], self.cfg_itfm_config2),
                    u[1] & 0x0fff,
                    index_s((u[1] >> 12) & 3, self.cfg_itfm_config2)))
+        return s
+
+    cfg_logfilter_flags = {
+        1: "recordEnabled",
+        2: "psmOncePerWakupEnabled",
+        4: "applyAllFilterSettings",
+        }
+
+    def cfg_logfilter(self, buf):
+        """UBX-CFG-LOGFILTER decode, Data Logger Configuration"""
+
+        # u-blox 7+, protVer 14+
+        u = struct.unpack_from('<BBHHHL', buf, 0)
+        s = (" version %u flags x%x minInterval %u timeThreshold %u\n"
+             " speedThreshold %u positionThreshold %u" % u)
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n   flags (%s)" %
+                  (flag_s(buf[1], self.cfg_logfilter_flags)))
+
         return s
 
     utc_std = {
@@ -2235,12 +2357,6 @@ class ubx(object):
 
     def cfg_nav5(self, buf):
         """UBX-CFG-NAV5 nav Engine Settings"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 36 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<HBBlLbBHHHHbbbbHHbBL', buf, 0)
         s = (' mask %#x dynModel %u fixmode %d fixedAlt %d FixedAltVar %u\n'
@@ -2282,24 +2398,19 @@ class ubx(object):
         # deprecated protver 23+
         # length == 20 case seems broken?
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<HHLHBBBBBHBH', buf, 0)
         s = (" version %u mask1 x%x mask2 x%x reserved1 %u minSVs %u "
              "maxSVs %u minCNO %u\n"
-             " reserved2 %u iniFix3D %u reserved3 %u  ackAiding %u\n"
+             " reserved2 %u iniFix3D %u reserved3 %u  ackAiding %u "
              "wknRollover %u" % u)
 
         # length == 40 in protver 27
         if 40 <= m_len:
-            u1 = struct.unpack_from('<BBHHLHBB', buf, 20)
+            u1 = struct.unpack_from('<BBHHBBHHLHBB', buf, 20)
             s += ("\n sigAttenCompMode %u reserved456 %u %u %u usePPP %u "
                   "aopCfg %u reserved7 %u"
-                  "\n aopOrbMaxErr %u reserved89 %u %u %u useAdr %u" % u)
+                  "\n aopOrbMaxErr %u reserved89 %u %u %u useAdr %u" % u1)
 
         if VERB_DECODE <= opts['verbosity']:
             s += ("\n   mask1 (%s)"
@@ -2315,18 +2426,18 @@ class ubx(object):
         m_len = len(buf)
         if 2 == m_len:
             u = struct.unpack_from('<BB', buf, 0)
-            return ' Rate request: %s' % self.class_id_s(u[0], u[1])
+            return '  Rate request %s' % self.class_id_s(u[0], u[1])
 
         if 3 == m_len:
             u = struct.unpack_from('<BBB', buf, 0)
-            return (' Rate set: %s Rate:%d' %
+            return ('  Rate set %s Rate %d' %
                     (self.class_id_s(u[0], u[1]), u[2]))
 
         if 8 != m_len:
-            return "Bad Length %s" % m_len
+            return "  Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBBBBB', buf, 0)
-        s = (' %s Rates: %u %u %u %u %u %u' %
+        s = (' %s Rates %u %u %u %u %u %u' %
              (self.class_id_s(u[0], u[1]), u[2], u[3], u[4], u[5], u[6], u[7]))
         return s
 
@@ -2382,12 +2493,6 @@ class ubx(object):
 
     def cfg_nmea(self, buf):
         """UBX-CFG-NMEA decode, Extended NMEA protocol configuration V1"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBLBBBBBBBBBBBB', buf, 0)
         s = (" filter x%x nmeaVersion x%x numSv %u flags x%x "
@@ -2408,6 +2513,28 @@ class ubx(object):
                    index_s(u[7], self.cfg_nmea_gtid)))
         return s
 
+    cfg_nvs_mask = {
+        0x20000: 'alm',
+        0x20000000: 'aop',
+        }
+
+    def cfg_nvs(self, buf):
+        """UBX-CFG-NVS decode, Clear,
+Save and Load non-volatile storage data"""
+
+        # u-blox 6, protVer 7.03
+        u = struct.unpack_from('<LLLB', buf, 0)
+        s = ('  clearMask: %#x (%s)\n' %
+             (u[0], flag_s(u[0], self.cfg_nvs_mask)))
+        s += ('  saveMask: %#x (%s)\n' %
+              (u[1], flag_s(u[1], self.cfg_nvs_mask)))
+        s += ('  loadMask: %#x (%s)\n' %
+              (u[2], flag_s(u[2], self.cfg_nvs_mask)))
+        s += ('  deviceMask: %#x (%s)\n' %
+              (u[3], flag_s(u[3], self.cfg_cfg_dev)))
+
+        return s
+
     cfg_odo_flags = {
         1: "useODO",
         2: "useCOG",
@@ -2425,12 +2552,6 @@ class ubx(object):
 
     def cfg_odo(self, buf):
         """UBX-CFG-ODO decode, Odometer, Low-speed COG Engine Settings"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBBBBBBBBBBBBBBBBB', buf, 0)
         s = (" version %u reserved1 %u %u %u flags x%x odoCfg x%x\n"
@@ -2443,7 +2564,7 @@ class ubx(object):
                    index_s(u[5], self.cfg_odo_profile)))
         return s
 
-    cfg_pm2_flags = {
+    cfg_pm_flags = {
         0x20: "extintWake",
         0x40: "extintBackup",
         0x80: "extintInactive",
@@ -2453,12 +2574,28 @@ class ubx(object):
         0x10000: "doNotEnterOff",
         }
 
-    cfg_pm2_limitPeakCurr = {
+    cfg_pm_limitPeakCurr = {
         0: "disabled",
         1: "enabled",
         2: "reserved",
         3: "reserved3",
         }
+
+    def cfg_pm(self, buf):
+        """UBX-CFG-PM decode, Poswer Management Configuration"""
+
+        # u-blox 5, protVer 6.00 to 6.02
+
+        u = struct.unpack_from('<BBBBLLLLHH', buf, 0)
+        s = (" version %u res1 %u res2 %u res3 %u flags x%x updatePeriod %u\n"
+             " searchPeriod %u gridOffset %u onTime %u minAcqTime %u\n" % u)
+        if VERB_DECODE <= opts['verbosity']:
+            s += ('\n  flags (%s) extintSel (EXTINT%u) '
+                  'limitPeakCurr (%s)' %
+                  (flag_s(u[4], self.cfg_pm_flags),
+                   (u[4] >> 4) & 1,
+                   index_s((u[4] >> 8) & 3, self.cfg_pm_limitPeakCurr)))
+        return s
 
     cfg_pm2_mode = {
         0: "ON/OFF operation (PSMOO)",
@@ -2481,12 +2618,8 @@ class ubx(object):
         # "version" 2 is 48 bytes,protver >= 23
 
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
         # 48 bytes protver 18+
-        if 44 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBLLLLHHLLLLL', buf, 0)
         s = (" version %u reserved1 %u maxStartupStateDur %u reserved2 %u\n"
@@ -2501,9 +2634,9 @@ class ubx(object):
             s += ('\n  flags (%s) extintSel (EXTINT%u)'
                   '\n  limitPeakCurr (%s)'
                   '\n  optTarget (%s) mode (%s)' %
-                  (flag_s(u[4], self.cfg_pm2_flags),
+                  (flag_s(u[4], self.cfg_pm_flags),
                    (u[4] >> 4) & 1,
-                   index_s((u[4] >> 8) & 3, self.cfg_pm2_limitPeakCurr),
+                   index_s((u[4] >> 8) & 3, self.cfg_pm_limitPeakCurr),
                    index_s((u[4] >> 1) & 3, self.cfg_pm2_optTarget,
                            nf="reserved"),
                    index_s((u[4] >> 17) & 3, self.cfg_pm2_mode)))
@@ -2521,13 +2654,6 @@ class ubx(object):
 
     def cfg_pms(self, buf):
         """UBX-CFG-PMS decode, Power Mode Setup"""
-
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBHHBB', buf, 0)
         s = (' version %u powerSetupValue %u'
@@ -2553,19 +2679,17 @@ class ubx(object):
         """UBX-CFG-PRT decode, Port Configuration """
 
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
         portid = buf[0]
         idstr = '%u (%s)' % (portid, self.port_ids.get(portid, '?'))
 
         if 1 == m_len:
-            return " Poll request PortID %s" % idstr
+            return "  Poll request PortID %s" % idstr
 
         # Note that this message can contain multiple 20-byte submessages, but
         # only in the send direction, which we don't currently do.
         if 20 > m_len:
-            return "Bad Length %s" % m_len
+            return "  Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBHLLHHHH', buf, 0)
 
@@ -2606,10 +2730,6 @@ class ubx(object):
     def cfg_pwr(self, buf):
         """UBX-CFG-PWR decode, Put receiver in a defined power state"""
 
-        m_len = len(buf)
-        if 8 > m_len:
-            return "Bad Length %s" % m_len
-
         u = struct.unpack_from('<BBBBL', buf, 0)
         s = (" version %u reserved %u %u %u state %u" %
              (u + (index_s(u[0], self.cfg_pwr_state),)))
@@ -2626,13 +2746,6 @@ class ubx(object):
     def cfg_rate(self, buf):
         """UBX-CFG-RATE decode, Navigation/Measurement Rate Settings"""
 
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 6 > m_len:
-            return "Bad Length %s" % m_len
-
         u = struct.unpack_from('<HHH', buf, 0)
         s = (" measRate %u navRate %u timeRef %u (%s)" %
              (u + (index_s(u[2], self.cfg_rate_system),)))
@@ -2646,9 +2759,8 @@ class ubx(object):
     def cfg_rinv(self, buf):
         """UBX-CFG-RINV decode, Contents of Remote Inventory"""
 
+        # u-blox 5, protVer 6.00 to 6.02
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
         u = struct.unpack_from('<B', buf, 0)
         s = (" flags x%x (%s) data:" %
@@ -2692,11 +2804,6 @@ class ubx(object):
     def cfg_rst(self, buf):
         """"UBX-CFG-RST decode, Reset Receiver/Clear Backup Data Structures"""
 
-        m_len = len(buf)
-
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
-
         u = struct.unpack_from('<HBB', buf, 0)
         s = ' navBbrmask x%x resetMode %u reserved %u' % u
 
@@ -2721,13 +2828,6 @@ class ubx(object):
 
     def cfg_rxm(self, buf):
         """UBX-CFG-RXM decode, Navigation/Measurement"""
-
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 2 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BB', buf, 0)
         s = (" reserved1 %u lpMode %u (%s)" %
@@ -2792,12 +2892,6 @@ class ubx(object):
 
     def cfg_sbas(self, buf):
         """UBX-CFG-SBAS decode, SBAS Configuration"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBL', buf, 0)
         s = (" mode x%x usage x%x maxSBAS %u scanMode2 x%x"
@@ -2812,6 +2906,25 @@ class ubx(object):
 
         return s
 
+    cfg_slas_mode = {
+        1: "enabled",
+        2: "test",
+        4: "raim",
+        }
+
+    def cfg_slas(self, buf):
+        """UBX-CFG-SLAS decode, SLAS configuration"""
+
+        # protVer 19.2 (ADR, UDR only)
+
+        u = struct.unpack_from('<BBH', buf, 0)
+        s = " mode %u reserved1 %u %u" % u
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += "\n   mode (%s)" % (flag_s(u[0], self.cfg_slas_mode))
+
+        return s
+
     cfg_smgr_messageCfg = {
         1: "measInternal",
         2: "measGNSS",
@@ -2821,12 +2934,6 @@ class ubx(object):
 
     def cfg_smgr(self, buf):
         """UBX-CFG-SMGR decode, Synchronization manager configuration"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBHHBBHHHHL', buf, 0)
         s = (" version %u minGNSSFix %u maxFreqChangeRate %u "
@@ -2841,11 +2948,26 @@ class ubx(object):
 
         return s
 
-    cfg_tmode2_timeMode = {
+    cfg_tmode_timeMode = {
         0: "Disabled",
         1: "Survey In",
         2: "Fixed Mode",
         }
+
+    def cfg_tmode(self, buf):
+        """UBX-CFG-TMODE decode, Time Mode Settings"""
+
+        # u-blox 5, protVer 5.00 to 6.02 (timing feature only)
+
+        u = struct.unpack_from('<BBHlllLLL', buf, 0)
+        s = ('  timeMode %u fixedPosX %d fixedPosY %d fixedPosZ %d\n'
+             '  fixedPosVar %u svinMinDur %u svinAccLimit %u' % u)
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n    timeMode (%s)" %
+                  (index_s(u[0], self.cfg_tmode_timeMode)))
+
+        return s
 
     cfg_tmode2_flags = {
         1: "lla",
@@ -2854,22 +2976,72 @@ class ubx(object):
 
     def cfg_tmode2(self, buf):
         """UBX-CFG-TMODE2 decode, Time Mode Settings 2"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 28 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBHlllLLL', buf, 0)
-        s = (' timeMode: %u reserved1: %u  usage: %#x\n'
-             ' ecefXOrLat: %d ecefYOrLon: %d ecefZOrAlt: %d\n'
-             ' fixedPosAcc %u svinMinDur %u svinAccLimit %u' % u)
+        s = ('  timeMode %u reserved1 %u usage %#x\n'
+             '  ecefXOrLat %d ecefYOrLon %d ecefZOrAlt %d\n'
+             '  fixedPosAcc %u svinMinDur %u svinAccLimit %u' % u)
 
         if VERB_DECODE <= opts['verbosity']:
-            s += ("\n   timeMode (%s) flags (%s)" %
-                  (index_s(u[0], self.cfg_tmode2_timeMode),
+            s += ("\n    timeMode (%s) flags (%s)" %
+                  (index_s(u[0], self.cfg_tmode_timeMode),
                    flag_s(u[2], self.cfg_tmode2_flags)))
+
+        return s
+
+    cfg_tmode3_flags = {
+        0x100: "lla",
+        }
+
+    def cfg_tmode3(self, buf):
+        """UBX-CFG-TMODE3 decode, Time Mode Settings 3"""
+
+        # Not in u-blox 7-, HP only
+        # undocumented, but present in ZED-F9T
+        u = struct.unpack_from('<BBHlllbbbBLLLLL', buf, 0)
+        s = ('  version %u reserved1 %u flags x%x\n'
+             '  ecefXOrLat %d ecefYOrLon %d ecefZOrAlt %d\n'
+             '  ecefXOrLatHP %d ecefYOrLonHP %d ecefZOrAltHP %d\n'
+             '  reserved2 %u fixedPosAcc %u svinMinDur %u svinAccLimit %u\n'
+             '  reserved3 %u %u' % u)
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n    flags (%s %s)" %
+                  (index_s(u[2], self.cfg_tmode_timeMode),
+                   flag_s(u[2] & 0x100, self.cfg_tmode3_flags)))
+
+        return s
+
+    cfg_tp_status = {
+        -1: "negative",
+        0: "off",
+        1: "positive",
+        }
+
+    cfg_tp_timeRef = {
+        0: "UTC",
+        1: "GPS",
+        2: "Local",
+        }
+
+    cfg_tp_flags = {
+        1: "syncMode",
+        }
+
+    def cfg_tp(self, buf):
+        """UBX-CFG-TP decode, Time Pulse Settings"""
+
+        # protVer 4.00 to 6.02
+
+        u = struct.unpack_from('<HHbBBBhhl', buf, 0)
+        s = ('  interval %u length %u status %d timeRef %u flags x%x res x%x\n'
+             '  antennaCableDelay %u rfGroupDelay %d userDelay %d' % u)
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n   flags (%s, %s, %s)" %
+                  (index_s(u[2], self.cfg_tp_status),
+                   index_s(u[3], self.cfg_tp_timeRef),
+                   flag_s(u[4], self.cfg_tp_flags)))
 
         return s
 
@@ -2894,54 +3066,52 @@ class ubx(object):
     def cfg_tp5(self, buf):
         """UBX-CFG-TP5 decode, Time Pulse Parameters"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request tpIdx 0"
 
         if 1 == m_len:
-            return " Poll request tpIdx %d" % buf[0]
+            return "  Poll request tpIdx %d" % buf[0]
 
         if 32 > m_len:
-            return " Bad Length %s" % m_len
+            return "  Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBHhhLLLLlL', buf, 0)
-        s = ("tpIdx %u version %u reserved1 %u\n"
-             " antCableDelay %d rfGroupDelay %d freqPeriod %u "
+        s = ("  tpIdx %u version %u reserved1 %u\n"
+             "  antCableDelay %d rfGroupDelay %d freqPeriod %u "
              "freqPeriodLock %u\n"
-             " pulseLenRatio %u pulseLenRatioLock %u userConfigDelay %d\n"
-             " Flags %#x" % u)
+             "  pulseLenRatio %u pulseLenRatioLock %u userConfigDelay %d\n"
+             "  flags x%x" % u)
 
         if VERB_DECODE <= opts['verbosity']:
-            s += ("\n   Flags (%s)"
-                  "\n   gridToGps (%s) syncMode %d" %
+            s += ("\n    flags (%s)"
+                  "\n    gridToGps (%s) syncMode %d" %
                   (flag_s(u[10] & 0x7f, self.cfg_tp5_flags),
                    index_s((u[10] >> 7) & 0x0f, self.cfg_tp5_grid),
                    (u[10] >> 11) & 0x03))
 
         return s
 
+    cfg_usb_flags = {1: "reEnum "}
+
+    cfg_usb_powerMode = {0: "self-powered",
+                         2: "bus-powered",
+                         }
+
     def cfg_usb(self, buf):
         """UBX-CFG-USB decode, USB Configuration"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 108 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<HHHHHH', buf, 0)
-        s = (' vendorID: %#x productID: %#x reserved1: %u'
-             ' reserved2: %u\n'
-             '  powerConsumption %u mA flags: %#x ' % tuple(u[:6]))
-        if 0x01 & u[5]:
-            s += "reEnum, "
-        if 0x02 & u[5]:
-            s += "self-powered"
-        else:
-            s += "bus-powered"
+        s = ('  vendorID %#x productID %#x reserved1 %u reserved2 %u\n'
+             '  powerConsumption %u mA flags %#x' % u)
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n    flags (%s%s)" %
+                  (flag_s(u[5] & 1, self.cfg_usb_flags),
+                   index_s(u[5] & 2, self.cfg_usb_powerMode)))
 
-        s += '\n vendorString: %s\n' % gps.polystr(buf[12:43])
-        s += ' productString: %s\n' % gps.polystr(buf[44:75])
-        s += ' serialNumber: %s' % gps.polystr(buf[76:107])
+        s += ('\n  vendorString %s\n'
+              '  productString %s\n'
+              '  serialNumber %s' %
+              (gps.polystr(buf[12:43]).rstrip('\0'),
+               gps.polystr(buf[44:75]).rstrip('\0'),
+               gps.polystr(buf[76:107]).rstrip('\0')))
         return s
 
     cfg_valdel_layers = {
@@ -2968,9 +3138,6 @@ class ubx(object):
         """"UBX-CFG-VALDEL decode, Delete configuration items"""
         m_len = len(buf)
 
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
-
         # this is a poll options, so does not set min protver
 
         u = struct.unpack_from('<BBBB', buf, 0)
@@ -2995,8 +3162,6 @@ class ubx(object):
 
         # version zero is a poll
         # version one is the response
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBB', buf, 0)
         s = ' version %u layer %u reserved %u,%u\n' % u
@@ -3043,9 +3208,6 @@ class ubx(object):
         """"UBX-CFG-VALSET decode, Set configuration items"""
         m_len = len(buf)
 
-        if 4 > m_len:
-            return "Bad Length %s" % m_len
-
         # this is a poll option, so does not set min protver
 
         u = struct.unpack_from('<BBBB', buf, 0)
@@ -3075,114 +3237,155 @@ class ubx(object):
 
     cfg_ids = {
                # in u-blox 5+
-               0: {'str': 'PRT', 'dec': cfg_prt, 'name': 'UBX-CFG-PRT'},
+               0x00: {'str': 'PRT', 'dec': cfg_prt, 'minlen': 1,
+                      'name': 'UBX-CFG-PRT'},
                # in u-blox 5+
-               1: {'str': 'MSG', 'dec': cfg_msg, 'name': 'UBX-CFG-MSG'},
+               0x01: {'str': 'MSG', 'dec': cfg_msg, 'minlen': 2,
+                      'name': 'UBX-CFG-MSG'},
                # in u-blox 5+
-               2: {'str': 'INF', 'dec': cfg_inf, 'name': 'UBX-CFG-INF'},
+               0x02: {'str': 'INF', 'dec': cfg_inf, 'minlen': 1,
+                      'name': 'UBX-CFG-INF'},
                # in u-blox 5+
-               4: {'str': 'RST', 'dec': cfg_rst, 'name': 'UBX-CFG-RST'},
-               # in u-blox 5+
-               6: {'str': 'DAT', 'name': 'UBX-CFG-DAT'},
+               0x04: {'str': 'RST', 'dec': cfg_rst, 'minlen': 4,
+                      'name': 'UBX-CFG-RST'},
+               # in u-blox 5 to 9
+               0x06: {'str': 'DAT', 'dec': cfg_dat, 'minlen': 2,
+                      'name': 'UBX-CFG-DAT'},
                # u-blox 5, 6.  Not in u-blox 7+
-               7: {'str': 'TP', 'name': 'UBX-CFG-TP'},
+               0x07: {'str': 'TP', 'dec': cfg_tp, 'minlen': 28,
+                      'name': 'UBX-CFG-TP'},
                # in u-blox 5+
-               8: {'str': 'RATE', 'dec': cfg_rate, 'name': 'UBX-CFG-RATE'},
+               0x08: {'str': 'RATE', 'dec': cfg_rate, 'minlen': 6,
+                      'name': 'UBX-CFG-RATE'},
                # in u-blox 5+
-               9: {'str': 'CFG', 'dec': cfg_cfg, 'name': 'UBX-CFG-CFG'},
+               0x09: {'str': 'CFG', 'dec': cfg_cfg, 'minlen': 12,
+                      'name': 'UBX-CFG-CFG'},
                # Antaris 4, deprecated in u-blox 5/6, gone in 7
-               0x0e: {'str': 'FXM', 'name': 'UBX-CFG-FXM'},
+               0x0e: {'str': 'FXM', 'dec': cfg_fxn, 'minlen': 36,
+                      'name': 'UBX-CFG-FXM'},
                # u-blox 5, 6, 7, 8
-               0x11: {'str': 'RXM', 'dec': cfg_rxm, 'name': 'UBX-CFG-RXM'},
-               # in u-blox 6.  Not in 5- or 7+
-               0x12: {'str': 'EKF', 'name': 'UBX-CFG-EKF'},
+               0x11: {'str': 'RXM', 'dec': cfg_rxm, 'minlen': 2,
+                      'name': 'UBX-CFG-RXM'},
+               # in u-blox 6, SFDR only.  Not in 5- or 7+
+               0x12: {'str': 'EKF', 'minlen': 16, 'name': 'UBX-CFG-EKF'},
                # in u-blox 5+
-               0x13: {'str': 'ANT', 'dec': cfg_ant, 'name': 'UBX-CFG-ANT'},
+               0x13: {'str': 'ANT', 'dec': cfg_ant, 'minlen': 4,
+                      'name': 'UBX-CFG-ANT'},
                # in u-blox 5+
-               0x16: {'str': 'SBAS', 'dec': cfg_sbas, 'name': 'UBX-CFG-SBAS'},
+               0x16: {'str': 'SBAS', 'dec': cfg_sbas, 'minlen': 8,
+                      'name': 'UBX-CFG-SBAS'},
                # in u-blox 5+
-               0x17: {'str': 'NMEA', 'dec': cfg_nmea, 'name': 'UBX-CFG-NMEA'},
+               0x17: {'str': 'NMEA', 'dec': cfg_nmea, 'minlen': 20,
+                      'name': 'UBX-CFG-NMEA'},
                # in u-blox 6+, Not in u-blox 5-
-               0x1b: {'str': 'USB', 'dec': cfg_usb, 'name': 'UBX-CFG-USB'},
+               0x1b: {'str': 'USB', 'dec': cfg_usb, 'minlen': 108,
+                      'name': 'UBX-CFG-USB'},
                # u-blox 5 and 6.  Not in u-blox 7+
-               0x1d: {'str': 'TMODE', 'name': 'UBX-CFG-TMODE'},
+               0x1d: {'str': 'TMODE', 'dec': cfg_tmode, 'minlen': 28,
+                      'name': 'UBX-CFG-TMODE'},
                # in u-blox 8+. Not in u-blox 7-
-               0x1e: {'str': 'ODO', 'dec': cfg_odo, 'name': 'UBX-CFG-ODO'},
-               # in u-blox 5, 6, not in u-blox 7+
-               0x22: {'str': 'NVS', 'name': 'UBX-CFG-NVS'},
+               0x1e: {'str': 'ODO', 'dec': cfg_odo, 'minlen': 20,
+                      'name': 'UBX-CFG-ODO'},
+               # in u-blox 6, not in u-blox 7+
+               0x22: {'str': 'NVS', 'dec': cfg_nvs, 'minlen': 13,
+                      'name': 'UBX-CFG-NVS'},
                # in u-blox 5+
-               0x23: {'str': 'NAVX5', 'dec': cfg_navx5,
+               0x23: {'str': 'NAVX5', 'dec': cfg_navx5, 'minlen': 20,
                       'name': 'UBX-CFG-NAVX5'},
                # in u-blox 6+.  Not in 5-
-               0x24: {'str': 'NAV5', 'dec': cfg_nav5, 'name': 'UBX-CFG-NAV5'},
-               # in u-blox 6.  Not in u-blox 5- or 7+
-               0x29: {'str': 'ESFGWT', 'name': 'UBX-CFG-ESFGWT'},
+               0x24: {'str': 'NAV5', 'dec': cfg_nav5, 'minlen': 36,
+                      'name': 'UBX-CFG-NAV5'},
+               # in u-blox 6. SFDR only. Not in u-blox 5- or 7+
+               0x29: {'str': 'ESFGWT', 'minlen': 44, 'name': 'UBX-CFG-ESFGWT'},
                # in u-blox 6+, Not u-blox 5-
-               0x31: {'str': 'TP5', 'dec': cfg_tp5, 'name': 'UBX-CFG-TP5'},
+               0x31: {'str': 'TP5', 'dec': cfg_tp5, 'minlen': 1,
+                      'name': 'UBX-CFG-TP5'},
                # In u-blox 5, 6. Not in u-blox 7+
-               0x32: {'str': 'PM', 'name': 'UBX-CFG-PM'},
+               0x32: {'str': 'PM', 'dec': cfg_pm, 'minlen': 24,
+                      'name': 'UBX-CFG-PM'},
                # in u-blox 5+
-               0x34: {'str': 'RINV', 'dec': cfg_rinv, 'name': 'UBX-CFG-RINV'},
+               0x34: {'str': 'RINV', 'dec': cfg_rinv, 'minlen': 1,
+                      'name': 'UBX-CFG-RINV'},
                # in u-blox 6+.  Not in u-blox 5-
-               0x39: {'str': 'ITFM', 'dec': cfg_itfm, 'name': 'UBX-CFG-ITFM'},
+               0x39: {'str': 'ITFM', 'dec': cfg_itfm, 'minlen': 8,
+                      'name': 'UBX-CFG-ITFM'},
                # in u-blox 6+.  Not in u-blox 5-
-               0x3b: {'str': 'PM2', 'dec': cfg_pm2, 'name': 'UBX-CFG-PM2'},
+               0x3b: {'str': 'PM2', 'dec': cfg_pm2, 'minlen': 44,
+                      'name': 'UBX-CFG-PM2'},
                # in u-blox 6 and 7.  Not in u-blox 5- or 8+
-               0x3d: {'str': 'TMODE2', 'dec': cfg_tmode2,
+               0x3d: {'str': 'TMODE2', 'dec': cfg_tmode2, 'minlen': 28,
                       'name': 'UBX-CFG-TMODE2'},
                # in u-blox 7+  Not in u-blox 6-
-               0x3e: {'str': 'GNSS', 'dec': cfg_gnss, 'name': 'UBX-CFG-GNSS'},
+               0x3e: {'str': 'GNSS', 'dec': cfg_gnss, 'minlen': 4,
+                      'name': 'UBX-CFG-GNSS'},
                # in u-blox 7+  Not in u-blox 6-
-               0x47: {'str': 'LOGFILTER', 'name': 'UBX-CFG-LOGFILTER'},
-               # Not in u-blox 8-
-               0x53: {'str': 'TXSLOT', 'name': 'UBX-CFG-TXSLOT'},
+               0x47: {'str': 'LOGFILTER', 'dec': cfg_logfilter, 'minlen': 12,
+                      'name': 'UBX-CFG-LOGFILTER'},
+               # Not in u-blox 7-, FTS only
+               0x53: {'str': 'TXSLOT', 'minlen': 2, 'name': 'UBX-CFG-TXSLOT'},
                # Not in u-blox 7-
-               0x57: {'str': 'PWR', 'dec': cfg_pwr, 'name': 'UBX-CFG-PWR'},
+               0x57: {'str': 'PWR', 'dec': cfg_pwr, 'minlen': 8,
+                      'name': 'UBX-CFG-PWR'},
                # Not in u-blox 8-
-               0x5c: {'str': 'HNR', 'dec': cfg_hnr, 'name': 'UBX-CFG-HNR'},
+               0x5c: {'str': 'HNR', 'dec': cfg_hnr, 'minlen': 4,
+                      'name': 'UBX-CFG-HNR'},
                # Not in u-blox 7-
-               0x60: {'str': 'ESRC', 'dec': cfg_esrc, 'name': 'UBX-CFG-ESRC'},
+               0x60: {'str': 'ESRC', 'dec': cfg_esrc, 'minlen': 4,
+                      'name': 'UBX-CFG-ESRC'},
                # Not in u-blox 8-
-               0x61: {'str': 'DOSC', 'dec': cfg_dosc, 'name': 'UBX-CFG-DOSC'},
+               0x61: {'str': 'DOSC', 'dec': cfg_dosc, 'minlen': 4,
+                      'name': 'UBX-CFG-DOSC'},
                # Not in u-blox 8-
-               0x62: {'str': 'SMGR', 'dec': cfg_smgr, 'name': 'UBX-CFG-SMGR'},
+               0x62: {'str': 'SMGR', 'dec': cfg_smgr, 'minlen': 20,
+                      'name': 'UBX-CFG-SMGR'},
                # Not in u-blox 8-
-               0x69: {'str': 'GEOFENCE', 'dec': cfg_geofence,
+               0x69: {'str': 'GEOFENCE', 'dec': cfg_geofence, 'minlen': 8,
                       'name': 'UBX-CFG-GEOFENCE'},
                # Not in u-blox 8-
-               0x70: {'str': 'DGNSS', 'dec': cfg_dgnss,
+               0x70: {'str': 'DGNSS', 'dec': cfg_dgnss, 'minlen': 4,
                       'name': 'UBX-CFG-DGNSS'},
+               # Not in u-blox 7-, HP only
+               # undocumented, but present in ZED-F9T
+               0x71: {'str': 'TMODE3', 'dec': cfg_tmode3, 'minlen': 40,
+                      'name': 'UBX-CFG-TMODE3'},
+               # Not in u-blox 7-
+               0x84: {'str': 'FIXSEED', 'dec': cfg_fixseed, 'minlen': 12,
+                      'name': 'UBX-CFG-FIXSEED'},
+               # Not in u-blox 7-
+               0x85: {'str': 'DYNSEED', 'dec': cfg_dynseed, 'minlen': 12,
+                      'name': 'UBX-CFG-DYNSEED'},
                # Not in u-blox 8-
-               0x71: {'str': 'TMODE3', 'name': 'UBX-CFG-TMODE3'},
-               # Not in u-blox 8-
-               0x84: {'str': 'FIXSEED', 'name': 'UBX-CFG-FIXSEED'},
-               # Not in u-blox 8-
-               0x85: {'str': 'DYNSEED', 'name': 'UBX-CFG-DYNSEED'},
-               # Not in u-blox 8-
-               0x86: {'str': 'PMS', 'dec': cfg_pms, 'name': 'UBX-CFG-PMS'},
+               0x86: {'str': 'PMS', 'dec': cfg_pms, 'minlen': 8,
+                      'name': 'UBX-CFG-PMS'},
                # in u-blox 9
-               0x8a: {'str': 'VALSET', 'dec': cfg_valset,
+               0x8a: {'str': 'VALSET', 'dec': cfg_valset, 'minlen': 4,
                       'name': 'UBX-CFG-VALSET'},
                # in u-blox 9
-               0x8b: {'str': 'VALGET', 'dec': cfg_valget,
+               0x8b: {'str': 'VALGET', 'dec': cfg_valget, 'minlen': 4,
                       'name': 'UBX-CFG-VALGET'},
                # in u-blox 9
-               0x8c: {'str': 'VALDEL', 'dec': cfg_valdel,
+               0x8c: {'str': 'VALDEL', 'dec': cfg_valdel, 'minlen': 4,
                       'name': 'UBX-CFG-VALDEL'},
+               # u-blox 8
+               0x8d: {'str': 'SLAS', 'dec': cfg_slas, 'minlen': 4,
+                      'name': 'UBX-CFG-SLAS'},
+               # only in u-blox 8
+               0x93: {'str': 'BATCH', 'dec': cfg_batch, 'minlen': 8,
+                      'name': 'UBX-CFG-BATCH'},
                }
 
     # UBX-ESF-
     # only with ADR or UDR products
-    esf_ids = {0x02: {'str': 'MEAS', 'name': "UBX-ESF-MEAS"},
-               0x03: {'str': 'RAW', 'name': "UBX-ESF-RAW"},
-               0x10: {'str': 'STATUS', 'name': "UBX-ESF-STATUS"},
-               0x15: {'str': 'INS', 'name': "UBX-ESF-INS"},
+    esf_ids = {0x02: {'str': 'MEAS', 'minlen': 8, 'name': "UBX-ESF-MEAS"},
+               0x03: {'str': 'RAW',  'minlen': 4, 'name': "UBX-ESF-RAW"},
+               0x10: {'str': 'STATUS', 'minlen': 16, 'name': "UBX-ESF-STATUS"},
+               0x15: {'str': 'INS', 'minlen': 16, 'name': "UBX-ESF-INS"},
                }
 
     # UBX-HNR-
     # only with ADR or UDR products
-    hnr_ids = {0x00: {'str': 'PVT', 'name': "UBX-HNR-PVT"},
-               0x02: {'str': 'INS', 'name': "UBX-HNR-INS"},
+    hnr_ids = {0x00: {'str': 'PVT', 'minlen': 72, 'name': "UBX-HNR-PVT"},
+               0x02: {'str': 'INS', 'minlen': 36, 'name': "UBX-HNR-INS"},
                }
 
     def inf_debug(self, buf):
@@ -3205,44 +3408,281 @@ class ubx(object):
         """UBX-INF-WARNING decode"""
         return ' Warning: ' + gps.polystr(buf)
 
-    inf_ids = {0x0: {'str': 'ERROR', 'dec': inf_error,
+    inf_ids = {0x0: {'str': 'ERROR', 'dec': inf_error, 'minlen': 0,
                      'name': 'UBX-INF-ERROR'},
-               0x1: {'str': 'WARNING', 'dec': inf_warning,
+               0x1: {'str': 'WARNING', 'dec': inf_warning, 'minlen': 0,
                      'name': 'UBX-INF-WARNING'},
-               0x2: {'str': 'NOTICE', 'dec': inf_notice,
+               0x2: {'str': 'NOTICE', 'dec': inf_notice, 'minlen': 0,
                      'name': 'UBX-INF-NOTICE'},
-               0x3: {'str': 'TEST', 'dec': inf_test,
+               0x3: {'str': 'TEST', 'dec': inf_test, 'minlen': 0,
                      'name': 'UBX-INF-TEST'},
-               0x4: {'str': 'DEBUG', 'dec': inf_debug,
+               0x4: {'str': 'DEBUG', 'dec': inf_debug, 'minlen': 0,
                      'name': 'UBX-INF-DEBUG'},
                }
 
+    log_batch_contentValid = {
+        1: 'extraPvt',
+        2: 'extraOdo',
+        }
+
+    log_batch_valid = {
+        1: 'validDate',
+        2: 'validTime',
+        }
+
+    log_batch_fixType = {
+        0: 'No Fix',
+        2: '2D Fix',
+        3: '3D Fix',
+        4: 'GNSS + DR',   # only UBX-LOG-RETRIEVEPOS
+        }
+
+    log_batch_flags = {
+        1: 'gnssFixOK',
+        2: 'diffSoln',
+        }
+
+    log_batch_psmState = {
+        0: 'Not Active',
+        4: 'Enabled',
+        8: 'Acquisition',
+        9: 'Tracking',
+        0x10: 'Power Optimized Tracking',
+        0x11: 'Inactive',
+        }
+
+    def log_batch(self, buf):
+        """UBX-LOG-BATCH decode
+Oddly this is polled with UBX-LOG-RETRIEVEBATCH
+"""
+
+        # u-blox 8, protVer 23+
+        # not in u-blox 9
+        u = struct.unpack_from('<BBHLHBBBBBBLlBBBBllllHHlllllLLHHLLLL', buf, 0)
+        s = ("  version %u contentValid x%x msgCnt %u iTow %u\n"
+             "  year %u month %u day %u hour %u min %u sec %u valid x%x\n"
+             "  tAcc %u fracSec %d fixType %u flags x%x flags2 x%x numSV %u\n"
+             "  lon %d lat %d height %d hMSL %d hAcc %u vAcc %u\n"
+             "  vel N %u E %u D %u gSpeed %rdA headMot %d sAxx %u headAcc %u\n"
+             "  pdep %u reserved1 x%x distance %u totalDistance %u\n"
+             "  distanceStd %u reserved2 x%x" % u)
+        if VERB_DECODE <= opts['verbosity']:
+            # flags2 undocumented
+            s += ("\n      contentValid (%s) valid (%s) fixType (%s) "
+                  "flags (%s) psmState (%s)" %
+                  (flag_s(u[1], self.log_batch_contentValid),
+                   flag_s(u[10], self.log_batch_valid),
+                   index_s(u[13], self.log_batch_fixType),
+                   flag_s(u[14] & 3, self.log_batch_flags),
+                   index_s(u[14] & 0x1c, self.log_batch_psmState)))
+
+        return s
+
+    log_create_logCfg = {
+        1: 'circular',
+        }
+
+    log_create_logSize = {
+        0: 'Maximum safe',
+        1: 'Minimum safe',
+        2: 'user defined',
+        }
+
+    def log_create(self, buf):
+        """UBX-LOG-CREATE decode"""
+
+        # u-blox 7+, protVer 14+
+        u = struct.unpack_from('<BBBBL', buf, 0)
+        s = ("  version %u logCfg x%x reserved1 x%x logSize %u\n"
+             "  userDefinedSize %u" % u)
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n      logCfg (%s) logSize (%s)" %
+                  (flag_s(u[1], self.log_create_logCfg),
+                   index_s(u[3], self.log_create_logSize)))
+
+        return s
+
+    def log_erase(self, buf):
+        """UBX-LOG-ERASE decode"""
+
+        # u-blox 7+, protVer 14+
+        return "  Erase Logged Data"
+
+    log_findtime_type = {
+        0: 'request',
+        1: 'response',
+        }
+
+    def log_findtime(self, buf):
+        """UBX-LOG-FINDTIME decode"""
+
+        # u-blox 7+, protVer 14+
+        m_len = len(buf)
+
+        # length 8 is reponse, length 12 is request
+        if 8 == m_len:
+            # response
+            u = struct.unpack_from('<BBHL', buf, 0)
+            s = "  version %u type %u reserved1 x%x entryNumber %u" % u
+        elif 12 < m_len:
+            return "  Bad Length %s" % m_len
+        else:
+            # request
+            u = struct.unpack_from('<BBHHBBBBBB', buf, 0)
+            s = ("  version %u type %u reserved1 x%x\n"
+                 "  year %u month %u day %u hour %u min %u sec %u "
+                 "reserved2 x%x" % u)
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n      type (%s)" %
+                  (index_s(u[1], self.log_findtime_type)))
+
+        return s
+
+    log_info_status = {
+        8: 'recording',
+        0x10: 'inactive',
+        0x20: 'circular',
+        }
+
+    def log_info(self, buf):
+        """UBX-LOG-INFO decode"""
+
+        # u-blox 7+, protVer 14+
+        u = struct.unpack_from('<BBHLLLLLLHBBBBBBHBBBBBBBBH', buf, 0)
+        s = ("  version %u reserved1 x%x x%x filestoreCapacity %u "
+             "reserved2 x%x x%x\n"
+             "  currentMaxLogSize %u currentLogSize %u entryCount %u\n"
+             "  oldestYear %u oldestMonth %u oldestDay %u \n"
+             "  oldestHour %u oldestMin %u oldestSec %u reserved3 x%x\n"
+             "  newestYear %u newestMonth %u newestDay %u \n"
+             "  newestHour %u newestMin %u newestSec %u reserved4 x%x\n"
+             "  status x%x reserved5 x%x x%x" % u)
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n      status (%s)" %
+                  (flag_s(u[23], self.log_info_status)))
+
+        return s
+
+    log_retrievebatch_flags = {
+        1: 'sendMonFirst',
+        }
+
+    def log_retrieve(self, buf):
+        """UBX-LOG-RETRIEVE decode"""
+
+        # u-blox 7+, protVer 14+
+        u = struct.unpack_from('<LLBBH', buf, 0)
+        s = "  startNumber %u entryCount %u version %u reserved1 x%x %x" % u
+
+        return s
+
+    def log_retrievebatch(self, buf):
+        """UBX-LOG-RETRIEVEBATCH decode
+Oddly this is the poll for UBX-LOG-BATCH
+"""
+
+        # u-blox 8, protVer 23.01 to 23.99
+        # not in u-blox 7 or 9
+        u = struct.unpack_from('<BBH', buf, 0)
+        s = ("  version %u flags x%x reserved1 x%x" % u)
+        if VERB_DECODE <= opts['verbosity']:
+            # flags2 undocumented
+            s += ("\n      flags (%s)" %
+                  flag_s(u[1], self.log_retrievebatch_flags))
+
+        return s
+
+    def log_retrievepos(self, buf):
+        """UBX-LOG-RETRIEVEPOS decode"""
+
+        # u-blox 7+, protVer 14+
+        u = struct.unpack_from('<LlllLLLBBHBBBBBBBB', buf, 0)
+        s = ("  entryIndex %u lon %d lat %d hMSL %d hAcc %u\n"
+             "  gSpeed %u heading %u version %u fixType %u\n"
+             "  year %u month %u day %u hour %u min %u sec %u\n"
+             "  reserved1 x%x numSV %u reserved2 x%x" % u)
+        if VERB_DECODE <= opts['verbosity']:
+            s += ("\n      flags (%s)" %
+                  (index_s(u[13], self.log_batch_fixType)))
+
+        return s
+
+    def log_retrieveposextra(self, buf):
+        """UBX-LOG-RETRIEVEPOSEXTRA decode"""
+
+        # u-blox 8+, protVer 15+
+        u = struct.unpack_from('<LBBHBBBBBBHLLLL', buf, 0)
+        s = ("  version %u reserved1 x%x\n"
+             "  year %u month %u day %u hour %u minute %u seconds %u\n"
+             "  reserved2 x%x %x distance %u reserved3 x%x %x %x" % u)
+
+        return s
+
+    def log_retrievestring(self, buf):
+        """UBX-LOG-RETRIEVESTRING decode"""
+
+        # u-blox 7+, protVer 14+
+        u = struct.unpack_from('<LBBHBBBBBBH', buf, 0)
+        s = ("  entryIndex %u version %u reserved2 x%x\n"
+             "  year %u month %u day %u hour %u min %u sec %u\n"
+             "  reserved2 x%x byteCount %u\n"
+             "\n  bytes " % u)
+        if 0 < u[10]:
+            s += gps.polystr(binascii.hexlify(buf[16:16 + u[10]]))
+
+        return s
+
+    def log_string(self, buf):
+        """UBX-LOG-STRING decode"""
+
+        # u-blox 7+, protVer 14+
+        m_len = len(buf)
+
+        if 256 < m_len:
+            return "  Bad Length %s" % m_len
+
+        s = "  bytes "
+        if 0 < m_len:
+            s += gps.polystr(binascii.hexlify(buf))
+
+        return s
+
     # UBX-LOG-
-    log_ids = {0x07: {'str': 'CREATE', 'name': "UBX-LOG-CREATE"},
-               0x03: {'str': 'ERASE', 'name': "UBX-LOG-ERASE"},
-               0x04: {'str': 'STRING', 'name': "UBX-LOG-STRING"},
-               0x08: {'str': 'INFO', 'name': "UBX-LOG-INFO"},
-               0x09: {'str': 'RETRIEVE', 'name': "UBX-LOG-RETRIEVE"},
-               0x0b: {'str': 'RETRIEVEPOS', 'name': "UBX-LOG-RETRIEVEPOS"},
-               0x0d: {'str': 'RETRIEVESTRING',
+    log_ids = {
+               0x03: {'str': 'ERASE', 'dec': log_erase, 'minlen': 0,
+                      'name': "UBX-LOG-ERASE"},
+               0x04: {'str': 'STRING', 'dec': log_string, 'minlen': 0,
+                      'name': "UBX-LOG-STRING"},
+               0x07: {'str': 'CREATE', 'dec': log_create, 'minlen': 8,
+                      'name': "UBX-LOG-CREATE"},
+               0x08: {'str': 'INFO', 'dec': log_info, 'minlen': 48,
+                      'name': "UBX-LOG-INFO"},
+               0x09: {'str': 'RETRIEVE', 'dec': log_retrieve, 'minlen': 12,
+                      'name': "UBX-LOG-RETRIEVE"},
+               0x0b: {'str': 'RETRIEVEPOS', 'dec': log_retrievepos,
+                      'minlen': 40,
+                      'name': "UBX-LOG-RETRIEVEPOS"},
+               0x0d: {'str': 'RETRIEVESTRING', 'dec': log_retrievestring,
+                      'minlen': 16,
                       'name': "UBX-LOG-RETRIEVESTRING"},
-               0x0e: {'str': 'FINDTIME', 'name': "UBX-LOG-FINDTIME"},
-               0x0f: {'str': 'RETRIEVEPOSEXTRA',
+               0x0e: {'str': 'FINDTIME', 'dec': log_findtime, 'minlen': 8,
+                      'name': "UBX-LOG-FINDTIME"},
+               0x0f: {'str': 'RETRIEVEPOSEXTRA', 'dec': log_retrieveposextra,
+                      'minlen': 32,
                       'name': "UBX-LOG-RETRIEVEPOSEXTRA"},
-               0x10: {'str': 'RETRIEVEBATCH', 'name': "UBX-LOG-RETRIEVEBATCH"},
-               0x11: {'str': 'BATCH', 'name': "UBX-LOG-BATCH"},
+               0x10: {'str': 'RETRIEVEBATCH', 'dec': log_retrievebatch,
+                      'minlen': 2,
+                      'name': "UBX-LOG-RETRIEVEBATCH"},
+               0x11: {'str': 'BATCH', 'dec': log_batch, 'minlen': 100,
+                      'name': "UBX-LOG-BATCH"},
                }
 
     # UBX-MGA-
     def mga_dbd(self, buf):
         """UBX-MGA-DBD- decode, Navigation Database Dump Entry"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
         # max 172
-        if 12 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LLL', buf, 0)
         s = ' reserved1 %u %u %u' % u
@@ -3250,27 +3690,24 @@ class ubx(object):
 
         return s
 
-    mga_ids = {0x00: {'str': 'GPS', 'name': "UBX-MGA-GPS"},
-               0x02: {'str': 'GAL', 'name': "UBX-MGA-GAL"},
-               0x03: {'str': 'BDS', 'name': "UBX-MGA-BDS"},
-               0x05: {'str': 'QZSS', 'name': "UBX-MGA-QZSS"},
-               0x06: {'str': 'GLO', 'name': "UBX-MGA-GLO"},
-               0x20: {'str': 'ANO', 'name': "UBX-MGA-ANO"},
-               0x21: {'str': 'FLASH', 'name': "UBX-MGA-FLASH"},
-               0x40: {'str': 'INI', 'name': "UBX-MGA-INI"},
-               0x60: {'str': 'ACK', 'name': "UBX-MGA-ACK"},
-               0x80: {'str': 'DBD', 'dec': mga_dbd, 'name': "UBX-MGA-DBD"},
+    mga_ids = {0x00: {'str': 'GPS', 'minlen': 16, 'name': "UBX-MGA-GPS"},
+               0x02: {'str': 'GAL', 'minlen': 12, 'name': "UBX-MGA-GAL"},
+               0x03: {'str': 'BDS', 'minlen': 16, 'name': "UBX-MGA-BDS"},
+               0x05: {'str': 'QZSS', 'minlen': 12, 'name': "UBX-MGA-QZSS"},
+               0x06: {'str': 'GLO', 'minlen': 20, 'name': "UBX-MGA-GLO"},
+               0x20: {'str': 'ANO', 'minlen': 76, 'name': "UBX-MGA-ANO"},
+               0x21: {'str': 'FLASH', 'minlen': 2, 'name': "UBX-MGA-FLASH"},
+               0x40: {'str': 'INI', 'minlen': 12, 'name': "UBX-MGA-INI"},
+               0x60: {'str': 'ACK', 'minlen': 8, 'name': "UBX-MGA-ACK"},
+               0x80: {'str': 'DBD', 'dec': mga_dbd, 'minlen': 12,
+                      'name': "UBX-MGA-DBD"},
                }
 
     def mon_batch(self, buf):
         """UBX-MON-BATCH decode, Data batching buffer status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
-        if 12 > m_len:
-            return " Bad Length %s" % m_len
-
+        # in u-blox 8 only, not in 7 or 9.
+        # protVer 23.01, gone in 24
         u = struct.unpack_from('<BBBBHHHH', buf, 0)
         s = ("   version %u reserved1 %u %u %u fillLevel %u\n"
              "   dropsAll %u dropsSinceMon %u nextMsgCnt %u" % u)
@@ -3287,12 +3724,6 @@ class ubx(object):
 
     def mon_comms(self, buf):
         """UBX-MON-COMMS decode, Comm port information"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         # at least protver 27
         if 27 > opts['protver']:
@@ -3338,11 +3769,9 @@ class ubx(object):
     def mon_gnss(self, buf):
         """UBX-MON-GNSS decode, Information message major GNSS selection"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
         if 8 > m_len:
-            return " Bad Length %s" % m_len
+            return "  Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBBBBB', buf, 0)
         s = ('   version %u supported %#x defaultGnss %#x enabled %#x\n'
@@ -3377,12 +3806,6 @@ class ubx(object):
 
     def mon_hw(self, buf):
         """UBX-MON-HW decode, Hardware Status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 60 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LLLLHHBBBBLBBBBBBBBBBBBBBBBBBBBLLL', buf, 0)
         s = ('  pinSel %#x pinBank %#x pinDir %#x pinVal %#x noisePerRMS %u\n'
@@ -3409,12 +3832,6 @@ class ubx(object):
 
     def mon_hw2(self, buf):
         """UBX-MON-HW2 decode, Extended Hardware Status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 28 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<bBbBBBBBLLLLL', buf, 0)
         s = ('   ofsI %d magI %u ofsQ %d magQ %u cfgSource %u\n'
@@ -3435,12 +3852,6 @@ class ubx(object):
 
     def mon_hw3(self, buf):
         """UBX-MON-HW3 decode, HW I/O pin information"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 22 > m_len:
-            return " Bad Length %s" % m_len
 
         # at least protver 27
         if 27 > opts['protver']:
@@ -3466,8 +3877,6 @@ class ubx(object):
     def mon_io(self, buf):
         """UBX-MON-IO decode, I/O Subsystem Status"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
         s = ''
         for i in range(0, int(m_len / 20)):
@@ -3482,12 +3891,6 @@ class ubx(object):
 
     def mon_msgpp(self, buf):
         """UBX-MON-MSGPP decode, Message Parse and Process Status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 120 > m_len:
-            return " Bad Length %s" % m_len
 
         s = ''
         for i in range(1, 7):
@@ -3510,14 +3913,6 @@ class ubx(object):
 
     def mon_patch(self, buf):
         """UBX-MON-PATCH decode, Output information about installed patches."""
-
-        m_len = len(buf)
-
-        if 0 == m_len:
-            return " Poll request"
-
-        if 4 > m_len:
-            return " Bad Length %s" % m_len
 
         # first seen in protver 15
         u = struct.unpack_from('<HH', buf, 0)
@@ -3552,13 +3947,6 @@ class ubx(object):
         """UBX-MON-RF decode, RF Information"""
 
         # first seen in protver 27
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 4 > m_len:
-            return " Bad Length %s" % m_len
-
         # at least protver 27
         if 27 > opts['protver']:
             opts['protver'] = 27
@@ -3581,12 +3969,6 @@ class ubx(object):
 
     def mon_rxbuf(self, buf):
         """UBX-MON-RXBUF decode, Receiver Buffer Status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 24 > m_len:
-            return " Bad Length %s" % m_len
 
         rxbuf_name = {
            1: " pending   ",
@@ -3608,10 +3990,6 @@ class ubx(object):
         """UBX-MON-RXBUF decode, Receiver Status Information"""
 
         # No way to poll
-        m_len = len(buf)
-
-        if 1 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<B', buf, 0)
         s = "  flags: x%x" % u
@@ -3645,14 +4023,6 @@ class ubx(object):
     def mon_smgr(self, buf):
         """UBX-MON-SMGR decode, Synchronization manager status"""
 
-        m_len = len(buf)
-
-        if 0 == m_len:
-            return " Poll request"
-
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
-
         u = struct.unpack_from('<BBBBLHHBBBB', buf, 0)
         s = (" version %u reserved1 %u %u %u iTOW %u intOsc x%x extOsc x%x\n"
              " discOsc %u gnss x%x extInt0 x%x extInt1 %x%x" % u)
@@ -3669,12 +4039,6 @@ class ubx(object):
 
     def mon_txbuf(self, buf):
         """UBX-MON-TXBUF decode, Transmitter Buffer Status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 28 > m_len:
-            return " Bad Length %s" % m_len
 
         rxbuf_name = {
            1: " pending   ",
@@ -3703,17 +4067,12 @@ class ubx(object):
     def mon_ver(self, buf):
         """UBX-MON-VER decode, Poll Receiver/Software Version"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 40 > m_len:
-            return " Bad Length %s" % m_len
 
         substr = buf.split(gps.polybytes('\0'))[0]
         substr1 = buf[30:39]
         substr1 = substr1.split(gps.polybytes('\0'))[0]
-        s = (" swVersion %s\n"
-             " hwVersion %s" %
+        s = ("  swVersion %s\n"
+             "  hwVersion %s" %
              (gps.polystr(substr), gps.polystr(substr1)))
 
         # extensions??
@@ -3722,37 +4081,43 @@ class ubx(object):
             loc = 40 + (i * 30)
             substr = buf[loc:]
             substr = substr.split(gps.polybytes('\0'))[0]
-            s += '\n extension %s' % gps.polystr(substr)
+            s += '\n  extension %s' % gps.polystr(substr)
         return s
 
-    mon_ids = {2: {'str': 'IO', 'dec': mon_io, 'name': 'UBX-MON-IO'},
-               4: {'str': 'VER', 'dec': mon_ver, 'name': 'UBX-MON-VER'},
-               6: {'str': 'MSGPP', 'dec': mon_msgpp, 'name': 'UBX-MON-MSGPP'},
-               7: {'str': 'RXBUF', 'dec': mon_rxbuf, 'name': 'UBX-MON-RXBUF'},
-               8: {'str': 'TXBUF', 'dec': mon_txbuf, 'name': 'UBX-MON-TXBUF'},
-               9: {'str': 'HW', 'dec': mon_hw, 'name': 'UBX-MON-HW'},
-               0x0b: {'str': 'HW2', 'dec': mon_hw2, 'name': 'UBX-MON-HW2'},
-               0x21: {'str': 'RXR', 'dec': mon_rxr, 'name': 'UBX-MON-RXR'},
-               0x27: {'str': 'PATCH', 'dec': mon_patch,
+    mon_ids = {0x02: {'str': 'IO', 'dec': mon_io, 'minlen': 20,
+                      'name': 'UBX-MON-IO'},
+               0x04: {'str': 'VER', 'dec': mon_ver, 'minlen': 40,
+                      'name': 'UBX-MON-VER'},
+               0x06: {'str': 'MSGPP', 'dec': mon_msgpp, 'minlen': 120,
+                      'name': 'UBX-MON-MSGPP'},
+               0x07: {'str': 'RXBUF', 'dec': mon_rxbuf, 'minlen': 24,
+                      'name': 'UBX-MON-RXBUF'},
+               0x08: {'str': 'TXBUF', 'dec': mon_txbuf, 'minlen': 28,
+                      'name': 'UBX-MON-TXBUF'},
+               0x09: {'str': 'HW', 'dec': mon_hw, 'minlen': 60,
+                      'name': 'UBX-MON-HW'},
+               0x0b: {'str': 'HW2', 'dec': mon_hw2, 'minlen': 28,
+                      'name': 'UBX-MON-HW2'},
+               0x21: {'str': 'RXR', 'dec': mon_rxr, 'minlen': 1,
+                      'name': 'UBX-MON-RXR'},
+               0x27: {'str': 'PATCH', 'dec': mon_patch, 'minlen': 4,
                       'name': 'UBX-MON-PATCH'},
-               0x28: {'str': 'GNSS', 'dec': mon_gnss, 'name': 'UBX-MON-GNSS'},
-               0x2e: {'str': 'SMGR', 'dec': mon_smgr, 'name': 'UBX-MON-SMGR'},
-               0x32: {'str': 'BATCH', 'dec': mon_batch,
+               0x28: {'str': 'GNSS', 'dec': mon_gnss, 'minlen': 8,
+                      'name': 'UBX-MON-GNSS'},
+               0x2e: {'str': 'SMGR', 'dec': mon_smgr, 'minlen': 16,
+                      'name': 'UBX-MON-SMGR'},
+               0x32: {'str': 'BATCH', 'dec': mon_batch, 'minlen': 12,
                       'name': 'UBX-MON-BATCH'},
-               0x36: {'str': 'COMMS', 'dec': mon_comms,
+               0x36: {'str': 'COMMS', 'dec': mon_comms, 'minlen': 8,
                       'name': 'UBX-MON-COMMS'},
-               0x37: {'str': 'HW3', 'dec': mon_hw3, 'name': 'UBX-MON-HW3'},
-               0x38: {'str': 'RF', 'dec': mon_rf, 'name': 'UBX-MON-RF'},
+               0x37: {'str': 'HW3', 'dec': mon_hw3, 'minlen': 22,
+                      'name': 'UBX-MON-HW3'},
+               0x38: {'str': 'RF', 'dec': mon_rf, 'minlen': 4,
+                      'name': 'UBX-MON-RF'},
                }
 
     def nav_aopstatus(self, buf):
         """UBX-NAV-AOPSTATUS decode, AssistNow Autonomous Status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBLLH', buf, 0)
         s = '  iTOW %u aopCfg %u status %u reserved1 %u %u %u' % u
@@ -3764,12 +4129,6 @@ class ubx(object):
 
     def nav_att(self, buf):
         """UBX-NAV-ATT decode, Attitude Solution"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 32 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBHBlllLLL', buf, 0)
         s = ("  iTOW %u version %u reserved1 %u %u\n"
@@ -3780,12 +4139,6 @@ class ubx(object):
 
     def nav_clock(self, buf):
         """UBX-NAV-CLOCK decode, Clock Solution"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LllLL', buf, 0)
         return '  iTOW %u clkB %d clkD %d tAcc %u fAcc %u' % u
@@ -3799,13 +4152,6 @@ class ubx(object):
         """UBX-NAV-DGPS decode, DGPS Data used for NAV"""
 
         # not present in protver 27+
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
-
         u = struct.unpack_from('<LlhhBBH', buf, 0)
         s = (' iTOW %u age %d baseID %d basehealth %d numCh %u\n'
              ' status x%x reserved1 %u' % u)
@@ -3824,12 +4170,6 @@ class ubx(object):
 
     def nav_dop(self, buf):
         """UBX-NAV-DOP decode, Dilution of Precision"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 18 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<Lhhhhhhh', buf, 0)
         s = ('  iTOW %u gDOP %u pDOP %u tDOP %u vDOP %u\n'
@@ -3838,9 +4178,6 @@ class ubx(object):
 
     def nav_eoe(self, buf):
         """UBX-NAV-EOE decode, End Of Epoch"""
-        m_len = len(buf)
-        if 4 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<L', buf, 0)
         return ' iTOW %u' % u
@@ -3857,12 +4194,6 @@ class ubx(object):
 
     def nav_geofence(self, buf):
         """UBX-NAV-GEOFENCE decode, Geofencing status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBBB', buf, 0)
         s = '  iTOW:%u version %u status %u numFences %u combState %u' % u
@@ -3882,12 +4213,6 @@ class ubx(object):
 
     def nav_hpposecef(self, buf):
         """UBX-NAV-POSECEF decode, High Precision Position Solution in ECEF"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 28 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBLlllbbbbL', buf, 0)
         return ('  version %u reserved1 %u %u %u iTOW %u\n'
@@ -3897,12 +4222,6 @@ class ubx(object):
 
     def nav_hpposllh(self, buf):
         """UBX-NAV-HPPOSLLH decode, HP Geodetic Position Solution"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 36 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBLllllbbbbLL', buf, 0)
         return ('  version %u reserved1 %u %u %u iTOW %u\n'
@@ -3912,12 +4231,6 @@ class ubx(object):
 
     def nav_odo(self, buf):
         """UBX-NAV-ODO decode, Odometer Solution"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBLLLL', buf, 0)
         return ("  version %u reserved1 %u %u %u iTOW %u\n"
@@ -3949,12 +4262,6 @@ class ubx(object):
 
     def nav_orb(self, buf):
         """UBX-NAV-ORB decode, GNSS Orbit Database Info"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBH', buf, 0)
         s = "  iTOW %u version %u numSv %u reserved1 %u" % u
@@ -3997,24 +4304,12 @@ class ubx(object):
 
     def nav_posecef(self, buf):
         """UBX-NAV-POSECEF decode, Position Solution in ECEF"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LlllL', buf, 0)
         return '  iTOW %u ecefX %d Y %d Z %d pAcc %u' % u
 
     def nav_posllh(self, buf):
         """UBX-NAV-POSLLH decode, Geodetic Position Solution"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LllllLL', buf, 0)
         return ('  iTOW %u lon %d lat %d height %d\n'
@@ -4068,13 +4363,9 @@ class ubx(object):
     def nav_pvt(self, buf):
         """UBX-NAV-PVT decode, Navigation Position Velocity Time Solution"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
         # 84 bytes long in protver 14.
         # 92 bytes long in protver 15.
-        if 84 > m_len:
-            return " Bad Length %s" % m_len
 
         # flags2 is protver 27
         u = struct.unpack_from('<LHBBBBBBLlBBBBllllLLlllllLLHHHH', buf, 0)
@@ -4114,15 +4405,10 @@ class ubx(object):
         }
 
     def nav_relposned(self, buf):
-        """\
-UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
-
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 64 > m_len:
-            return " Bad Length %s" % m_len
+        """UBX-NAV-RELPOSNED decode
+Relative Positioning Information in NED frame.
+protVer 20+
+High Precision GNSS products only."""
 
         u = struct.unpack_from('<BBHLlllllLbbbbLLLLLLL', buf, 0)
         s = ('  version %u reserved1 %u refStationId %u iTOW %u\n'
@@ -4160,6 +4446,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         }
 
     health = {
+        0: "Unknown",
         1: "Healthy",
         2: "Unhealthy",
         }
@@ -4199,12 +4486,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_sat(self, buf):
         """UBX-NAV-SAT decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBBB', buf, 0)
         s = '  iTOW %u version %u numSvs %u reserved1 %u %u' % u
@@ -4250,13 +4531,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
     def nav_sbas(self, buf):
         """UBX-NAV-SBAS decode, SBAS Status Data"""
 
-        # undocuemnted, but present in protver 27+
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 12 > m_len:
-            return " Bad Length %s" % m_len
+        # undocumented, but present in protver 27+
 
         u = struct.unpack_from('<LBBbBBBBB', buf, 0)
         s = (" iTOW %d geo %u mode x%x sys %d service x%x cnt %u "
@@ -4311,12 +4586,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_sig(self, buf):
         """UBX-NAV-SIG decode, Signal Information"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBH', buf, 0)
         s = '  iTOW %u version %u numSigs %u reserved1 %u' % u
@@ -4349,12 +4618,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_slas(self, buf):
         """UBX-NAV-SLAS decode, QZSS L1S SLAS Status Data"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBBBllBBBB', buf, 0)
         s = ('  iTOW %u version %u reserved1 %u %u %u'
@@ -4381,12 +4644,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         """UBX-NAV-SOL decode, Navigation Solution Information"""
 
         #  deprecated by u-blox
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 52 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LlhBBlllLlllLHBBL', buf, 0)
         s = ('  iTOW %u fTOW %d week %d gpsFix %u flags x%x\n'
@@ -4403,12 +4660,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_status(self, buf):
         """UBX-NAV-STATUS decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBBBLL', buf, 0)
         return ('  iTOW:%d ms, fix:%d flags:%#x fixstat:%#x flags2:%#x\n'
@@ -4416,12 +4667,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_svin(self, buf):
         """UBX-NAV-SVIN decode, Survey-in data"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 40 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBLLlllbbbBLLBB', buf, 0)
         return ('  version %u reserved1[%u %u %u] iTOW %u dur %u\n'
@@ -4432,11 +4677,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
     def nav_svinfo(self, buf):
         """UBX-NAV-SVINFO decode"""
         m_len = len(buf)
-        if 0 == m_len:
-            return "Poll request"
-
-        if 8 > m_len:
-            return "Bad Length %s" % m_len
 
         u = struct.unpack_from('<Lbb', buf, 0)
         s = ' iTOW:%d ms, numCh:%d globalFlags:%d' % u
@@ -4478,12 +4718,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_timebds(self, buf):
         """UBX-NAV-TIMEBDS decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return ".Bad Length %s" % m_len
 
         u = struct.unpack_from('<LLlhbBL', buf, 0)
         s = ("  iTOW %d SOW %d fSOW %d week %d leapS %d\n"
@@ -4496,12 +4730,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_timegal(self, buf):
         """UBX-NAV-TIMEGAL decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LLlhbBL', buf, 0)
         s = ("  iTOW %d galTOW %d fGalTow %d galWno %d leapS %d\n"
@@ -4514,12 +4742,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_timeglo(self, buf):
         """UBX-NAV-TIMEGLO decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LLlhbBL', buf, 0)
         s = ("  iTOW %d TOD %d fTOD %d Nt %d  N4 %d\n"
@@ -4532,12 +4754,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_timegps(self, buf):
         """UBX-NAV-TIMEGPS decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LlhbBL', buf, 0)
         s = "  iTOW %u fTOW %u week %d leapS %d valid x%x tAcc %d" % u
@@ -4574,12 +4790,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_timels(self, buf):
         """UBX-NAV-TIMELS decode, Leap second event information"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 24 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LBBBBBbBblHHBBBB', buf, 0)
         s = ('  iTOW %u version %u reserved2 %u %u %u srcOfCurrLs %u\n'
@@ -4602,12 +4812,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_timeutc(self, buf):
         """UBX-NAV-TIMEUTC decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LLlHbbbbbB', buf, 0)
         s = ("  iTOW %d tAcc %d nano %d Time  %d/%d/%d %d:%d:%d\n"
@@ -4621,80 +4825,85 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def nav_velecef(self, buf):
         """UBX-NAV-VELECEF decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 != m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LlllL', buf, 0)
         return '  iTOW %d ecef: VX %d VY %d VZ %d vAcc:%u' % u
 
     def nav_velned(self, buf):
-        """UBX-NAV-VELNED decode"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
+        """UBX-NAV-VELNED decode."""
 
-        if 36 > m_len:
-            return " Bad Length %s" % m_len
-
+        # protVer 15+
         u = struct.unpack_from('<LlllLLlLL', buf, 0)
         return ('  iTOW %u vel: N %d E %d D %d speed %u\n'
                 '  gspeed %u heading %d sAcc %u cAcc %u' % u)
 
-    nav_ids = {1: {'str': 'POSECEF', 'dec': nav_posecef,
-                   'name': 'UBX-NAV-POSECEF'},
-               2: {'str': 'POSLLH', 'dec': nav_posllh,
-                   'name': 'UBX-NAV-POSLLH'},
-               3: {'str': 'STATUS', 'dec': nav_status,
-                   'name': 'UBX-NAV-STATUS'},
-               0x4: {'str': 'DOP', 'dec': nav_dop, 'name': 'UBX-NAV-DOP'},
-               0x5: {'str': 'ATT', 'dec': nav_att, 'name': 'UBX-NAV-ATT'},
-               0x6: {'str': 'SOL', 'dec': nav_sol, 'name': 'UBX-NAV-SOL'},
-               0x7: {'str': 'PVT', 'dec': nav_pvt, 'name': 'UBX-NAV-PVT'},
-               0x9: {'str': 'ODO', 'dec': nav_odo, 'name': 'UBX-NAV-ODO'},
-               0x10: {'str': 'RESETODO', 'dec': nav_resetodo,
+    nav_ids = {0x01: {'str': 'POSECEF', 'dec': nav_posecef, 'minlen': 20,
+                      'name': 'UBX-NAV-POSECEF'},
+               0x02: {'str': 'POSLLH', 'dec': nav_posllh, 'minlen': 20,
+                      'name': 'UBX-NAV-POSLLH'},
+               0x03: {'str': 'STATUS', 'dec': nav_status, 'minlen': 16,
+                      'name': 'UBX-NAV-STATUS'},
+               0x04: {'str': 'DOP', 'dec': nav_dop, 'minlen': 18,
+                      'name': 'UBX-NAV-DOP'},
+               0x05: {'str': 'ATT', 'dec': nav_att, 'minlen': 32,
+                      'name': 'UBX-NAV-ATT'},
+               0x06: {'str': 'SOL', 'dec': nav_sol, 'minlen': 52,
+                      'name': 'UBX-NAV-SOL'},
+               0x07: {'str': 'PVT', 'dec': nav_pvt, 'minlen': 84,
+                      'name': 'UBX-NAV-PVT'},
+               0x09: {'str': 'ODO', 'dec': nav_odo, 'minlen': 20,
+                      'name': 'UBX-NAV-ODO'},
+               0x10: {'str': 'RESETODO', 'dec': nav_resetodo, 'minlen': 0,
                       'name': 'UBX-NAV-RESETODO'},
-               0x11: {'str': 'VELECEF', 'dec': nav_velecef,
+               0x11: {'str': 'VELECEF', 'dec': nav_velecef, 'minlen': 20,
                       'name': 'UBX-NAV-VELECEF'},
-               0x12: {'str': 'VELNED', 'dec': nav_velned,
+               0x12: {'str': 'VELNED', 'dec': nav_velned, 'minlen': 36,
                       'name': 'UBX-NAV-VELNED'},
-               0x13: {'str': 'HPPOSECEF', 'dec': nav_hpposecef,
+               0x13: {'str': 'HPPOSECEF', 'dec': nav_hpposecef, 'minlen': 28,
                       'name': 'UBX-NAV-HPPOSECEF'},
-               0x14: {'str': 'HPPOSLLH', 'dec': nav_hpposllh,
+               0x14: {'str': 'HPPOSLLH', 'dec': nav_hpposllh, 'minlen': 36,
                       'name': 'UBX-NAV-HPPOSLLH'},
-               0x20: {'str': 'TIMEGPS', 'dec': nav_timegps,
+               0x20: {'str': 'TIMEGPS', 'dec': nav_timegps, 'minlen': 16,
                       'name': 'UBX-NAV-TIMEGPS'},
-               0x21: {'str': 'TIMEUTC', 'dec': nav_timeutc,
+               0x21: {'str': 'TIMEUTC', 'dec': nav_timeutc, 'minlen': 20,
                       'name': 'UBX-NAV-TIMEUTC'},
-               0x22: {'str': 'CLOCK', 'dec': nav_clock,
+               0x22: {'str': 'CLOCK', 'dec': nav_clock, 'minlen': 20,
                       'name': 'UBX-NAV-CLOCK'},
-               0x23: {'str': 'TIMEGLO', 'dec': nav_timeglo,
+               0x23: {'str': 'TIMEGLO', 'dec': nav_timeglo, 'minlen': 20,
                       'name': 'UBX-NAV-TIMEGLO'},
-               0x24: {'str': 'TIMEBDS', 'dec': nav_timebds,
+               0x24: {'str': 'TIMEBDS', 'dec': nav_timebds, 'minlen': 20,
                       'name': 'UBX-NAV-TIMEBDS'},
-               0x25: {'str': 'TIMEGAL', 'dec': nav_timegal,
+               0x25: {'str': 'TIMEGAL', 'dec': nav_timegal, 'minlen': 20,
                       'name': 'UBX-NAV-TIMEGAL'},
-               0x26: {'str': 'TIMELS', 'dec': nav_timels,
+               0x26: {'str': 'TIMELS', 'dec': nav_timels, 'minlen': 24,
                       'name': 'UBX-NAV-TIMELS'},
-               0x30: {'str': 'SVINFO', 'dec': nav_svinfo,
+               0x30: {'str': 'SVINFO', 'dec': nav_svinfo, 'minlen': 8,
                       'name': 'UBX-NAV-SVINFO'},
-               0x31: {'str': 'DGPS', 'dec': nav_dgps, 'name': 'UBX-NAV-DGPS'},
-               0x32: {'str': 'SBAS', 'dec': nav_sbas, 'name': 'UBX-NAV-SBAS'},
-               0x34: {'str': 'ORB', 'dec': nav_orb, 'name': 'UBX-NAV-ORB'},
-               0x35: {'str': 'SAT', 'dec': nav_sat, 'name': 'UBX-NAV-SAT'},
-               0x39: {'str': 'GEOFENCE', 'dec': nav_geofence,
+               0x31: {'str': 'DGPS', 'dec': nav_dgps, 'minlen': 16,
+                      'name': 'UBX-NAV-DGPS'},
+               0x32: {'str': 'SBAS', 'dec': nav_sbas, 'minlen': 12,
+                      'name': 'UBX-NAV-SBAS'},
+               0x34: {'str': 'ORB', 'dec': nav_orb, 'minlen': 8,
+                      'name': 'UBX-NAV-ORB'},
+               0x35: {'str': 'SAT', 'dec': nav_sat, 'minlen': 8,
+                      'name': 'UBX-NAV-SAT'},
+               0x39: {'str': 'GEOFENCE', 'dec': nav_geofence, 'minlen': 8,
                       'name': 'UBX-NAV-GEOFENCE'},
-               0x3B: {'str': 'SVIN', 'dec': nav_svin, 'name': 'UBX-NAV-SVIN'},
-               0x3C: {'str': 'RELPOSNED', 'dec': nav_relposned,
+               0x3B: {'str': 'SVIN', 'dec': nav_svin, 'minlen': 40,
+                      'name': 'UBX-NAV-SVIN'},
+               0x3C: {'str': 'RELPOSNED', 'dec': nav_relposned, 'minlen': 64,
                       'name': 'UBX-NAV-RELPOSNED'},
-               0x42: {'str': 'SLAS', 'dec': nav_slas, 'name': 'UBX-NAV-SLAS'},
-               0x43: {'str': 'SIG', 'dec': nav_sig, 'name': 'UBX-NAV-SIG'},
-               0x60: {'str': 'AOPSTATUS', 'dec': nav_aopstatus,
+               # deprecated in u-blox 6, SFDR only
+               0x40: {'str': 'EKFSTATUS', 'minlen': 36,
+                      'name': 'UBX-NAV-EKFSTATUS'},
+               0x42: {'str': 'SLAS', 'dec': nav_slas, 'minlen': 20,
+                      'name': 'UBX-NAV-SLAS'},
+               0x43: {'str': 'SIG', 'dec': nav_sig, 'minlen': 8,
+                      'name': 'UBX-NAV-SIG'},
+               0x60: {'str': 'AOPSTATUS', 'dec': nav_aopstatus, 'minlen': 16,
                       'name': 'UBX-NAV-AOPSTATUS'},
-               0x61: {'str': 'EOE', 'dec': nav_eoe, 'name': 'UBX-NAV-EOE'},
+               0x61: {'str': 'EOE', 'dec': nav_eoe, 'minlen': 4,
+                      'name': 'UBX-NAV-EOE'},
                }
 
     # used for RTCM3 rate config
@@ -4735,12 +4944,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def rxm_imes(self, buf):
         """UBX-RXM-IMES decode, Indoor Messaging System Information"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 4 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBH', buf, 0)
         s = ' numTx %u version %u reserved1 %u' % u
@@ -4757,11 +4960,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
     def rxm_measx(self, buf):
         """UBX-RXM-RAW decode"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 44 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBLLLLLHHHHHBBLL', buf, 0)
         s = (' version %u reserved1 %u %u %u gpsTOW %u gloTOW %u\n'
@@ -4784,11 +4982,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
     def rxm_raw(self, buf):
         """UBX-RXM-RAW decode"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<lhBB', buf, 0)
         s = ' iTOW %d weeks %d numSV %u res1 %u' % u
@@ -4812,11 +5005,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
     def rxm_rawx(self, buf):
         """UBX-RXM-RAWX decode"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
 
         # version not here before protver 18, I hope it is zero.
         u = struct.unpack_from('<dHbBBBBB', buf, 0)
@@ -4845,9 +5033,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         """UBX-RXM-RLM decode, Galileo SAR RLM report"""
         m_len = len(buf)
 
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
-
         # common to Short-RLM and Long-RLM report
         u = struct.unpack_from('<BBBBLLB', buf, 0)
         s = (" version %u type %u svId %u reserved1 %u beacon x%x %x "
@@ -4866,12 +5051,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def rxm_rtcm(self, buf):
         """UBX-RXM-RTCM decode, RTCM Input Status"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBHHH', buf, 0)
         s = " version %u flags x%x subtype %u refstation %u msgtype %u" % u
@@ -4879,12 +5058,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def rxm_sfrb(self, buf):
         """UBX-RXM-SFRB decode, Subframe Buffer"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 42 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBLLLLLLLLLL', buf, 0)
         s = (' chn %d s svid %3d\n'
@@ -4947,7 +5120,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         }
 
     # map subframe 4 SV ID to Page number
-    # IS-GPS-200J Table 20-V
+    # IS-GPS-200K Table 20-V
     sbfr4_svid_page = {
         57: 1,
         25: 2,
@@ -4977,7 +5150,8 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         }
 
     # map subframe 5 SV ID to Page number
-    # IS-GPS-200J Table 20-V
+    # FIXME: duplicate keys!
+    # IS-GPS-200K Table 20-V
     sbfr5_svid_page = {
         1: 1,
         2: 2,
@@ -5038,10 +5212,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
         # The way u-blox packs the subfram data is perverse, and
         # undocuemnted.  Even more perverse than native subframes.
-        m_len = len(buf)
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBBBBBBB', buf, 0)
         svId = u[1]
@@ -5182,8 +5352,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                         s += ("\n   dataid %u svid %u (page %s)\n" %
                               (words[2] >> 28, svid, page))
 
-                        if (((2 <= page and 5 >= page) or
-                             (5 <= page and 10 >= page))):
+                        if 2 <= page <= 10:
                             s += self.almanac(words)
                         elif 13 == page:
                             s += "    NWCT"
@@ -5226,7 +5395,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                         s += ("\n   dataid %u svid %u (page %s)\n" %
                               (words[2] >> 28, svid, page))
 
-                        if 1 <= page and 24 >= page:
+                        if 1 <= page <= 24:
                             s += self.almanac(words)
                         elif 25 == page:
                             s += "    A/S flags"
@@ -5238,11 +5407,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
     def rxm_svsi(self, buf):
         """UBX-RXM-SVSI decode, SV Status Info"""
         m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 8 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LhBB', buf, 0)
         s = ' iTOW %d week %d numVis %d numSV %d' % u
@@ -5257,51 +5421,60 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
         return s
 
-    rxm_ids = {0x10: {'str': 'RAW', 'dec': rxm_raw,
+    rxm_ids = {0x10: {'str': 'RAW', 'dec': rxm_raw, 'minlen': 8,
                       'name': 'UBX-RXM-RAW'},      # obsolete
-               0x11: {'str': 'SFRB', 'dec': rxm_sfrb,
+               0x11: {'str': 'SFRB', 'dec': rxm_sfrb, 'minlen': 42,
                       'name': 'UBX-RXM-SFRB'},
-               0x13: {'str': 'SFRBX', 'dec': rxm_sfrbx,
+               0x13: {'str': 'SFRBX', 'dec': rxm_sfrbx, 'minlen': 8,
                       'name': 'UBX-RXM-SFRBX'},
-               0x14: {'str': 'MEASX', 'dec': rxm_measx,
+               0x14: {'str': 'MEASX', 'dec': rxm_measx, 'minlen': 44,
                       'name': 'UBX-RXM-MEASX'},
-               0x15: {'str': 'RAWX', 'dec': rxm_rawx, 'name': 'UBX-RXM-RAWX'},
-               0x20: {'str': 'SVSI', 'dec': rxm_svsi, 'name': 'UBX-RXM-SVSI'},
-               0x32: {'str': 'RTCM', 'dec': rxm_rtcm, 'name': 'UBX-RXM-RTCM'},
-               0x41: {'str': 'PMREQ', 'name': 'UBX-RXM-PMREQ'},
-               0x59: {'str': 'RLM', 'dec': rxm_rlm, 'name': 'UBX-RXM-RLM'},
-               0x61: {'str': 'IMES', 'dec': rxm_imes, 'name': 'UBX-RXM-IMES'},
+               0x15: {'str': 'RAWX', 'dec': rxm_rawx, 'minlen': 16,
+                      'name': 'UBX-RXM-RAWX'},
+               0x20: {'str': 'SVSI', 'dec': rxm_svsi, 'minlen': 8,
+                      'name': 'UBX-RXM-SVSI'},
+               # deprecated in u-blox 6, 7, raw option only
+               0x30: {'str': 'ALM', 'minlen': 1, 'name': 'UBX-RXM-ALM'},
+               # deprecated in u-blox 6, 7, raw option only
+               0x31: {'str': 'EPH', 'minlen': 1, 'name': 'UBX-RXM-EPH'},
+               0x32: {'str': 'RTCM', 'dec': rxm_rtcm, 'minlen': 8,
+                      'name': 'UBX-RXM-RTCM'},
+               0x41: {'str': 'PMREQ', 'minlen': 8, 'name': 'UBX-RXM-PMREQ'},
+               0x59: {'str': 'RLM', 'dec': rxm_rlm, 'minlen': 16,
+                      'name': 'UBX-RXM-RLM'},
+               0x61: {'str': 'IMES', 'dec': rxm_imes, 'minlen': 4,
+                      'name': 'UBX-RXM-IMES'},
                }
 
     # UBX-SEC-
     def sec_uniqid(self, buf):
         """UBX-SEC_UNIQID decode Unique chip ID"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
 
-        if 9 > m_len:
-            return " Bad Length %s" % m_len
-
-        u = struct.unpack_from('<BBBBBBBBB', buf, 0)
-        s = (' version %u reserved %u %u %u uniqueId %#02x%02x%02x%02x%02x'
+        # protVer 18 to 23
+        u = struct.unpack_from('<BBHBBBBB', buf, 0)
+        s = ("  version %u reserved %u %u uniqueId %#02x%02x%02x%02x%02x"
              % u)
         return s
 
-    sec_ids = {0x01: {'str': 'SIGN', 'name': 'UBX-SEC-SIGN'},
-               0x03: {'str': 'UNIQID', 'dec': sec_uniqid,
+    def sec_sign(self, buf):
+        """UBX-SEC_SIGN decode, Signature of a previous message"""
+
+        # protVer 18 to 23
+        u = struct.unpack_from('<BBHBBH', buf, 0)
+        s = (" version %u reserved %u %u classId x%x messageID x%x "
+             " checksum %u\n  hash " % u)
+        s += gps.polystr(binascii.hexlify(buf[8:39]))
+        return s
+
+    sec_ids = {0x01: {'str': 'SIGN', 'minlen': 40,  'dec': sec_sign,
+                      'name': 'UBX-SEC-SIGN'},
+               0x03: {'str': 'UNIQID', 'minlen': 9, 'dec': sec_uniqid,
                       'name': 'UBX-SEC-UNIQID'},
                }
 
     # UBX-TIM-
     def tim_svin(self, buf):
         """UBX-TIM-SVIN decode, Survey-in data"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 28 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LlllLLBB', buf, 0)
         s = ('  dur %u meanX %d meanY %d meanZ %d meanV %u\n'
@@ -5310,12 +5483,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def tim_tm2(self, buf):
         """UBX-TIM-TM2 decode, Time mark data"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 28 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<BBHHHLLLLL', buf, 0)
         s = ('  ch %u flags %#x count %u wnR %u wnF %u\n'
@@ -5324,12 +5491,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def tim_tp(self, buf):
         """UBX-TIM-TP decode, Time Pulse Timedata"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 16 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<LLlHbb', buf, 0)
         s = ('  towMS %u towSubMS %u qErr %d week %d\n'
@@ -5363,12 +5524,6 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
 
     def tim_vrfy(self, buf):
         """UBX-TIM-VRFY decode, Sourced Time Verification"""
-        m_len = len(buf)
-        if 0 == m_len:
-            return " Poll request"
-
-        if 20 > m_len:
-            return " Bad Length %s" % m_len
 
         u = struct.unpack_from('<llllHBB', buf, 0)
         s = ('  itow %d frac %d deltaMs %d deltaMs %d\n'
@@ -5378,20 +5533,77 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                   index_s(u[5] & 3, self.tim_vrfy_flags))
         return s
 
-    tim_ids = {1: {'str': 'TP', 'dec': tim_tp, 'name': 'UBX-TIM-TP'},
-               3: {'str': 'TM2', 'dec': tim_tm2, 'name': 'UBX-TIM-TM2'},
-               4: {'str': 'SVIN', 'dec': tim_svin, 'name': 'UBX-TIM-SVIN'},
-               6: {'str': 'VRFY', 'dec': tim_vrfy, 'name': 'UBX-TIM-VRFY'},
-               0x11: {'str': 'DOSC', 'name': 'UBX-TIM-DOSC'},
-               0x12: {'str': 'TOS', 'name': 'UBX-TIM-TOS'},
-               0x13: {'str': 'SMEAS', 'name': 'UBX-TIM-SMEAS'},
-               0x15: {'str': 'VCOCAL', 'name': 'UBX-TIM-VCOCAL'},
-               0x16: {'str': 'FCHG', 'name': 'UBX-TIM-FCHG'},
-               0x17: {'str': 'HOC', 'name': 'UBX-TIM-HOC'},
+    tim_ids = {0x01: {'str': 'TP', 'dec': tim_tp, 'minlen': 16,
+                      'name': 'UBX-TIM-TP'},
+               0x03: {'str': 'TM2', 'dec': tim_tm2, 'minlen': 28,
+                      'name': 'UBX-TIM-TM2'},
+               0x04: {'str': 'SVIN', 'dec': tim_svin, 'minlen': 28,
+                      'name': 'UBX-TIM-SVIN'},
+               0x06: {'str': 'VRFY', 'dec': tim_vrfy, 'minlen': 20,
+                      'name': 'UBX-TIM-VRFY'},
+               # u-blox 8, FTS only
+               0x11: {'str': 'DOSC', 'minlen': 8, 'name': 'UBX-TIM-DOSC'},
+               # u-blox 8, FTS only
+               0x12: {'str': 'TOS', 'minlen': 56, 'name': 'UBX-TIM-TOS'},
+               # u-blox 8, FTS only
+               0x13: {'str': 'SMEAS', 'minlen': 12, 'name': 'UBX-TIM-SMEAS'},
+               # u-blox 8, FTS only
+               0x15: {'str': 'VCOCAL', 'minlen': 1, 'name': 'UBX-TIM-VCOCAL'},
+               # u-blox 8, FTS only
+               0x16: {'str': 'FCHG', 'minlen': 32, 'name': 'UBX-TIM-FCHG'},
+               # u-blox 8, FTS only
+               0x17: {'str': 'HOC', 'minlen': 8, 'name': 'UBX-TIM-HOC'},
                }
 
     # UBX-UPD-
-    upd_ids = {0x14: {'str': 'SOS', 'name': "UBX-UPD-SOS"},
+    upd_sos_cmd = {
+        0: "Create Backup File in Flash",
+        1: "Clear Backup in Flash",
+        2: "Backup File Creation Acknowledge",
+        3: "System Restored from Backup",
+        }
+
+    upd_sos_response2 = {
+        0: "Not Acknowledged",
+        1: "Acknowledged",
+        }
+
+    upd_sos_response3 = {
+        0: "Unknown",
+        1: "Failed restoring from backup fiil",
+        2: "Restored from backup file",
+        3: "Not restored (no backup)",
+        }
+
+    def upd_sos(self, buf):
+        """UBX-UPD-SOS decode, Backup File stuff"""
+
+        u = struct.unpack_from('<BBH', buf, 0)
+        s = '  command %u reserved1 x%x %x' % u
+
+        s1 = ""
+        if 2 == u[0]:
+            # Backup File Creation Acknowledge
+            u1 = struct.unpack_from('<BBH', buf, 4)
+            s += '\n  response %u reserved2 x%x %x' % u1
+            s1 = ' response (%s)' % index_s(u[2], self.upd_sos_response2)
+        elif 3 == u[0]:
+            # System Restored from Backup
+            u1 = struct.unpack_from('<BBH', buf, 4)
+            s += '\n  response %u reserved2 x%x %x' % u1
+            s1 = ' response (%s)' % index_s(u[2], self.upd_sos_response3)
+
+        if VERB_DECODE <= opts['verbosity']:
+            s += '\n    cmd (%s)%s' % (index_s(u[0], self.upd_sos_cmd), s1)
+        return s
+
+    upd_ids = {
+               # undocumented firmware update message
+               0x0c: {'str': 'undoc1', 'minlen': 13, 'name': "UBX-UPD-undoc1"},
+               0x14: {'str': 'SOS', 'dec': upd_sos, 'minlen': 4,
+                      'name': "UBX-UPD-SOS"},
+               # undocumented firmware update message
+               0x25: {'str': 'undoc2', 'minlen': 20, 'name': "UBX-UPD-undoc2"},
                }
 
     classes = {
@@ -5409,6 +5621,8 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         0x21: {'str': 'LOG', 'ids': log_ids},
         0x27: {'str': 'SEC', 'ids': sec_ids},
         0x28: {'str': 'HNR', 'ids': hnr_ids},
+        # Antaris 4
+        # 0x4x USR, SCK Customer Messages
         0xf0: {'str': 'NMEA', 'ids': nmea_ids},
         0xf5: {'str': 'RTCM', 'ids': rtcm_ids},
     }
@@ -5416,12 +5630,12 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
     def class_id_s(self, m_class, m_id):
         """Return class and ID numbers as a string."""
 
-        s = 'Class x%x' % (m_class)
+        s = 'Class x%02x' % (m_class)
         if (((m_class in self.classes and
               'str' in self.classes[m_class]))):
             s += ' (%s)' % (self.classes[m_class]['str'])
 
-        s += ' ID x%x' % (m_id)
+        s += ' ID x%02x' % (m_id)
         if (((m_class in self.classes and
               'ids' in self.classes[m_class] and
               m_id in self.classes[m_class]['ids'] and
@@ -5447,7 +5661,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                 c = int(this_byte)
 
             if VERB_RAW <= opts['verbosity']:
-                if (ord(' ') <= c) and (ord('~') >= c):
+                if ord(' ') <= c <= ord('~'):
                     # c is printable
                     print("state: %s char %c (%#x)" % (state, chr(c), c))
                 else:
@@ -5516,8 +5730,9 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                     elif VERB_DECODE <= opts['verbosity']:
                         print(comment)
                     return consumed
-                else:
-                    comment += chr(c)
+
+                # else:
+                comment += chr(c)
                 continue
 
             if 'NMEA' == state:
@@ -5528,8 +5743,9 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                     if VERB_DECODE <= opts['verbosity']:
                         print(comment + '\n')
                     return consumed
-                else:
-                    comment += chr(c)
+
+                # else:
+                comment += chr(c)
                 continue
 
             if 'RTCM3_1' == state:
@@ -5558,10 +5774,10 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                 m_payload.extend([c])
                 if 0 == m_len:
                     state = 'BASE'
-                    type = m_payload[0] << 4
-                    type |= 0x0f & (m_payload[1] >> 4)
+                    ptype = m_payload[0] << 4
+                    ptype |= 0x0f & (m_payload[1] >> 4)
                     if VERB_DECODE <= opts['verbosity']:
-                        print("RTCM3 packet: type %d\n" % type)
+                        print("RTCM3 packet: type %d\n" % ptype)
                 continue
 
             if ord('b') == c and 'HEADER1' == state:
@@ -5634,15 +5850,33 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                     this_class = self.classes[m_class]
                     if 'ids' in this_class:
                         if m_id in this_class['ids']:
-                            if 'dec' in this_class['ids'][m_id]:
+                            # got an entry for this message
+                            # name is mandatory
+                            s_payload = this_class['ids'][m_id]['name']
+                            s_payload += ':\n'
+
+                            if ((('minlen' in this_class['ids'][m_id]) and
+                                 (0 == m_len) and
+                                 (0 != this_class['ids'][m_id]['minlen']))):
+                                s_payload += "  Poll request"
+                            elif (('minlen' in this_class['ids'][m_id]) and
+                                  (this_class['ids'][m_id]['minlen'] >
+                                   m_len)):
+                                # failed minimum length for this message
+                                s_payload += "  Bad Length %s" % m_len
+                            elif 'dec' in this_class['ids'][m_id]:
+                                # got a decoder for this message
                                 dec = this_class['ids'][m_id]['dec']
-                                s_payload = this_class['ids'][m_id]['name']
-                                s_payload += ':\n'
                                 s_payload += dec(self, m_payload)
                             else:
-                                s_payload = ("%s, len %#x, raw %s" %
-                                             (self.class_id_s(m_class, m_id),
-                                              m_len, x_payload))
+                                s_payload += ("  len %#x, raw %s" %
+                                              (m_len, x_payload))
+
+                if not s_payload:
+                    # huh?
+                    s_payload = ("%s, len %#x, raw %s" %
+                                 (self.class_id_s(m_class, m_id),
+                                  m_len, x_payload))
 
                 if VERB_INFO <= opts['verbosity']:
                     print("%s, len: %#x" %
@@ -5806,6 +6040,51 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         # disable, then enable
         gps_model.send_cfg_gnss1(6, able)
 
+    def send_able_logfilter(self, able):
+        """Enable logging"""
+
+        if able:
+            m_data = bytearray([1,            # version
+                                5,            # flags
+                                # All zeros below == log all
+                                0, 0,         # minInterval
+                                0, 0,         # timeThreshold
+                                0, 0,         # speedThreshold
+                                0, 0, 0, 0    # positionThreshold
+                                ])
+        else:
+            m_data = bytearray([1,      # version
+                                0,      # flags
+                                0, 0,   # minInterval
+                                0, 0,   # timeThreshold
+                                0, 0,   # speedThreshold
+                                0, 0, 0, 0    # positionThreshold
+                                ])
+
+        # set UBX-CFG-LOGFILTER
+        gps_model.gps_send(6, 0x47, m_data)
+
+    def send_able_ned(self, able):
+        """Enable NAV-RELPOSNED and VELNED messages.
+protver 15+ required for VELNED
+protver 20+, and HP GNSS, required for RELPOSNED"""
+        if 15 > opts['protver']:
+            sys.stderr.write('%s: WARNING: protver %d too low for NED\n' %
+                             (PROG_NAME, opts['protver']))
+            return
+
+        # set NAV-VELNED rate
+        gps_model.send_cfg_msg(1, 0x12, able)
+
+        if 20 > opts['protver']:
+            sys.stderr.write('%s: WARNING: protver %d too low for '
+                             'RELPOSNED\n' %
+                             (PROG_NAME, opts['protver']))
+            return
+
+        # set NAV-RELPOSNED rate
+        gps_model.send_cfg_msg(1, 0x3C, able)
+
     def send_able_nmea(self, able):
         """dis/enable basic NMEA messages"""
 
@@ -5898,6 +6177,8 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         m_data[29] = 0        # flags
         m_data[30] = 0        # flags
         m_data[31] = 0        # flags
+        if not able:
+            m_data[28] &= ~1  # bit 0 is active
 
         gps_model.gps_send(6, 0x31, m_data)
 
@@ -6164,7 +6445,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         m_data[0] = 1
         gps_model.gps_send(6, 0x31, m_data)
 
-    def send_cfg_valdel(self, key):
+    def send_cfg_valdel(self, keys):
         """UBX-CFG-VALDEL, delete config items by key"""
         m_data = bytearray(4)
         m_data[0] = 0       # version, 0 = transactionless, 1 = transaction
@@ -6257,6 +6538,12 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         # en/dis able GLONASS
         "GLONASS": {"command": send_able_glonass,
                     "help": "GLONASS"},
+        # en/dis able LOG
+        "LOG": {"command": send_able_logfilter,
+                "help": "Data Logger"},
+        # en/dis able NED
+        "NED": {"command": send_able_ned,
+                "help": "NAV-VELNED and NAV-RELPOSNED"},
         # en/dis able basic NMEA messages
         "NMEA": {"command": send_able_nmea,
                  "help": "basic NMEA messages"},
@@ -6287,6 +6574,9 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         "AID-AOP": {"command": send_poll, "opt": [0x0b, 0x33],
                     "help": "poll UBX-AID-AOP Poll Poll AssistNow "
                     "Autonomous data"},
+        # UBX-AID-DATA
+        "AID-DATA": {"command": send_poll, "opt": [0x0b, 0x10],
+                     "help": "Poll all GPS Initial Aiding Data"},
         # UBX-AID-EPH
         "AID-EPH": {"command": send_poll, "opt": [0x0b, 0x31],
                     "help": "poll UBX-AID-EPH Poll GPS Aiding Ephemeris Data"},
@@ -6300,6 +6590,13 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         # UBX-CFG-ANT
         "CFG-ANT": {"command": send_poll, "opt": [0x06, 0x13],
                     "help": "poll UBX-CFG-ANT antenna config"},
+        # UBX-CFG-BATCH
+        "CFG-BATCH": {"command": send_poll, "opt": [0x06, 0x93],
+                      "help": "poll UBX-CFG-BATCH data batching config",
+                      "minVer": 23.01},
+        # UBX-CFG-DAT
+        "CFG-DAT": {"command": send_poll, "opt": [0x06, 0x06],
+                    "help": "poll UBX-CFG-DAT Datum Setting"},
         # UBX-CFG-DOSC
         "CFG-DOSC": {"command": send_poll, "opt": [0x06, 0x61],
                      "help": "poll UBX-CFG-DOSC Disciplined oscillator "
@@ -6308,6 +6605,9 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         "CFG-ESRC": {"command": send_poll, "opt": [0x06, 0x60],
                      "help": "poll UBX-CFG-ESRC External synchronization "
                      "source configuration"},
+        # UBX-CFG-FXN
+        "CFG-FXN": {"command": send_poll, "opt": [0x06, 0x0e],
+                    "help": "poll UBX-CFG-FXN FXN Configuration"},
         # UBX-CFG-GEOFENCE
         "CFG-GEOFENCE": {"command": send_poll, "opt": [0x06, 0x69],
                          "help": "poll UBX-CFG-GEOFENCE Geofencing "
@@ -6326,6 +6626,11 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         "CFG-ITFM": {"command": send_poll, "opt": [0x06, 0x39],
                      "help": "poll UBX-CFG-RXM Jamming/Interference "
                      "Monitor configuration"},
+        # UBX-CFG-LOGFILTER
+        "CFG-LOGFILTER": {"command": send_poll, "opt": [0x06, 0x47],
+                          "help": "poll UBX-CFG-LOGFILTER "
+                          " Data Logger Configuration",
+                          "minVer": 14},
         # UBX-CFG-NAV5
         "CFG-NAV5": {"command": send_poll, "opt": [0x06, 0x24],
                      "help": "poll UBX-CFG-NAV5 Nav Engines settings"},
@@ -6340,9 +6645,12 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         "CFG-ODO": {"command": send_poll, "opt": [0x06, 0x1e],
                     "help": "poll UBX-CFG-ODO Odometer, Low-speed COG "
                             "Engine Settings"},
+        # UBX-CFG-PM
+        "CFG-PM": {"command": send_poll, "opt": [0x06, 0x32],
+                   "help": "poll UBX-CFG-PM Power management settings"},
         # UBX-CFG-PM2
         "CFG-PM2": {"command": send_poll, "opt": [0x06, 0x3b],
-                    "help": "poll UBX-CFG-PM2 Exetnded power management "
+                    "help": "poll UBX-CFG-PM2 Extended power management "
                     "settings"},
         # UBX-CFG-PMS
         "CFG-PMS": {"command": send_poll, "opt": [0x06, 0x86],
@@ -6363,13 +6671,22 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         # UBX-CFG-SBAS
         "CFG-SBAS": {"command": send_poll, "opt": [0x06, 0x16],
                      "help": "poll UBX-CFG-SBAS SBAS settings"},
+        # UBX-CFG-SLAS
+        "CFG-SLAS": {"command": send_poll, "opt": [0x06, 0x8d],
+                     "help": "poll UBX-CFG-SLAS SLAS configuration"},
         # UBX-CFG-SMGR
         "CFG-SMGR": {"command": send_poll, "opt": [0x06, 0x62],
                      "help": "poll UBX-CFG-SMGR Synchronization manager "
                      " configuration"},
+        # UBX-CFG-TMODE
+        "CFG-TMODE": {"command": send_poll, "opt": [0x06, 0x1d],
+                      "help": "poll UBX-CFG-TMODE time mode settings"},
         # UBX-CFG-TMODE2
         "CFG-TMODE2": {"command": send_poll, "opt": [0x06, 0x3d],
                        "help": "poll UBX-CFG-TMODE2 time mode 2 config"},
+        # UBX-CFG-TP
+        "CFG-TP": {"command": send_poll, "opt": [0x06, 0x07],
+                   "help": "poll UBX-CFG-TP TimePulse Parameters"},
         # UBX-CFG-TP5
         "CFG-TP5": {"command": send_cfg_tp5,
                     "help": "poll UBX-TIM-TP5 time pulse decodes"},
@@ -6384,6 +6701,36 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         "HOTBOOT": {"command": send_cfg_rst,
                     "help": "UBX-CFG-RST hotboot the GPS",
                     "opt": 0},
+        # UBX-LOG-CREATE
+        "LOG-CREATE": {"command": send_poll,
+                       "opt": [0x21, 0x07, 0, 1, 0, 0, 0, 0, 0, 0],
+                       "help": "send UBX-LOG-CREATE",
+                       "minVer": 14},
+        # UBX-LOG-ERASE
+        "LOG-ERASE": {"command": send_poll, "opt": [0x21, 0x03],
+                      "help": "send UBX-LOG-ERASE",
+                      "minVer": 14},
+        # UBX-LOG-INFO
+        "LOG-INFO": {"command": send_poll, "opt": [0x21, 0x08],
+                     "help": "poll UBX-LOG-INFO",
+                     "minVer": 14},
+        # UBX-LOG-RETRIEVE
+        "LOG-RETRIEVE": {"command": send_poll,
+                         "opt": [0x21, 9, 0, 0, 0, 0, 0, 1, 0, 0,
+                                 0, 0, 0, 0, 0],
+                         "help": "send UBX-LOG-RETRIEVE",
+                         "minVer": 14},
+        # UBX-LOG-RETRIEVEBATCH
+        "LOG-RETRIEVEBATCH": {"command": send_poll,
+                              "opt": [0x21, 0x10, 0, 1, 0, 0],
+                              "help": "send UBX-LOG-RETRIEVEBATCH",
+                              "maxVer": 23.99,
+                              "minVer": 23.01},
+        # UBX-LOG-STRING
+        "LOG-STRING": {"command": send_poll,
+                       "opt": [0x21, 4, ord("H"), ord("i")],
+                       "help": "send UBX-LOG-STRING",
+                       "minVer": 14},
         # UBX-CFG-NAV5
         "MODEL": {"command": send_cfg_nav5_model,
                   "help": "set UBX-CFG-NAV5 Dynamic Platform Model"},
@@ -6393,7 +6740,9 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         # UBX-MON-BATCH
         "MON-BATCH": {"command": send_poll, "opt": [0x0a, 0x32],
                       "help": "poll UBX-MON-BATCH Data batching "
-                      "buffer status"},
+                      "buffer status",
+                      "maxVer": 23.99,
+                      "minVer": 23.01},
         # UBX-MON-COMMS
         "MON-COMMS": {"command": send_poll, "opt": [0x0a, 0x36],
                       "help": "poll UBX-MON-COMMS Comm port "
@@ -6478,6 +6827,7 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
                     "help": "poll UBX-NAV-PVT Navigation Position Velocity "
                     "Time Solution"},
         # UBX-NAV-RELPOSNED
+        # HP only, 20+, otherwise not ACKed or NACKed
         "NAV-RELPOSNED": {"command": send_poll, "opt": [0x01, 0x3c],
                           "help": "poll UBX-NAV-RELPOSNED Relative "
                           "Positioning Information in NED frame"},
@@ -6503,6 +6853,9 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         # UBX-NAV-STATUS
         "NAV-STATUS": {"command": send_poll, "opt": [0x01, 0x03],
                        "help": "poll UBX-NAV-STATUS Receiver Nav Status"},
+        # UBX-NAV-SVINFO
+        "NAV-SVINFO": {"command": send_poll, "opt": [0x01, 0x30],
+                       "help": "poll UBX-NAV-SVINFO Satellite Information"},
         # UBX-NAV-TIMEBDS
         "NAV-TIMEBDS": {"command": send_poll, "opt": [0x01, 0x24],
                         "help": "poll UBX-NAV-TIMEBDS BDS Time Solution"},
@@ -6564,6 +6917,15 @@ UBX-NAV-RELPOSND decode, Relative Positioning Information in NED frame"""
         # UBX-TIM-VRFY
         "TIM-VRFY": {"command": send_poll, "opt": [0x0d, 0x06],
                      "help": "poll UBX-TIM-VRFY Sourced Time Verification"},
+        # UBX-UPD-SOS
+        "UPD-SOS": {"command": send_poll, "opt": [0x09, 0x14],
+                    "help": "poll UBX-UPD-SOS Backup File restore Status"},
+        # UBX-UPD-SOS
+        "UPD-SOS0": {"command": send_poll, "opt": [0x09, 0x14, 0, 0, 0, 0],
+                     "help": "UBX-UPD-SOS Create Backup File in Flash"},
+        # UBX-UPD-SOS
+        "UPD-SOS1": {"command": send_poll, "opt": [0x09, 0x14, 1, 0, 0, 0],
+                     "help": "UBX-UPD-SOS Create Clear File in Flash"},
         # UBX-CFG-RST
         "WARMBOOT": {"command": send_cfg_rst,
                      "help": "UBX-CFG-RST warmboot the GPS",
@@ -6712,8 +7074,8 @@ class gps_io(object):
         try:
             if read_opts['target']['server'] is not None:
                 # gpsd input
-                start = time.clock()
-                while read_opts['input_wait'] > (time.clock() - start):
+                start = gps.monotonic()
+                while read_opts['input_wait'] > (gps.monotonic() - start):
                     # First priority is to be sure the input buffer is read.
                     # This is to prevent input buffer overuns
                     if 0 < self.ser.waiting():
@@ -6739,8 +7101,8 @@ class gps_io(object):
 
             elif self.input_is_device:
                 # input is a serial device
-                start = time.clock()
-                while read_opts['input_wait'] > (time.clock() - start):
+                start = gps.monotonic()
+                while read_opts['input_wait'] > (gps.monotonic() - start):
                     # First priority is to be sure the input buffer is read.
                     # This is to prevent input buffer overuns
                     # pyserial 3.0+ deprecates inWaiting() in favor of
@@ -6808,7 +7170,8 @@ class gps_io(object):
 
         if opts['target']['device'] is not None:
             # add in the requested device
-            data_out = b'?DEVICE={"path":"' + opts['target']['device'] + b'",'
+            data_out = (b'?DEVICE={"path":"' +
+                        gps.polybytes(opts['target']['device']) + b'",')
         else:
             data_out = b'?DEVICE={'
 
@@ -6854,7 +7217,6 @@ def usage():
           '                     default: %s seconds\n'
           '       -x I          delete config item I\n'
           '       -z I,v        set config item I to v\n'
-          '       -?            print help\n'
           '\n' %
           (PROG_NAME, opts['input_file_name'],
            opts['protver'], opts['raw_file'],
@@ -6906,14 +7268,16 @@ for (opt, val) in options:
     if opt == '-c':
         opts['command'] = val
     elif opt == '-d':
-        opts['disable'] = val
+        # don't force the user to upper case
+        opts['disable'] = val.upper()
     elif opt == '-e':
-        opts['enable'] = val
+        # don't force the user to upper case
+        opts['enable'] = val.upper()
     elif opt == '-f':
         opts['input_file_name'] = val
     elif opt == '-g':
         opts['get_item'].append(val)
-    elif opt == '-h' or opt == '-?':
+    elif opt in ('-h', '-?'):
         opts['help'] = True
     elif opt == '-i':
         valnum = gps_model.port_id_map.get(val.upper())
@@ -6921,13 +7285,15 @@ for (opt, val) in options:
     elif opt == '-m':
         opts['mode'] = int(val)
     elif opt == '-P':
-        opts['protver'] = int(val)
+        # to handle vesion like 23.01
+        opts['protver'] = float(val)
         if 10 > opts['protver']:
             opts['protver'] = 10
         if 27 < opts['protver']:
             opts['protver'] = 27
     elif opt == '-p':
-        opts['poll'] = val
+        # don't force the user to upper case
+        opts['poll'] = val.upper()
     elif opt in '-R':
         # raw log file
         opts['raw_file'] = val
@@ -6971,7 +7337,7 @@ for (opt, val) in options:
         opts['set_item'].append(val)
 
 if opts['help']:
-        usage()
+    usage()
 
 if opts['input_file_name'] is None:
     # no input file given
@@ -7032,7 +7398,7 @@ try:
 
     if opts['disable'] is not None:
         if VERB_QUIET < opts['verbosity']:
-            sys.stderr.write('%s: disable %s\n' % (PROG_NAME, opts['disable']))
+            print('%s: disable %s\n' % (PROG_NAME, opts['disable']))
         if opts['disable'] in gps_model.able_commands:
             command = gps_model.able_commands[opts['disable']]
             command["command"](gps, 0)
@@ -7043,7 +7409,7 @@ try:
 
     elif opts['enable'] is not None:
         if VERB_QUIET < opts['verbosity']:
-            sys.stderr.write('%s: enable %s\n' % (PROG_NAME, opts['enable']))
+            print('%s: enable %s\n' % (PROG_NAME, opts['enable']))
         if opts['enable'] in gps_model.able_commands:
             command = gps_model.able_commands[opts['enable']]
             command["command"](gps, 1)
@@ -7054,7 +7420,7 @@ try:
 
     elif opts['poll'] is not None:
         if VERB_QUIET < opts['verbosity']:
-            sys.stderr.write('%s: poll %s\n' % (PROG_NAME, opts['poll']))
+            print('%s: poll %s\n' % (PROG_NAME, opts['poll']))
 
         if 'MODEL' == opts["poll"]:
             if opts["mode"] is None:
@@ -7062,6 +7428,20 @@ try:
 
         if opts['poll'] in gps_model.commands:
             command = gps_model.commands[opts['poll']]
+            if (('minVer' in command and
+                 opts['protver'] < command['minVer'])):
+                print('%s: WARNING poll %s requires protVer >= %s '
+                      'you have %s\n' %
+                      (PROG_NAME, opts['poll'], command['minVer'],
+                       opts['protver']))
+
+            if (('maxVer' in command and
+                 opts['protver'] > command['maxVer'])):
+                print('%s: WARNING poll %s requires protVer <= %s '
+                      'you have %s\n' %
+                      (PROG_NAME, opts['poll'], command['maxVer'],
+                       opts['protver']))
+
             if 'opt' in command:
                 command["command"](gps, command["opt"])
             else:
@@ -7089,7 +7469,7 @@ try:
             sys.exit(1)
         payload = bytearray(cmd_data[2:])
         if VERB_QUIET < opts['verbosity']:
-            sys.stderr.write('%s: command %s\n' % (PROG_NAME, opts['command']))
+            print('%s: command %s\n' % (PROG_NAME, opts['command']))
         gps_model.gps_send(cmd_data[0], cmd_data[1], payload)
 
     elif opts['del_item']:

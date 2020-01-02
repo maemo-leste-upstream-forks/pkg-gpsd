@@ -301,7 +301,7 @@ static void print_rinex_header(void)
         "3.03", "", "OBSERVATION DATA", "M: Mixed", "RINEX VERSION / TYPE");
     (void)fprintf(log_file,
         "%-20s%-20s%-20s%-20s\n",
-        "gpsrinex 3.19", "", tmstr,
+        "gpsrinex 3.20", "", tmstr,
         "PGM / RUN BY / DATE");
     (void)fprintf(log_file, "%-60s%-20s\n",
          "Source: gpsd live data", "COMMENT");
@@ -377,7 +377,7 @@ static void print_rinex_header(void)
                   "", "# OF SATELLITES");
 
     /* get all the PRN / # OF OBS */
-    for (i = 0; i <= MAXCNT; i++) {
+    for (i = 0; i < MAXCNT; i++) {
         cnt = 0;
 
         if (0 == obs_cnt[i].svid) {

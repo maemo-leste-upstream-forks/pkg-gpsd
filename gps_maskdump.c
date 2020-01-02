@@ -58,6 +58,8 @@ const char *gps_maskdump(gps_mask_t set)
         {VECEF_SET,	"VECEF"},
         {MAGNETIC_TRACK_SET,	"MAGNETIC_TRACK"},
         {RAW_SET,	"RAW"},
+        {NED_SET,	"NED"},
+        {VNED_SET,	"VNED"},
         {RAW_IS,	"RAW"},
         {USED_IS,	"USED"},
         {DRIVER_IS,	"DRIVER"},

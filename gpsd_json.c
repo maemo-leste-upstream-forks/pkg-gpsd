@@ -9,7 +9,7 @@ of various core data structures in JSON.
 
 PERMISSIONS
   Written by Eric S. Raymond, 2009
-  This file is Copyright (c) 2010-2018 by the GPSD project
+  This file is Copyright (c) 2010-2019 by the GPSD project
   SPDX-License-Identifier: BSD-2-clause
 
 ***************************************************************************/
@@ -56,7 +56,7 @@ struct classmap_t classmap[CLASSMAP_NITEMS] = {
 };
 /* *INDENT-ON* */
 
-char *json_stringify( char *to,
+char *json_stringify(char *to,
 		     size_t len,
 		     const char *from)
 /* escape double quotes and control characters inside a JSON string */
@@ -111,20 +111,14 @@ char *json_stringify( char *to,
 void json_version_dump( char *reply, size_t replylen)
 {
     (void)snprintf(reply, replylen,
-		   "{\"class\":\"VERSION\",\"release\":\"%s\",\"rev\":\"%s\",\"proto_major\":%d,\"proto_minor\":%d}\r\n",
+		   "{\"class\":\"VERSION\",\"release\":\"%s\",\"rev\":\"%s\","
+                   "\"proto_major\":%d,\"proto_minor\":%d}\r\n",
 		   VERSION, REVISION,
 		   GPSD_PROTO_MAJOR_VERSION, GPSD_PROTO_MINOR_VERSION);
 }
 
-#ifdef TIMING_ENABLE
-#define CONDITIONALLY_UNUSED
-#else
-#define CONDITIONALLY_UNUSED UNUSED
-#endif /* TIMING_ENABLE */
-
-
 void json_tpv_dump(const struct gps_device_t *session,
-		   const struct gps_policy_t *policy CONDITIONALLY_UNUSED,
+		   const struct gps_policy_t *policy,
 		   char *reply, size_t replylen)
 {
     const struct gps_data_t *gpsdata = &session->gpsdata;
@@ -139,11 +133,12 @@ void json_tpv_dump(const struct gps_device_t *session,
 	str_appendf(reply, replylen, "\"status\":%d,", gpsdata->status);
     }
     str_appendf(reply, replylen, "\"mode\":%d,", gpsdata->fix.mode);
-    if (isfinite(gpsdata->fix.time) != 0) {
+    if (0 < gpsdata->fix.time.tv_sec) {
 	char tbuf[JSON_DATE_MAX+1];
 	str_appendf(reply, replylen,
 		       "\"time\":\"%s\",",
-		       unix_to_iso8601(gpsdata->fix.time, tbuf, sizeof(tbuf)));
+		       timespec_to_iso8601(gpsdata->fix.time,
+                                      tbuf, sizeof(tbuf)));
     }
     if (LEAP_SECOND_VALID == (session->context->valid & LEAP_SECOND_VALID)) {
 	str_appendf(reply, replylen, "\"leapseconds\":%d,",
@@ -162,15 +157,30 @@ void json_tpv_dump(const struct gps_device_t *session,
      * chips, which are quite common.
      */
     if (gpsdata->fix.mode >= MODE_2D) {
+        double altitude = NAN;
+
 	if (isfinite(gpsdata->fix.latitude) != 0)
 	    str_appendf(reply, replylen,
 			   "\"lat\":%.9f,", gpsdata->fix.latitude);
 	if (isfinite(gpsdata->fix.longitude) != 0)
 	    str_appendf(reply, replylen,
 			   "\"lon\":%.9f,", gpsdata->fix.longitude);
-	if (0 != isfinite(gpsdata->fix.altitude))
+	if (0 != isfinite(gpsdata->fix.altHAE)) {
+	    altitude = gpsdata->fix.altHAE;
 	    str_appendf(reply, replylen,
-			   "\"alt\":%.3f,", gpsdata->fix.altitude);
+			   "\"altHAE\":%.3f,", gpsdata->fix.altHAE);
+        }
+	if (0 != isfinite(gpsdata->fix.altMSL)) {
+	    altitude = gpsdata->fix.altMSL;
+	    str_appendf(reply, replylen,
+			   "\"altMSL\":%.3f,", gpsdata->fix.altMSL);
+        }
+	if (0 != isfinite(altitude)) {
+            // DEPRECATED, undefined
+	    str_appendf(reply, replylen,
+			   "\"alt\":%.3f,", altitude);
+        }
+
 	if (isfinite(gpsdata->fix.epx) != 0)
 	    str_appendf(reply, replylen, "\"epx\":%.3f,", gpsdata->fix.epx);
 	if (isfinite(gpsdata->fix.epy) != 0)
@@ -179,9 +189,12 @@ void json_tpv_dump(const struct gps_device_t *session,
 	    str_appendf(reply, replylen, "\"epv\":%.3f,", gpsdata->fix.epv);
 	if (isfinite(gpsdata->fix.track) != 0)
 	    str_appendf(reply, replylen, "\"track\":%.4f,", gpsdata->fix.track);
-	if (isfinite(gpsdata->fix.magnetic_track) != 0)
+	if (0 != isfinite(gpsdata->fix.magnetic_track))
 		str_appendf(reply, replylen, "\"magtrack\":%.4f,",
                             gpsdata->fix.magnetic_track);
+	if (0 != isfinite(gpsdata->fix.magnetic_var))
+		str_appendf(reply, replylen, "\"magvar\":%.1f,",
+                            gpsdata->fix.magnetic_var);
 	if (isfinite(gpsdata->fix.speed) != 0)
 	    str_appendf(reply, replylen, "\"speed\":%.3f,", gpsdata->fix.speed);
 	if ((gpsdata->fix.mode >= MODE_3D) && isfinite(gpsdata->fix.climb) != 0)
@@ -218,37 +231,59 @@ void json_tpv_dump(const struct gps_device_t *session,
 	    if (0 != isfinite(gpsdata->fix.ecef.vAcc))
 		str_appendf(reply, replylen, "\"ecefvAcc\":%.2f,",
 			    gpsdata->fix.ecef.vAcc);
+	    /* NED is in meters, so %.3f is millimeter resolution */
+	    if (0 != isfinite(gpsdata->fix.NED.relPosN))
+		str_appendf(reply, replylen, "\"relN\":%.3f,",
+			    gpsdata->fix.NED.relPosN);
+	    if (0 != isfinite(gpsdata->fix.NED.relPosE))
+		str_appendf(reply, replylen, "\"relE\":%.3f,",
+			    gpsdata->fix.NED.relPosE);
+	    if (0 != isfinite(gpsdata->fix.NED.relPosD))
+		str_appendf(reply, replylen, "\"relD\":%.3f,",
+			    gpsdata->fix.NED.relPosD);
+	    if (0 != isfinite(gpsdata->fix.NED.velN))
+		str_appendf(reply, replylen, "\"velN\":%.3f,",
+			    gpsdata->fix.NED.velN);
+	    if (0 != isfinite(gpsdata->fix.NED.velE))
+		str_appendf(reply, replylen, "\"velE\":%.3f,",
+			    gpsdata->fix.NED.velE);
+	    if (0 != isfinite(gpsdata->fix.NED.velD))
+		str_appendf(reply, replylen, "\"velD\":%.3f,",
+			    gpsdata->fix.NED.velD);
+	    if (0 != isfinite(gpsdata->fix.geoid_sep))
+		str_appendf(reply, replylen, "\"geoidSep\":%.3f,",
+			    gpsdata->fix.geoid_sep);
         }
-#ifdef TIMING_ENABLE
 	if (policy->timing) {
 	    char rtime_str[TIMESPEC_LEN];
+            char ts_buf[TIMESPEC_LEN];
 	    struct timespec rtime_tmp;
 	    (void)clock_gettime(CLOCK_REALTIME, &rtime_tmp);
-	    timespec_str(&rtime_tmp, rtime_str, sizeof(rtime_str));
-	    str_appendf(reply, replylen, "\"rtime\":%s,", rtime_str);
-#ifdef PPS_ENABLE
+	    str_appendf(reply, replylen, "\"rtime\":%s,",
+                        timespec_str(&rtime_tmp, rtime_str,
+                                     sizeof(rtime_str)));
 	    if (session->pps_thread.ppsout_count) {
 		char ts_str[TIMESPEC_LEN];
 		struct timedelta_t timedelta;
 		/* ugh - de-consting this might get us in trouble someday */
 		pps_thread_ppsout(&((struct gps_device_t *)session)->pps_thread,
 				  &timedelta);
-		timespec_str(&timedelta.clock, ts_str, sizeof(ts_str) );
-		str_appendf(reply, replylen, "\"pps\":%s,", ts_str);
+		str_appendf(reply, replylen, "\"pps\":%s,",
+                            timespec_str(&timedelta.clock, ts_str,
+                                         sizeof(ts_str)));
                 /* TODO: add PPS precision to JSON output */
 	    }
-#endif /* PPS_ENABLE */
 	    str_appendf(reply, replylen,
-			"\"sor\":%.9f,\"chars\":%lu,\"sats\":%2d,"
-			"\"week\":%u,\"tow\":%.3f,\"rollovers\":%d",
-			session->sor,
+			"\"sor\":%s,\"chars\":%lu,\"sats\":%2d,"
+			"\"week\":%u,\"tow\":%lld.%03ld,\"rollovers\":%d",
+                        timespec_str(&session->sor, ts_buf, sizeof(ts_buf)),
 			session->chars,
 			gpsdata->satellites_used,
 			session->context->gps_week,
-			session->context->gps_tow,
+			(long long)session->context->gps_tow.tv_sec,
+			session->context->gps_tow.tv_nsec / 1000000L,
 			session->context->rollovers);
 	}
-#endif /* TIMING_ENABLE */
         /* at the end because it is new and microjson chokes on new items */
 	if (0 != isfinite(gpsdata->fix.eph))
 	    str_appendf(reply, replylen, "\"eph\":%.3f,", gpsdata->fix.eph);
@@ -257,6 +292,17 @@ void json_tpv_dump(const struct gps_device_t *session,
 	if ('\0' != gpsdata->fix.datum[0])
 	    str_appendf(reply, replylen, "\"datum\":\"%.40s\",",
                         gpsdata->fix.datum);
+	if (0 != isfinite(gpsdata->fix.depth))
+	    str_appendf(reply, replylen,
+			   "\"depth\":%.3f,", gpsdata->fix.depth);
+	if (0 != isfinite(gpsdata->fix.dgps_age) &&
+	    0 <= gpsdata->fix.dgps_station) {
+            /* both, or none */
+	    str_appendf(reply, replylen,
+			   "\"dgpsAge\":%.1f,", gpsdata->fix.dgps_age);
+	    str_appendf(reply, replylen,
+			   "\"dgpsSta\":%d,", gpsdata->fix.dgps_station);
+        }
     }
     str_rstrip_char(reply, ',');
     (void)strlcat(reply, "}\r\n", replylen);
@@ -269,11 +315,12 @@ void json_noise_dump(const struct gps_data_t *gpsdata,
     (void)strlcpy(reply, "{\"class\":\"GST\",", replylen);
     if (gpsdata->dev.path[0] != '\0')
 	str_appendf(reply, replylen, "\"device\":\"%s\",", gpsdata->dev.path);
-    if (isfinite(gpsdata->fix.time) != 0) {
+    if (0 < gpsdata->gst.utctime.tv_sec) {
 	char tbuf[JSON_DATE_MAX+1];
 	str_appendf(reply, replylen,
 		   "\"time\":\"%s\",",
-		   unix_to_iso8601(gpsdata->gst.utctime, tbuf, sizeof(tbuf)));
+		   timespec_to_iso8601(gpsdata->gst.utctime,
+                                       tbuf, sizeof(tbuf)));
     }
 #define ADD_GST_FIELD(tag, field) do {                     \
     if (isfinite(gpsdata->gst.field) != 0)              \
@@ -303,11 +350,12 @@ void json_sky_dump(const struct gps_data_t *datap,
     (void)strlcpy(reply, "{\"class\":\"SKY\",", replylen);
     if (datap->dev.path[0] != '\0')
 	str_appendf(reply, replylen, "\"device\":\"%s\",", datap->dev.path);
-    if (isfinite(datap->skyview_time) != 0) {
+    if (0 < datap->skyview_time.tv_sec) {
 	char tbuf[JSON_DATE_MAX+1];
 	str_appendf(reply, replylen,
 		       "\"time\":\"%s\",",
-		       unix_to_iso8601(datap->skyview_time, tbuf, sizeof(tbuf)));
+		       timespec_to_iso8601(datap->skyview_time,
+                                      tbuf, sizeof(tbuf)));
     }
     if (isfinite(datap->dop.xdop) != 0)
 	str_appendf(reply, replylen, "\"xdop\":%.2f,", datap->dop.xdop);
@@ -331,19 +379,25 @@ void json_sky_dump(const struct gps_data_t *datap,
 	(void)strlcat(reply, "\"satellites\":[", replylen);
 	for (i = 0; i < reported; i++) {
 	    if (datap->skyview[i].PRN) {
-                if (-90 > datap->skyview[i].elevation ||
-                    90 < datap->skyview[i].elevation ||
-                    0 > datap->skyview[i].azimuth ||
-                    360 < datap->skyview[i].azimuth) {
-                   /* do not report PRN w/o valid elevation and azimuth */
-                   continue;
+		str_appendf(reply, replylen, "{\"PRN\":%d,",
+                            datap->skyview[i].PRN);
+		if (0 != isfinite(datap->skyview[i].elevation) &&
+		    90 >= fabs(datap->skyview[i].elevation)) {
+		    str_appendf(reply, replylen, "\"el\":%.1f,",
+		                datap->skyview[i].elevation);
+                }
+		if (0 != isfinite(datap->skyview[i].azimuth) &&
+		    0 <= fabs(datap->skyview[i].azimuth) &&
+		    359 >= fabs(datap->skyview[i].azimuth)) {
+		    str_appendf(reply, replylen, "\"az\":%.1f,",
+		                datap->skyview[i].azimuth);
+                }
+		if (0 != isfinite(datap->skyview[i].ss)) {
+		    str_appendf(reply, replylen, "\"ss\":%.1f,",
+		                datap->skyview[i].ss);
                 }
 		str_appendf(reply, replylen,
-                   "{\"PRN\":%d,\"el\":%d,\"az\":%d,\"ss\":%.0f,\"used\":%s",
-                   datap->skyview[i].PRN,
-                   datap->skyview[i].elevation,
-                   datap->skyview[i].azimuth,
-                   datap->skyview[i].ss,
+                   "\"used\":%s",
                    datap->skyview[i].used ? "true" : "false");
                 if (0 != datap->skyview[i].svid) {
                     str_appendf(reply, replylen,
@@ -353,8 +407,17 @@ void json_sky_dump(const struct gps_data_t *datap,
                 }
                 if (0 != datap->skyview[i].sigid) {
                     str_appendf(reply, replylen,
-                       ",\"sigid\":%d",
-                       datap->skyview[i].sigid);
+                       ",\"sigid\":%d", datap->skyview[i].sigid);
+                }
+                if (GNSSID_GLO == datap->skyview[i].gnssid &&
+                    0 <= datap->skyview[i].freqid &&
+                    16 >= datap->skyview[i].freqid) {
+                    str_appendf(reply, replylen,
+                       ",\"freqid\":%d", datap->skyview[i].freqid);
+                }
+                if (SAT_HEALTH_UNK != datap->skyview[i].health) {
+                    str_appendf(reply, replylen,
+                       ",\"health\":%d", datap->skyview[i].health);
                 }
                 (void)strlcat(reply, "},", replylen);
 	    }
@@ -387,14 +450,22 @@ void json_device_dump(const struct gps_device_t *device,
 		      replylen);
 	(void)strlcat(reply, "\",", replylen);
     }
+    if (device->subtype1[0] != '\0') {
+	(void)strlcat(reply, "\"subtype1\":\"", replylen);
+	(void)strlcat(reply,
+		      json_stringify(buf1, sizeof(buf1), device->subtype1),
+		      replylen);
+	(void)strlcat(reply, "\",", replylen);
+    }
     /*
      * There's an assumption here: Anything that we type service_sensor is
      * a serial device with the usual control parameters.
      */
-    if (device->gpsdata.online > 0) {	
-	str_appendf(reply, replylen,
-		       "\"activated\":\"%s\",",
-		       unix_to_iso8601(device->gpsdata.online, buf1, sizeof(buf1)));
+    if (0 < device->gpsdata.online.tv_sec) {
+        /* odd, using online, not activated, time */
+	str_appendf(reply, replylen, "\"activated\":\"%s\",",
+		    timespec_to_iso8601(device->gpsdata.online,
+                                        buf1, sizeof(buf1)));
 	if (device->observed != 0) {
 	    int mask = 0;
 	    for (cmp = classmap; cmp < classmap + NITEMS(classmap); cmp++)
@@ -408,18 +479,22 @@ void json_device_dump(const struct gps_device_t *device,
 	    speed_t speed = gpsd_get_speed(device);
 	    if (speed != 0)
 		str_appendf(reply, replylen,
-			       "\"native\":%d,\"bps\":%d,\"parity\":\"%c\",\"stopbits\":%u,\"cycle\":%2.2f,",
-			       device->gpsdata.dev.driver_mode,
-			       (int)speed,
-			       device->gpsdata.dev.parity,
-			       device->gpsdata.dev.stopbits,
-			       device->gpsdata.dev.cycle);
+			    "\"native\":%d,\"bps\":%d,\"parity\":\"%c\","
+                            "\"stopbits\":%u,\"cycle\":%lld.%02ld,",
+			    device->gpsdata.dev.driver_mode,
+			    (int)speed,
+			    device->gpsdata.dev.parity,
+			    device->gpsdata.dev.stopbits,
+			    (long long)device->gpsdata.dev.cycle.tv_sec,
+			    device->gpsdata.dev.cycle.tv_nsec / 10000000);
 #ifdef RECONFIGURE_ENABLE
 	    if (device->device_type != NULL
 		&& device->device_type->rate_switcher != NULL)
 		str_appendf(reply, replylen,
-			       "\"mincycle\":%2.2f,",
-			       device->device_type->min_cycle);
+			       "\"mincycle\":%lld.%02ld,",
+			       (long long)device->device_type->min_cycle.tv_sec,
+			       device->device_type->min_cycle.tv_nsec /
+                               10000000);
 #endif /* RECONFIGURE_ENABLE */
 	}
     }
@@ -431,7 +506,9 @@ void json_watch_dump(const struct gps_policy_t *ccp,
 		     char *reply, size_t replylen)
 {
     (void)snprintf(reply, replylen,
-		   "{\"class\":\"WATCH\",\"enable\":%s,\"json\":%s,\"nmea\":%s,\"raw\":%d,\"scaled\":%s,\"timing\":%s,\"split24\":%s,\"pps\":%s,",
+		   "{\"class\":\"WATCH\",\"enable\":%s,\"json\":%s,"
+                   "\"nmea\":%s,\"raw\":%d,\"scaled\":%s,\"timing\":%s,"
+                   "\"split24\":%s,\"pps\":%s,",
 		   ccp->watcher ? "true" : "false",
 		   ccp->json ? "true" : "false",
 		   ccp->nmea ? "true" : "false",
@@ -639,7 +716,7 @@ void json_subframe_dump(const struct gps_data_t *datap,
 		str_appendf(buf, buflen,
 			",\"IONO\":{\"a0\":%.5g,\"a1\":%.5g,\"a2\":%.5g,"
 			"\"a3\":%.5g,\"b0\":%.5g,\"b1\":%.5g,\"b2\":%.5g,"
-			"\"b3\":%.5g,\"A1\":%.11e,\"A0\":%.11e,\"tot\":%.5g,"
+			"\"b3\":%.5g,\"A1\":%.11e,\"A0\":%.11e,\"tot\":%lld,"
 			"\"WNt\":%u,\"ls\":%d,\"WNlsf\":%u,\"DN\":%u,"
 			"\"lsf\":%d}",
 			    subframe->sub4_18.d_alpha0,
@@ -652,7 +729,7 @@ void json_subframe_dump(const struct gps_data_t *datap,
 			    subframe->sub4_18.d_beta3,
 			    subframe->sub4_18.d_A1,
 			    subframe->sub4_18.d_A0,
-			    subframe->sub4_18.d_tot,
+			    (long long)subframe->sub4_18.t_tot,
 			    (unsigned int)subframe->sub4_18.WNt,
 			    (int)subframe->sub4_18.leap,
 			    (unsigned int)subframe->sub4_18.WNlsf,
@@ -721,7 +798,8 @@ void json_subframe_dump(const struct gps_data_t *datap,
 		/* 1-index loop to construct json */
 		for(i = 1 ; i <= 24; i++){
 		    str_appendf(buf, buflen,
-				   "\"SV%d\":%d,", i, (int)subframe->sub5_25.sv[i]);
+                                "\"SV%d\":%d,",
+                                i, (int)subframe->sub5_25.sv[i]);
 		}
 		str_rstrip_char(buf, ',');
 		str_appendf(buf, buflen, "}");
@@ -746,8 +824,9 @@ void json_raw_dump(const struct gps_data_t *gpsdata,
     if (gpsdata->dev.path[0] != '\0')
 	str_appendf(reply, replylen, "\"device\":\"%s\",", gpsdata->dev.path);
 
-    str_appendf(reply, replylen, "\"time\":%ld,\"nsec\":%ld,\"rawdata\":[",
-                (long)gpsdata->raw.mtime.tv_sec, gpsdata->raw.mtime.tv_nsec);
+    str_appendf(reply, replylen, "\"time\":%lld,\"nsec\":%ld,\"rawdata\":[",
+                (long long)gpsdata->raw.mtime.tv_sec,
+                gpsdata->raw.mtime.tv_nsec);
 
     for (i = 0; i < MAXCHANNELS; i++) {
         bool comma = false;
@@ -835,7 +914,8 @@ void json_rtcm2_dump(const struct rtcm2_t *rtcm,
     if (device != NULL && device[0] != '\0')
 	str_appendf(buf, buflen, "\"device\":\"%s\",", device);
     str_appendf(buf, buflen,
-		   "\"type\":%u,\"station_id\":%u,\"zcount\":%0.1f,\"seqnum\":%u,\"length\":%u,\"station_health\":%u,",
+		   "\"type\":%u,\"station_id\":%u,\"zcount\":%0.1f,"
+                   "\"seqnum\":%u,\"length\":%u,\"station_health\":%u,",
 		   rtcm->type, rtcm->refstaid, rtcm->zcount, rtcm->seqnum,
 		   rtcm->length, rtcm->stathlth);
 
@@ -846,7 +926,8 @@ void json_rtcm2_dump(const struct rtcm2_t *rtcm,
 	for (n = 0; n < rtcm->gps_ranges.nentries; n++) {
 	    const struct gps_rangesat_t *rsp = &rtcm->gps_ranges.sat[n];
 	    str_appendf(buf, buflen,
-			   "{\"ident\":%u,\"udre\":%u,\"iod\":%u,\"prc\":%0.3f,\"rrc\":%0.3f},",
+			   "{\"ident\":%u,\"udre\":%u,\"iod\":%u,"
+                           "\"prc\":%0.3f,\"rrc\":%0.3f},",
 			   rsp->ident,
 			   rsp->udre, rsp->iod,
 			   rsp->prc, rsp->rrc);
@@ -872,7 +953,9 @@ void json_rtcm2_dump(const struct rtcm2_t *rtcm,
 	     */
 	    static char *navsysnames[] = { "GPS", "GLONASS", "GALILEO" };
 	    str_appendf(buf, buflen,
-			   "\"system\":\"%s\",\"sense\":%1d,\"datum\":\"%s\",\"dx\":%.1f,\"dy\":%.1f,\"dz\":%.1f,",
+			   "\"system\":\"%s\",\"sense\":%1d,"
+                           "\"datum\":\"%s\",\"dx\":%.1f,\"dy\":%.1f,"
+                           "\"dz\":%.1f,",
 			   rtcm->reference.system >= NITEMS(navsysnames)
 			   ? "UNKNOWN"
 			   : navsysnames[rtcm->reference.system],
@@ -888,7 +971,9 @@ void json_rtcm2_dump(const struct rtcm2_t *rtcm,
 	for (n = 0; n < rtcm->conhealth.nentries; n++) {
 	    const struct consat_t *csp = &rtcm->conhealth.sat[n];
 	    str_appendf(buf, buflen,
-			   "{\"ident\":%u,\"iodl\":%s,\"health\":%1u,\"snr\":%d,\"health_en\":%s,\"new_data\":%s,\"los_warning\":%s,\"tou\":%u},",
+			   "{\"ident\":%u,\"iodl\":%s,\"health\":%1u,"
+                           "\"snr\":%d,\"health_en\":%s,\"new_data\":%s,"
+                           "\"los_warning\":%s,\"tou\":%u},",
 			   csp->ident,
 			   JSON_BOOL(csp->iodl),
 			   (unsigned)csp->health,
@@ -909,7 +994,9 @@ void json_rtcm2_dump(const struct rtcm2_t *rtcm,
 	for (n = 0; n < rtcm->almanac.nentries; n++) {
 	    const struct station_t *ssp = &rtcm->almanac.station[n];
 	    str_appendf(buf, buflen,
-			   "{\"lat\":%.4f,\"lon\":%.4f,\"range\":%u,\"frequency\":%.1f,\"health\":%u,\"station_id\":%u,\"bitrate\":%u},",
+			   "{\"lat\":%.4f,\"lon\":%.4f,\"range\":%u,"
+                           "\"frequency\":%.1f,\"health\":%u,"
+                           "\"station_id\":%u,\"bitrate\":%u},",
 			   ssp->latitude,
 			   ssp->longitude,
 			   ssp->range,
@@ -951,7 +1038,8 @@ void json_rtcm2_dump(const struct rtcm2_t *rtcm,
 	for (n = 0; n < rtcm->glonass_ranges.nentries; n++) {
 	    const struct glonass_rangesat_t *rsp = &rtcm->glonass_ranges.sat[n];
 	    str_appendf(buf, buflen,
-			   "{\"ident\":%u,\"udre\":%u,\"change\":%s,\"tod\":%u,\"prc\":%0.3f,\"rrc\":%0.3f},",
+			   "{\"ident\":%u,\"udre\":%u,\"change\":%s,"
+                           "\"tod\":%u,\"prc\":%0.3f,\"rrc\":%0.3f},",
 			   rsp->ident,
 			   rsp->udre,
 			   JSON_BOOL(rsp->change),
@@ -1100,7 +1188,7 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 			   "{\"ident\":%u,"
 			   "\"L1\":{\"ind\":%u,\"prange\":%8.2f,"
 			   "\"delta\":%6.4f,\"lockt\":%u,"
-			   "\"amb\":%u,\"CNR\":%.2f}"
+			   "\"amb\":%u,\"CNR\":%.2f},"
 			   "\"L2\":{\"ind\":%u,\"prange\":%8.2f,"
 			   "\"delta\":%6.4f,\"lockt\":%u,"
 			   "\"CNR\":%.2f}"
@@ -1188,11 +1276,11 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 
     case 1009:
 	str_appendf(buf, buflen,
-		       "\"station_id\":%u,\"tow\":%d,\"sync\":\"%s\","
+		       "\"station_id\":%u,\"tow\":%lld,\"sync\":\"%s\","
 		       "\"smoothing\":\"%s\",\"interval\":\"%u\","
 		       "\"satcount\":\"%u\",",
 		       rtcm->rtcmtypes.rtcm3_1009.header.station_id,
-		       (int)rtcm->rtcmtypes.rtcm3_1009.header.tow,
+		       (long long)rtcm->rtcmtypes.rtcm3_1009.header.tow,
 		       JSON_BOOL(rtcm->rtcmtypes.rtcm3_1009.header.sync),
 		       JSON_BOOL(rtcm->rtcmtypes.rtcm3_1009.header.smoothing),
 		       rtcm->rtcmtypes.rtcm3_1009.header.interval,
@@ -1340,7 +1428,8 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
     case 1014:
 	str_appendf(buf, buflen,
 		       "\"netid\":%u,\"subnetid\":%u,\"statcount\":%u"
-		       "\"master\":%u,\"aux\":%u,\"lat\":%f,\"lon\":%f,\"alt\":%f,",
+		       "\"master\":%u,\"aux\":%u,\"lat\":%f,\"lon\":%f,"
+                       "\"alt\":%f,",
 		       rtcm->rtcmtypes.rtcm3_1014.network_id,
 		       rtcm->rtcmtypes.rtcm3_1014.subnetwork_id,
 		       rtcm->rtcmtypes.rtcm3_1014.stationcount,
@@ -1399,7 +1488,7 @@ void json_rtcm3_dump(const struct rtcm3_t *rtcm,
 	(void)strlcat(buf, "\"data\":[", buflen);
 	for (n = 0; n < rtcm->length; n++)
 	    str_appendf(buf, buflen,
-			   "\"0x%02x\",",(unsigned int)rtcm->rtcmtypes.data[n]);
+			"\"0x%02x\",",(unsigned int)rtcm->rtcmtypes.data[n]);
 	str_rstrip_char(buf, ',');
 	(void)strlcat(buf, "]", buflen);
 	break;
@@ -1927,9 +2016,10 @@ void json_aivdm_dump(const struct ais_t *ais,
 			   "\"data\":\"%zd:%s\"}\r\n",
 			   ais->type6.bitcount,
 			   json_stringify(buf1, sizeof(buf1),
-					  gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
-						       (char *)ais->type6.bitdata,
-						       BITS_TO_BYTES(ais->type6.bitcount))));
+                              gpsd_hexdump(
+                                  scratchbuf, sizeof(scratchbuf),
+                                  (char *)ais->type6.bitdata,
+                                  BITS_TO_BYTES(ais->type6.bitcount))));
 	    break;
 	}
 	if (ais->type6.dac == 200) {
@@ -2034,8 +2124,10 @@ void json_aivdm_dump(const struct ais_t *ais,
 	    case 12:	/* IMO236 -Dangerous cargo indication */
 		/* some fields have beem merged to an ISO8601 partial date */
 		str_appendf(buf, buflen,
-			       "\"lastport\":\"%s\",\"departure\":\"%02u-%02uT%02u:%02uZ\","
-			       "\"nextport\":\"%s\",\"eta\":\"%02u-%02uT%02u:%02uZ\","
+			       "\"lastport\":\"%s\","
+                               "\"departure\":\"%02u-%02uT%02u:%02uZ\","
+			       "\"nextport\":\"%s\","
+                               "\"eta\":\"%02u-%02uT%02u:%02uZ\","
 			       "\"dangerous\":\"%s\",\"imdcat\":\"%s\","
 			       "\"unid\":%u,\"amount\":%u,\"unit\":%u}\r\n",
 			       json_stringify(buf1, sizeof(buf1),
@@ -2058,18 +2150,21 @@ void json_aivdm_dump(const struct ais_t *ais,
 			       ais->type6.dac1fid12.amount,
 			       ais->type6.dac1fid12.unit);
 		break;
-	    case 15:	/* IMO236 - Extended Ship Static and Voyage Related Data */
+	    case 15: /* IMO236 - Extended Ship Static and Voyage Related Data */
 		str_appendf(buf, buflen,
 		    "\"airdraught\":%u}\r\n",
 		    ais->type6.dac1fid15.airdraught);
 		break;
 	    case 16:	/* IMO236 - Number of persons on board */
 		str_appendf(buf, buflen,
-			       "\"persons\":%u}\r\n", ais->type6.dac1fid16.persons);
+			   "\"persons\":%u}\r\n",
+                            ais->type6.dac1fid16.persons);
 		break;
 	    case 18:	/* IMO289 - Clearance time to enter port */
 		str_appendf(buf, buflen,
-			       "\"linkage\":%u,\"arrival\":\"%02u-%02uT%02u:%02uZ\",\"portname\":\"%s\",\"destination\":\"%s\",",
+			       "\"linkage\":%u,"
+                               "\"arrival\":\"%02u-%02uT%02u:%02uZ\","
+                               "\"portname\":\"%s\",\"destination\":\"%s\",",
 			       ais->type6.dac1fid18.linkage,
 			       ais->type6.dac1fid18.month,
 			       ais->type6.dac1fid18.day,
@@ -2235,7 +2330,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 			  tp->lon,
 			  tp->lat);
 		  str_appendf(buf, buflen,
-		      "\"from_hour\":%u,\"from_min\":%u,\"to_hour\":%u,\"to_min\":%u,\"cdir\":%u,",
+		      "\"from_hour\":%u,\"from_min\":%u,"
+                      "\"to_hour\":%u,\"to_min\":%u,\"cdir\":%u,",
 		      tp->from_hour,
 		      tp->from_min,
 		      tp->to_hour,
@@ -2259,7 +2355,8 @@ void json_aivdm_dump(const struct ais_t *ais,
     case 7:			/* Binary Acknowledge */
     case 13:			/* Safety Related Acknowledge */
 	str_appendf(buf, buflen,
-		       "\"mmsi1\":%u,\"mmsi2\":%u,\"mmsi3\":%u,\"mmsi4\":%u}\r\n",
+		       "\"mmsi1\":%u,\"mmsi2\":%u,\"mmsi3\":%u,"
+                       "\"mmsi4\":%u}\r\n",
 		       ais->type7.mmsi1,
 		       ais->type7.mmsi2, ais->type7.mmsi3, ais->type7.mmsi4);
 	break;
@@ -2271,9 +2368,10 @@ void json_aivdm_dump(const struct ais_t *ais,
 			   "\"data\":\"%zd:%s\"}\r\n",
 			   ais->type8.bitcount,
 			   json_stringify(buf1, sizeof(buf1),
-					  gpsd_hexdump(scratchbuf, sizeof(scratchbuf),
-						       (char *)ais->type8.bitdata,
-						       BITS_TO_BYTES(ais->type8.bitcount))));
+                              gpsd_hexdump(
+                                  scratchbuf, sizeof(scratchbuf),
+                                  (char *)ais->type8.bitdata,
+                                  BITS_TO_BYTES(ais->type8.bitcount))));
 	    break;
 	}
 	if (ais->type8.dac == 1) {
@@ -2364,13 +2462,19 @@ void json_aivdm_dump(const struct ais_t *ais,
 		    str_appendf(buf, buflen,
 				   "\"leveltrend\":\"%s\","
 				   "\"cspeed\":%.1f,\"cdir\":%u,"
-				   "\"cspeed2\":%.1f,\"cdir2\":%u,\"cdepth2\":%u,"
-				   "\"cspeed3\":%.1f,\"cdir3\":%u,\"cdepth3\":%u,"
-				   "\"waveheight\":%.1f,\"waveperiod\":%u,\"wavedir\":%u,"
-				   "\"swellheight\":%.1f,\"swellperiod\":%u,\"swelldir\":%u,"
+				   "\"cspeed2\":%.1f,\"cdir2\":%u,"
+                                   "\"cdepth2\":%u,"
+				   "\"cspeed3\":%.1f,\"cdir3\":%u,"
+                                   "\"cdepth3\":%u,"
+				   "\"waveheight\":%.1f,\"waveperiod\":%u,"
+                                   "\"wavedir\":%u,"
+				   "\"swellheight\":%.1f,\"swellperiod\":%u,"
+                                   "\"swelldir\":%u,"
 				   "\"seastate\":%u,\"watertemp\":%.1f,"
-				   "\"preciptype\":%u,\"preciptype_text\":\"%s\","
-				   "\"salinity\":%.1f,\"ice\":%u,\"ice_text\":\"%s\"",
+				   "\"preciptype\":%u,"
+                                   "\"preciptype_text\":\"%s\","
+				   "\"salinity\":%.1f,\"ice\":%u,"
+                                   "\"ice_text\":\"%s\"",
 				   trends[ais->type8.dac1fid11.leveltrend],
 				   ais->type8.dac1fid11.cspeed / DAC1FID11_CSPEED_DIV,
 				   ais->type8.dac1fid11.cdir,
@@ -2397,13 +2501,19 @@ void json_aivdm_dump(const struct ais_t *ais,
 		    str_appendf(buf, buflen,
 				   "\"leveltrend\":%u,"
 				   "\"cspeed\":%u,\"cdir\":%u,"
-				   "\"cspeed2\":%u,\"cdir2\":%u,\"cdepth2\":%u,"
-				   "\"cspeed3\":%u,\"cdir3\":%u,\"cdepth3\":%u,"
-				   "\"waveheight\":%u,\"waveperiod\":%u,\"wavedir\":%u,"
-				   "\"swellheight\":%u,\"swellperiod\":%u,\"swelldir\":%u,"
+				   "\"cspeed2\":%u,\"cdir2\":%u,"
+                                   "\"cdepth2\":%u,"
+				   "\"cspeed3\":%u,\"cdir3\":%u,"
+                                   "\"cdepth3\":%u,"
+				   "\"waveheight\":%u,\"waveperiod\":%u,"
+                                   "\"wavedir\":%u,"
+				   "\"swellheight\":%u,\"swellperiod\":%u,"
+                                   "\"swelldir\":%u,"
 				   "\"seastate\":%u,\"watertemp\":%u,"
-				   "\"preciptype\":%u,\"preciptype_text\":\"%s\","
-				   "\"salinity\":%u,\"ice\":%u,\"ice_text\":\"%s\"",
+				   "\"preciptype\":%u,"
+                                   "\"preciptype_text\":\"%s\","
+				   "\"salinity\":%u,\"ice\":%u,"
+                                   "\"ice_text\":\"%s\"",
 				   ais->type8.dac1fid11.leveltrend,
 				   ais->type8.dac1fid11.cspeed,
 				   ais->type8.dac1fid11.cdir,
@@ -2459,7 +2569,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 		break;
 	    case 16:	/* IMO289 - Number of persons on board */
 		str_appendf(buf, buflen,
-			       "\"persons\":%u}\r\n", ais->type6.dac1fid16.persons);
+			    "\"persons\":%u}\r\n",
+                            ais->type6.dac1fid16.persons);
 		break;
 	    case 17:        /* IMO289 - VTS-generated/synthetic targets */
 		(void)strlcat(buf, "\"targets\":[", buflen);
@@ -2540,7 +2651,7 @@ void json_aivdm_dump(const struct ais_t *ais,
 		break;
 	    case 22:        /* IMO289 - Area notice - broadcast */
 		break;
-	    case 24:        /* IMO289 - Extended ship static & voyage-related data */
+	    case 24:  /* IMO289 - Extended ship static & voyage-related data */
 		break;
 	    case 25:        /* IMO289 - Dangerous Cargo Indication */
 		break;
@@ -2652,12 +2763,17 @@ void json_aivdm_dump(const struct ais_t *ais,
 		    str_appendf(buf, buflen,
 				   "\"leveltrend\":\"%s\","
 				   "\"cspeed\":%.1f,\"cdir\":%u,"
-				   "\"cspeed2\":%.1f,\"cdir2\":%u,\"cdepth2\":%u,"
-				   "\"cspeed3\":%.1f,\"cdir3\":%u,\"cdepth3\":%u,"
-				   "\"waveheight\":%.1f,\"waveperiod\":%u,\"wavedir\":%u,"
-				   "\"swellheight\":%.1f,\"swellperiod\":%u,\"swelldir\":%u,"
+				   "\"cspeed2\":%.1f,\"cdir2\":%u,"
+                                   "\"cdepth2\":%u,"
+				   "\"cspeed3\":%.1f,\"cdir3\":%u,"
+                                   "\"cdepth3\":%u,"
+				   "\"waveheight\":%.1f,\"waveperiod\":%u,"
+                                   "\"wavedir\":%u,"
+				   "\"swellheight\":%.1f,\"swellperiod\":%u,"
+                                   "\"swelldir\":%u,"
 				   "\"seastate\":%u,\"watertemp\":%.1f,"
-				   "\"preciptype\":\"%s\",\"salinity\":%.1f,\"ice\":\"%s\"",
+				   "\"preciptype\":\"%s\",\"salinity\":%.1f,"
+                                   "\"ice\":\"%s\"",
 				   trends[ais->type8.dac1fid31.leveltrend],
 				   ais->type8.dac1fid31.cspeed / DAC1FID31_CSPEED_DIV,
 				   ais->type8.dac1fid31.cdir,
@@ -2682,12 +2798,17 @@ void json_aivdm_dump(const struct ais_t *ais,
 		    str_appendf(buf, buflen,
 				   "\"leveltrend\":%u,"
 				   "\"cspeed\":%u,\"cdir\":%u,"
-				   "\"cspeed2\":%u,\"cdir2\":%u,\"cdepth2\":%u,"
-				   "\"cspeed3\":%u,\"cdir3\":%u,\"cdepth3\":%u,"
-				   "\"waveheight\":%u,\"waveperiod\":%u,\"wavedir\":%u,"
-				   "\"swellheight\":%u,\"swellperiod\":%u,\"swelldir\":%u,"
+				   "\"cspeed2\":%u,\"cdir2\":%u,"
+                                   "\"cdepth2\":%u,"
+				   "\"cspeed3\":%u,\"cdir3\":%u,"
+                                   "\"cdepth3\":%u,"
+				   "\"waveheight\":%u,\"waveperiod\":%u,"
+                                   "\"wavedir\":%u,"
+				   "\"swellheight\":%u,\"swellperiod\":%u,"
+                                   "\"swelldir\":%u,"
 				   "\"seastate\":%u,\"watertemp\":%d,"
-				   "\"preciptype\":%u,\"salinity\":%u,\"ice\":%u",
+				   "\"preciptype\":%u,\"salinity\":%u,"
+                                   "\"ice\":%u",
 				   ais->type8.dac1fid31.leveltrend,
 				   ais->type8.dac1fid31.cspeed,
 				   ais->type8.dac1fid31.cdir,
@@ -2728,7 +2849,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 		{8020, 89, "Motor tanker"},
 		{8021, 80, "Motor tanker, liquid cargo, type N"},
 		{8022, 80, "Motor tanker, liquid cargo, type C"},
-		{8023, 89, "Motor tanker, dry cargo as if liquid (e.g. cement)"},
+		{8023, 89,
+                 "Motor tanker, dry cargo as if liquid (e.g. cement)"},
 		{8030, 79, "Container vessel"},
 		{8040, 80, "Gas tanker"},
 		{8050, 79, "Motor freighter, tug"},
@@ -2758,12 +2880,18 @@ void json_aivdm_dump(const struct ais_t *ais,
 		{8280, 79, "Pushtow, eigth cargo barges"},
 		{8290, 79, "Pushtow, nine or more barges"},
 		{8310, 80, "Pushtow, one tank/gas barge"},
-		{8320, 80, "Pushtow, two barges at least one tanker or gas barge"},
-		{8330, 80, "Pushtow, three barges at least one tanker or gas barge"},
-		{8340, 80, "Pushtow, four barges at least one tanker or gas barge"},
-		{8350, 80, "Pushtow, five barges at least one tanker or gas barge"},
-		{8360, 80, "Pushtow, six barges at least one tanker or gas barge"},
-		{8370, 80, "Pushtow, seven barges at least one tanker or gas barg"},
+		{8320, 80,
+                 "Pushtow, two barges at least one tanker or gas barge"},
+		{8330, 80,
+                 "Pushtow, three barges at least one tanker or gas barge"},
+		{8340, 80,
+                 "Pushtow, four barges at least one tanker or gas barge"},
+		{8350, 80,
+                 "Pushtow, five barges at least one tanker or gas barge"},
+		{8360, 80,
+                 "Pushtow, six barges at least one tanker or gas barge"},
+		{8370, 80,
+                 "Pushtow, seven barges at least one tanker or gas barg"},
 		{0, 0, "Illegal ship type value."},
 	    };
 	    const char *hazard_types[] = {
@@ -2848,7 +2976,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 			       "\"speed_q\":%s,"
 			       "\"course_q\":%s,"
 			       "\"heading_q\":%s}\r\n",
-			       json_stringify(buf1, sizeof(buf1), ais->type8.dac200fid10.vin),
+			       json_stringify(buf1, sizeof(buf1),
+                               ais->type8.dac200fid10.vin),
 			       ais->type8.dac200fid10.length,
 			       ais->type8.dac200fid10.beam,
 			       ais->type8.dac200fid10.shiptype,
@@ -2880,20 +3009,24 @@ void json_aivdm_dump(const struct ais_t *ais,
 			       ais->type8.dac200fid23.end_minute);
 		if (scaled)
 		    str_appendf(buf, buflen,
-			"\"start_lon\":%.6f,\"start_lat\":%.6f,\"end_lon\":%.6f,\"end_lat\":%.6f,",
+			"\"start_lon\":%.6f,\"start_lat\":%.6f,"
+                        "\"end_lon\":%.6f,\"end_lat\":%.6f,",
 			ais->type8.dac200fid23.start_lon / AIS_LATLON_DIV,
 			ais->type8.dac200fid23.start_lat / AIS_LATLON_DIV,
 			ais->type8.dac200fid23.end_lon / AIS_LATLON_DIV,
 			ais->type8.dac200fid23.end_lat / AIS_LATLON_DIV);
 		else
 		    str_appendf(buf, buflen,
-			"\"start_lon\":%d,\"start_lat\":%d,\"end_lon\":%d,\"end_lat\":%d,",
+			"\"start_lon\":%d,\"start_lat\":%d,\"end_lon\":%d,"
+                        "\"end_lat\":%d,",
 			ais->type8.dac200fid23.start_lon,
 			ais->type8.dac200fid23.start_lat,
 			ais->type8.dac200fid23.end_lon,
 			ais->type8.dac200fid23.end_lat);
 		str_appendf(buf, buflen,
-		    "\"type\":%u,\"type_text\":\"%s\",\"min\":%d,\"max\":%d,\"class\":%u,\"class_text\":\"%s\",\"wind\":%u,\"wind_text\":\"%s\"}\r\n",
+		    "\"type\":%u,\"type_text\":\"%s\",\"min\":%d,"
+                    "\"max\":%d,\"class\":%u,\"class_text\":\"%s\","
+                    "\"wind\":%u,\"wind_text\":\"%s\"}\r\n",
 
 		    ais->type8.dac200fid23.type,
 		    EMMA_TYPE_DISPLAY(ais->type8.dac200fid23.type),
@@ -2929,7 +3062,9 @@ void json_aivdm_dump(const struct ais_t *ais,
 			ais->type8.dac200fid40.lon,
 			ais->type8.dac200fid40.lat);
 		str_appendf(buf, buflen,
-		    "\"form\":%u,\"facing\":%u,\"direction\":%u,\"direction_text\":\"%s\",\"status\":%u,\"status_text\":\"%s\"}\r\n",
+		    "\"form\":%u,\"facing\":%u,\"direction\":%u,"
+                    "\"direction_text\":\"%s\",\"status\":%u,"
+                    "\"status_text\":\"%s\"}\r\n",
 		    ais->type8.dac200fid40.form,
 		    ais->type8.dac200fid40.facing,
 		    ais->type8.dac200fid40.direction,
@@ -3008,7 +3143,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 	break;
     case 12:			/* Safety Related Message */
 	str_appendf(buf, buflen,
-		       "\"seqno\":%u,\"dest_mmsi\":%u,\"retransmit\":%s,\"text\":\"%s\"}\r\n",
+		       "\"seqno\":%u,\"dest_mmsi\":%u,\"retransmit\":%s,"
+                       "\"text\":\"%s\"}\r\n",
 		       ais->type12.seqno,
 		       ais->type12.dest_mmsi,
 		       JSON_BOOL(ais->type12.retransmit),
@@ -3407,7 +3543,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 	    str_appendf(buf, buflen,
 			   "\"status\":\"%s\","
 			   "\"accuracy\":%s,\"lon\":%.1f,\"lat\":%.1f,"
-			   "\"speed\":%u,\"course\":%u,\"raim\":%s,\"gnss\":%s}\r\n",
+			   "\"speed\":%u,\"course\":%u,\"raim\":%s,"
+                           "\"gnss\":%s}\r\n",
 			   nav_legends[ais->type27.status],
 			   JSON_BOOL(ais->type27.accuracy),
 			   ais->type27.lon / AIS_LONGRANGE_LATLON_DIV,
@@ -3420,7 +3557,8 @@ void json_aivdm_dump(const struct ais_t *ais,
 	    str_appendf(buf, buflen,
 			   "\"status\":%u,"
 			   "\"accuracy\":%s,\"lon\":%d,\"lat\":%d,"
-			   "\"speed\":%u,\"course\":%u,\"raim\":%s,\"gnss\":%s}\r\n",
+			   "\"speed\":%u,\"course\":%u,\"raim\":%s,"
+                           "\"gnss\":%s}\r\n",
 			   ais->type27.status,
 			   JSON_BOOL(ais->type27.accuracy),
 			   ais->type27.lon,
@@ -3536,7 +3674,8 @@ void json_oscillator_dump(const struct gps_data_t *datap,
 /* dump the contents of an oscillator_t structure as JSON */
 {
     (void)snprintf(reply, replylen,
-		   "{\"class\":\"OSC\",\"device\":\"%s\",\"running\":%s,\"reference\":%s,\"disciplined\":%s,\"delta\":%d}\r\n",
+		   "{\"class\":\"OSC\",\"device\":\"%s\",\"running\":%s,"
+                   "\"reference\":%s,\"disciplined\":%s,\"delta\":%d}\r\n",
 		   datap->dev.path,
 		   JSON_BOOL(datap->osc.running),
 		   JSON_BOOL(datap->osc.reference),

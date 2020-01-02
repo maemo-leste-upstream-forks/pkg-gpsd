@@ -64,13 +64,13 @@ PERMISSIONS
 ***************************************************************************/
 #include "gpsd_config.h"  /* must be before all includes */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdarg.h>
 #include <ctype.h>
 #include <math.h>	/* for HUGE_VAL */
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "os_compat.h"
 #ifdef SOCKET_EXPORT_ENABLE
@@ -78,6 +78,7 @@ PERMISSIONS
 
 #include "gps.h"		/* for safe_atof() prototype */
 #include "strfuncs.h"
+#include "timespec.h"
 
 #ifdef CLIENTDEBUG_ENABLE
 static int debuglevel = 0;
@@ -141,6 +142,8 @@ static char *json_target_address(const struct json_attr_t *cursor,
 	    targetaddr = (char *)&cursor->addr.ushortint[offset];
 	    break;
 	case t_time:
+	    targetaddr = (char *)&cursor->addr.ts[offset];
+	    break;
 	case t_real:
 	    targetaddr = (char *)&cursor->addr.real[offset];
 	    break;
@@ -223,6 +226,8 @@ static int json_internal_read_object(const char *cp,
 		           sizeof(unsigned short));
 		    break;
 		case t_time:
+		    memcpy(lptr, &cursor->dflt.ts, sizeof(timespec_t));
+		    break;
 		case t_real:
 		    memcpy(lptr, &cursor->dflt.real, sizeof(double));
 		    break;
@@ -298,6 +303,9 @@ static int json_internal_read_object(const char *cp,
 				      cursor->attribute));
 		    if (strcmp(cursor->attribute, attrbuf) == 0)
 			break;
+		    if (cursor->type == t_ignore && strncmp(cursor->attribute, "", 1) == 0) {
+			break;
+		    }
 		}
 		if (cursor->attribute == NULL) {
 		    json_debug_trace((1,
@@ -540,8 +548,8 @@ static int json_internal_read_object(const char *cp,
 		    break;
 		case t_time:
 		    {
-			double tmp = iso8601_to_unix(valbuf);
-			memcpy(lptr, &tmp, sizeof(double));
+                        timespec_t ts_tmp = iso8601_to_timespec(valbuf);
+			memcpy(lptr, &ts_tmp, sizeof(timespec_t));
 		    }
 		    break;
 		case t_real:
@@ -728,19 +736,21 @@ int json_read_array(const char *cp, const struct json_array_t *arr,
 		cp = ep;
 	    break;
 	case t_time:
-	    if (*cp != '"')
-		return JSON_ERR_BADSTRING;
-	    else
-		++cp;
-	    arr->arr.reals.store[offset] = iso8601_to_unix((char *)cp);
-	    if (arr->arr.reals.store[offset] >= HUGE_VAL)
-		return JSON_ERR_BADNUM;
-	    while (*cp && *cp != '"')
-		cp++;
-	    if (*cp != '"')
-		return JSON_ERR_BADSTRING;
-	    else
-		++cp;
+            {
+                timespec_t ts_tmp;
+		if (*cp != '"')
+		    return JSON_ERR_BADSTRING;
+		else
+		    ++cp;
+		ts_tmp = iso8601_to_timespec((char *)cp);
+		arr->arr.timespecs.store[offset] = ts_tmp;
+		while (*cp && *cp != '"')
+		    cp++;
+		if (*cp != '"')
+		    return JSON_ERR_BADSTRING;
+		else
+		    ++cp;
+            }
 	    break;
 	case t_real:
 	    arr->arr.reals.store[offset] = strtod(cp, &ep);
