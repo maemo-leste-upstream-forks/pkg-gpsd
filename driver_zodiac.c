@@ -87,7 +87,7 @@ static ssize_t zodiac_spew(struct gps_device_t *session, unsigned short type,
 	if (end_write(session->gpsdata.gps_fd, &h, hlen) != (ssize_t) hlen ||
 	    end_write(session->gpsdata.gps_fd, dat,
 		      datlen) != (ssize_t) datlen) {
-	    gpsd_log(&session->context->errout, LOG_RAW,
+	    GPSD_LOG(LOG_INFO, &session->context->errout,
 		     "Reconfigure write failed\n");
 	    return -1;
 	}
@@ -99,7 +99,7 @@ static ssize_t zodiac_spew(struct gps_device_t *session, unsigned short type,
     for (i = 0; i < dlen; i++)
 	str_appendf(buf, sizeof(buf), " %04x", dat[i]);
 
-    gpsd_log(&session->context->errout, LOG_RAW,
+    GPSD_LOG(LOG_RAW, &session->context->errout,
 	     "Sent Zodiac packet: %s\n", buf);
 
     return 0;
@@ -141,9 +141,9 @@ static gps_mask_t handle1000(struct gps_device_t *session)
 /* time-position-velocity report */
 {
     gps_mask_t mask;
-    double subseconds;
     struct tm unpacked_date;
     int datum;
+    char ts_buf[TIMESPEC_LEN];
 
     /* ticks                      = getzlong(6); */
     /* sequence                   = getzword(8); */
@@ -167,21 +167,21 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     unpacked_date.tm_min = (int)getzword(23);
     unpacked_date.tm_sec = (int)getzword(24);
     unpacked_date.tm_isdst = 0;
-    subseconds = (int)getzlong(25) / 1e9;
-    session->newdata.time = (timestamp_t)mkgmtime(&unpacked_date) + subseconds;
+    session->newdata.time.tv_sec = mkgmtime(&unpacked_date);
+    session->newdata.time.tv_nsec = getzlong(25);
     session->newdata.latitude = ((long)getzlong(27)) * RAD_2_DEG * 1e-8;
     session->newdata.longitude = ((long)getzlong(29)) * RAD_2_DEG * 1e-8;
     /*
      * The Rockwell Jupiter TU30-D140 reports altitude as uncorrected height
      * above WGS84 geoid.  The Zodiac binary protocol manual does not
      * specify whether word 31 is geodetic or WGS 84.
+     * Here we assume altitude is always wgs84.
      */
-    session->newdata.altitude = ((long)getzlong(31)) * 1e-2;
-    session->gpsdata.separation = ((short)getzword(33)) * 1e-2;
-    session->newdata.altitude -= session->gpsdata.separation;
+    session->newdata.altHAE = ((long)getzlong(31)) * 1e-2;
+    session->newdata.geoid_sep = ((short)getzword(33)) * 1e-2;
     session->newdata.speed = (int)getzlong(34) * 1e-2;
     session->newdata.track = (int)getzword(36) * RAD_2_DEG * 1e-3;
-    session->mag_var = ((short)getzword(37)) * RAD_2_DEG * 1e-4;
+    session->newdata.magnetic_var = ((short)getzword(37)) * RAD_2_DEG * 1e-4;
     session->newdata.climb = ((short)getzword(38)) * 1e-2;
     datum = getzword(39);
     datum_code_string(datum, session->newdata.datum,
@@ -202,27 +202,32 @@ static gps_mask_t handle1000(struct gps_device_t *session)
     mask = TIME_SET | NTPTIME_IS | LATLON_SET | ALTITUDE_SET | CLIMB_SET |
            SPEED_SET | TRACK_SET | STATUS_SET | MODE_SET |
            HERR_SET | SPEEDERR_SET | VERR_SET;
-    gpsd_log(&session->context->errout, LOG_DATA,
-	     "1000: time=%.2f lat=%.2f lon=%.2f alt=%.2f track=%.2f speed=%.2f climb=%.2f mode=%d status=%d\n",
-	     session->newdata.time, session->newdata.latitude,
-	     session->newdata.longitude, session->newdata.altitude,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
+	     "1000: time=%s lat=%.2f lon=%.2f altHAE=%.2f track=%.2f "
+             "speed=%.2f climb=%.2f mode=%d status=%d\n",
+             timespec_str(&session->newdata.time, ts_buf, sizeof(ts_buf)),
+	     session->newdata.latitude,
+	     session->newdata.longitude, session->newdata.altHAE,
 	     session->newdata.track, session->newdata.speed,
 	     session->newdata.climb, session->newdata.mode,
 	     session->gpsdata.status);
     return mask;
 }
 
+/* Message 1002: Channel Summary Message */
 static gps_mask_t handle1002(struct gps_device_t *session)
-/* satellite signal quality report */
 {
     int i;
+    timespec_t ts_tow;
 
     /* ticks                      = getzlong(6); */
     /* sequence                   = getzword(8); */
     /* measurement_sequence       = getzword(9); */
     int gps_week = getzword(10);
-    int gps_seconds = getzlong(11);
-    /* gps_nanoseconds            = getzlong(13); */
+    time_t gps_seconds = getzlong(11);
+    long gps_nanoseconds = getzlong(13);
+    char ts_buf[TIMESPEC_LEN];
+
     /* Note: this week counter is not limited to 10 bits. */
     session->context->gps_week = (unsigned short)gps_week;
     session->gpsdata.satellites_used = 0;
@@ -238,13 +243,17 @@ static gps_mask_t handle1002(struct gps_device_t *session)
 	session->gpsdata.skyview[i].ss = (float)getzword(17 + (3 * i));
 	session->gpsdata.skyview[i].used = (bool)(status & 1);
     }
-    session->gpsdata.skyview_time = gpsd_gpstime_resolve(session,
+    ts_tow.tv_sec = gps_seconds;
+    ts_tow.tv_nsec = gps_nanoseconds;
+    session->gpsdata.skyview_time = gpsd_gpstime_resolv(session,
 						      (unsigned short)gps_week,
-						      (double)gps_seconds);
-    gpsd_log(&session->context->errout, LOG_DATA,
-	     "1002: visible=%d used=%d mask={SATELLITE|USED}\n",
+						      ts_tow);
+    GPSD_LOG(LOG_DATA, &session->context->errout,
+	     "1002: visible=%d used=%d mask={SATELLITE|USED} time %s\n",
 	     session->gpsdata.satellites_visible,
-	     session->gpsdata.satellites_used);
+	     session->gpsdata.satellites_used,
+             timespec_str(&session->gpsdata.skyview_time, ts_buf,
+                          sizeof(ts_buf)));
     return SATELLITE_SET | USED_IS;
 }
 
@@ -275,19 +284,21 @@ static gps_mask_t handle1003(struct gps_device_t *session)
 	if (i < session->gpsdata.satellites_visible) {
 	    session->gpsdata.skyview[i].PRN = (short)getzword(15 + (3 * i));
 	    session->gpsdata.skyview[i].azimuth =
-		(short)(((short)getzword(16 + (3 * i))) * RAD_2_DEG * 1e-4);
+		(((double)getzword(16 + (3 * i))) * RAD_2_DEG * 1e-4);
 	    if (session->gpsdata.skyview[i].azimuth < 0)
 		session->gpsdata.skyview[i].azimuth += 360;
 	    session->gpsdata.skyview[i].elevation =
-		(short)(((short)getzword(17 + (3 * i))) * RAD_2_DEG * 1e-4);
+		(((double)getzword(17 + (3 * i))) * RAD_2_DEG * 1e-4);
 	} else {
 	    session->gpsdata.skyview[i].PRN = 0;
-	    session->gpsdata.skyview[i].azimuth = 0;
-	    session->gpsdata.skyview[i].elevation = 0;
+	    session->gpsdata.skyview[i].azimuth = NAN;
+	    session->gpsdata.skyview[i].elevation = NAN;
+	    session->gpsdata.skyview[i].ss = NAN;
 	}
     }
-    session->gpsdata.skyview_time = NAN;
-    gpsd_log(&session->context->errout, LOG_DATA,
+    session->gpsdata.skyview_time.tv_sec = 0;
+    session->gpsdata.skyview_time.tv_nsec = 0;
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "NAVDOP: visible=%d gdop=%.2f pdop=%.2f "
 	     "hdop=%.2f vdop=%.2f tdop=%.2f mask={SATELLITE|DOP}\n",
 	     session->gpsdata.satellites_visible,
@@ -322,7 +333,7 @@ static gps_mask_t handle1011(struct gps_device_t *session)
      * The Zodiac is supposed to send one of these messages on startup.
      */
     getstringz(session->subtype, session->lexer.outbuffer, 19, 28);	/* software version field */
-    gpsd_log(&session->context->errout, LOG_DATA,
+    GPSD_LOG(LOG_DATA, &session->context->errout,
 	     "1011: subtype=%s mask={DEVICEID}\n",
 	     session->subtype);
     return DEVICEID_SET;
@@ -353,7 +364,7 @@ static gps_mask_t zodiac_analyze(struct gps_device_t *session)
      * level does not actually require it.
      */
     if (session->context->errout.debug >= LOG_RAW)
-	gpsd_log(&session->context->errout, LOG_RAW,
+	GPSD_LOG(LOG_RAW, &session->context->errout,
 		 "Raw Zodiac packet type %d length %zd: %s\n",
 		 id, session->lexer.outbuflen, gpsd_prettydump(session));
 
@@ -446,7 +457,6 @@ static bool zodiac_speed_switch(struct gps_device_t *session,
 }
 #endif /* RECONFIGURE_ENABLE */
 
-#ifdef TIMEHINT_ENABLE
 static double zodiac_time_offset(struct gps_device_t *session UNUSED)
 {
     /* Removing/changing the magic number below is likely to disturb
@@ -455,7 +465,6 @@ static double zodiac_time_offset(struct gps_device_t *session UNUSED)
      * with the 1pps signal active is required. */
     return 1.1;
 }
-#endif /* TIMEHINT_ENABLE */
 
 /* this is everything we export */
 /* *INDENT-OFF* */
@@ -476,14 +485,13 @@ const struct gps_type_t driver_zodiac =
     .speed_switcher = zodiac_speed_switch,/* we can change baud rate */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = zodiac_control_send,	/* for gpsctl and friends */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = zodiac_time_offset,	/* compute NTO fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 

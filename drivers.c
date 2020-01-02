@@ -3,18 +3,15 @@
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-/* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
-#define __ISO_C_VISIBLE 1999
-
 #include "gpsd_config.h"  /* must be before all includes */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdarg.h>
 #include <assert.h>
 #include <ctype.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "gpsd.h"
@@ -40,21 +37,21 @@ gps_mask_t generic_parse_input(struct gps_device_t *session)
 	char *sentence = (char *)session->lexer.outbuffer;
 
 	if (sentence[strlen(sentence)-1] != '\n')
-	    gpsd_log(&session->context->errout, LOG_IO,
+	    GPSD_LOG(LOG_IO, &session->context->errout,
 		     "<= GPS: %s\n", sentence);
 	else
-	    gpsd_log(&session->context->errout, LOG_IO,
+	    GPSD_LOG(LOG_IO, &session->context->errout,
 		     "<= GPS: %s", sentence);
 
 	if ((st=nmea_parse(sentence, session)) == 0) {
-	    gpsd_log(&session->context->errout, LOG_WARN,
+	    GPSD_LOG(LOG_WARN, &session->context->errout,
 		     "unknown sentence: \"%s\"\n", sentence);
 	}
 	for (dp = gpsd_drivers; *dp; dp++) {
 	    char *trigger = (*dp)->trigger;
 
 	    if (trigger!=NULL && str_starts_with(sentence, trigger)) {
-		gpsd_log(&session->context->errout, LOG_PROG,
+		GPSD_LOG(LOG_PROG, &session->context->errout,
 			 "found trigger string %s.\n", trigger);
 		if (*dp != session->device_type) {
 		    (void)gpsd_switch_driver(session, (*dp)->type_name);
@@ -69,7 +66,7 @@ gps_mask_t generic_parse_input(struct gps_device_t *session)
 	return st;
 #endif /* NMEA0183_ENABLE */
     } else {
-	gpsd_log(&session->context->errout, LOG_SHOUT,
+	GPSD_LOG(LOG_SHOUT, &session->context->errout,
 		 "packet type %d fell through (should never happen): %s.\n",
 		 session->lexer.type, gpsd_prettydump(session));
 	return 0;
@@ -99,14 +96,13 @@ const struct gps_type_t driver_unknown = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = NULL,		/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 
@@ -153,7 +149,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 #ifdef NMEA0183_ENABLE
 	case 0:
 	    /* probe for Garmin serial GPS -- expect $PGRMC followed by data */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for Garmin NMEA\n");
 	    (void)nmea_send(session, "$PGRMCE");
 	    break;
@@ -177,33 +173,32 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 	     * mode!  Fix this if we ever find a nondisruptive probe
 	     * string.
 	     */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for SiRF\n");
 	    (void)nmea_send(session,
 			    "$PSRF100,0,%d,%d,%d,0",
 			    session->gpsdata.dev.baudrate,
 			    9 - session->gpsdata.dev.stopbits,
 			    session->gpsdata.dev.stopbits);
-	    session->back_to_nmea = true;
 	    break;
 #endif /* SIRF_ENABLE */
 #ifdef NMEA0183_ENABLE
 	case 2:
 	    /* probe for the FV-18 -- expect $PFEC,GPint followed by data */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for FV-18\n");
 	    (void)nmea_send(session, "$PFEC,GPint");
 	    break;
 	case 3:
 	    /* probe for the Trimble Copernicus */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for Trimble Copernicus\n");
 	    (void)nmea_send(session, "$PTNLSNM,0139,01");
 	    break;
 #endif /* NMEA0183_ENABLE */
 #ifdef EVERMORE_ENABLE
 	case 4:
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for Evermore\n");
 	    /* Enable checksum and GGA(1s), GLL(0s), GSA(1s), GSV(1s), RMC(1s), VTG(0s), PEMT101(0s) */
 	    /* EverMore will reply with: \x10\x02\x04\x38\x8E\xC6\x10\x03 */
@@ -215,7 +210,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 #ifdef GPSCLOCK_ENABLE
 	case 5:
 	    /* probe for Furuno Electric GH-79L4-N (GPSClock); expect $PFEC,GPssd */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for GPSClock\n");
 	    (void)nmea_send(session, "$PFEC,GPsrq");
 	    break;
@@ -223,7 +218,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 #ifdef ASHTECH_ENABLE
 	case 6:
 	    /* probe for Ashtech -- expect $PASHR,RID */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for Ashtech\n");
 	    (void)nmea_send(session, "$PASHQ,RID");
 	    break;
@@ -231,7 +226,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 #ifdef UBLOX_ENABLE
 	case 7:
 	    /* probe for UBX -- query port configuration */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for UBX\n");
 	    (void)ubx_write(session, 0x06, 0x00, NULL, 0);
 	    break;
@@ -239,7 +234,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 #ifdef MTK3301_ENABLE
 	case 8:
 	    /* probe for MTK-3301 -- expect $PMTK705 */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for MediaTek\n");
 	    (void)nmea_send(session, "$PMTK605");
 	    break;
@@ -247,7 +242,7 @@ static void nmea_event_hook(struct gps_device_t *session, event_t event)
 #ifdef GREIS_ENABLE
 	case 9:
 	    /* probe for Javad GREIS -- expect reply with JAVAD */
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "=> Probing for Javad GREIS\n");
 	    /* TODO: confirm this actually gets JAVAD response */
 	    (void)nmea_send(session, "print,/par/rcv/vendor");
@@ -280,14 +275,13 @@ const struct gps_type_t driver_nmea0183 = {
     .mode_switcher  = NULL,		/* no binary mode to revert to */
 #endif /* BINARY_ENABLE */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 
@@ -387,14 +381,13 @@ const struct gps_type_t driver_garmin = {
     .speed_switcher = NULL,			/* no speed switcher */
     .mode_switcher  = garmin_mode_switch,	/* mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /*RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* GARMIN_ENABLE && NMEA0183_ENABLE */
@@ -450,14 +443,13 @@ const struct gps_type_t driver_ashtech = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* ASHTECH_ENABLE */
@@ -502,14 +494,13 @@ const struct gps_type_t driver_fv18 = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* FV18_ENABLE */
@@ -542,14 +533,13 @@ const struct gps_type_t driver_gpsclock = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* sample rate is fixed */
-    .min_cycle      = 1,		/* sample rate is fixed */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* GPSCLOCK_ENABLE */
@@ -598,14 +588,13 @@ static const struct gps_type_t driver_tripmate = {
     .speed_switcher= NULL,			/* no speed switcher */
     .mode_switcher = NULL,			/* no mode switcher */
     .rate_switcher = NULL,			/* no sample-rate switcher */
-    .min_cycle     = 1,				/* no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send  = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* TRIPMATE_ENABLE */
@@ -655,14 +644,13 @@ static const struct gps_type_t driver_earthmate = {
     .speed_switcher= NULL,			/* no speed switcher */
     .mode_switcher = NULL,			/* no mode switcher */
     .rate_switcher = NULL,			/* no sample-rate switcher */
-    .min_cycle     = 1,				/* no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send  = nmea_write,	/* never actually used. */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* EARTHMATE_ENABLE */
@@ -696,7 +684,7 @@ static ssize_t tnt_control_send(struct gps_device_t *session,
     }
 #ifdef __UNUSED__
     else {
-	gpsd_log(&session->context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "Bad TNT sentence: '%s'\n", msg);
     }
 #endif /* __UNUSED__ */
@@ -722,11 +710,11 @@ static bool tnt_send(struct gps_device_t *session, const char *fmt, ...)
     va_end(ap);
     sent = tnt_control_send(session, buf, strlen(buf));
     if (sent == (ssize_t) strlen(buf)) {
-	gpsd_log(&session->context->errout, LOG_IO,
+	GPSD_LOG(LOG_IO, &session->context->errout,
 		 "=> GPS: %s\n", buf);
 	return true;
     } else {
-	gpsd_log(&session->context->errout, LOG_WARN,
+	GPSD_LOG(LOG_WARN, &session->context->errout,
 		 "=> GPS: %s FAILED\n", buf);
 	return false;
     }
@@ -780,14 +768,13 @@ const struct gps_type_t driver_trueNorth = {
     .speed_switcher = tnt_speed,	/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no wrapup */
-    .min_cycle      = 0.5,		/* fixed at 20 samples per second */
+    .min_cycle.tv_sec  = 0,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 500000000,	/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = tnt_control_send,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif
@@ -820,10 +807,10 @@ static int oceanserver_send(struct gpsd_errout_t *errout,
     status = (int)write(fd, buf, strlen(buf));
     (void)tcdrain(fd);
     if (status == (int)strlen(buf)) {
-	gpsd_log(errout, LOG_IO, "=> GPS: %s\n", buf);
+	GPSD_LOG(LOG_IO, errout, "=> GPS: %s\n", buf);
 	return status;
     } else {
-	gpsd_log(errout, LOG_WARN, "=> GPS: %s FAILED\n", buf);
+	GPSD_LOG(LOG_WARN, errout, "=> GPS: %s FAILED\n", buf);
 	return -1;
     }
 }
@@ -860,14 +847,13 @@ static const struct gps_type_t driver_oceanServer = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no wrapup */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif
@@ -928,14 +914,13 @@ static const struct gps_type_t driver_fury = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = fury_rate_switcher,
-    .min_cycle      = 1,		/* has rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 
@@ -953,8 +938,9 @@ static gps_mask_t rtcm104v2_analyze(struct gps_device_t *session)
     rtcm2_unpack(&session->gpsdata.rtcm2, (char *)session->lexer.isgps.buf);
     /* extra guard prevents expensive hexdump calls */
     if (session->context->errout.debug >= LOG_RAW)
-	gpsd_log(&session->context->errout, LOG_RAW,
-		 "RTCM 2.x packet type 0x%02x length %d words from %zd bytes: %s\n",
+	GPSD_LOG(LOG_RAW, &session->context->errout,
+		 "RTCM 2.x packet type 0x%02x length %d words "
+                 "from %zd bytes: %s\n",
 		 session->gpsdata.rtcm2.type,
 		 session->gpsdata.rtcm2.length + 2,
 		 session->lexer.isgps.buflen,
@@ -983,14 +969,13 @@ static const struct gps_type_t driver_rtcm104v2 = {
     .speed_switcher= NULL,		/* no speed switcher */
     .mode_switcher = NULL,		/* no mode switcher */
     .rate_switcher = NULL,		/* no sample-rate switcher */
-    .min_cycle     = 1,			/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = NULL,		/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* RTCM104V2_ENABLE */
@@ -1005,7 +990,7 @@ static gps_mask_t rtcm104v3_analyze(struct gps_device_t *session)
 {
     uint16_t type = getbeu16(session->lexer.inbuffer, 3) >> 4;
 
-    gpsd_log(&session->context->errout, LOG_RAW, "RTCM 3.x packet %d\n", type);
+    GPSD_LOG(LOG_RAW, &session->context->errout, "RTCM 3.x packet %d\n", type);
     rtcm3_unpack(session->context,
 		 &session->gpsdata.rtcm3,
 		 (char *)session->lexer.outbuffer);
@@ -1030,14 +1015,13 @@ static const struct gps_type_t driver_rtcm104v3 = {
     .speed_switcher= NULL,		/* no speed switcher */
     .mode_switcher = NULL,		/* no mode switcher */
     .rate_switcher = NULL,		/* no sample-rate switcher */
-    .min_cycle     = 1,			/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = NULL,		/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* RTCM104V3_ENABLE */
@@ -1066,14 +1050,13 @@ static const struct gps_type_t driver_garmintxt = {
     .speed_switcher= NULL,		/* no speed switcher */
     .mode_switcher = NULL,		/* no mode switcher */
     .rate_switcher = NULL,		/* no sample-rate switcher */
-    .min_cycle     = 1,			/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = NULL,		/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* GARMINTXT_ENABLE */
@@ -1081,7 +1064,7 @@ static const struct gps_type_t driver_garmintxt = {
 #ifdef MTK3301_ENABLE
 /**************************************************************************
  *
- * MediaTek MTK-3301, 3329, 3339
+ * MediaTek MTK-3301, 3329, 3333, 3339
  *
  * OEMs for several GPS vendors, notably including Garmin, FasTrax, Trimble,
  * and AdaFruit. Website at <http://www.mediatek.com/>.
@@ -1097,6 +1080,8 @@ static const struct gps_type_t driver_garmintxt = {
  * sense given the multi-constellation capability. The channel count
  * in the driver is never used by the NMEA driver so leaving the lower MTK3301
  * value in there is OK.
+ *
+ * MTK3333 support 10Hz.
  *
  * The Adafruit GPS HAT for the Raspberry Pi is an MTK3339. It works with this
  * driver; in fact AdaFruit's overview page for the product features GPSD.
@@ -1147,10 +1132,13 @@ static bool mtk3301_rate_switcher(struct gps_device_t *session, double rate)
     char buf[78];
 
     unsigned int milliseconds = (unsigned int)(1000 * rate);
-    if (rate > 1)
-	milliseconds = 1000;
-    else if (rate < 0.2)
-	milliseconds = 200;
+    if (rate > 1) {
+        // force no slower than 1Hz
+        milliseconds = 1000;
+    } else if (rate < 0.1) {
+        // force no faster than 10Hz, MTK3333 can do 10Hz
+        milliseconds = 100;
+    }
 
     (void)snprintf(buf, sizeof(buf), "$PMTK300,%u,0,0,0,0", milliseconds);
     (void)nmea_send(session, buf);	/* Fix interval */
@@ -1174,15 +1162,14 @@ const struct gps_type_t driver_mtk3301 = {
 #ifdef RECONFIGURE_ENABLE
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
-    .rate_switcher  = mtk3301_rate_switcher,		/* sample rate switcher */
-    .min_cycle      = 0.2,		/* max 5Hz */
+    .rate_switcher  = mtk3301_rate_switcher,	/* sample rate switcher */
+    .min_cycle.tv_sec  = 0,
+    .min_cycle.tv_nsec = 100000000,     /* max 10Hz */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* MTK3301_ENABLE */
@@ -1342,14 +1329,13 @@ const struct gps_type_t driver_isync = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = nmea_write,	/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* ISYNC_ENABLE */
@@ -1396,7 +1382,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 	return false;
 
     /* we may need to dump the raw packet */
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "AIVDM packet length %zd: %s\n", buflen, buf);
 
     /* first clear the result, making sure we don't return garbage */
@@ -1404,7 +1390,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 
     /* discard overlong sentences */
     if (strlen(buf) > sizeof(fieldcopy)-1) {
-	gpsd_log(&session->context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "overlong AIVDM packet.\n");
 	return false;
     }
@@ -1412,7 +1398,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
     /* discard sentences with high-half characters in them, they're corrupted */
     for (cp1 = buf; *cp1; cp1++) {
 	if (!isascii(*cp1)) {
-	    gpsd_log(&session->context->errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &session->context->errout,
 		     "corrupted AIVDM packet.\n");
 	    return false;
 	}
@@ -1434,12 +1420,13 @@ static bool aivdm_decode(const char *buf, size_t buflen,
     }
 #ifdef __UNDEF_DEBUG_
     for(int i=0;i<nfields;i++)
-        gpsd_log(&session->context->errout, LOG_DATA, "field [%d] [%s]\n",i,field[i]);
+        GPSD_LOG(LOG_DATA, &session->context->errout,
+                 "field [%d] [%s]\n", i, field[i]);
 #endif
 
     /* discard sentences with exiguous commas; catches run-ons */
     if (nfields < 7) {
-	gpsd_log(&session->context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "malformed AIVDM packet.\n");
 	return false;
     }
@@ -1452,14 +1439,14 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 	 * is going to break if there's ever an AIVDO type 24, though.
 	 */
 	if (!str_starts_with((const char *)field[0], "!AIVDO"))
-	    gpsd_log(&session->context->errout, LOG_INF,
+	    GPSD_LOG(LOG_INF, &session->context->errout,
 		     "invalid empty AIS channel. Assuming 'A'\n");
 	ais_context = &session->driver.aivdm.context[0];
 	session->driver.aivdm.ais_channel ='A';
 	break;
     case '1':
 	if (strcmp((char *)field[4], (char *)"12") == 0) {
-	    gpsd_log(&session->context->errout, LOG_INF,
+	    GPSD_LOG(LOG_INF, &session->context->errout,
 		     "ignoring bogus AIS channel '12'.\n");
 	    return false;
 	}
@@ -1474,11 +1461,11 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 	session->driver.aivdm.ais_channel ='B';
 	break;
     case 'C':
-        gpsd_log(&session->context->errout, LOG_INF,
+        GPSD_LOG(LOG_INF, &session->context->errout,
 		 "ignoring AIS channel C (secure AIS).\n");
         return false;
     default:
-	gpsd_log(&session->context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "invalid AIS channel 0x%0X .\n", field[4][0]);
 	return false;
     }
@@ -1490,7 +1477,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
     pad = 0;
     if(isdigit(field[6][0]))
         pad = field[6][0] - '0'; /* number of padding bits ASCII encoded*/
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "nfrags=%d, ifrag=%d, decoded_frags=%d, data=%s, pad=%d\n",
 	     nfrags, ifrag, ais_context->decoded_frags, data, pad);
 
@@ -1498,7 +1485,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 
     /* check fragment ordering */
     if (ifrag != ais_context->decoded_frags + 1) {
-	gpsd_log(&session->context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "invalid fragment #%d received, expected #%d.\n",
 		 ifrag, ais_context->decoded_frags + 1);
 	if (ifrag != 1)
@@ -1520,7 +1507,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 	if (ch >= 40)
 	    ch -= 8;
 #ifdef __UNUSED_DEBUG__
-	gpsd_log(&session->context->errout, LOG_RAW,
+	GPSD_LOG(LOG_RAW, &session->context->errout,
 		 "%c: %s\n", *cp, sixbits[ch]);
 #endif /* __UNUSED_DEBUG__ */
 	for (i = 5; i >= 0; i--) {
@@ -1530,7 +1517,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
 	    }
 	    ais_context->bitlen++;
 	    if (ais_context->bitlen > sizeof(ais_context->bits)) {
-		gpsd_log(&session->context->errout, LOG_INF,
+		GPSD_LOG(LOG_INF, &session->context->errout,
 			 "overlong AIVDM payload truncated.\n");
 		return false;
 	    }
@@ -1542,7 +1529,7 @@ static bool aivdm_decode(const char *buf, size_t buflen,
     if (ifrag == nfrags) {
 	if (debug >= LOG_INF) {
 	    size_t clen = BITS_TO_BYTES(ais_context->bitlen);
-	    gpsd_log(&session->context->errout, LOG_INF,
+	    GPSD_LOG(LOG_INF, &session->context->errout,
 		     "AIVDM payload is %zd bits, %zd chars: %s\n",
 		     ais_context->bitlen, clen,
 		     gpsd_hexdump(session->msgbuf, sizeof(session->msgbuf),
@@ -1601,14 +1588,13 @@ const struct gps_type_t driver_aivdm = {
     .speed_switcher   = NULL,		/* no speed switcher */
     .mode_switcher    = NULL,		/* no mode switcher */
     .rate_switcher    = NULL,		/* no rate switcher */
-    .min_cycle        = 1,		/* max 1Hz */
+    .min_cycle.tv_sec  = 1,		/* max 1Hz */
+    .min_cycle.tv_nsec = 0,
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send     = NULL,		/* no control sender */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no NTP communication */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* AIVDM_ENABLE */
@@ -1663,7 +1649,7 @@ static void path_rewrite(struct gps_device_t *session, char *prefix)
 
 static gps_mask_t json_pass_packet(struct gps_device_t *session)
 {
-    gpsd_log(&session->context->errout, LOG_IO,
+    GPSD_LOG(LOG_IO, &session->context->errout,
 	     "<= GPS: %s\n", (char *)session->lexer.outbuffer);
 
     if (strstr(session->gpsdata.dev.path, ":/") != NULL && strstr(session->gpsdata.dev.path, "localhost") == NULL)
@@ -1690,7 +1676,7 @@ static gps_mask_t json_pass_packet(struct gps_device_t *session)
 	    session->lexer.outbuflen = strlen((char *)session->lexer.outbuffer);
 	}
     }
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "JSON, passing through %s\n",
 	     (char *)session->lexer.outbuffer);
     return PASSTHROUGH_IS;
@@ -1713,20 +1699,18 @@ const struct gps_type_t driver_json_passthrough = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = NULL,		/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 
 #endif /* PASSTHROUGH_ENABLE */
 
-#if defined(PPS_ENABLE)
 /* *INDENT-OFF* */
 const struct gps_type_t driver_pps = {
     .type_name      = "PPS",		/* full name of type */
@@ -1744,18 +1728,15 @@ const struct gps_type_t driver_pps = {
     .speed_switcher = NULL,		/* no speed switcher */
     .mode_switcher  = NULL,		/* no mode switcher */
     .rate_switcher  = NULL,		/* no sample-rate switcher */
-    .min_cycle      = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = NULL,		/* how to send control strings */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
-
-#endif /* PPS_ENABLE */
 
 
 extern const struct gps_type_t driver_evermore;
@@ -1876,10 +1857,7 @@ static const struct gps_type_t *gpsd_driver_array[] = {
 #ifdef PASSTHROUGH_ENABLE
     &driver_json_passthrough,
 #endif /* PASSTHROUGH_ENABLE */
-#if defined(PPS_ENABLE)
     &driver_pps,
-#endif /* PPS_ENABLE */
-
     NULL,
 };
 

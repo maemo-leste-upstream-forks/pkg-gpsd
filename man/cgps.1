@@ -37,7 +37,7 @@ cgps, gegps, gps, lcdgps, xgps, xgpsspeed \- test clients for gpsd
 .HP \w'\fBlcdgps\fR\ 'u
 \fBlcdgps\fR [\-h] [\-j] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-s] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBxgps\fR\ 'u
-\fBxgps\fR [\-?] [\-D\ \fIdebug\-level\fR] [\-h] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+\fBxgps\fR [\-?] [\-D\ \fIdebug\-level\fR] [\-h] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\-r\ \fIdegrees\fR] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .HP \w'\fBxgpsspeed\fR\ 'u
 \fBxgpsspeed\fR [\-\-debug\ \fIdebug\-level\fR] [\-\-device\ \fIdevice\fR] [\-h] [\-\-host\ \fIhost\fR] [\-\-landspeed] [\-\-maxspeed\ \fImaxspeed\fR] [\-\-nautical] [\-\-port\ \fIport\fR] [\-\-speedunits\ {[mph]\ |\ [kph]\ |\ [knots]}] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
 .SH "DESCRIPTION"
@@ -91,13 +91,17 @@ option\&.
 .PP
 Where present, the
 \fB\-u\fR
-option can be used to set the system units for display; follow the keyword with \*(Aqi\*(Aq for \*(Aqimperial\*(Aq for American units (feet in altitude and error estimates, miles per hour in speeds), \*(Aqn\*(Aq for \*(Aqnautical\*(Aq (feet in altitude and error estimates, knots in speed) or \*(Aqm\*(Aq for \*(Aqmetric\*(Aq (meters in altitude and error estimates, kilometers per hour in speeds)\&.
+option can be used to set the system units for display; follow the keyword with \*(Aqi\*(Aq for \*(Aqimperial\*(Aq for American units (International Feet in altitude and error estimates, miles per hour in speeds), \*(Aqn\*(Aq for \*(Aqnautical\*(Aq (feet in altitude and error estimates, knots in speed) or \*(Aqm\*(Aq for \*(Aqmetric\*(Aq (meters in altitude and error estimates, kilometers per hour in speeds)\&.
+.PP
+Note: The USA Survey Foot is not supported\&.
 .PP
 The
 \fB\-D\fR
 option, when present, sets a debug level; it is primarily for use by GPSD developers\&. It enables various progress messages to standard error\&.
 .PP
 By default, clients collect data from all compatible devices on localhost, using the default GPSD port 2947\&. An optional argument to any client may specify a server to get data from\&. A colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a specific device name to be watched\&. However, if the server specification contains square brackets, the part inside them is taken as an IPv6 address and port/device suffixes are only parsed after the trailing bracket\&. Possible cases look like this:
+.PP
+The options for xgps can be placed in the XGPSOPTS environment variable\&. XGPSOPTS is processed before the CLI options\&.
 .PP
 localhost:/dev/ttyS1
 .RS 4
@@ -133,7 +137,9 @@ is a simple test client for
 gpsd
 with an X interface\&. It displays current GPS position/time/velocity information and (for GPSes that support the feature) the locations of accessible satellites\&.
 .PP
-In the sky view, satellites are color\-coded to indicate quality of signal; consult the data display to the left for exact figures in dB\&. Square icons indicate WAAS/EGNOS satellites, circles indicate ordinary GPS satellites\&. Filled icons were used in the last fix, outline icons were not\&.
+In the sky view, satellites are color\-coded to indicate quality of signal; consult the data display to the left for exact figures in dB\&. Square icons indicate SBAS/WAAS/EGNOS satellites, circles indicate ordinary GPS satellites\&. Filled icons were used in the current fix, outline icons were not\&.
+.PP
+The \-r option accepts an argument in degrees, to rotate the skyview counterclockwise\&.
 .SS "xgpsspeed"
 .PP
 xgpsspeed
@@ -159,7 +165,7 @@ from displaying the data coming from the daemon\&. This display can also be togg
 .PP
 The
 \fB\-m\fR
-option will display your magnetic heading (as opposed to your true heading)\&. This is a calculated value, not a measured value, and is subject to a potential error of up to two degrees in the areas for which the calculation is valid (currently Western Europe, Alaska, and Lower 48 in the USA)\&. The formulas used are those found in the Aviation Formulary v1\&.43\&.
+option will display your magnetic track (as opposed to your true track)\&. This is a calculated value, not a measured value\&. Magnetic variation is always potentially subject to large errors, but is usually better than two degrees\&.
 .PP
 cgps
 terminates when you send it a SIGHUP or SIGINT; given default terminal settings this will happen when you type Ctrl\-C at it\&. It will also terminate on \*(Aqq\*(Aq
@@ -184,6 +190,18 @@ If you have the free (non\-subscription) version, start by running with the
 option to drop a clue in the Google Earth installation directory, as \*(AqOpen_in_Google_Earth_RT_GPS\&.kml\*(Aq, then open that file in Places (File > Open\&.\&.\&.)\&. Run
 gegps
 in the normal way after that\&.
+.SH "ENVIRONMENT"
+.PP
+The
+\fBXGPSOPTS>\fR
+environment variable may be set to pass commonly used command line options to
+\fBxgps\fR
+and
+\fBxgpsspeed\fR\&. This is often used to set the
+\fB\-u\fR
+option for locale specific units\&.
+\fBXGPSOPTS\fR
+is processed before the CLI options\&.
 .SH "SEE ALSO"
 .PP
 \fBgpsd\fR(8),

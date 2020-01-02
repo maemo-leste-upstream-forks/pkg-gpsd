@@ -10,15 +10,15 @@
 extern "C" {
 #endif
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <stdbool.h>
 #include <inttypes.h>	/* stdint.h would be smaller but not all have it */
 #include <limits.h>
-#include <time.h>
-#include <signal.h>
-#include <stdio.h>
 #include <pthread.h>	/* pacifies OpenBSD's compiler */
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <sys/time.h>   // for struct timespec
+#include <sys/types.h>
+#include <time.h>
 
 /*
  * 4.1 - Base version for initial JSON protocol (Dec 2009, release 2.90)
@@ -51,13 +51,40 @@ extern "C" {
  *       enlarge subtype to hold ZED-F9 string
  *       MAXCHANNELS bumped from 120 to 140
  *       Try to make PRN be NMEA 2.x-4.0 compliant, not 4.10 or u-blox
+ * 9.0   add NED and geoid_sep variables to gps_fix_t
+ *       add health variable to satellite_t
+ *       change satellite_t elevation and azimuth to double
+ *       satellite_t elevation, azimuth, and ss use NAN for unknown value.
+ *       add altMSL, and depth, to gps_fix_t
+ *       add altHAE to gps_fix_t
+ *       mark altitude in gps_fix_t as deprecated and undefined
+ *       Move mag_var from gps_device_t to magnetic_var gps_data_t.
+ *       add dgps_age and dgps_station, to gps_fix_t
+ *       Change gps_fix_t.time from timestamp_t to timespec_t
+ *       Change gps_data_t.skyview_time from timestamp_t to timespec_t
+ *       Change gps_data_t.online from timestamp_t to timespec_t
+ *       Change gpst_t.utctime from double to timespec_t
+ *       Change devices.time from timestamp_t to timespec_t
+ *       Change sub4_18.d_tot from timestamp_t to time_t t_tot
+ *       Change devconfig_t.activated, cycle & mincycle to timespec_t
+ *       Remove unused timestamp() and unix_to_iso8601().
+ *       Remove unused iso8601_to_unix().
+ *       Remove unused struct timestamp_t entirely
+ *       Add DEG_NORM()
+ *       Move toff and pps out of gps_data_t.union.
+ *       Move gps_fix_t.qErr to gps_data_t.
+ *       Split devconfig_t.subtype into subtype and subtype1
  */
-#define GPSD_API_MAJOR_VERSION	8	/* bump on incompatible changes */
+#define GPSD_API_MAJOR_VERSION	9	/* bump on incompatible changes */
 #define GPSD_API_MINOR_VERSION	0	/* bump on compatible changes */
 
 #define MAXCHANNELS	140	/* u-blox 9 tracks 140 signals */
 #define MAXUSERDEVS	4	/* max devices per user */
 #define GPS_PATH_MAX	128	/* for names like /dev/serial/by-id/... */
+
+// normalize degrees to 0 to 359
+#define DEG_NORM(deg) \
+    if (0 > (deg)) {(deg) += 360;} else if (360 <= (deg)) {(deg) -= 360;};
 
 /*
  * The structure describing an uncertainty volume in kinematic space.
@@ -71,12 +98,12 @@ extern "C" {
  *
  * Error estimates are at 95% confidence.
  */
-/* WARNING!  potential loss of precision in timestamp_t
- * a double is 53 significant bits.
+/* WARNING!  loss of precision telling time as a double.
+ * A double is 53 significant bits.
  * UNIX time to nanoSec precision is 62 significant bits
  * UNIX time to nanoSec precision after 2038 is 63 bits
- * timestamp_t is only microSec precision
- * timestamp_t and PPS do not play well together
+ * UNIX time as a double is only microSec precision
+ * UNIX time as a double and PPS do not play well together
  */
 
 /* we want cm accuracy and 0.0000001 degrees is 1.11 cm at the equator
@@ -89,13 +116,12 @@ extern "C" {
  *
  * ref: https://en.wikipedia.org/wiki/Decimal_degrees
  */
-typedef double timestamp_t;	/* Unix time in seconds with fractional part */
 typedef struct timespec timespec_t;	/* Unix time as sec, nsec */
 
 /* GPS error estimates are all over the map, and often unspecified.
  * try for 1-sigma if we can... */
 struct gps_fix_t {
-    timestamp_t time;	/* Time of update */
+    timespec_t time;	/* Time of update */
     int    mode;	/* Mode of fix */
 #define MODE_NOT_SEEN	0	/* mode update not seen yet */
 #define MODE_NO_FIX	1	/* none */
@@ -106,7 +132,12 @@ struct gps_fix_t {
     double epy;  	/* Latitude position uncertainty, meters */
     double longitude;	/* Longitude in degrees (valid if mode >= 2) */
     double epx;  	/* Longitude position uncertainty, meters */
-    double altitude;	/* Altitude in meters (valid if mode == 3) */
+    double altitude;    // DEPRECATED, undefined.
+    double altHAE;	/* Altitude, height above ellipsoid.
+                         * in meters and probably WGS84
+                         * (valid if mode == 3)
+                         * MSL = altHAE - geoid_sep */
+    double altMSL;      /* Altitude MSL (maybe EGM2008) */
     double epv;  	/* Vertical position uncertainty, meters */
     double track;	/* Course made good (relative to true north) */
     double epd;		/* Track uncertainty, degrees */
@@ -114,14 +145,21 @@ struct gps_fix_t {
     double eps;		/* Speed uncertainty, meters/sec */
     double climb;       /* Vertical speed, meters/sec */
     double epc;		/* Vertical speed uncertainty */
-    /* estimated postion error horizontal (2D) . meters, maybe 50%, maybe 95% */
+    /* estimated position error horizontal (2D). Meters, maybe 50%, maybe 95% */
     /* aka estimated position error (epe) */
-    double eph;		/* estimated postion error horizontal (2D) */
-    /* sperical error probability, 3D. meters, maybe 50%, maybe 95% */
+    double eph;		/* estimated position error horizontal (2D) */
+    /* spherical error probability, 3D. Meters, maybe 50%, maybe 95% */
     /* Garmin, not gpsd, calls this estimated position error (epe) */
     double sep;
+    /* Geoid separation (ellipsoid separation)
+     * Height of MSL ellipsoid (geoid) above WGS84 ellipsoid.
+     * Postive is MSL above WGS84. In meters */
+    double geoid_sep;
 
     double magnetic_track;  /* Course (relative to Magnetic North) */
+    double magnetic_var;    /* magnetic variation in degrees */
+    double depth;           /* depth in meters, probably depth of water
+                             * under the keel */
 
     /* ECEF data, all data in meters, and meters/second, or NaN */
     struct {
@@ -130,9 +168,20 @@ struct gps_fix_t {
 	double vx, vy, vz;	/* ECEF x, y, z velocity */
 	double vAcc;            /* Velocity Accuracy Estimate, probably SEP */
     } ecef;
+    /* NED data, all data in meters, and meters/second, or NaN */
+    struct {
+        double relPosN, relPosE, relPosD;   /* NED relative positions */
+        double velN, velE, velD;            /* NED velocities */
+    } NED;
     char datum[40];             /* map datum */
-    /* quantization error adjustment to PPS. aka "sawtooth" correction */
-    long qErr;                  /* offset in picoseconds (ps) */
+    /* DGPS stuff, often from xxGGA, or xxGNS */
+    double dgps_age;            /* age of DGPS data in tenths of seconds,
+                                 * -1 invalid */
+    /* DGPS Station used, max size is a guess
+     * NMEA 2 says 0000-1023
+     * RTCM 3, station ID is 0 to 4095.
+     * u-blox UBX-NAV-DGPS is 16 bit integer */
+    int dgps_station;           /* DGPS station ID, -1 invalid */
 };
 
 /*
@@ -147,7 +196,7 @@ struct gps_fix_t {
  * The structure describing the pseudorange errors (GPGST)
  */
 struct gst_t {
-    double utctime;
+    timespec_t utctime;
     double rms_deviation;
     double smajor_deviation;
     double sminor_deviation;
@@ -184,7 +233,7 @@ struct gst_t {
 typedef uint32_t isgps30bits_t;
 
 /*
- * Values for "system" fields.  Note, the encoding logic is senstive to the
+ * Values for "system" fields.  Note, the encoding logic is sensitive to the
  * actual values of these; it's not sufficient that they're distinct.
  */
 #define NAVSYSTEM_GPS   	0
@@ -207,7 +256,7 @@ struct rtcm2_t {
 	    unsigned int nentries;
 	    struct gps_rangesat_t {	/* data from messages 1 & 9 */
 		unsigned ident;		/* satellite ID */
-		unsigned udre;		/* user diff. range error */
+		unsigned udre;		/* user differential range error */
 		unsigned iod;		/* issue of data */
 		double prc;		/* range error */
 		double rrc;		/* range error rate */
@@ -271,7 +320,7 @@ struct rtcm2_t {
 	    unsigned int nentries;
 	    struct glonass_rangesat_t {		/* data from message type 31 */
 		unsigned ident;		/* satellite ID */
-		unsigned udre;		/* user diff. range error */
+		unsigned udre;		/* user differential range error */
 		unsigned tod;		/* issue of data */
 		bool change;		/* ephemeris change bit */
 		double prc;		/* range error */
@@ -329,7 +378,7 @@ struct rtcm3_network_rtk_header {
     time_t time;		/* GPS Epoch Time (TOW) in ms */
     bool multimesg;		/* GPS Multiple Message Indicator */
     unsigned master_id;		/* Master Reference Station ID */
-    unsigned aux_id;		/* Auxilary Reference Station ID */
+    unsigned aux_id;		/* Auxiliary Reference Station ID */
     unsigned char satcount;	/* count of GPS satellites */
 };
 
@@ -455,7 +504,7 @@ struct rtcm3_t {
 	    unsigned int subnetwork_id;	/* Subnetwork ID */
 	    unsigned int stationcount;	/* # auxiliary stations transmitted */
 	    unsigned int master_id;	/* Master Reference Station ID */
-	    unsigned int aux_id;	/* Auxilary Reference Station ID */
+	    unsigned int aux_id;	/* Auxiliary Reference Station ID */
 	    double d_lat, d_lon, d_alt;	/* Aux-master location delta */
 	} rtcm3_1014;
 	struct rtcm3_1015_t {
@@ -828,7 +877,7 @@ struct subframe_t {
 	    /* tot, reference time for UTC data,
 	     * 8 bits unsigned, scale 2**12, seconds */
 	    uint8_t tot;
-	    double d_tot;
+	    time_t t_tot;
 
 	    /* WNt, UTC reference week number, 8 bits unsigned, scale 1,
 	     * weeks */
@@ -916,7 +965,7 @@ struct ais_t
 #define AIS_TURN_HARD_LEFT	-127
 #define AIS_TURN_HARD_RIGHT	127
 #define AIS_TURN_NOT_AVAILABLE	128
-	    unsigned int speed;			/* speed over ground in deciknots */
+	    unsigned int speed;		/* speed over ground in deciknots */
 #define AIS_SPEED_NOT_AVAILABLE	1023
 #define AIS_SPEED_FAST_MOVER	1022		/* >= 102.2 knots */
 	    bool accuracy;			/* position accuracy */
@@ -929,7 +978,10 @@ struct ais_t
 #define AIS_COURSE_NOT_AVAILABLE	3600
 	    unsigned int heading;		/* true heading */
 #define AIS_HEADING_NOT_AVAILABLE	511
-	    unsigned int second;		/* seconds of UTC timestamp */
+            /* seconds of UTC time, 0 to 59.
+             * 60 == N/A, 61 == manual, 62 == dead reckoning,
+             * 63 == inoperative */
+	    unsigned int second;
 #define AIS_SEC_NOT_AVAILABLE	60
 #define AIS_SEC_MANUAL		61
 #define AIS_SEC_ESTIMATED	62
@@ -975,7 +1027,7 @@ struct ais_t
 	    unsigned int to_stern;	/* dimension to stern */
 	    unsigned int to_port;	/* dimension to port */
 	    unsigned int to_starboard;	/* dimension to starboard */
-	    unsigned int epfd;		/* type of position fix deviuce */
+	    unsigned int epfd;		/* type of position fix device */
 	    unsigned int month;		/* UTC month */
 	    unsigned int day;		/* UTC day */
 	    unsigned int hour;		/* UTC hour */
@@ -1116,7 +1168,7 @@ struct ais_t
 		    unsigned int tugs;	/* Tugs */
 		    unsigned int solidwaste;	/* Waste disposal (solid) */
 		    unsigned int liquidwaste;	/* Waste disposal (liquid) */
-		    unsigned int hazardouswaste;	/* Waste disposal (hazardous) */
+		    unsigned int hazardouswaste;  // Waste disposal (hazardous)
 		    unsigned int ballast;	/* Reserved ballast exchange */
 		    unsigned int additional;	/* Additional services */
 		    unsigned int regional1;	/* Regional reserved 1 */
@@ -1380,10 +1432,10 @@ struct ais_t
 #define DAC1FID11_WATERLEVEL_DIV		10.0
 		    unsigned int leveltrend;	/* water level trend code */
 #define DAC1FID11_WATERLEVELTREND_NOT_AVAILABLE	3
-		    unsigned int cspeed;	/* surface current speed in deciknots */
+		    unsigned int cspeed;  // surface current speed in deciknots
 #define DAC1FID11_CSPEED_NOT_AVAILABLE		255
 #define DAC1FID11_CSPEED_DIV			10.0
-		    unsigned int cdir;		/* surface current dir., degrees */
+		    unsigned int cdir;	/* surface current dir., degrees */
 #define DAC1FID11_CDIR_NOT_AVAILABLE		511
 		    unsigned int cspeed2;	/* current speed in deciknots */
 		    unsigned int cdir2;		/* current dir., degrees */
@@ -1558,7 +1610,7 @@ struct ais_t
 #define DAC1FID31_WATERTEMP_DIV		10.0
 		    unsigned int preciptype;	/* 0-7, enumerated */
 #define DAC1FID31_PRECIPTYPE_NOT_AVAILABLE	7
-		    unsigned int salinity;	/* units of 0.1 permil (ca. PSU) */
+		    unsigned int salinity;   // units of 0.1 permil (ca. PSU)
 #define DAC1FID31_SALINITY_NOT_AVAILABLE	510
 #define DAC1FID31_SALINITY_DIV		10.0
 		    unsigned int ice;		/* is there sea ice? */
@@ -1578,7 +1630,10 @@ struct ais_t
 	    int lon;			/* longitude */
 	    int lat;			/* latitude */
 	    unsigned int course;	/* course over ground */
-	    unsigned int second;	/* seconds of UTC timestamp */
+            /* seconds of UTC time, 0 to 59.
+             * 60 == N/A, 61 == manual, 62 == dead reckoning,
+             * 63 == inoperative */
+	    unsigned int second;	/* seconds of UTC time */
 	    unsigned int regional;	/* regional reserved */
 	    unsigned int dte;		/* data terminal enable */
 	    //unsigned int spare;	spare bits */
@@ -1654,7 +1709,10 @@ struct ais_t
 #define AIS_GNS_LAT_NOT_AVAILABLE	0xd548
 	    unsigned int course;	/* course over ground */
 	    unsigned int heading;	/* true heading */
-	    unsigned int second;	/* seconds of UTC timestamp */
+            /* seconds of UTC time, 0 to 59.
+             * 60 == N/A, 61 == manual, 62 == dead reckoning,
+             * 63 == inoperative */
+	    unsigned int second;
 	    unsigned int regional;	/* regional reserved */
 	    bool cs;     		/* carrier sense unit flag */
 	    bool display;		/* unit has attached display? */
@@ -1674,7 +1732,10 @@ struct ais_t
 	    int lat;			/* latitude */
 	    unsigned int course;	/* course over ground */
 	    unsigned int heading;	/* true heading */
-	    unsigned int second;	/* seconds of UTC timestamp */
+            /* seconds of UTC time, 0 to 59.
+             * 60 == N/A, 61 == manual, 62 == dead reckoning,
+             * 63 == inoperative */
+	    unsigned int second;
 	    unsigned int regional;	/* regional reserved */
 	    // cppcheck-suppress arrayIndexOutOfBounds
 	    char shipname[AIS_SHIPNAME_MAXLEN+1];		/* ship name */
@@ -1683,7 +1744,7 @@ struct ais_t
 	    unsigned int to_stern;	/* dimension to stern */
 	    unsigned int to_port;	/* dimension to port */
 	    unsigned int to_starboard;	/* dimension to starboard */
-	    unsigned int epfd;		/* type of position fix deviuce */
+	    unsigned int epfd;		/* type of position fix device */
 	    bool raim;			/* RAIM flag */
 	    unsigned int dte;    	/* date terminal enable */
 	    bool assigned;		/* assigned-mode flag */
@@ -1721,7 +1782,10 @@ struct ais_t
 	    unsigned int to_port;	/* dimension to port */
 	    unsigned int to_starboard;	/* dimension to starboard */
 	    unsigned int epfd;		/* type of EPFD */
-	    unsigned int second;	/* second of UTC timestamp */
+            /* seconds of UTC time, 0 to 59.
+             * 60 == N/A, 61 == manual, 62 == dead reckoning,
+             * 63 == inoperative */
+	    unsigned int second;
 	    bool off_position;		/* off-position indicator */
 	    unsigned int regional;	/* regional reserved field */
 	    bool raim;			/* RAIM flag */
@@ -1749,7 +1813,7 @@ struct ais_t
 		    unsigned int dest2;	/* addressed station MMSI 2 */
 		} mmsi;
 	    };
-	    bool addressed;		/* addressed vs. broadast flag */
+	    bool addressed;		/* addressed vs. broadcast flag */
 	    bool band_a;		/* fix 1.5kHz band for channel A */
 	    bool band_b;		/* fix 1.5kHz band for channel B */
 	    unsigned int zonesize;	/* size of transitional zone */
@@ -1832,29 +1896,21 @@ struct ais_t
     };
 };
 
-/* defines for u-blox gnssId, as used in satellite_t */
-#define GNSSID_GPS 0
-#define GNSSID_SBAS 1
-#define GNSSID_GAL 2
-#define GNSSID_BD 3
-#define GNSSID_IMES 4
-#define GNSSID_QZSS 5
-#define GNSSID_GLO 6
-#define GNSSID_IRNSS 7            /* Not defined by u-blox */
-#define GNSSID_CNT 8              /* count for array size */
 
 /* basic data, per PRN, from GPGSA and GPGSV, or GPS binary messages */
 /* FIXME: u-blox 9 no longer uses PRN */
 struct satellite_t {
-    double ss;		/* signal-to-noise ratio, 0 to 254 dB, -1 for n/a */
+    /* SNR. signal-to-noise ratio, 0 to 254 dB, u-blox can be 0 to 63.
+     * -1 for n/a */
+    double ss;
     bool used;		/* this satellite used in solution */
     /* PRN of this satellite, 1 to 437, 0 for n/a
      * sadly there is no standard, but many different implementations of
      * how to code PRN
      */
     short PRN;          /* PRN numbering per NMEA 2.x to 4.0, not 4.10 */
-    short elevation;	/* elevation of satellite, -90 to 90 deg, -91 for n/a */
-    short azimuth;	/* azimuth, 0 to 359 deg, -1 for n/a */
+    double elevation;	/* elevation of satellite, -90 to 90 deg, NAN for n/a */
+    double azimuth;	/* azimuth, 0 to 359 deg, NAN1 for n/a */
     /* gnssid:svid:sigid, as defined by u-blox 8/9:
      *  gnssid        svid (native PRN)
      *  0 = GPS       1-32
@@ -1878,6 +1934,17 @@ struct satellite_t {
      * Note: other GNSS receivers use different mappings!
      */
     unsigned char gnssid;
+/* defines for u-blox gnssId, as used in satellite_t */
+#define GNSSID_GPS 0
+#define GNSSID_SBAS 1
+#define GNSSID_GAL 2
+#define GNSSID_BD 3
+#define GNSSID_IMES 4
+#define GNSSID_QZSS 5
+#define GNSSID_GLO 6
+#define GNSSID_IRNSS 7            /* Not defined by u-blox */
+#define GNSSID_CNT 8              /* count for array size */
+
     /* ignore gnssid and sigid if svid is zero */
     unsigned char svid;
     /* sigid as defined by u-blox 9, and used here
@@ -1896,11 +1963,15 @@ struct satellite_t {
      * GLONASS:  1 = L1 OF, 3 = L2 OF
      */
     unsigned char sigid;
-    unsigned char freqid;       /* The GLONASS (Only) frequency, 0 - 13 */
+    signed char freqid;         /* The GLONASS (Only) frequency, 0 - 13 */
+    unsigned char health;       /* 0 = unknown, 1 = healthy, 2 = unhealthy */
+#define SAT_HEALTH_UNK 0
+#define SAT_HEALTH_OK 1
+#define SAT_HEALTH_BAD 2
 };
 
 struct attitude_t {
-    struct timespec	mtime;  /* time of measurement */
+    timespec_t	mtime;  /* time of measurement */
     double acc_len; /* unitvector sqrt(x^2 + y^2 +z^2) */
     double acc_x;
     double acc_y;
@@ -1960,7 +2031,8 @@ struct rawdata_t {
         unsigned char svid;
         /* sigid see satellite_t for decode */
         unsigned char sigid;
-        unsigned char snr;      /* SNR.  0 to 100 dB-Hz. */
+        /* SNR.  0 to 100 dB-Hz.  u-blox can be 0 to 63. */
+        unsigned char snr;
         unsigned char freqid;   /* The GLONASS (Only) frequency, 0 - 13 */
         unsigned char lli;      /* RINEX Loss of Lock Indicator
                                  * bit 0 - Lost Lock
@@ -2027,13 +2099,15 @@ struct devconfig_t {
 #define SEEN_RTCM3	0x04
 #define SEEN_AIS 	0x08
     char driver[64];
-    char subtype[128];                  /* 96 too small for ZED-F9 */
+    /* 96 too small for ZED-F9 */
+    char subtype[128];           // maybe hardware version
+    char subtype1[128];          // maybe software version
     /* a buffer to hold data to output to GPS */
     char hexdata[HEXDATA_MAX];
-    double activated;
+    timespec_t activated;
     unsigned int baudrate, stopbits;	/* RS232 link parameters */
     char parity;			/* 'N', 'O', or 'E' */
-    double cycle, mincycle;     	/* refresh cycle time in seconds */
+    timespec_t cycle, mincycle;     	/* refresh cycle time in seconds */
     int driver_mode;    		/* is driver in native mode or not? */
 };
 
@@ -2055,8 +2129,8 @@ struct gps_policy_t {
 #define TIMEDELTA_DEFINED
 
 struct timedelta_t {
-    struct timespec	real;
-    struct timespec	clock;
+    timespec_t	real;
+    timespec_t	clock;
 };
 #endif /* TIMEDELTA_DEFINED */
 
@@ -2136,8 +2210,10 @@ struct gps_data_t {
 #define VECEF_SET	(1llu<<37)
 #define MAGNETIC_TRACK_SET (1llu<<38)
 #define RAW_SET         (1llu<<39)
-#define SET_HIGH_BIT	40
-    timestamp_t online;		/* NZ if GPS is on line, 0 if not.
+#define NED_SET         (1llu<<40)
+#define VNED_SET        (1llu<<41)
+#define SET_HIGH_BIT	42
+    timespec_t online;		/* NZ if GPS is on line, 0 if not.
 				 *
 				 * Note: gpsd clears this time when sentences
 				 * fail to show up within the GPS's normal
@@ -2154,13 +2230,11 @@ struct gps_data_t {
 #endif
     struct gps_fix_t	fix;	/* accumulated PVT data */
 
-    /* this should move to the per-driver structure */
-    double separation;		/* Geoidal separation, MSL - WGS84 (Meters) */
-
     /* GPS status -- always valid */
     int    status;		/* Do we have a fix? */
 #define STATUS_NO_FIX	0	/* no */
-#define STATUS_FIX	1	/* yes, GPS, without DGPS */
+/* yes, plain GPS (SPS Mode), without DGPS, PPS, RTK, DR, etc. */
+#define STATUS_FIX	1
 #define STATUS_DGPS_FIX	2	/* yes, with DGPS */
 #define STATUS_RTK_FIX	3	/* yes, with RTK Fixed */
 #define STATUS_RTK_FLT	4	/* yes, with RTK Float */
@@ -2168,13 +2242,17 @@ struct gps_data_t {
 #define STATUS_GNSSDR	6	/* yes, with GNSS + dead reckoning */
 #define STATUS_TIME	7	/* yes, time only (surveyed in, manual) */
 #define STATUS_SIM	8	/* yes, simulated */
+/* yes, Precise Positioning Service (PPS)
+ * Not to be confused with Pulse per Second (PPS)
+ * PPS is the encrypted military P(Y)-code */
+#define STATUS_PPS_FIX	9
 
     /* precision of fix -- valid if satellites_used > 0 */
     int satellites_used;	/* Number of satellites used in solution */
     struct dop_t dop;
 
     /* satellite status -- valid when satellites_visible > 0 */
-    timestamp_t skyview_time;	/* skyview timestamp */
+    timespec_t skyview_time;	/* skyview time */
     int satellites_visible;	/* # of satellites in view */
     struct satellite_t skyview[MAXCHANNELS];
 
@@ -2183,7 +2261,7 @@ struct gps_data_t {
     struct gps_policy_t policy;	/* our listening policy */
 
     struct {
-	timestamp_t time;
+	timespec_t time;
 	int ndevices;
 	struct devconfig_t list[MAXUSERDEVS];
     } devices;
@@ -2207,10 +2285,16 @@ struct gps_data_t {
 	/* "artificial" structures for various protocol responses */
 	struct version_t version;
 	char error[256];
-	struct timedelta_t toff;
-	struct timedelta_t pps;
     };
+
+    /* time stuff */
     /* FIXME! next lib rev need to add a place to put PPS precision */
+    struct timedelta_t toff;
+    struct timedelta_t pps;
+    /* quantization error adjustment to PPS. aka "sawtooth" correction */
+    long qErr;                  /* offset in picoseconds (ps) */
+    /* time of PPS pulse that qErr applies to */
+    timespec_t qErr_time;
 
     /* Private data - client code must not set this */
     void *privdata;
@@ -2249,18 +2333,21 @@ extern const char *gps_maskdump(gps_mask_t);
 
 extern double safe_atof(const char *);
 extern time_t mkgmtime(struct tm *);
-extern timestamp_t timestamp(void);
-extern timestamp_t iso8601_to_unix(char *);
-extern char *unix_to_iso8601(timestamp_t t, char[], size_t len);
+extern timespec_t iso8601_to_timespec(char *);
+extern char *now_to_iso8601(char[], size_t len);
+extern char *timespec_to_iso8601(timespec_t t, char[], size_t len);
 extern double earth_distance(double, double, double, double);
 extern double earth_distance_and_bearings(double, double, double, double,
 					  double *,
 					  double *);
 extern double wgs84_separation(double, double);
+extern double mag_var(double, double);
 extern void datum_code_string(int code, char *buffer, size_t len);
 
 /* some multipliers for interpreting GPS output */
-#define METERS_TO_FEET	3.2808399	/* Meters to U.S./British feet */
+#define METERS_TO_FEET	(1 / 0.3048)	/* Meters to International Foot */
+/* Note: not the same as the USA Survey Foot: (3937 / 1200)
+ * Some states use the International Foot, not the USA Survey Foot */
 #define METERS_TO_MILES	0.00062137119	/* Meters to miles */
 #define METERS_TO_FATHOMS	0.54680665	/* Meters to fathoms */
 #define KNOTS_TO_MPH	1.1507794	/* Knots to miles per hour */
@@ -2280,10 +2367,21 @@ extern void datum_code_string(int code, char *buffer, size_t len);
 #define GPS_LN2         0.693147180559945309417232121458176568
 
 
-/* geodetic constants */
-#define WGS84A 6378137		/* equatorial radius */
-#define WGS84F 298.257223563	/* flattening */
-#define WGS84B 6356752.3142	/* polar radius */
+/* WGS84(G1674) degining parameters */
+/* https://en.wikipedia.org/wiki/Geodetic_datum
+ * Section #World_Geodetic_System_1984_(WGS_84)
+ *
+ * http://www.unoosa.org/pdf/icg/2012/template/WGS_84.pdf
+ */
+#define WGS84A 6378137.0	     /* equatorial radius (semi-major axis) */
+#define WGS84F 298.257223563	        /* flattening */
+#define WGS84B 6356752.314245	        /* polar radius (semi-minor axis) */
+/* 1st eccentricity squared = (WGS84A ^ 2 + WGS84B ^ 2) / (WGS84A ^ 2)
+ * precomputed so C does not recompute every time */
+#define WGS84E 0.006694379990197585	/* 1st eccentricity squared */
+/* 2nd eccentricity squared = ((WGS84A ^ 2 - WGS84B ^ 2) / (WGS84B ^ 2)
+ * precomputed so C does not recompute every time */
+#define WGS84E2 0.006739496742333464    /* 2nd eccentricy squared */
 
 #define CLIGHT      299792458.0  /* speed of light (m/s) */
 

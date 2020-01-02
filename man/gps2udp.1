@@ -86,11 +86,14 @@ will then exit gracefully\&.
 .PP
 \-d 1 prints sent packet on stdout\&.
 .PP
+\-d 2 prints unsent packet on stdout\&.
+.PP
 \-v prints the version, then exits\&.
 .SH "EXAMPLE"
 .PP
 With a running
-gpsd accessible on the network
+gpsd
+accessible on the network
 .PP
 \fBgps2udp \-d 1 \-n \-u data\&.aishub\&.net:2222 \fR
 will collect data from localhost:gpsd display them on stdout and send a copy to test aishub in NMEA format\&.

@@ -10,22 +10,21 @@
 
 #include "gpsd_config.h"  /* must be before all includes */
 
-#include <string.h>
-#include <libgen.h>
-#include <stdbool.h>
-#include <math.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
+#include <libgen.h>
+#include <math.h>
+#include <stdbool.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>        /* for timespec */
 #include <unistd.h>
 
 #include "timespec.h"
 #include "gpsd.h"
 
-#ifdef NTPSHM_ENABLE
 #include "ntpshm.h"
 
 /* Note: you can start gpsd as non-root, and have it work with ntpd.
@@ -130,7 +129,7 @@ static volatile struct shmTime *getShmTime(struct gps_context_t *context, int un
     shmid = shmget((key_t) (NTPD_BASE + unit),
 		   sizeof(struct shmTime), (int)(IPC_CREAT | perms));
     if (shmid == -1) {
-	gpsd_log(&context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context->errout,
 		 "NTP: shmget(%ld, %zd, %o) fail: %s\n",
 		 (long int)(NTPD_BASE + unit), sizeof(struct shmTime),
 		 (int)perms, strerror(errno));
@@ -138,12 +137,12 @@ static volatile struct shmTime *getShmTime(struct gps_context_t *context, int un
     }
     p = (struct shmTime *)shmat(shmid, 0, 0);
     if ((int)(long)p == -1) {
-	gpsd_log(&context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context->errout,
 		 "NTP: shmat failed: %s\n",
 		 strerror(errno));
 	return NULL;
     }
-    gpsd_log(&context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &context->errout,
 	     "NTP: shmat(%d,0,0) succeeded, segment %d\n",
 	     shmid, unit);
     return p;
@@ -208,17 +207,14 @@ static bool ntpshm_free(struct gps_context_t * context, volatile struct shmTime 
 
 void ntpshm_session_init(struct gps_device_t *session)
 {
-#ifdef NTPSHM_ENABLE
     /* mark NTPD shared memory segments as unused */
     session->shm_clock = NULL;
-#endif /* NTPSHM_ENABLE */
-#ifdef PPS_ENABLE
     session->shm_pps = NULL;
-#endif	/* PPS_ENABLE */
 }
 
-int ntpshm_put(struct gps_device_t *session, volatile struct shmTime *shmseg, struct timedelta_t *td)
 /* put a received fix time into shared memory for NTP */
+int ntpshm_put(struct gps_device_t *session, volatile struct shmTime *shmseg,
+               struct timedelta_t *td)
 {
     char real_str[TIMESPEC_LEN];
     char clock_str[TIMESPEC_LEN];
@@ -227,37 +223,34 @@ int ntpshm_put(struct gps_device_t *session, volatile struct shmTime *shmseg, st
     int precision = -20; /* default precision, 1 micro sec */
 
     if (shmseg == NULL) {
-	gpsd_log(&session->context->errout, LOG_RAW, "NTP:PPS: missing shm\n");
+	GPSD_LOG(LOG_RAW, &session->context->errout, "NTP:PPS: missing shm\n");
 	return 0;
     }
 
-#ifdef PPS_ENABLE
+    // FIXME: make NMEA precision -1
     if (shmseg == session->shm_pps) {
         /* precision is a floor so do not make it tight */
         if ( source_usb == session->sourcetype ) {
-	    /* if PPS over USB, then precision = -20, 1 micro sec  */
-	    precision = -20;
+	    /* if PPS over USB, then precision = -10, 1 milli sec  */
+	    precision = -10;
         } else {
-	    /* likely PPS over serial, precision = -30, 1 nano sec */
-	    precision = -30;
+	    /* likely PPS over serial, precision = -20, 1 micro sec */
+	    precision = -20;
         }
     }
-#endif	/* PPS_ENABLE */
 
     ntp_write(shmseg, td, precision, session->context->leap_notify);
 
-    timespec_str( &td->real, real_str, sizeof(real_str) );
-    timespec_str( &td->clock, clock_str, sizeof(clock_str) );
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "NTP: ntpshm_put(%s,%d) %s @ %s\n",
 	     session->gpsdata.dev.path,
 	     precision,
-	     real_str, clock_str);
+             timespec_str(&td->real, real_str, sizeof(real_str)),
+             timespec_str(&td->clock, clock_str, sizeof(clock_str)));
 
     return 1;
 }
 
-#ifdef PPS_ENABLE
 #define SOCK_MAGIC 0x534f434b
 struct sock_sample {
     struct timeval tv;
@@ -289,18 +282,18 @@ static void init_hook(struct gps_device_t *session)
     }
 
     if (access(chrony_path, F_OK) != 0) {
-	gpsd_log(&session->context->errout, LOG_PROG,
+	GPSD_LOG(LOG_PROG, &session->context->errout,
 		"PPS:%s chrony socket %s doesn't exist\n",
 		session->gpsdata.dev.path, chrony_path);
     } else {
 	session->chronyfd = netlib_localsocket(chrony_path, SOCK_DGRAM);
 	if (session->chronyfd < 0)
-	    gpsd_log(&session->context->errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &session->context->errout,
 		     "PPS:%s connect chrony socket failed: %s, error: %d, errno: %d/%s\n",
 		     session->gpsdata.dev.path,
 		     chrony_path, session->chronyfd, errno, strerror(errno));
 	else
-	    gpsd_log(&session->context->errout, LOG_RAW,
+	    GPSD_LOG(LOG_RAW, &session->context->errout,
 		     "PPS:%s using chrony socket: %s\n",
 		     session->gpsdata.dev.path, chrony_path);
     }
@@ -313,7 +306,6 @@ static void chrony_send(struct gps_device_t *session, struct timedelta_t *td)
 {
     char real_str[TIMESPEC_LEN];
     char clock_str[TIMESPEC_LEN];
-    struct timespec offset;
     struct sock_sample sample;
     struct tm tm;
     int leap_notify = session->context->leap_notify;
@@ -342,17 +334,16 @@ static void chrony_send(struct gps_device_t *session, struct timedelta_t *td)
      * just the top of the second */
     TSTOTV(&sample.tv, &td->clock);
     /* calculate the offset as a timespec to not lose precision */
-    TS_SUB( &offset, &td->real, &td->clock);
     /* if tv_sec greater than 2 then tv_nsec loses precision, but
      * not a big deal as slewing will be required */
-    sample.offset = TSTONS( &offset );
+    sample.offset = TS_SUB_D(&td->real, &td->clock);
     sample._pad = 0;
 
-    timespec_str( &td->real, real_str, sizeof(real_str) );
-    timespec_str( &td->clock, clock_str, sizeof(clock_str) );
-    gpsd_log(&session->context->errout, LOG_RAW,
+    GPSD_LOG(LOG_RAW, &session->context->errout,
 	     "PPS chrony_send %s @ %s Offset: %0.9f\n",
-	     real_str, clock_str, sample.offset);
+             timespec_str(&td->real, real_str, sizeof(real_str)),
+             timespec_str(&td->clock, clock_str, sizeof(clock_str)),
+             sample.offset);
     (void)send(session->chronyfd, &sample, sizeof (sample), 0);
 }
 
@@ -398,7 +389,6 @@ static char *report_hook(volatile struct pps_thread_t *pps_thread,
 
     return log1;
 }
-#endif	/* PPS_ENABLE */
 
 void ntpshm_link_deactivate(struct gps_device_t *session)
 /* release ntpshm storage for a session */
@@ -407,7 +397,6 @@ void ntpshm_link_deactivate(struct gps_device_t *session)
 	(void)ntpshm_free(session->context, session->shm_clock);
 	session->shm_clock = NULL;
     }
-#if defined(PPS_ENABLE)
     if (session->shm_pps != NULL) {
 	pps_thread_deactivate(&session->pps_thread);
 	if (session->chronyfd != -1)
@@ -415,7 +404,6 @@ void ntpshm_link_deactivate(struct gps_device_t *session)
 	(void)ntpshm_free(session->context, session->shm_pps);
 	session->shm_pps = NULL;
     }
-#endif	/* PPS_ENABLE */
 }
 
 void ntpshm_link_activate(struct gps_device_t *session)
@@ -430,13 +418,12 @@ void ntpshm_link_activate(struct gps_device_t *session)
 	session->shm_clock = ntpshm_alloc(session->context);
 
 	if (session->shm_clock == NULL) {
-	    gpsd_log(&session->context->errout, LOG_WARN,
+	    GPSD_LOG(LOG_WARN, &session->context->errout,
 		     "NTP: ntpshm_alloc() failed\n");
 	    return;
         }
     }
 
-#if defined(PPS_ENABLE)
     if (session->sourcetype == source_usb
             || session->sourcetype == source_rs232
             || session->sourcetype == source_pps) {
@@ -445,7 +432,7 @@ void ntpshm_link_activate(struct gps_device_t *session)
 	 * transitions
 	 */
 	if ((session->shm_pps = ntpshm_alloc(session->context)) == NULL) {
-	    gpsd_log(&session->context->errout, LOG_WARN,
+	    GPSD_LOG(LOG_WARN, &session->context->errout,
 		     "PPS: ntpshm_alloc(1) failed\n");
 	} else {
 	    init_hook(session);
@@ -468,8 +455,6 @@ void ntpshm_link_activate(struct gps_device_t *session)
 	    pps_thread_activate(&session->pps_thread);
 	}
     }
-#endif /* PPS_ENABLE */
 }
 
-#endif /* NTPSHM_ENABLE */
 /* end */

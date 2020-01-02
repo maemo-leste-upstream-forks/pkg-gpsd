@@ -1,9 +1,20 @@
 /*
+ * DEPRECATED September 2019
+ *
+ * September 2019: Looks like Everymore converted most of their products
+ * over to using to SiRF and u-blox chips a long time ago.  They still offer
+ * the EB-E26 and EB-E36-5Hz modules, but these appear to be NMEA only.  Their
+ * web site has not documentation: http://www.evermoregps.com.tw/
+ *
+ * May 2013: The binary bits were commented out.  Then removed in
+ * September 2019, but will live forever in the git history...
  *
  * This is the gpsd driver for EverMore GPSes.  They have both an NMEA and
  * a binary reporting mode, with the interesting property that they will
  * cheerfully accept binary commands (such as speed changes) while in NMEA
  * mode.
+ *
+ * This driver seems to be a subset of driver_sirf.c.  Is it needed at all?
  *
  * Binary mode would give us atomic fix reports, but it has one large drawback:
  * the Navigation Data Out message doesn't report a leap-second offset, so it
@@ -138,275 +149,6 @@
 
 #define EVERMORE_CHANNELS	12
 
-#ifdef __UNUSED__
-
-gps_mask_t evermore_parse(struct gps_device_t * session, unsigned char *buf,
-			  size_t len)
-{
-    unsigned char buf2[MAX_PACKET_LENGTH], *cp, *tp;
-    size_t i, datalen;
-    unsigned int type, used, visible, satcnt, j, k;
-    double version;
-    gps_mask_t mask = 0;
-
-    /* must have two leader bytes, length, and two trailer bytes minimum */
-    if (len < 5)
-	return 0;
-
-    /* time to unstuff it and discard the header and footer */
-    cp = buf + 2;
-    if (*cp == 0x10)
-	cp++;
-    datalen = (size_t) * cp++;
-    datalen -= 2;
-
-    /* prevent 'Assigned value is garbage or undefined' from scan-build */
-    memset(buf2, '\0', sizeof(buf2));
-    tp = buf2;
-    for (i = 0; i < (size_t) datalen; i++) {
-	*tp = *cp++;
-	if (*tp == 0x10)
-	    cp++;
-	tp++;
-    }
-    type = (unsigned char)getub(buf2, 0);
-
-    gpsd_log(&session->context->errout, LOG_RAW,
-	     "EverMore packet type 0x%02x (%zd bytes)\n", type, tp-buf2);
-
-    session->cycle_end_reliable = true;
-
-    switch (type) {
-    case 0x02:			/* Navigation Data Output */
-	session->newdata.time = gpsd_gpstime_resolve(session,
-	  (unsigned short)getleu16(buf2, 3),
-	  (double)getleu32(buf2, 5) * 0.01);
-	session->newdata.ecef.x = (double)getles32(buf2, 9) * 1.0,
-	session->newdata.ecef.y = (double)getles32(buf2, 13) * 1.0,
-	session->newdata.ecef.z = (double)getles32(buf2, 17) * 1.0,
-	session->newdata.ecef.vx = (double)getles16(buf2, 21) / 10.0,
-	session->newdata.ecef.vy = (double)getles16(buf2, 23) / 10.0,
-	session->newdata.ecef.vz = (double)getles16(buf2, 25) / 10.0;
-	ecef_to_wgs84fix(&session->newdata, &session->gpsdata.separation,
-		     session->newdata.ecef.x, session->newdata.ecef.y,
-		     session->newdata.ecef.z, session->newdata.ecef.vx,
-		     session->newdata.ecef.vy, session->newdata.ecef.vz);
-	used = (unsigned char)getub(buf2, 27) & 0x0f;
-	//visible = (getub(buf2, 27) & 0xf0) >> 4;
-	version = (unsigned int) getleu16(buf2, 28) / 100.0;
-	/* that's all the information in this packet */
-	if (used < 3)
-	    session->newdata.mode = MODE_NO_FIX;
-	else if (used == 3)
-	    session->newdata.mode = MODE_2D;
-	else {
-	    session->newdata.mode = MODE_3D;
-	    mask |= ALTITUDE_SET | CLIMB_SET;
-	}
-	mask |= TIME_SET | NTPTIME_IS | LATLON_SET | TRACK_SET | SPEED_SET
-                | MODE_SET | ECEF_SET | VECEF_SET;
-	if (session->subtype[0] == '\0') {
-	    (void)snprintf(session->subtype, sizeof(session->subtype),
-			   "%3.2f", version);
-	    mask |= DEVICEID_SET;
-	}
-	gpsd_log(&session->context->errout, LOG_DATA,
-		 "NDO 0x02: time=%.2f, lat=%.2f lon=%.2f alt=%.2f speed=%.2f track=%.2f climb=%.2f mode=%d subtype='%s\n",
-		 session->newdata.time, session->newdata.latitude,
-		 session->newdata.longitude, session->newdata.altitude,
-		 session->newdata.speed, session->newdata.track,
-		 session->newdata.climb, session->newdata.mode,
-		 session->gpsdata.dev.subtype);
-	return mask | CLEAR_IS | REPORT_IS;
-
-    case 0x04:			/* DOP Data Output */
-	session->newdata.time = gpsd_gpstime_resolve(session,
-						     (unsigned short)getleu16(buf2, 3),
-						     (double)getleu32(buf2, 5) * 0.01);
-	/*
-	 * We make a deliberate choice not to clear DOPs from the
-	 * last skyview here, but rather to treat this as a supplement
-	 * to our calculations from the visibility matrix, trusting
-	 * the firmware algorithms over ours.
-	 */
-	session->gpsdata.dop.gdop = (double)getub(buf2, 9) * 0.1;
-	session->gpsdata.dop.pdop = (double)getub(buf2, 10) * 0.1;
-	session->gpsdata.dop.hdop = (double)getub(buf2, 11) * 0.1;
-	session->gpsdata.dop.vdop = (double)getub(buf2, 12) * 0.1;
-	session->gpsdata.dop.tdop = (double)getub(buf2, 13) * 0.1;
-	switch (getub(buf2, 14)) {
-	case 0:		/* no position fix */
-	case 1:		/* manual calls this "1D navigation" */
-	    session->gpsdata.status = STATUS_NO_FIX;
-	    session->newdata.mode = MODE_NO_FIX;
-	    break;
-	case 2:		/* 2D navigation */
-	    session->gpsdata.status = STATUS_FIX;
-	    session->newdata.mode = MODE_2D;
-	    break;
-	case 3:		/* 3D navigation */
-	    session->gpsdata.status = STATUS_FIX;
-	    session->newdata.mode = MODE_3D;
-	    break;
-	case 4:		/* 3D navigation with DGPS */
-	    session->gpsdata.status = STATUS_DGPS_FIX;
-	    session->newdata.mode = MODE_3D;
-	    break;
-	}
-	/* that's all the information in this packet */
-	mask = TIME_SET | NTPTIME_IS | DOP_SET | MODE_SET | STATUS_SET;
-	gpsd_log(&session->context->errout, LOG_DATA,
-		 "DDO 0x04: gdop=%.2f pdop=%.2f hdop=%.2f vdop=%.2f tdop=%.2f mode=%d, status=%d mask={TIME| DOP|MODE|STATUS}\n",
-		 session->gpsdata.dop.gdop, session->gpsdata.dop.pdop,
-		 session->gpsdata.dop.hdop, session->gpsdata.dop.vdop,
-		 session->gpsdata.dop.tdop, session->newdata.mode,
-		 session->gpsdata.status);
-	return mask;
-
-    case 0x06:			/* Channel Status Output */
-	session->gpsdata.skyview_time = gpsd_gpstime_resolve(session,
-	    (unsigned short)getleu16(buf2, 3),
-	    (double)getleu32(buf2, 5) * 0.01);
-	session->gpsdata.satellites_visible = (int)getub(buf2, 9);
-	gpsd_zero_satellites(&session->gpsdata);
-	memset(session->gpsdata.used, 0, sizeof(session->gpsdata.used));
-	if (session->gpsdata.satellites_visible > 12) {
-	    gpsd_log(&session->context->errout, LOG_WARN,
-		     "Warning: EverMore packet has information about %d satellites!\n",
-		     session->gpsdata.satellites_visible);
-	}
-	if (session->gpsdata.satellites_visible > EVERMORE_CHANNELS)
-	    session->gpsdata.satellites_visible = EVERMORE_CHANNELS;
-	satcnt = 0;
-	for (i = 0; i < (size_t) session->gpsdata.satellites_visible; i++) {
-	    int prn;
-	    // channel = getub(buf2, 7*i+7+3)
-	    prn = (int)getub(buf2, 7 * i + 7 + 4);
-	    if (prn == 0)
-		continue;	/* satellite record is not valid */
-	    session->gpsdata.PRN[satcnt] = prn;
-	    session->gpsdata.azimuth[satcnt] =
-		(int)getleu16(buf2, 7 * i + 7 + 5);
-	    session->gpsdata.elevation[satcnt] =
-		(int)getub(buf2, 7 * i + 7 + 7);
-	    session->gpsdata.ss[satcnt] = (float)getub(buf2, 7 * i + 7 + 8);
-	    /*
-	     * Status bits at offset 8:
-	     * bit0 = 1 satellite acquired
-	     * bit1 = 1 code-tracking loop locked
-	     * bit2 = 1 carrier-tracking loop locked
-	     * bit3 = 1 data-bit synchronization done
-	     * bit4 = 1 frame synchronization done
-	     * bit5 = 1 ephemeris data collected
-	     * bit6 = 1 used for position fix
-	     */
-	    if (getub(buf2, 7 * i + 7 + 9) & 0x40) {
-		session->gpsdata.used[session->gpsdata.satellites_used++] =
-		    prn;
-	    }
-
-	    satcnt++;
-	}
-	session->gpsdata.satellites_visible = (int)satcnt;
-	/* that's all the information in this packet */
-	mask = SATELLITE_SET | USED_IS;
-	gpsd_log(&session->context->errout, LOG_DATA,
-		 "CSO 0x06: time=%.2f used=%d visible=%d mask={TIME|SATELLITE|USED}\n",
-		 session->newdata.time, session->gpsdata.satellites_used,
-		 session->gpsdata.satellites_visible);
-	return mask;
-
-    case 0x08:			/* Measurement Data Output */
-	/* clock offset is a manufacturer diagnostic */
-	/* (int)getleu16(buf2, 9);  clock offset, 29000..29850 ?? */
-	session->newdata.time = gpsd_gpstime_resolve(session,
-	    (unsigned short)getleu16(buf2, 3),
-	    (double)getleu32(buf2, 5) * 0.01);
-	visible = (unsigned char)getub(buf2, 11);
-	/*
-	 * Note: This code is untested. It was written from the manual.
-	 * The results need to be sanity-checked against a GPS with
-	 * known-good raw decoding and the same skyview.
-	 *
-	 * We can get pseudo range (m), delta-range (m/s), doppler (Hz)
-	 * and status for each channel from the chip.  We cannot get
-	 * codephase or carrierphase.
-	 */
-#define SBITS(sat, s, l)	sbits((signed char *)buf, 10 + (sat*14) + s, l, false)
-#define UBITS(sat, s, l)	ubits((unsigned char *)buf, 10 + (sat*14) + s, l, false)
-	for (k = 0; k < visible; k++) {
-	    int prn = (int)UBITS(k, 4, 5);
-	    /* this is so we can tell which never got set */
-	    for (j = 0; j < MAXCHANNELS; j++)
-		session->gpsdata.raw[j].mtime = 0;
-	    for (j = 0; j < MAXCHANNELS; j++) {
-		if (session->gpsdata.PRN[j] == prn) {
-		    session->gpsdata.raw[j].codephase = NAN;
-		    session->gpsdata.raw[j].carrierphase = NAN;
-		    session->gpsdata.raw[j].mtime = session->newdata.time;
-		    session->gpsdata.raw[j].satstat = \
-                        (unsigned)UBITS(k, 24, 8);
-		    session->gpsdata.raw[j].pseudorange = \
-                        (double)SBITS(k,40,32);
-		    session->gpsdata.raw[j].deltarange = \
-                        (double)SBITS(k,72,32);
-		    session->gpsdata.raw[j].doppler = \
-                        (double)SBITS(k, 104, 16);
-		}
-	    }
-	}
-#undef SBITS
-#undef UBITS
-	gpsd_log(&session->context->errout, LOG_DATA,
-		 "MDO 0x04: time=%.2f mask={TIME|RAW}\n",
-		 session->newdata.time);
-	return TIME_SET | NTPTIME_IS | RAW_IS;
-
-    case 0x20:			/* LogConfig Info, could be used as a probe for EverMore GPS */
-	gpsd_log(&session->context->errout, LOG_DATA,
-		 "LogConfig EverMore packet, length %zd\n", datalen);
-	return ONLINE_SET;
-
-    case 0x22:			/* LogData */
-	gpsd_log(&session->context->errout, LOG_DATA,
-		 "LogData EverMore packet, length %zd\n", datalen);
-	return ONLINE_SET;
-
-    case 0x38:			/* ACK */
-	gpsd_log(&session->context->errout, LOG_PROG,
-		 "EverMore command %02X ACK\n", getub(buf2, 3));
-	return ONLINE_SET;
-
-    default:
-	gpsd_log(&session->context->errout, LOG_WARN,
-		 "unknown EverMore packet EID 0x%02x, length %zd\n",
-		 buf2[0], datalen);
-	return 0;
-    }
-}
-
-
-static gps_mask_t evermore_parse_input(struct gps_device_t *session)
-{
-    gps_mask_t st;
-
-    if (session->lexer.type == EVERMORE_PACKET) {
-	st = evermore_parse(session, session->lexer.outbuffer,
-			    session->lexer.outbuflen);
-	return st;
-    }
-#ifdef NMEA0183_ENABLE
-    else if (session->lexer.type == NMEA_PACKET) {
-	st = nmea_parse((char *)session->lexer.outbuffer, session);
-	return st;
-    }
-#endif /* NMEA0183_ENABLE */
-    else
-	return 0;
-}
-
-#endif /* __UNUSED__ */
-
 static ssize_t evermore_control_send(struct gps_device_t *session, char *buf,
 				     size_t len)
 {
@@ -458,7 +200,7 @@ static bool evermore_protocol(struct gps_device_t *session, int protocol)
 	(char)0x00,		/* 2: reserved */
 	(char)0x00,		/* 3: reserved */
     };
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "evermore_protocol(%d)\n", protocol);
     tmp8 = (protocol != 0) ? 1 : 0;
     /* NMEA : binary */
@@ -487,7 +229,7 @@ static bool evermore_nmea_config(struct gps_device_t *session, int mode)
 	0,			/*  9: PEMT,101, interval 0-255s */
 	0, 0, 0, 0, 0, 0,	/* 10-15: reserved */
     };
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "evermore_nmea_config(%d)\n", mode);
     tmp8 = (mode == 1) ? 5 : 1;
     /* NMEA GPGSV, gpsd  */
@@ -501,9 +243,8 @@ static bool evermore_nmea_config(struct gps_device_t *session, int mode)
 
 static void evermore_mode(struct gps_device_t *session, int mode)
 {
-    gpsd_log(&session->context->errout, LOG_PROG,
-	     "evermore_mode(%d), %d\n", mode,
-	     session->back_to_nmea ? 1 : 0);
+    GPSD_LOG(LOG_PROG, &session->context->errout,
+	     "evermore_mode(%d)\n", mode);
     if (mode == MODE_NMEA) {
 	/* NMEA */
 	(void)evermore_protocol(session, 1);
@@ -511,7 +252,6 @@ static void evermore_mode(struct gps_device_t *session, int mode)
     } else {
 	/* binary */
 	(void)evermore_protocol(session, 0);
-	session->back_to_nmea = false;
     }
 }
 
@@ -534,7 +274,6 @@ static void evermore_event_hook(struct gps_device_t *session, event_t event)
 	 */
 	(void)evermore_mode(session, 0);	/* switch GPS to NMEA mode */
 	(void)evermore_nmea_config(session, 1);	/* configure NMEA messages for gpsd (GPGSV every 5s) */
-	session->back_to_nmea = false;
     } else if (event == event_deactivate) {
 	(void)evermore_nmea_config(session, 0);	/* configure NMEA messages to default */
     }
@@ -544,7 +283,7 @@ static void evermore_event_hook(struct gps_device_t *session, event_t event)
 static bool evermore_speed(struct gps_device_t *session,
 			   speed_t speed, char parity, int stopbits)
 {
-    gpsd_log(&session->context->errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &session->context->errout,
 	     "evermore_speed(%u%c%d)\n", (unsigned int)speed, parity,
 	     stopbits);
     /* parity and stopbit switching aren't available on this chip */
@@ -585,7 +324,7 @@ static bool evermore_rate_switcher(struct gps_device_t *session, double rate)
 /* change the sample rate of the GPS */
 {
     if (rate < 1 || rate > 10) {
-	gpsd_log(&session->context->errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &session->context->errout,
 		 "valid rate range is 1-10.\n");
 	return false;
     } else {
@@ -622,14 +361,13 @@ const struct gps_type_t driver_evermore =
     .speed_switcher = evermore_speed,		/* we can change baud rates */
     .mode_switcher  = evermore_mode,		/* there is a mode switcher */
     .rate_switcher  = evermore_rate_switcher,	/* change sample rate */
-    .min_cycle      = 1,			/* ignore, no rate switch */
+    .min_cycle.tv_sec  = 1,		/* not relevant, no rate switch */
+    .min_cycle.tv_nsec = 0,		/* not relevant, no rate switch */
 #endif /* RECONFIGURE_ENABLE */
 #ifdef CONTROLSEND_ENABLE
     .control_send   = evermore_control_send,	/* how to send a control string */
 #endif /* CONTROLSEND_ENABLE */
-#ifdef TIMEHINT_ENABLE
     .time_offset     = NULL,		/* no method for NTP fudge factor */
-#endif /* TIMEHINT_ENABLE */
 };
 /* *INDENT-ON* */
 #endif /* defined(EVERMORE_ENABLE) && defined(BINARY_ENABLE) */

@@ -86,7 +86,6 @@ import threading
 import time
 
 import gps
-from gps import polybytes
 from . import packet as sniffer
 
 # The magic number below has to be derived from observation.  If
@@ -105,7 +104,7 @@ elif sys.platform.startswith("freebsd"):
 elif sys.platform.startswith("netbsd5"):
     WRITE_PAD = 0.200
 elif sys.platform.startswith("netbsd"):
-    WRITE_PAD = 0.004
+    WRITE_PAD = 0.01
 elif sys.platform.startswith("darwin"):
     # darwin Darwin-13.4.0-x86_64-i386-64bit
     WRITE_PAD = 0.005
@@ -121,10 +120,7 @@ TEST_TIMEOUT = 60
 
 def GetDelay(slow=False):
     "Get appropriate per-line delay."
-    delay = WRITE_PAD
-    # Make it easier to test pad values
-    if os.getenv("WRITE_PAD"):
-        delay = eval(os.getenv("WRITE_PAD"))
+    delay = float(os.getenv("WRITE_PAD", WRITE_PAD))
     if slow:
         delay += WRITE_PAD_SLOWDOWN
     return delay
@@ -138,8 +134,7 @@ class TestError(BaseException):
 
 
 class TestLoadError(TestError):
-    "Class TestLoadError"
-    pass
+    "Class TestLoadError, empty"
 
 
 class TestLoad(object):
@@ -234,13 +229,12 @@ class TestLoad(object):
 
 
 class PacketError(TestError):
-    "Class PacketError"
-    pass
+    "Class PacketError, empty"
 
 
 class FakeGPS(object):
     "Class FakeGPS"
-    def __init__(self, testload, progress=None):
+    def __init__(self, testload, progress=lambda x: None):
         self.exhausted = 0
         self.go_predicate = lambda: True
         self.index = 0
@@ -273,7 +267,7 @@ class FakePTY(FakeGPS):
 
     def __init__(self, testload,
                  speed=4800, databits=8, parity='N', stopbits=1,
-                 progress=None):
+                 progress=lambda x: None):
         super(FakePTY, self).__init__(testload, progress)
         # Allow Serial: header to be overridden by explicit speed.
         if self.testload.serial:
@@ -386,7 +380,7 @@ class FakeTCP(FakeGPS):
 
     def __init__(self, testload,
                  host, port,
-                 progress=None):
+                 progress=lambda x: None):
         super(FakeTCP, self).__init__(testload, progress)
         self.host = host
         self.dispatcher = cleansocket(self.host, int(port))
@@ -435,7 +429,7 @@ class FakeUDP(FakeGPS):
 
     def __init__(self, testload,
                  ipaddr, port,
-                 progress=None):
+                 progress=lambda x: None):
         super(FakeUDP, self).__init__(testload, progress)
         self.byname = "udp://" + ipaddr + ":" + str(port)
         self.ipaddr = ipaddr
@@ -444,7 +438,7 @@ class FakeUDP(FakeGPS):
 
     def read(self):
         "Discard control strings written by gpsd."
-        pass
+        return
 
     def write(self, line):
         self.progress("gpsfake: %s writes %d=%s\n"
@@ -453,7 +447,8 @@ class FakeUDP(FakeGPS):
 
     def drain(self):
         "Wait for the associated device to drain (e.g. before closing)."
-        pass  # shutdown() fails on UDP
+        # shutdown() fails on UDP
+        return  # shutdown() fails on UDP
 
 
 class SubprogramError(TestError):
@@ -533,7 +528,6 @@ class SubprogramInstance(object):
 
 class DaemonError(SubprogramError):
     "Class DaemonError"
-    pass
 
 
 class DaemonInstance(SubprogramInstance):
@@ -585,22 +579,21 @@ class DaemonInstance(SubprogramInstance):
     def add_device(self, path):
         "Add a device to the daemon's internal search list."
         if self.__get_control_socket():
-            self.sock.sendall(polybytes("+%s\r\n\x00" % path))
+            self.sock.sendall(gps.polybytes("+%s\r\n\x00" % path))
             self.sock.recv(12)
             self.sock.close()
 
     def remove_device(self, path):
         "Remove a device from the daemon's internal search list."
         if self.__get_control_socket():
-            self.sock.sendall(polybytes("-%s\r\n\x00" % path))
+            self.sock.sendall(gps.polybytes("-%s\r\n\x00" % path))
             self.sock.recv(12)
             self.sock.close()
 
 
 class TestSessionError(TestError):
     "class TestSessionError"
-    # why does testSessionError() return pass? "
-    pass
+    # why does testSessionError() do nothing? "
 
 
 class TestSession(object):
@@ -629,6 +622,8 @@ class TestSession(object):
         else:
             self.port = freeport()
         self.progress = lambda x: None
+        # for debugging
+        # self.progress = lambda x: sys.stderr.write("# Hi " + x)
         self.reporter = lambda x: None
         self.default_predicate = None
         self.fd_set = []
@@ -749,7 +744,8 @@ class TestSession(object):
                             "Test timed out: maybe increase WRITE_PAD (= %s)\n"
                             % GetDelay(self.slow))
                         raise SystemExit(1)
-                    elif not chosen.go_predicate(chosen.index, chosen):
+
+                    if not chosen.go_predicate(chosen.index, chosen):
                         if chosen.exhausted == 0:
                             chosen.exhausted = time.time()
                             self.progress("gpsfake: GPS %s ran out of input\n"

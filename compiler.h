@@ -46,9 +46,9 @@
     0 * (int) sizeof(({ \
         struct { \
             int unused_int; \
-            typeof(arr) unused_arr; \
+            __typeof__(arr) unused_arr; \
         } zero_init = {0}; \
-        typeof(arr) arg_is_not_array UNUSED = { \
+        __typeof__(arr) arg_is_not_array UNUSED = { \
             zero_init.unused_arr[0], \
         }; \
         1; \
@@ -65,20 +65,21 @@
         assert(locresult != -23); \
     } while (0)
 
-#ifdef HAVE_STDATOMIC_H
-#if !defined(__COVERITY__)
-#if !defined(__cplusplus)
+#ifdef __COVERITY__
+    /* do nothing */
+#elif defined(__cplusplus)
+    /* we are C++ */
+    #if __cplusplus >= 201103L
+        /* C++ before C++11 can not handle stdatomic.h or atomic */
+        /* atomic is just C++ for stdatomic.h */
+        #include <atomic>
+    #endif
+#elif defined(HAVE_STDATOMIC_H)
+    /* we are C and atomics are in C98 and newer */
     #include <stdatomic.h>
-#elif __cplusplus >= 201103L
-    /* C++ before C++11 can not handle stdatomic.h or atomic */
-    /* atomic is just C++ for stdatomic.h */
-    #include <atomic>
-#endif /* __cplusplus */
-#endif /* __COVERITY__ */
-#endif /* HAVE_STDATOMIC_H */
-
-#ifdef HAVE_OSATOMIC_H
-#include <libkern/OSAtomic.h>
+#elif defined(HAVE_OSATOMIC_H)
+    /* do it the OS X way */
+    #include <libkern/OSAtomic.h>
 #endif /* HAVE_OSATOMIC_H */
 
 static inline void memory_barrier(void)
@@ -99,7 +100,7 @@ static inline void memory_barrier(void)
     /* do it the OS X way */
     OSMemoryBarrier();
 #elif defined(__GNUC__)
-    asm volatile ("" : : : "memory");
+    __asm__ __volatile__ ("" : : : "memory");
 #endif
 }
 

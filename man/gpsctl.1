@@ -31,7 +31,7 @@
 gpsctl \- control the modes of a GPS
 .SH "SYNOPSIS"
 .HP \w'\fBgpsctl\fR\ 'u
-\fBgpsctl\fR [\-h] [\-b | \-n] [\-x\ \fIcontrol\fR] [\-e] [\-f] [\-l] [\-s\ \fIspeed\fR] [\-t\ \fIdevicetype\fR] [\-R] [\-D\ \fIdebuglevel\fR] [\-V] [\fIserial\-port\fR]
+\fBgpsctl\fR [\-h] [\-b | \-n | \-r] [\-x\ \fIcontrol\fR] [\-e] [\-f] [\-l] [\-s\ \fIspeed\fR] [\-t\ \fIdevicetype\fR] [\-R] [\-D\ \fIdebuglevel\fR] [\-V] [\fIserial\-port\fR]
 .SH "DESCRIPTION"
 .PP
 gpsctl
@@ -78,6 +78,11 @@ List a table showing which option switches can be applied to which device types,
 \-n
 .RS 4
 Put GPS into NMEA mode\&.
+.RE
+.PP
+\-r
+.RS 4
+Reset the GPS\&. Device port and type must be specified\&.
 .RE
 .PP
 \-s

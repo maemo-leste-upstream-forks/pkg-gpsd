@@ -6,9 +6,6 @@
  * SPDX-License-Identifier: BSD-2-clause
  */
 
-/* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
-#define __ISO_C_VISIBLE 1999
-
 #include "gpsd_config.h"  /* must be before all includes */
 
 #include <stdio.h>
@@ -308,22 +305,26 @@ extern const char *gps_errstr(const int err)
 #ifdef LIBGPS_DEBUG
 void libgps_dump_state(struct gps_data_t *collect)
 {
+    char ts_buf[TIMESPEC_LEN];
+
     /* no need to dump the entire state, this is a sanity check */
 #ifndef USE_QT
     (void)fprintf(debugfp, "flags: (0x%04x) %s\n",
 		  (unsigned int)collect->set, gps_maskdump(collect->set));
 #endif
     if (collect->set & ONLINE_SET)
-	(void)fprintf(debugfp, "ONLINE: %lf\n", collect->online);
+	(void)fprintf(debugfp, "ONLINE: %s\n",
+                      timespec_str(&collect->online, ts_buf, sizeof(ts_buf)));
     if (collect->set & TIME_SET)
-	(void)fprintf(debugfp, "TIME: %lf\n", collect->fix.time);
+	(void)fprintf(debugfp, "TIME: %s\n",
+                     timespec_str(&collect->fix.time, ts_buf, sizeof(ts_buf)));
     /* NOTE: %.7f needed for cm level accurate GPS */
     if (collect->set & LATLON_SET)
 	(void)fprintf(debugfp, "LATLON: lat/lon: %.7lf %.7lf\n",
 		      collect->fix.latitude, collect->fix.longitude);
     if (collect->set & ALTITUDE_SET)
-	(void)fprintf(debugfp, "ALTITUDE: altitude: %lf  U: climb: %lf\n",
-		      collect->fix.altitude, collect->fix.climb);
+	(void)fprintf(debugfp, "ALTITUDE: altHAE: %lf  U: climb: %lf\n",
+		      collect->fix.altHAE, collect->fix.climb);
     if (collect->set & SPEED_SET)
 	(void)fprintf(debugfp, "SPEED: %lf\n", collect->fix.speed);
     if (collect->set & TRACK_SET)
@@ -373,7 +374,7 @@ void libgps_dump_state(struct gps_data_t *collect)
 	for (sp = collect->skyview;
 	     sp < collect->skyview + collect->satellites_visible;
 	     sp++) {
-	    (void)fprintf(debugfp, "    %2.2d: %2.2d %3.3d %3.0f %c\n",
+	    (void)fprintf(debugfp, "  %2.2d: %4.1f %5.1f %3.0f %c\n",
 			  sp->PRN, sp->elevation,
 			  sp->azimuth, sp->ss,
 			  sp->used ? 'Y' : 'N');

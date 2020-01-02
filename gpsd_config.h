@@ -2,7 +2,7 @@
 
 #ifndef GPSD_CONFIG_H
 
-#define VERSION "3.19"
+#define VERSION "3.20"
 
 #define GPSD_URL "https://gpsd.io/"
 
@@ -12,10 +12,6 @@
 
 #if !defined(_DEFAULT_SOURCE)
 #define _DEFAULT_SOURCE
-#endif
-
-#if !defined(_XOPEN_SOURCE)
-#define _XOPEN_SOURCE 700
 #endif
 
 #if !defined(_BSD_SOURCE)
@@ -54,6 +50,8 @@
 
 #define HAVE_NETINET_IP_H 1
 
+#define HAVE_SYS_SYSMACROS_H 1
+
 #define HAVE_SYS_SOCKET_H 1
 
 #define HAVE_SYS_UN_H 1
@@ -64,23 +62,29 @@
 
 /* #undef HAVE_WINSOCK2_H */
 
-#define HAVE_DAEMON 1
+#define SIZEOF_TIME_T 8
 
-/* #undef HAVE_STRLCPY */
-
-/* #undef HAVE_STRLCAT */
+#define HAVE_CFMAKERAW 1
 
 #define HAVE_CLOCK_GETTIME 1
 
-#define HAVE_STRPTIME 1
+#define HAVE_DAEMON 1
+
+#define HAVE_FCNTL 1
+
+#define HAVE_FORK 1
 
 #define HAVE_GMTIME_R 1
 
 #define HAVE_INET_NTOP 1
 
-#define HAVE_FCNTL 1
+/* #undef HAVE_STRLCAT */
 
-#define HAVE_FORK 1
+/* #undef HAVE_STRLCPY */
+
+#define HAVE_STRPTIME 1
+
+#define HAVE_SINCOS
 
 #define HAVE_SYS_TIMEPPS_H 1
 
@@ -122,12 +126,6 @@
 
 /* EverMore binary support */
 #define EVERMORE_ENABLE 1
-
-/* fixed serial port speed */
-/* #undef FIXED_PORT_SPEED */
-
-/* fixed serial port stop bits */
-/* #undef FIXED_STOP_BITS */
 
 /* force daemon to listen on all addressses */
 /* #undef FORCE_GLOBAL_ENABLE */
@@ -171,17 +169,11 @@
 /* header file directory */
 #define INCLUDEDIR "include"
 
-/* build IPv6 support */
-#define IPV6_ENABLE 1
-
 /* Spectratime iSync LNRClok/GRCLOK support */
 #define ISYNC_ENABLE 1
 
 /* iTrax hardware support */
 #define ITRAX_ENABLE 1
-
-/* fetch up-to-date data on leap seconds. */
-#define LEAPFETCH_ENABLE 1
 
 /* system libraries */
 #define LIBDIR "lib"
@@ -225,17 +217,8 @@
 /* NMEA2000/CAN support */
 #define NMEA2000_ENABLE 1
 
-/* float ops are expensive, suppress error estimates */
-/* #undef NOFLOATS_ENABLE */
-
 /* don't symbol-strip binaries at link time */
 /* #undef NOSTRIP_ENABLE */
-
-/* NTP time hinting support */
-#define NTP_ENABLE 1
-
-/* NTP time hinting via shared memory */
-#define NTPSHM_ENABLE 1
 
 /* NTRIP support */
 #define NTRIP_ENABLE 1
@@ -255,14 +238,11 @@
 /* pkgconfig file directory */
 #define PKGCONFIG "lib/pkgconfig"
 
-/* PPS time syncing support */
-#define PPS_ENABLE 1
-
 /* installation directory prefix */
 #define PREFIX "/usr/local"
 
 /* build with profiling enabled */
-/* #undef PROFILING_ENABLE */
+#define PROFILING_ENABLE 1
 
 /* build Python support and modules. */
 #define PYTHON_ENABLE 1
@@ -273,11 +253,11 @@
 /* Python module directory prefix */
 /* #undef PYTHON_LIBDIR */
 
-/* build QT bindings */
+/* build Qt bindings */
 #define QT_ENABLE 1
 
 /* version for versioned Qt */
-/* #undef QT_VERSIONED */
+#define QT_VERSIONED 5
 
 /* allow gpsd to change device settings */
 #define RECONFIGURE_ENABLE 1
@@ -332,9 +312,6 @@
 
 /* time-service configuration */
 /* #undef TIMESERVICE_ENABLE */
-
-/* latency timing support */
-#define TIMING_ENABLE 1
 
 /* True North Technologies support */
 #define TNT_ENABLE 1

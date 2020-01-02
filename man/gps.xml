@@ -72,6 +72,7 @@ SPDX-License-Identifier: BSD-2-clause
       <arg choice='opt'>-h </arg>
       <arg choice='opt'>-l <group><arg>d</arg><arg>m</arg><arg>s</arg></group></arg>
       <arg choice='opt'>-u <group><arg>i</arg><arg>n</arg><arg>m</arg></group></arg>
+      <arg choice='opt'>-r <replaceable>degrees</replaceable></arg>
       <arg choice='opt'>-V </arg>
       <group>
 	<replaceable>server</replaceable>
@@ -151,10 +152,12 @@ option.</para>
 
 <para>Where present, the <option>-u</option> option can be used to set
 the system units for display; follow the keyword with 'i' for
-'imperial' for American units (feet in altitude and error estimates,
-miles per hour in speeds), 'n' for 'nautical' (feet in altitude and
-error estimates, knots in speed) or 'm' for 'metric' (meters in
-altitude and error estimates, kilometers per hour in speeds). </para>
+'imperial' for American units (International Feet in altitude and error
+estimates, miles per hour in speeds), 'n' for 'nautical' (feet in altitude
+and error estimates, knots in speed) or 'm' for 'metric' (meters in
+altitude and error estimates, kilometers per hour in speeds).</para>
+
+<para>Note: The USA Survey Foot is not supported.</para>
 
 <para> The <option>-D</option> option, when present, sets a debug
 level; it is primarily for use by GPSD developers.  It enables
@@ -169,6 +172,9 @@ watched. However, if the server specification contains square
 brackets, the part inside them is taken as an IPv6 address and
 port/device suffixes are only parsed after the trailing bracket.
 Possible cases look like this:</para>
+
+<para>The options for xgps can be placed in the XGPSOPTS environment variable.
+XGPSOPTS is processed before the CLI options.</para>
 
 <variablelist>
 <varlistentry>
@@ -211,9 +217,12 @@ support the feature) the locations of accessible satellites.</para>
 
 <para>In the sky view, satellites are color-coded to indicate quality
 of signal; consult the data display to the left for exact figures in
-dB. Square icons indicate WAAS/EGNOS satellites, circles indicate
-ordinary GPS satellites.  Filled icons were used in the last fix,
+dB. Square icons indicate SBAS/WAAS/EGNOS satellites, circles indicate
+ordinary GPS satellites.  Filled icons were used in the current fix,
 outline icons were not.</para>
+
+<para>The -r option accepts an argument in degrees, to rotate the
+skyview counterclockwise.</para>
 
 </refsect2>
 <refsect2><title>xgpsspeed</title>
@@ -250,11 +259,9 @@ the daemon. This display can also be toggled with the s
 command.</para>
 
 <para>The <option>-m</option> option will display your magnetic
-heading (as opposed to your true heading).  This is a calculated
-value, not a measured value, and is subject to a potential error of up
-to two degrees in the areas for which the calculation is valid
-(currently Western Europe, Alaska, and Lower 48 in the USA).  The
-formulas used are those found in the Aviation Formulary v1.43.</para>
+track (as opposed to your true track).  This is a calculated
+value, not a measured value.  Magnetic variation is always potentially
+subject to large errors, but is usually better than two degrees.</para>
 
 <para><application>cgps</application> terminates when you send it a
 SIGHUP or SIGINT; given default terminal settings this will happen
@@ -290,6 +297,15 @@ after that.</para>
 
 </refsect2>
 </refsect1>
+
+<refsect1 id='environment'><title>ENVIRONMENT</title>
+<para>The <option>XGPSOPTS></option> environment variable may be set to
+pass commonly used command line options to <command>xgps</command>
+and <command>xgpsspeed</command>.  This is often used to set the
+<option>-u</option> option for locale specific units.
+<option>XGPSOPTS</option> is processed before the CLI options.</para>
+</refsect1>
+
 <refsect1 id='see_also'><title>SEE ALSO</title>
 <para>
 <citerefentry><refentrytitle>gpsd</refentrytitle><manvolnum>8</manvolnum></citerefentry>,

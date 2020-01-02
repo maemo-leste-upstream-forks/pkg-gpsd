@@ -103,23 +103,19 @@
  */
 #define NICEVAL	-10
 
-#if (defined(FIXED_PORT_SPEED) || \
-     defined(TIMESERVICE_ENABLE) || \
+#if (defined(TIMESERVICE_ENABLE) || \
      !defined(SOCKET_EXPORT_ENABLE))
     /*
-     * Force nowait in three circumstances:
+     * Force nowait in two circumstances:
      *
-     * (1) If we're running with FIXED_PORT_SPEED we're some sort
-     * of embedded configuration where we don't want to wait for connect
-     *
-     * (2) Socket export has been disabled.  In this case we have no
+     * (1) Socket export has been disabled.  In this case we have no
      * way to know when client apps are watching the export channels,
      * so we need to be running all the time.
      *
-     * (3) timeservice mode where we want the GPS always on for timing.
+     * (2) timeservice mode where we want the GPS always on for timing.
      */
 #define FORCE_NOWAIT
-#endif /* defined(FIXED_PORT_SPEED) || !defined(SOCKET_EXPORT_ENABLE) */
+#endif /* defined(TIMESERVICE_ENABLE) || !defined(SOCKET_EXPORT_ENABLE) */
 
 #ifdef SOCKET_EXPORT_ENABLE
 /* IP version used by the program */
@@ -127,11 +123,7 @@
  * AF_INET: IPv4 only
  * AF_INET6: IPv6 only
  */
-#ifdef IPV6_ENABLE
 static const int af_allowed = AF_UNSPEC;
-#else
-static const int af_allowed = AF_INET;
-#endif
 #endif /* SOCKET_EXPORT_ENABLE */
 
 #define AFCOUNT 2
@@ -210,40 +202,35 @@ static void typelist(void)
 #if defined(DBUS_EXPORT_ENABLE)
     (void)printf("# DBUS export enabled\n");
 #endif
-#if defined(TIMEHINT_ENABLE)
-    (void)printf("# Time service features enabled.\n");
-#endif
-#if defined(PPS_ENABLE)
-    (void)printf("# PPS enabled.\n");
-#endif
     exit(EXIT_SUCCESS);
 }
 
 static void usage(void)
 {
-    (void)printf("usage: gpsd [-b] [-D n] [-F sockfile] [-G] [-h] [-n] [-N] [-P pidfile] [-S port] device...\n\
+    (void)printf("usage: gpsd [OPTIONS] device...\n\n\
   Options include: \n\
   -b		     	    = bluetooth-safe: open data sources read-only\n\
   -D integer (default 0)    = set debug level \n\
-  -F sockfile		    = specify control socket location\n"
+  -F sockfile		    = specify control socket location\n\
+  -f FRAMING		    = fix device framing to FRAMING (8N1, 8O1, etc.)\n\
+  -G         		    = make gpsd listen on INADDR_ANY\n"
 #ifndef FORCE_GLOBAL_ENABLE
-"  -G         		    = make gpsd listen on INADDR_ANY\n"
-#endif /* FORCE_GLOBAL_ENABLE */
-"  -h		     	    = help message \n"
-#ifdef FORCE_NOWAIT
-"  -n			    = don't wait for client connects to poll GPS\n"
 "                             forced on in this binary\n"
-#else
-"  -n			    = don't wait for client connects to poll GPS\n"
+#endif /* FORCE_GLOBAL_ENABLE */
+"  -h		     	    = help message \n\
+  -n			    = don't wait for client connects to poll GPS\n"
+#ifdef FORCE_NOWAIT
+"                             forced on in this binary\n"
 #endif /* FORCE_NOWAIT */
 "  -N			    = don't go into background\n\
   -P pidfile	      	    = set file to record process ID\n\
   -r               	    = use GPS time even if no fix\n\
-  -S integer (default %s) = set port for daemon \n\
+  -S PORT (default %s) = set port for daemon \n\
+  -s SPEED                  = fix device speed to SPEED\n\
   -V			    = emit version and exit.\n"
 #ifdef NETFEED_ENABLE
-"A device may be a local serial device for GPS input, or a URL in one \n\
-of the following forms:\n\
+"\nA device may be a local serial device for GNSS input, plus an optional\n\
+PPS device, or a URL in one of the following forms:\n\
      tcp://host[:port]\n\
      udp://host[:port]\n\
      {dgpsip|ntrip}://[user:passwd@]host[:port][/stream]\n\
@@ -254,6 +241,11 @@ in which case it specifies an input source for device, DGPS or ntrip data.\n"
 The following driver types are compiled into this gpsd instance:\n",
 		 DEFAULT_GPSD_PORT);
     typelist();
+    if (8 > sizeof(time_t)) {
+	(void)printf("\nWARNING: This system has a 32-bit time_t.\n"
+		     "WARNING: This gpsd will fail at 2038-01-19T03:14:07Z.\n");
+    }
+
 }
 
 #ifdef CONTROL_SOCKET_ENABLE
@@ -263,20 +255,20 @@ static socket_t filesock(char *filename)
     socket_t sock;
 
     if (BAD_SOCKET(sock = socket(AF_UNIX, SOCK_STREAM, 0))) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "Can't create device-control socket\n");
 	return -1;
     }
     (void)strlcpy(addr.sun_path, filename, sizeof(addr.sun_path));
     addr.sun_family = (sa_family_t)AF_UNIX;
-    if (bind(sock, (struct sockaddr *)&addr, (int)sizeof(addr)) < 0) {
-	gpsd_log(&context.errout, LOG_ERROR,
+    if (bind(sock, (struct sockaddr *)&addr, (socklen_t)sizeof(addr)) < 0) {
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't bind to local socket %s\n", filename);
 	(void)close(sock);
 	return -1;
     }
     if (listen(sock, QLEN) == -1) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't listen on local socket %s\n", filename);
 	(void)close(sock);
 	return -1;
@@ -304,15 +296,12 @@ static void adjust_max_fd(int fd, bool on)
     if (on) {
 	if (fd > maxfd)
 	    maxfd = fd;
-    }
-    else {
-	if (fd == maxfd) {
-	    int tfd;
+    } else if (fd == maxfd) {
+        int tfd;
 
-	    for (maxfd = tfd = 0; tfd < (int)FD_SETSIZE; tfd++)
-		if (FD_ISSET(tfd, &all_fds))
-		    maxfd = tfd;
-	}
+        for (maxfd = tfd = 0; tfd < (int)FD_SETSIZE; tfd++)
+            if (FD_ISSET(tfd, &all_fds))
+                maxfd = tfd;
     }
 }
 
@@ -334,7 +323,7 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
     struct servent *pse;
     struct protoent *ppe;
     sockaddr_t sat;
-    int sin_len = 0;
+    size_t sin_len = 0;
     int type, proto, one = 1;
     in_port_t port;
     char *af_str = "";
@@ -344,7 +333,7 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
 	port = ntohs((in_port_t) pse->s_port);
     // cppcheck-suppress unreadVariable
     else if ((port = (in_port_t) atoi(service)) == 0) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't get \"%s\" service entry.\n", service);
 	return -1;
     }
@@ -376,13 +365,13 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
 	s = socket(PF_INET, type, proto);
 	if (s > -1 ) {
 	/* Set packet priority */
-	if (setsockopt(s, IPPROTO_IP, IP_TOS, &dscp, sizeof(dscp)) == -1)
-	    gpsd_log(&context.errout, LOG_WARN,
+	if (setsockopt(s, IPPROTO_IP, IP_TOS, &dscp,
+                       (socklen_t)sizeof(dscp)) == -1)
+	    GPSD_LOG(LOG_WARN, &context.errout,
 		     "Warning: SETSOCKOPT TOS failed\n");
 	}
 
 	break;
-#ifdef IPV6_ENABLE
     case AF_INET6:
 	sin_len = sizeof(sat.sa_in6);
 
@@ -415,60 +404,61 @@ static socket_t passivesock_af(int af, char *service, char *tcp_or_udp, int qlen
 	 */
 	if (s > -1) {
 	    int on = 1;
-	    if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)) == -1) {
-		gpsd_log(&context.errout, LOG_ERROR,
+	    if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on,
+                           (socklen_t)sizeof(on)) == -1) {
+		GPSD_LOG(LOG_ERROR, &context.errout,
 			 "Error: SETSOCKOPT IPV6_V6ONLY\n");
 		(void)close(s);
 		return -1;
 	    }
 #ifdef IPV6_TCLASS
 	    /* Set packet priority */
-	    if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &dscp, sizeof(dscp)) == -1)
-		gpsd_log(&context.errout, LOG_WARN,
+	    if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &dscp,
+                           (socklen_t)sizeof(dscp)) == -1)
+		GPSD_LOG(LOG_WARN, &context.errout,
 			 "Warning: SETSOCKOPT TOS failed\n");
 #endif /* IPV6_TCLASS */
 	}
 	break;
-#endif  /* IPV6_ENABLE */
     default:
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "unhandled address family %d\n", af);
 	return -1;
     }
-    gpsd_log(&context.errout, LOG_IO,
+    GPSD_LOG(LOG_IO, &context.errout,
 	     "opening %s socket\n", af_str);
 
     if (BAD_SOCKET(s)) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't create %s socket\n", af_str);
 	return -1;
     }
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one,
-		   (int)sizeof(one)) == -1) {
-	gpsd_log(&context.errout, LOG_ERROR,
+		   (socklen_t)sizeof(one)) == -1) {
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "Error: SETSOCKOPT SO_REUSEADDR\n");
 	(void)close(s);
 	return -1;
     }
-    if (bind(s, &sat.sa, sin_len) < 0) {
-	gpsd_log(&context.errout, LOG_ERROR,
+    if (bind(s, &sat.sa, (socklen_t)sin_len) < 0) {
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't bind to %s port %s, %s\n", af_str,
 		 service, strerror(errno));
 	if (errno == EADDRINUSE) {
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "maybe gpsd is already running!\n");
 	}
 	(void)close(s);
 	return -1;
     }
     if (type == SOCK_STREAM && listen(s, qlen) == -1) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't listen on port %s\n", service);
 	(void)close(s);
 	return -1;
     }
 
-    gpsd_log(&context.errout, LOG_SPIN, "passivesock_af() -> %d\n", s);
+    GPSD_LOG(LOG_SPIN, &context.errout, "passivesock_af() -> %d\n", s);
     return s;
 }
 
@@ -557,11 +547,11 @@ static void detach_client(struct subscriber_t *sub)
     }
     c_ip = netlib_sock2ip(sub->fd);
     (void)shutdown(sub->fd, SHUT_RDWR);
-    gpsd_log(&context.errout, LOG_SPIN,
+    GPSD_LOG(LOG_SPIN, &context.errout,
 	     "close(%d) in detach_client()\n",
 	     sub->fd);
     (void)close(sub->fd);
-    gpsd_log(&context.errout, LOG_INF,
+    GPSD_LOG(LOG_INF, &context.errout,
 	     "detaching %s (sub %d, fd %d) in detach_client\n",
 	     c_ip, sub_index(sub), sub->fd);
     FD_CLR(sub->fd, &all_fds);
@@ -587,7 +577,7 @@ static ssize_t throttled_write(struct subscriber_t *sub, char *buf,
 
     if (context.errout.debug >= LOG_CLIENT) {
 	if (isprint((unsigned char) buf[0]))
-	    gpsd_log(&context.errout, LOG_CLIENT,
+	    GPSD_LOG(LOG_CLIENT, &context.errout,
 		     "=> client(%d): %s\n", sub_index(sub), buf);
 	else {
 #ifndef __clang_analyzer__
@@ -596,24 +586,20 @@ static ssize_t throttled_write(struct subscriber_t *sub, char *buf,
 	    for (cp = buf; cp < buf + len; cp++)
 		str_appendf(buf2, sizeof(buf2),
 			       "%02x", (unsigned int)(*cp & 0xff));
-	    gpsd_log(&context.errout, LOG_CLIENT,
-		     "=> client(%d): =%s\n", sub_index(sub),	buf2);
+	    GPSD_LOG(LOG_CLIENT, &context.errout,
+		     "=> client(%d): =%s\n", sub_index(sub), buf2);
 #endif /* __clang_analyzer__ */
 	}
     }
 
-#if defined(PPS_ENABLE)
     gpsd_acquire_reporting_lock();
-#endif /* PPS_ENABLE */
     status = send(sub->fd, buf, len, 0);
-#if defined(PPS_ENABLE)
     gpsd_release_reporting_lock();
 
-#endif /* PPS_ENABLE */
     if (status == (ssize_t) len)
 	return status;
     else if (status > -1) {
-	gpsd_log(&context.errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &context.errout,
 		 "short write disconnecting client(%d)\n",
 		 sub_index(sub));
 	detach_client(sub);
@@ -621,14 +607,14 @@ static ssize_t throttled_write(struct subscriber_t *sub, char *buf,
     } else if (errno == EAGAIN || errno == EINTR)
 	return 0;		/* no data written, and errno says to retry */
     else if (errno == EBADF)
-	gpsd_log(&context.errout, LOG_WARN,
+	GPSD_LOG(LOG_WARN, &context.errout,
 		 "client(%d) has vanished.\n", sub_index(sub));
     else if (errno == EWOULDBLOCK
 	     && time(NULL) - sub->active > NOREAD_TIMEOUT)
-	gpsd_log(&context.errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &context.errout,
 		 "client(%d) timed out.\n", sub_index(sub));
     else
-	gpsd_log(&context.errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &context.errout,
 		 "client(%d) write: %s\n",
 		 sub_index(sub), strerror(errno));
     detach_client(sub);
@@ -667,31 +653,24 @@ static void deactivate_device(struct gps_device_t *device)
     if (!BAD_SOCKET(device->gpsdata.gps_fd)) {
 	FD_CLR(device->gpsdata.gps_fd, &all_fds);
 	adjust_max_fd(device->gpsdata.gps_fd, false);
-#ifdef NTPSHM_ENABLE
 	ntpshm_link_deactivate(device);
-#endif /* NTPSHM_ENABLE */
 	gpsd_deactivate(device);
     }
 }
 
-#if defined(SOCKET_EXPORT_ENABLE) || defined(CONTROL_SOCKET_ENABLE)
-/* *INDENT-OFF* */
-static struct gps_device_t *find_device(const char
-								 *device_name)
 /* find the device block for an existing device name */
+static struct gps_device_t *find_device(const char *device_name)
 {
     struct gps_device_t *devp;
 
-    for (devp = devices; devp < devices + MAX_DEVICES; devp++)
-    {
+    for (devp = devices; devp < devices + MAX_DEVICES; devp++) {
         if (allocated_device(devp) && NULL != device_name &&
-            strcmp(devp->gpsdata.dev.path, device_name) == 0)
+            strcmp(devp->gpsdata.dev.path, device_name) == 0) {
             return devp;
+        }
     }
     return NULL;
 }
-/* *INDENT-ON* */
-#endif /* defined(SOCKET_EXPORT_ENABLE) || defined(CONTROL_SOCKET_ENABLE) */
 
 static bool open_device( struct gps_device_t *device)
 /* open the input device
@@ -710,20 +689,18 @@ static bool open_device( struct gps_device_t *device)
 	return false;
     }
 
-#ifdef NTPSHM_ENABLE
     /*
      * Now is the right time to grab the shared memory segment(s)
      * to communicate the navigation message derived and (possibly)
      * 1PPS derived time data to ntpd/chrony.
      */
     ntpshm_link_activate(device);
-    gpsd_log(&context.errout, LOG_INF,
+    GPSD_LOG(LOG_INF, &context.errout,
 	     "PPS:%s ntpshm_link_activate: %d\n",
 	     device->gpsdata.dev.path,
 	     device->shm_clock != NULL);
-#endif /* NTPSHM_ENABLE */
 
-    gpsd_log(&context.errout, LOG_INF,
+    GPSD_LOG(LOG_INF, &context.errout,
 	     "device %s activated\n", device->gpsdata.dev.path);
     if ( PLACEHOLDING_FD == activated ) {
 	/* it is a /dev/ppsX, no need to wait on it */
@@ -743,9 +720,13 @@ bool gpsd_add_device(const char *device_name, bool flag_nowait)
 {
     struct gps_device_t *devp;
     bool ret = false;
+#ifdef SOCKET_EXPORT_ENABLE
+    char tbuf[JSON_DATE_MAX+1];
+#endif /* SOCKET_EXPORT_ENABLE */
+
     /* we can't handle paths longer than GPS_PATH_MAX, so don't try */
     if (strlen(device_name) >= GPS_PATH_MAX) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "ignoring device %s: path length exceeds maximum %d\n",
 		 device_name, GPS_PATH_MAX);
 	return false;
@@ -754,10 +735,8 @@ bool gpsd_add_device(const char *device_name, bool flag_nowait)
     for (devp = devices; devp < devices + MAX_DEVICES; devp++)
 	if (!allocated_device(devp)) {
 	    gpsd_init(devp, &context, device_name);
-#ifdef NTPSHM_ENABLE
 	    ntpshm_session_init(devp);
-#endif /* NTPSHM_ENABLE */
-	    gpsd_log(&context.errout, LOG_INF,
+	    GPSD_LOG(LOG_INF, &context.errout,
 		     "stashing device %s at slot %d\n",
 		     device_name, (int)(devp - devices));
 	    if (!flag_nowait) {
@@ -768,8 +747,10 @@ bool gpsd_add_device(const char *device_name, bool flag_nowait)
 	    }
 #ifdef SOCKET_EXPORT_ENABLE
 	    notify_watchers(devp, true, false,
-			    "{\"class\":\"DEVICE\",\"path\":\"%s\",\"activated\":%lf}\r\n",
-			    devp->gpsdata.dev.path, timestamp());
+			    "{\"class\":\"DEVICE\",\"path\":\"%s\","
+                            "\"activated\":%s}\r\n",
+			    devp->gpsdata.dev.path,
+		            now_to_iso8601(tbuf, sizeof(tbuf)));
 #endif /* SOCKET_EXPORT_ENABLE */
 	    break;
 	}
@@ -783,11 +764,11 @@ static int write_gps(char *device, char *hex) {
     int st;
 
     if ((devp = find_device(device)) == NULL) {
-	gpsd_log(&context.errout, LOG_INF, "GPS <=: %s not active\n", device);
+	GPSD_LOG(LOG_INF, &context.errout, "GPS <=: %s not active\n", device);
 	return 1;
     }
     if (devp->context->readonly || (devp->sourcetype <= source_blockdev)) {
-	gpsd_log(&context.errout, LOG_WARN,
+	GPSD_LOG(LOG_WARN, &context.errout,
 		 "GPS <=: attempted to write to a read-only device\n");
 	return 1;
     }
@@ -796,15 +777,15 @@ static int write_gps(char *device, char *hex) {
     /* NOTE: this destroys the original buffer contents */
     st = gpsd_hexpack(hex, hex, len);
     if (st <= 0) {
-	gpsd_log(&context.errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &context.errout,
 		 "GPS <=: invalid hex string (error %d).\n", st);
 	return 1;
     }
-    gpsd_log(&context.errout, LOG_INF,
+    GPSD_LOG(LOG_INF, &context.errout,
 	     "GPS <=: writing %d bytes fromhex(%s) to %s\n",
 	     st, hex, device);
     if (write(devp->gpsdata.gps_fd, hex, (size_t) st) <= 0) {
-	gpsd_log(&context.errout, LOG_WARN,
+	GPSD_LOG(LOG_WARN, &context.errout,
 		 "GPS <=: write to device failed\n");
 	return 1;
     }
@@ -818,7 +799,10 @@ static char *snarfline(char *p, char **out)
     char *q;
     static char stash[BUFSIZ];
 
-    for (q = p; isprint((unsigned char) *p) && !isspace((unsigned char) *p) && (p - q < (ssize_t) sizeof(stash) - 1);
+    for (q = p;
+         isprint((unsigned char) *p) &&
+         !isspace((unsigned char) *p) &&
+         (p - q < (ssize_t)(sizeof(stash) - 1));
 	 p++)
 	continue;
     (void)memcpy(stash, q, (size_t) (p - q));
@@ -842,7 +826,7 @@ static void handle_control(int sfd, char *buf)
     if (buf[0] == '-') {
 	/* remove device named after - */
 	(void)snarfline(buf + 1, &stash);
-	gpsd_log(&context.errout, LOG_INF,
+	GPSD_LOG(LOG_INF, &context.errout,
 		 "<= control(%d): removing %s\n", sfd, stash);
 	if ((devp = find_device(stash))) {
 	    deactivate_device(devp);
@@ -854,19 +838,20 @@ static void handle_control(int sfd, char *buf)
 	/* add device named after + */
 	(void)snarfline(buf + 1, &stash);
 	if (find_device(stash)) {
-	    gpsd_log(&context.errout, LOG_INF,
+	    GPSD_LOG(LOG_INF, &context.errout,
 		     "<= control(%d): %s already active \n", sfd,
 		     stash);
 	    ignore_return(write(sfd, "ERROR\n", 6));
 	} else {
-	    gpsd_log(&context.errout, LOG_INF,
+	    GPSD_LOG(LOG_INF, &context.errout,
 		     "<= control(%d): adding %s\n", sfd, stash);
 	    if (gpsd_add_device(stash, nowait))
 		ignore_return(write(sfd, "OK\n", 3));
 	    else {
 		ignore_return(write(sfd, "ERROR\n", 6));
-		gpsd_log(&context.errout, LOG_INF,
-			 "control(%d): adding %s failed, too many devices active\n",
+		GPSD_LOG(LOG_INF, &context.errout,
+			 "control(%d): adding %s failed, too many "
+                         "devices active\n",
 			 sfd, stash);
 	    }
 	}
@@ -876,24 +861,26 @@ static void handle_control(int sfd, char *buf)
 	(void)snarfline(buf + 1, &stash);
 	eq = strchr(stash, '=');
 	if (eq == NULL) {
-	    gpsd_log(&context.errout, LOG_WARN,
+	    GPSD_LOG(LOG_WARN, &context.errout,
 		     "<= control(%d): ill-formed command \n",
 		     sfd);
 	    ignore_return(write(sfd, "ERROR\n", 6));
 	} else {
 	    *eq++ = '\0';
 	    if ((devp = find_device(stash))) {
-		if (devp->context->readonly || (devp->sourcetype <= source_blockdev)) {
-		    gpsd_log(&context.errout, LOG_WARN,
-			     "<= control(%d): attempted to write to a read-only device\n",
+		if (devp->context->readonly ||
+                    (devp->sourcetype <= source_blockdev)) {
+		    GPSD_LOG(LOG_WARN, &context.errout,
+			     "<= control(%d): attempted to write to a "
+                             "read-only device\n",
 			     sfd);
 		    ignore_return(write(sfd, "ERROR\n", 6));
 		} else {
-		    gpsd_log(&context.errout, LOG_INF,
+		    GPSD_LOG(LOG_INF, &context.errout,
 			     "<= control(%d): writing to %s \n", sfd,
 			     stash);
 		    if (write(devp->gpsdata.gps_fd, eq, strlen(eq)) <= 0) {
-			gpsd_log(&context.errout, LOG_WARN,
+			GPSD_LOG(LOG_WARN, &context.errout,
 				 "<= control(%d): write to device failed\n",
 				 sfd);
 			ignore_return(write(sfd, "ERROR\n", 6));
@@ -902,7 +889,7 @@ static void handle_control(int sfd, char *buf)
 		    }
 		}
 	    } else {
-		gpsd_log(&context.errout, LOG_INF,
+		GPSD_LOG(LOG_INF, &context.errout,
 			 "<= control(%d): %s not active \n", sfd,
 			 stash);
 		ignore_return(write(sfd, "ERROR\n", 6));
@@ -915,7 +902,7 @@ static void handle_control(int sfd, char *buf)
 	(void)snarfline(buf + 1, &stash);
 	eq = strchr(stash, '=');
 	if (eq == NULL) {
-	    gpsd_log(&context.errout, LOG_WARN,
+	    GPSD_LOG(LOG_WARN, &context.errout,
 		     "<= control(%d): ill-formed command\n",
 		     sfd);
 	    ignore_return(write(sfd, "ERROR\n", 6));
@@ -949,7 +936,7 @@ static bool awaken(struct gps_device_t *device)
     /* open that device */
     if (!initialized_device(device)) {
 	if (!open_device(device)) {
-	    gpsd_log(&context.errout, LOG_WARN,
+	    GPSD_LOG(LOG_WARN, &context.errout,
 		     "%s: open failed\n",
 		     device->gpsdata.dev.path);
 	    free_device(device);
@@ -958,26 +945,26 @@ static bool awaken(struct gps_device_t *device)
     }
 
     if (!BAD_SOCKET(device->gpsdata.gps_fd)) {
-	gpsd_log(&context.errout, LOG_PROG,
+	GPSD_LOG(LOG_PROG, &context.errout,
 		 "device %d (fd=%d, path %s) already active.\n",
 		 (int)(device - devices),
 		 device->gpsdata.gps_fd, device->gpsdata.dev.path);
 	return true;
     } else {
 	if (gpsd_activate(device, O_OPTIMIZE) < 0) {
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "%s: device activation failed.\n",
 		     device->gpsdata.dev.path);
-		    gpsd_log(&context.errout, LOG_ERROR,
+		    GPSD_LOG(LOG_ERROR, &context.errout,
 				"%s: activation failed, freeing device\n",
 				device->gpsdata.dev.path);
 		    /* FIXME: works around a crash bug, but prevents retries */
 		    free_device(device);
 	    return false;
 	} else {
-	    gpsd_log(&context.errout, LOG_RAW,
-			"flagging descriptor %d in assign_channel()\n",
-			device->gpsdata.gps_fd);
+	    GPSD_LOG(LOG_RAW, &context.errout,
+                     "flagging descriptor %d in assign_channel()\n",
+                     device->gpsdata.gps_fd);
 	    FD_SET(device->gpsdata.gps_fd, &all_fds);
 	    adjust_max_fd(device->gpsdata.gps_fd, true);
 	    return true;
@@ -1019,19 +1006,20 @@ static void set_serial(struct gps_device_t *device,
 #ifndef __clang_analyzer__
     while (isspace((unsigned char) *modestring))
 	modestring++;
-    if (*modestring && strchr("78", *modestring) != NULL) {
+    if (*modestring && (NULL != strchr("78", *modestring))) {
 	wordsize = (int)(*modestring++ - '0');
-	if (*modestring && strchr("NOE", *modestring) != NULL) {
+	if (*modestring && (NULL != strchr("NOE", *modestring))) {
 	    parity = *modestring++;
 	    while (isspace((unsigned char) *modestring))
 		modestring++;
-	    if (*modestring && strchr("12", *modestring) != NULL)
+	    if (*modestring && (NULL != strchr("12", *modestring))) {
 		stopbits = (unsigned int)(*modestring - '0');
+            }
 	}
     }
 #endif /* __clang_analyzer__ */
 
-    gpsd_log(&context.errout, LOG_PROG,
+    GPSD_LOG(LOG_PROG, &context.errout,
 	     "set_serial(%s,%u,%s) %c%d\n",
 	     device->gpsdata.dev.path,
 	     (unsigned int)speed, modestring, parity, stopbits);
@@ -1122,9 +1110,7 @@ static void handle_request(struct subscriber_t *sub,
 	    ++buf;
 	} else {
 	    int status = json_watch_read(buf + 1, &sub->policy, &end);
-#ifndef TIMING_ENABLE
 	    sub->policy.timing = false;
-#endif /* TIMING_ENABLE */
 	    if (end == NULL)
 		buf += strlen(buf);
 	    else {
@@ -1134,9 +1120,10 @@ static void handle_request(struct subscriber_t *sub,
 	    }
 	    if (status != 0) {
 		(void)snprintf(reply, replylen,
-			       "{\"class\":\"ERROR\",\"message\":\"Invalid WATCH: %s\"}\r\n",
+			       "{\"class\":\"ERROR\",\"message\":"
+                               "\"Invalid WATCH: %s\"}\r\n",
 			       json_error_string(status));
-		gpsd_log(&context.errout, LOG_ERROR, "response: %s\n", reply);
+		GPSD_LOG(LOG_ERROR, &context.errout, "response: %s\n", reply);
 	    } else if (sub->policy.watcher) {
 		if (sub->policy.devpath[0] == '\0') {
 		    /* awaken all devices */
@@ -1153,9 +1140,10 @@ static void handle_request(struct subscriber_t *sub,
 		    devp = find_device(sub->policy.devpath);
 		    if (devp == NULL) {
 			(void)snprintf(reply, replylen,
-				       "{\"class\":\"ERROR\",\"message\":\"No such device as %s\"}\r\n",
+				       "{\"class\":\"ERROR\",\"message\":"
+                                       "\"No such device as %s\"}\r\n",
 				       sub->policy.devpath);
-			gpsd_log(&context.errout, LOG_ERROR,
+			GPSD_LOG(LOG_ERROR, &context.errout,
 				 "response: %s\n", reply);
 			goto bailout;
 		    } else if (awaken(devp)) {
@@ -1166,7 +1154,7 @@ static void handle_request(struct subscriber_t *sub,
 			(void)snprintf(reply, replylen,
 				       "{\"class\":\"ERROR\",\"message\":\"Can't assign %s\"}\r\n",
 				       sub->policy.devpath);
-			gpsd_log(&context.errout, LOG_ERROR,
+			GPSD_LOG(LOG_ERROR, &context.errout,
 				 "response: %s\n", reply);
 			goto bailout;
 		    }
@@ -1201,7 +1189,7 @@ static void handle_request(struct subscriber_t *sub,
 		(void)snprintf(reply, replylen,
 			       "{\"class\":\"ERROR\",\"message\":\"Invalid DEVICE: \"%s\"}\r\n",
 			       json_error_string(status));
-		gpsd_log(&context.errout, LOG_ERROR, "response: %s\n", reply);
+		GPSD_LOG(LOG_ERROR, &context.errout, "response: %s\n", reply);
 		goto bailout;
 	    } else {
 		if (devconf.path[0] != '\0') {
@@ -1212,7 +1200,7 @@ static void handle_request(struct subscriber_t *sub,
 			(void)snprintf(reply, replylen,
 				       "{\"class\":\"ERROR\",\"message\":\"Can't open %s.\"}\r\n",
 				       devconf.path);
-			gpsd_log(&context.errout, LOG_ERROR,
+			GPSD_LOG(LOG_ERROR, &context.errout,
 				 "response: %s\n", reply);
 			goto bailout;
 		    }
@@ -1226,15 +1214,19 @@ static void handle_request(struct subscriber_t *sub,
 			}
 		    if (devcount == 0) {
 			(void)strlcat(reply,
-				      "{\"class\":\"ERROR\",\"message\":\"Can't perform DEVICE configuration, no devices attached.\"}\r\n",
+				      "{\"class\":\"ERROR\",\"message\":"
+                                      "\"Can't perform DEVICE configuration, "
+                                      "no devices attached.\"}\r\n",
 				      replylen);
-			gpsd_log(&context.errout, LOG_ERROR,
+			GPSD_LOG(LOG_ERROR, &context.errout,
 				 "response: %s\n", reply);
 			goto bailout;
 		    } else if (devcount > 1) {
 			str_appendf(reply, replylen,
-				       "{\"class\":\"ERROR\",\"message\":\"No path specified in DEVICE, but multiple devices are attached.\"}\r\n");
-			gpsd_log(&context.errout, LOG_ERROR,
+				    "{\"class\":\"ERROR\",\"message\":"
+                                    "\"No path specified in DEVICE, but "
+                                    "multiple devices are attached.\"}\r\n");
+			GPSD_LOG(LOG_ERROR, &context.errout,
 				 "response: %s\n", reply);
 			goto bailout;
 		    }
@@ -1245,6 +1237,7 @@ static void handle_request(struct subscriber_t *sub,
 				   "{\"class\":\"ERROR\",\"message\":\"Type of %s is unknown.\"}\r\n",
 				   device->gpsdata.dev.path);
 		else {
+                    timespec_t delta1, delta2;
 		    const struct gps_type_t *dt = device->device_type;
 		    bool no_serial_change =
 			(devconf.baudrate == DEVDEFAULT_BPS)
@@ -1259,8 +1252,10 @@ static void handle_request(struct subscriber_t *sub,
 			devconf.stopbits = device->gpsdata.dev.stopbits;
 		    if (devconf.stopbits == DEVDEFAULT_STOPBITS)
 			devconf.stopbits = device->gpsdata.dev.stopbits;
-		    if (0 == isfinite(devconf.cycle))
+		    if (0 < devconf.cycle.tv_sec ||
+		        0 < devconf.cycle.tv_nsec) {
 			devconf.cycle = device->gpsdata.dev.cycle;
+                    }
 
 		    /* now that channel is selected, apply changes */
 		    if (devconf.driver_mode != device->gpsdata.dev.driver_mode
@@ -1275,11 +1270,19 @@ static void handle_request(struct subscriber_t *sub,
 			set_serial(device,
 				   (speed_t) devconf.baudrate, serialmode);
 		    }
-		    if (devconf.cycle != device->gpsdata.dev.cycle
-			&& devconf.cycle >= dt->min_cycle
-			&& dt->rate_switcher != NULL)
-			if (dt->rate_switcher(device, devconf.cycle))
-			    device->gpsdata.dev.cycle = devconf.cycle;
+		    TS_SUB(&delta1, &devconf.cycle, &device->gpsdata.dev.cycle);
+		    if (TS_NZ(&delta1)) {
+                        /* different cycle time than before */
+			TS_SUB(&delta2, &devconf.cycle, &dt->min_cycle);
+			if (TS_GZ(&delta2) &&
+			    dt->rate_switcher != NULL) {
+			    /* longer than minimum cycle time */
+			    if (dt->rate_switcher(device,
+                                                  TSTONS(&devconf.cycle))) {
+				device->gpsdata.dev.cycle = devconf.cycle;
+			    }
+                        }
+                    }
 	            if ('\0' != devconf.hexdata[0]) {
 			write_gps(device->gpsdata.dev.path, devconf.hexdata);
 		    }
@@ -1291,7 +1294,7 @@ static void handle_request(struct subscriber_t *sub,
 #endif /* RECONFIGURE_ENABLE */
 	}
 	/* dump a response for each selected channel */
-	for (devp = devices; devp < devices + MAX_DEVICES; devp++)
+	for (devp = devices; devp < devices + MAX_DEVICES; devp++) {
 	    if (!allocated_device(devp))
 		continue;
 	    else if (devconf.path[0] != '\0'
@@ -1302,17 +1305,22 @@ static void handle_request(struct subscriber_t *sub,
 				 reply + strlen(reply),
 				 replylen - strlen(reply));
 	    }
+        }
     } else if (str_starts_with(buf, "?POLL;")) {
 	char tbuf[JSON_DATE_MAX+1];
 	int active = 0;
+
 	buf += 6;
-	for (devp = devices; devp < devices + MAX_DEVICES; devp++)
+	for (devp = devices; devp < devices + MAX_DEVICES; devp++) {
 	    if (allocated_device(devp) && subscribed(sub, devp))
 		if ((devp->observed & GPS_TYPEMASK) != 0)
 		    active++;
+        }
+
 	(void)snprintf(reply, replylen,
-		       "{\"class\":\"POLL\",\"time\":\"%s\",\"active\":%d,\"tpv\":[",
-		       unix_to_iso8601(timestamp(), tbuf, sizeof(tbuf)), active);
+		       "{\"class\":\"POLL\",\"time\":\"%s\",\"active\":%d, "
+                       "\"tpv\":[",
+		       now_to_iso8601(tbuf, sizeof(tbuf)), active);
 	for (devp = devices; devp < devices + MAX_DEVICES; devp++) {
 	    if (allocated_device(devp) && subscribed(sub, devp)) {
 		if ((devp->observed & GPS_TYPEMASK) != 0) {
@@ -1361,9 +1369,10 @@ static void handle_request(struct subscriber_t *sub,
 	while (isspace((unsigned char) *errend) && errend > buf)
 	    --errend;
 	(void)snprintf(reply, replylen,
-		       "{\"class\":\"ERROR\",\"message\":\"Unrecognized request '%.*s'\"}\r\n",
+		       "{\"class\":\"ERROR\",\"message\":"
+                       "\"Unrecognized request '%.*s'\"}\r\n",
 		       (int)(errend - buf), buf);
-	gpsd_log(&context.errout, LOG_ERROR, "ERROR response: %s\n", reply);
+	GPSD_LOG(LOG_ERROR, &context.errout, "ERROR response: %s\n", reply);
 	buf += strlen(buf);
     }
   bailout:
@@ -1423,7 +1432,7 @@ static void pseudonmea_report(struct subscriber_t *sub,
 
 	if ((changed & REPORT_IS) != 0) {
 	    nmea_tpv_dump(device, buf, sizeof(buf));
-	    gpsd_log(&context.errout, LOG_IO,
+	    GPSD_LOG(LOG_IO, &context.errout,
 		     "<= GPS (binary tpv) %s: %s\n",
 		     device->gpsdata.dev.path, buf);
 	    (void)throttled_write(sub, buf, strlen(buf));
@@ -1431,7 +1440,7 @@ static void pseudonmea_report(struct subscriber_t *sub,
 
 	if ((changed & (SATELLITE_SET|USED_IS)) != 0) {
 	    nmea_sky_dump(device, buf, sizeof(buf));
-	    gpsd_log(&context.errout, LOG_IO,
+	    GPSD_LOG(LOG_IO, &context.errout,
 		     "<= GPS (binary sky) %s: %s\n",
 		     device->gpsdata.dev.path, buf);
 	    (void)throttled_write(sub, buf, strlen(buf));
@@ -1439,7 +1448,7 @@ static void pseudonmea_report(struct subscriber_t *sub,
 
 	if ((changed & SUBFRAME_SET) != 0) {
 	    nmea_subframe_dump(device, buf, sizeof(buf));
-	    gpsd_log(&context.errout, LOG_IO,
+	    GPSD_LOG(LOG_IO, &context.errout,
 		     "<= GPS (binary subframe) %s: %s\n",
 		     device->gpsdata.dev.path, buf);
 	    (void)throttled_write(sub, buf, strlen(buf));
@@ -1447,7 +1456,7 @@ static void pseudonmea_report(struct subscriber_t *sub,
 #ifdef AIVDM_ENABLE
 	if ((changed & AIS_SET) != 0) {
 	    nmea_ais_dump(device, buf, sizeof(buf));
-	    gpsd_log(&context.errout, LOG_IO,
+	    GPSD_LOG(LOG_IO, &context.errout,
 		     "<= AIS (binary ais) %s: %s\n",
 		     device->gpsdata.dev.path, buf);
 	    (void)throttled_write(sub, buf, strlen(buf));
@@ -1480,8 +1489,9 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
     /* handle laggy response to a firmware version query */
     if ((changed & (DEVICEID_SET | DRIVER_IS)) != 0) {
 	if (device->device_type == NULL)
-	    gpsd_log(&context.errout, LOG_ERROR,
-		     "internal error - device type of %s not set when expected\n",
+	    GPSD_LOG(LOG_ERROR, &context.errout,
+		     "internal error - device type of %s not set "
+                     "when expected\n",
 		     device->gpsdata.dev.path);
 	else
 	{
@@ -1498,12 +1508,12 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
     if ((changed & RTCM2_SET) != 0 || (changed & RTCM3_SET) != 0) {
 	if ((changed & RTCM2_SET) != 0
                    && device->lexer.outbuflen > RTCM_MAX) {
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "overlong RTCM packet (%zd bytes)\n",
 		     device->lexer.outbuflen);
 	} else if ((changed & RTCM3_SET) != 0
 		   && device->lexer.outbuflen > RTCM3_MAX) {
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "overlong RTCM3 packet (%zd bytes)\n",
 		     device->lexer.outbuflen);
 	} else {
@@ -1511,16 +1521,22 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
 	    for (dp = devices; dp < devices+MAX_DEVICES; dp++) {
 		if (allocated_device(dp)) {
 /* *INDENT-OFF* */
-		    if (dp->device_type->rtcm_writer != NULL) {
-			if (dp->device_type->rtcm_writer(dp,
-							     (const char *)device->lexer.outbuffer,
-							     device->lexer.outbuflen) == 0)
-			    gpsd_log(&context.errout, LOG_ERROR,
-				     "Write to RTCM sink failed\n");
-			else {
-			    gpsd_log(&context.errout, LOG_IO,
-				     "<= DGPS: %zd bytes of RTCM relayed.\n",
-				     device->lexer.outbuflen);
+		    if (NULL != dp->device_type &&
+		        NULL != dp->device_type->rtcm_writer) {
+                        // FIXME: don't write back to source
+                        ssize_t ret = dp->device_type->rtcm_writer(dp,
+			                 (const char *)device->lexer.outbuffer,
+			                 device->lexer.outbuflen);
+                        if (0 < ret) {
+                            GPSD_LOG(LOG_IO, &context.errout,
+                                     "<= DGPS: %zd bytes of RTCM relayed.\n",
+                                     device->lexer.outbuflen);
+                        } else if (0 == ret) {
+                            // nothing written, probably read_only
+			} else {
+			    GPSD_LOG(LOG_ERROR, &context.errout,
+				     "Write to RTCM sink failed, type %s\n",
+                                     dp->device_type->type_name);
 			}
 		    }
 /* *INDENT-ON* */
@@ -1530,7 +1546,6 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
     }
 
 
-#ifdef NTP_ENABLE
     /*
      * Time is eligible for shipping to NTPD if the driver has
      * asserted NTPTIME_IS at any point in the current cycle.
@@ -1544,50 +1559,45 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
      * Else we may be providing GPS time.
      */
     if ((changed & TIME_SET) == 0) {
-	//gpsd_log(&context.errout, LOG_PROG, "NTP: No time this packet\n");
+	//GPSD_LOG(LOG_PROG, &context.errout, "NTP: No time this packet\n");
     } else if ( 0 >= device->fixcnt && !batteryRTC ) {
         /* many GPS spew random times until a valid GPS fix */
         /* allow override with -r optin */
-	//gpsd_log(&context.errout, LOG_PROG, "NTP: no fix\n");
-    } else if (0 == isfinite(device->newdata.time)) {
-	//gpsd_log(&context.errout, LOG_PROG, "NTP: bad new time\n");
-#if defined(PPS_ENABLE)
-    } else if (device->newdata.time <= device->pps_thread.fix_in.real.tv_sec) {
-	//gpsd_log(&context.errout, LOG_PROG, "NTP: Not a new time\n");
-#endif /* PPS_ENABLE */
+	//GPSD_LOG(LOG_PROG, &context.errout, "NTP: no fix\n");
+    } else if (0 == device->newdata.time.tv_sec) {
+	//GPSD_LOG(LOG_PROG, &context.errout, "NTP: bad new time\n");
+    } else if (device->newdata.time.tv_sec <=
+               device->pps_thread.fix_in.real.tv_sec) {
+	//GPSD_LOG(LOG_PROG, &context.errout, "NTP: Not a new time\n");
     } else if (!device->ship_to_ntpd) {
-	//gpsd_log(&context.errout, LOG_PROG, "NTP: No precision time report\n");
+	//GPSD_LOG(LOG_PROG, &context.errout,
+        //         "NTP: No precision time report\n");
     } else {
 	struct timedelta_t td;
-#if defined(PPS_ENABLE)
 	struct gps_device_t *ppsonly;
-#endif /* PPS_ENABLE */
 
 	ntp_latch(device, &td);
 
-#if defined(PPS_ENABLE)
 	/* propagate this in-band-time to all PPS-only devices */
 	for (ppsonly = devices; ppsonly < devices + MAX_DEVICES; ppsonly++)
 	    if (ppsonly->sourcetype == source_pps)
 		pps_thread_fixin(&ppsonly->pps_thread, &td);
-#endif /* PPS_ENABLE */
 
-#ifdef NTPSHM_ENABLE
 	if (device->shm_clock != NULL) {
 	    (void)ntpshm_put(device, device->shm_clock, &td);
 	}
-#endif /* NTPSHM_ENABLE */
 
 #ifdef SOCKET_EXPORT_ENABLE
 	notify_watchers(device, false, true,
-			"{\"class\":\"TOFF\",\"device\":\"%s\",\"real_sec\":%ld, \"real_nsec\":%ld,\"clock_sec\":%ld,\"clock_nsec\":%ld}\r\n",
+			"{\"class\":\"TOFF\",\"device\":\"%s\",\"real_sec\":"
+                        "%lld, \"real_nsec\":%ld,\"clock_sec\":%lld,"
+                        "\"clock_nsec\":%ld}\r\n",
 			device->gpsdata.dev.path,
-			td.real.tv_sec, td.real.tv_nsec,
-			td.clock.tv_sec, td.clock.tv_nsec);
+			(long long)td.real.tv_sec, td.real.tv_nsec,
+			(long long)td.clock.tv_sec, td.clock.tv_nsec);
 #endif /* SOCKET_EXPORT_ENABLE */
 
     }
-#endif /* NTP_ENABLE */
 
     /*
      * If no reliable end of cycle, must report every time
@@ -1649,21 +1659,19 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
 	/* some listeners may be in watcher mode */
 	if (sub->policy.watcher) {
 	    if (changed & DATA_IS) {
-		/* guard keeps mask dumper from eating CPU */
-		if (context.errout.debug >= LOG_PROG)
-		    gpsd_log(&context.errout, LOG_PROG,
-			     "Changed mask: %s with %sreliable cycle detection\n",
-			     gps_maskdump(changed),
-			     device->cycle_end_reliable ? "" : "un");
+                GPSD_LOG(LOG_PROG, &context.errout,
+                         "Changed mask: %s with %sreliable "
+                         "cycle detection\n",
+                         gps_maskdump(changed),
+                         device->cycle_end_reliable ? "" : "un");
 		if ((changed & REPORT_IS) != 0)
-		    gpsd_log(&context.errout, LOG_PROG,
+		    GPSD_LOG(LOG_PROG, &context.errout,
 			     "time to report a fix\n");
 
 		if (sub->policy.nmea)
 		    pseudonmea_report(sub, changed, device);
 
-		if (sub->policy.json)
-		{
+		if (sub->policy.json) {
 		    char buf[GPS_JSON_RESPONSE_MAX * 4];
 
 		    if ((changed & AIS_SET) != 0)
@@ -1672,8 +1680,7 @@ static void all_reports(struct gps_device_t *device, gps_mask_t changed)
 			    && !sub->policy.split24)
 			    continue;
 
-		    json_data_report(changed,
-				     device, &sub->policy,
+		    json_data_report(changed, device, &sub->policy,
 				     buf, sizeof(buf));
 		    if (buf[0] != '\0')
 			(void)throttled_write(sub, buf, strlen(buf));
@@ -1708,32 +1715,50 @@ static int handle_gpsd_request(struct subscriber_t *sub, const char *buf)
 }
 #endif /* SOCKET_EXPORT_ENABLE */
 
-#if defined(CONTROL_SOCKET_ENABLE) && defined(PPS_ENABLE) && defined(SOCKET_EXPORT_ENABLE)
+#if defined(CONTROL_SOCKET_ENABLE) && defined(SOCKET_EXPORT_ENABLE)
 static void ship_pps_message(struct gps_device_t *session,
 				   struct timedelta_t *td)
 /* on PPS interrupt, ship a message to all clients */
 {
     int precision = -20;
+    char buf[GPS_JSON_RESPONSE_MAX];
+    char ts_str[TIMESPEC_LEN];
 
     if ( source_usb == session->sourcetype) {
         /* PPS over USB not so good */
 	precision = -10;
     }
 
+    GPSD_LOG(LOG_DATA, &session->context->errout,
+             "ship_pps: qErr_time %s qErr %ld, pps.tv_sec %lld\n",
+	     timespec_str(&session->gpsdata.qErr_time, ts_str, sizeof(ts_str)),
+	     session->gpsdata.qErr,
+	     (long long)td->real.tv_sec);
+
     /* real_XXX - the time the GPS thinks it is at the PPS edge */
     /* clock_XXX - the time the system clock thinks it is at the PPS edge */
-    notify_watchers(session, true, true,
-		    "{\"class\":\"PPS\",\"device\":\"%s\",\"real_sec\":%ld, \"real_nsec\":%ld,\"clock_sec\":%ld,\"clock_nsec\":%ld,\"precision\":%d}\r\n",
+    (void)snprintf(buf, sizeof(buf),
+		    "{\"class\":\"PPS\",\"device\":\"%s\",\"real_sec\":%lld,"
+                    "\"real_nsec\":%ld,\"clock_sec\":%lld,\"clock_nsec\":%ld,"
+                    "\"precision\":%d",
 		    session->gpsdata.dev.path,
-		    td->real.tv_sec, td->real.tv_nsec,
-		    td->clock.tv_sec, td->clock.tv_nsec,
+		    (long long)td->real.tv_sec, td->real.tv_nsec,
+		    (long long)td->clock.tv_sec, td->clock.tv_nsec,
                     precision);
+
+    // output qErr if timestamps line up
+    if (td->real.tv_sec == session->gpsdata.qErr_time.tv_sec) {
+	str_appendf(buf, sizeof(buf), ",\"qErr\":%ld",
+                    session->gpsdata.qErr);
+    }
+    (void)strlcat(buf, "}\r\n", sizeof(buf));
+    notify_watchers(session, true, true, buf);
 
     /*
      * PPS receipt resets the device's timeout.  This keeps PPS-only
      * devices, which never deliver in-band data, from timing out.
      */
-    session->gpsdata.online = timestamp();
+    (void)clock_gettime(CLOCK_REALTIME, &session->gpsdata.online);
 }
 #endif
 
@@ -1763,7 +1788,7 @@ static void netgnss_autoconnect(struct gps_context_t *context,
     FILE *sfp = fopen(serverlist, "r");
 
     if (sfp == NULL) {
-	gpsd_log(&context.errout, LOG_ERROR, "no DGPS server list found.\n");
+	GPSD_LOG(LOG_ERROR, &context.errout, "no DGPS server list found.\n");
 	return;
     }
 
@@ -1797,7 +1822,7 @@ static void netgnss_autoconnect(struct gps_context_t *context,
     (void)fclose(sfp);
 
     if (keep[0].server[0] == '\0') {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "no DGPS servers within %dm.\n",
 		 (int)(DGPS_THRESHOLD / 1000));
 	return;
@@ -1807,7 +1832,7 @@ static void netgnss_autoconnect(struct gps_context_t *context,
     qsort((void *)keep, SERVER_SAMPLE, sizeof(struct dgps_server_t), srvcmp);
     for (sp = keep; sp < keep + SERVER_SAMPLE; sp++) {
 	if (sp->server[0] != '\0') {
-	    gpsd_log(&context.errout, LOG_INF,
+	    GPSD_LOG(LOG_INF, &context.errout,
 		     "%s is %dkm away.\n", sp->server,
 		     (int)(sp->dist / 1000));
 	    if (dgpsip_open(context, sp->server) >= 0)
@@ -1817,12 +1842,7 @@ static void netgnss_autoconnect(struct gps_context_t *context,
 }
 #endif /* __UNUSED_AUTOCONNECT__ */
 
-#ifdef PPS_ENABLE
-#define CONDITIONALLY_UNUSED
-#else
-#define CONDITIONALLY_UNUSED UNUSED
-#endif /* PPS_ENABLE */
-static void gpsd_terminate(struct gps_context_t *context CONDITIONALLY_UNUSED)
+static void gpsd_terminate(struct gps_context_t *context)
 /* finish cleanly, reverting device configuration */
 {
     int dfd;
@@ -1832,9 +1852,7 @@ static void gpsd_terminate(struct gps_context_t *context CONDITIONALLY_UNUSED)
 	    (void)gpsd_wrap(&devices[dfd]);
 	}
     }
-#ifdef PPS_ENABLE
     context->pps_hook = NULL;	/* tell any PPS-watcher thread to die */
-#endif /* PPS_ENABLE */
 }
 
 int main(int argc, char *argv[])
@@ -1868,14 +1886,18 @@ int main(int argc, char *argv[])
 
 #ifdef CONTROL_SOCKET_ENABLE
     INVALIDATE_SOCKET(csock);
-#if defined(PPS_ENABLE) && defined(SOCKET_EXPORT_ENABLE)
+#if defined(SOCKET_EXPORT_ENABLE)
     context.pps_hook = ship_pps_message;
-#endif /* PPS_ENABLE && SOCKET_EXPORT_ENABLE */
+#endif /* SOCKET_EXPORT_ENABLE */
 #endif /* CONTROL_SOCKET_ENABLE */
 
-    while ((option = getopt(argc, argv, "F:D:S:bGhlNnrP:V")) != -1) {
+    while ((option = getopt(argc, argv, "bD:F:f:GhlNnP:rS:s:V")) != -1) {
 	switch (option) {
+	case 'b':
+	    context.readonly = true;
+	    break;
 	case 'D':
+            // accept decimal, octal and hex
 	    context.errout.debug = (int)strtol(optarg, 0, 0);
 #ifdef CLIENTDEBUG_ENABLE
 	    gps_enable_debug(context.errout.debug, stderr);
@@ -1886,11 +1908,22 @@ int main(int argc, char *argv[])
 	    control_socket = optarg;
 	    break;
 #endif /* CONTROL_SOCKET_ENABLE */
-	case 'N':
-	    go_background = false;
-	    break;
-	case 'b':
-	    context.readonly = true;
+	case 'f':
+            // framing
+            if (3 == strlen(optarg) &&
+                ('7' == optarg[0] || '8' == optarg[0]) &&
+                ('E' == optarg[1] || 'N' == optarg[1] ||
+                 'O' == optarg[1]) &&
+                ('0' <= optarg[2] && '2' >= optarg[2])) {
+                // [78][ENO][012]
+                (void)strlcpy(context.fixed_port_framing, optarg,
+                              sizeof(context.fixed_port_framing));
+            } else {
+                // invalid framing
+                GPSD_LOG(LOG_ERROR, &context.errout,
+                         "-f has invalid framing %s\n", optarg);
+                exit(1);
+            }
 	    break;
 #ifndef FORCE_GLOBAL_ENABLE
 	case 'G':
@@ -1900,25 +1933,45 @@ int main(int argc, char *argv[])
 	case 'l':		/* list known device types and exit */
 	    typelist();
 	    break;
+	case 'N':
+	    go_background = false;
+	    break;
+	case 'n':
+	    nowait = true;
+	    break;
+	case 'P':
+	    pid_file = optarg;
+	    break;
+	case 'r':
+	    batteryRTC = true;
+	    break;
 	case 'S':
 #ifdef SOCKET_EXPORT_ENABLE
 	    gpsd_service = optarg;
 #endif /* SOCKET_EXPORT_ENABLE */
 	    break;
-	case 'n':
-	    nowait = true;
-	    break;
-	case 'r':
-	    batteryRTC = true;
-	    break;
-	case 'P':
-	    pid_file = optarg;
+	case 's':
+            {
+                // accept decimal, octal and hex
+                long speed = strtol(optarg, 0, 0);
+                if (0 < speed) {
+                    // allow weird speeds
+                    context.fixed_port_speed = (speed_t)speed;
+                } else {
+                    // invalid speed
+                    GPSD_LOG(LOG_ERROR, &context.errout,
+                             "-s has invalid speed %ld\n", speed);
+                    exit(1);
+                }
+            }
 	    break;
 	case 'V':
 	    (void)printf("%s: %s (revision %s)\n", argv[0], VERSION, REVISION);
 	    exit(EXIT_SUCCESS);
 	case 'h':
+            // FALLTHROUGH
 	case '?':
+            // FALLTHROUGH
 	default:
 	    usage();
 	    exit(EXIT_SUCCESS);
@@ -1927,15 +1980,21 @@ int main(int argc, char *argv[])
 
     /* sanity check */
     if (argc - optind > MAX_DEVICES) {
-	gpsd_log(&context.errout, LOG_ERROR,
-		 "too many devices on command line\n");
+	GPSD_LOG(LOG_ERROR, &context.errout,
+		 "Too many devices on command line.\n");
 	exit(1);
+    }
+
+    if (8 > sizeof(time_t)) {
+	GPSD_LOG(LOG_WARN, &context.errout,
+		 "This system has a 32-bit time_t.  "
+		 "This gpsd will fail at 2038-01-19T03:14:07Z.\n");
     }
 
 #if defined(SYSTEMD_ENABLE) && defined(CONTROL_SOCKET_ENABLE)
     sd_socket_count = sd_get_socket_count();
     if (sd_socket_count > 0 && control_socket != NULL) {
-        gpsd_log(&context.errout, LOG_WARN,
+        GPSD_LOG(LOG_WARN, &context.errout,
 		 "control socket passed on command line ignored\n");
         control_socket = NULL;
     }
@@ -1953,7 +2012,7 @@ int main(int argc, char *argv[])
 	sd_socket_count <= 0
 #endif
 	&& optind >= argc) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't run with neither control socket nor devices\n");
 	exit(EXIT_FAILURE);
     }
@@ -1974,35 +2033,36 @@ int main(int argc, char *argv[])
     if (control_socket) {
 	(void)unlink(control_socket);
 	if (BAD_SOCKET(csock = filesock(control_socket))) {
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "control socket create failed, netlib error %d\n",
 		     csock);
 	    exit(EXIT_FAILURE);
 	} else
-	    gpsd_log(&context.errout, LOG_SPIN,
+	    GPSD_LOG(LOG_SPIN, &context.errout,
 		     "control socket %s is fd %d\n",
 		     control_socket, csock);
 	FD_SET(csock, &all_fds);
 	adjust_max_fd(csock, true);
-	gpsd_log(&context.errout, LOG_PROG,
+	GPSD_LOG(LOG_PROG, &context.errout,
 		 "control socket opened at %s\n",
 		 control_socket);
     }
 #endif /* CONTROL_SOCKET_ENABLE */
 #else
     if (optind >= argc) {
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "can't run with no devices specified\n");
 	exit(EXIT_FAILURE);
     }
 #endif /* defined(CONTROL_SOCKET_ENABLE) || defined(SYSTEMD_ENABLE) */
 
+    // TODO, a dump of all options here at LOG_xx would be nice.
 
     /* might be time to daemonize */
     if (go_background) {
 	/* not SuS/POSIX portable, but we have our own fallback version */
 	if (os_daemon(0, 0) != 0)
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "daemonization failed: %s\n",strerror(errno));
     }
 
@@ -2013,37 +2073,38 @@ int main(int argc, char *argv[])
 	    (void)fprintf(fp, "%u\n", (unsigned int)getpid());
 	    (void)fclose(fp);
 	} else {
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "Cannot create PID file: %s.\n", pid_file);
 	}
     }
 
     openlog("gpsd", LOG_PID, LOG_USER);
-    gpsd_log(&context.errout, LOG_INF, "launching (Version %s)\n", VERSION);
+    GPSD_LOG(LOG_INF, &context.errout, "launching (Version %s)\n", VERSION);
 
 #ifdef SOCKET_EXPORT_ENABLE
     if (!gpsd_service)
 	gpsd_service =
 	    getservbyname("gpsd", "tcp") ? "gpsd" : DEFAULT_GPSD_PORT;
     if (passivesocks(gpsd_service, "tcp", QLEN, msocks) < 1) {
-	gpsd_log(&context.errout, LOG_ERR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "command sockets creation failed, netlib errors %d, %d\n",
 		 msocks[0], msocks[1]);
 	if (pid_file != NULL)
 	    (void)unlink(pid_file);
 	exit(EXIT_FAILURE);
     }
-    gpsd_log(&context.errout, LOG_INF, "listening on port %s\n", gpsd_service);
+    GPSD_LOG(LOG_INF, &context.errout, "listening on port %s\n",
+                       gpsd_service);
 #endif /* SOCKET_EXPORT_ENABLE */
 
-#ifdef NTPSHM_ENABLE
     if (getuid() == 0) {
 	errno = 0;
 	// nice() can ONLY succeed when run as root!
 	// do not even bother as non-root
 	if (nice(NICEVAL) == -1 && errno != 0)
-	    gpsd_log(&context.errout, LOG_WARN,
-		     "PPS: o=priority setting failed. Time accuracty will be degraded\n");
+	    GPSD_LOG(LOG_WARN, &context.errout,
+		     "PPS: o=priority setting failed. Time accuracy "
+                     "will be degraded\n");
     }
     /*
      * By initializing before we drop privileges, we guarantee that even
@@ -2051,16 +2112,15 @@ int main(int argc, char *argv[])
      * to use segments 0 and 1.
      */
     (void)ntpshm_context_init(&context);
-#endif /* NTPSHM_ENABLE */
 
 #if defined(DBUS_EXPORT_ENABLE)
     /* we need to connect to dbus as root */
     if (initialize_dbus_connection()) {
 	/* the connection could not be started */
-	gpsd_log(&context.errout, LOG_ERROR,
+	GPSD_LOG(LOG_ERROR, &context.errout,
 		 "unable to connect to the DBUS system bus\n");
     } else
-	gpsd_log(&context.errout, LOG_PROG,
+	GPSD_LOG(LOG_PROG, &context.errout,
 		 "successfully connected to the DBUS system bus\n");
 #endif /* defined(DBUS_EXPORT_ENABLE) */
 
@@ -2077,7 +2137,7 @@ int main(int argc, char *argv[])
     in_restart = false;
     for (i = optind; i < argc; i++) {
       if (!gpsd_add_device(argv[i], nowait)) {
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "initial GPS device %s open failed\n",
 		     argv[i]);
 	} else {
@@ -2093,7 +2153,7 @@ int main(int argc, char *argv[])
        sd_socket_count <= 0 &&
 #endif
        !device_opened) {
-       gpsd_log(&context.errout, LOG_ERROR,
+       GPSD_LOG(LOG_ERROR, &context.errout,
                 "can't run with neither control socket nor devices open\n");
        exit(EXIT_FAILURE);
     }
@@ -2118,7 +2178,7 @@ int main(int argc, char *argv[])
 	 * devices have their group read/write permissions set.
 	 */
 	if (setgroups(0, NULL) != 0)
-	    gpsd_log(&context.errout, LOG_ERROR,
+	    GPSD_LOG(LOG_ERROR, &context.errout,
 		     "setgroups() failed, errno %s\n",
 		     strerror(errno));
 #ifdef GPSD_GROUP
@@ -2126,17 +2186,17 @@ int main(int argc, char *argv[])
 	    struct group *grp = getgrnam(GPSD_GROUP);
 	    if (grp)
 		if (setgid(grp->gr_gid) != 0)
-		    gpsd_log(&context.errout, LOG_ERROR,
+		    GPSD_LOG(LOG_ERROR, &context.errout,
 			     "setgid() failed, errno %s\n",
 			     strerror(errno));
 	}
 #else
 	if ((optind < argc && stat(argv[optind], &stb) == 0)
 	    || stat(PROTO_TTY, &stb) == 0) {
-	    gpsd_log(&context.errout, LOG_PROG,
+	    GPSD_LOG(LOG_PROG, &context.errout,
 		     "changing to group %d\n", stb.st_gid);
 	    if (setgid(stb.st_gid) != 0)
-		gpsd_log(&context.errout, LOG_ERROR,
+		GPSD_LOG(LOG_ERROR, &context.errout,
 			 "setgid() failed, errno %s\n",
 			 strerror(errno));
 	}
@@ -2144,13 +2204,13 @@ int main(int argc, char *argv[])
 	pw = getpwnam(GPSD_USER);
 	if (pw)
 	    if (setuid(pw->pw_uid) != 0)
-		gpsd_log(&context.errout, LOG_ERROR,
+		GPSD_LOG(LOG_ERROR, &context.errout,
 			    "setuid() failed, errno %s\n",
 			    strerror(errno));
     }
-    gpsd_log(&context.errout, LOG_INF,
+    GPSD_LOG(LOG_INF, &context.errout,
 	     "running with effective group ID %d\n", getegid());
-    gpsd_log(&context.errout, LOG_INF,
+    GPSD_LOG(LOG_INF, &context.errout,
 	     "running with effective user ID %d\n", geteuid());
 
 #ifdef SOCKET_EXPORT_ENABLE
@@ -2185,7 +2245,7 @@ int main(int argc, char *argv[])
     if (setjmp(restartbuf) > 0) {
 	gpsd_terminate(&context);
 	in_restart = true;
-	gpsd_log(&context.errout, LOG_WARN, "gpsd restarted by SIGHUP\n");
+	GPSD_LOG(LOG_WARN, &context.errout, "gpsd restarted by SIGHUP\n");
     }
 
     signalled = 0;
@@ -2210,7 +2270,7 @@ int main(int argc, char *argv[])
     if (in_restart)
 	for (i = optind; i < argc; i++) {
 	  if (!gpsd_add_device(argv[i], nowait)) {
-		gpsd_log(&context.errout, LOG_ERROR,
+		GPSD_LOG(LOG_ERROR, &context.errout,
 			 "GPS device %s open failed\n",
 			 argv[i]);
 	    }
@@ -2219,6 +2279,7 @@ int main(int argc, char *argv[])
     while (0 == signalled) {
 	fd_set efds;
 
+        GPSD_LOG(LOG_RAW + 1, &context.errout, "await data\n");
 	switch(gpsd_await_data(&rfds, &efds, maxfd, &all_fds, &context.errout))
 	{
 	case AWAIT_GOT_INPUT:
@@ -2226,7 +2287,7 @@ int main(int argc, char *argv[])
 	case AWAIT_NOT_READY:
 	    for (device = devices; device < devices + MAX_DEVICES; device++)
 		/*
-		 * The file descriptor validity check is reqiured on some ARM
+		 * The file descriptor validity check is required on some ARM
 		 * platforms to prevent a core dump.  This may be due to an
 		 * implimentation error in FD_ISSET().
 		 */
@@ -2250,8 +2311,8 @@ int main(int argc, char *argv[])
 		    accept(msocks[i], (struct sockaddr *)&fsin, &alen);
 
 		if (BAD_SOCKET(ssock))
-		    gpsd_log(&context.errout, LOG_ERROR,
-			     "accept: %s\n", strerror(errno));
+		    GPSD_LOG(LOG_ERROR, &context.errout,
+			     "accept: fail: %s\n", strerror(errno));
 		else {
 		    struct subscriber_t *client = NULL;
 		    int opts = fcntl(ssock, F_GETFL);
@@ -2264,7 +2325,7 @@ int main(int argc, char *argv[])
 		    c_ip = netlib_sock2ip(ssock);
 		    client = allocate_client();
 		    if (client == NULL) {
-			gpsd_log(&context.errout, LOG_ERROR,
+			GPSD_LOG(LOG_ERROR, &context.errout,
 				 "Client %s connect on fd %d -"
 				 "no subscriber slots available\n", c_ip,
 				    ssock);
@@ -2273,7 +2334,7 @@ int main(int argc, char *argv[])
 			if (setsockopt
 			    (ssock, SOL_SOCKET, SO_LINGER, (char *)&linger,
 			     (int)sizeof(struct linger)) == -1) {
-			gpsd_log(&context.errout, LOG_ERROR,
+			GPSD_LOG(LOG_ERROR, &context.errout,
 				 "Error: SETSOCKOPT SO_LINGER\n");
 			(void)close(ssock);
 		    } else {
@@ -2282,7 +2343,7 @@ int main(int argc, char *argv[])
 			adjust_max_fd(ssock, true);
 			client->fd = ssock;
 			client->active = time(NULL);
-			gpsd_log(&context.errout, LOG_SPIN,
+			GPSD_LOG(LOG_SPIN, &context.errout,
 				 "client %s (%d) connect on fd %d\n", c_ip,
 				 sub_index(client), ssock);
 			json_version_dump(announce, sizeof(announce));
@@ -2302,10 +2363,10 @@ int main(int argc, char *argv[])
 	    socket_t ssock = accept(csock, (struct sockaddr *)&fsin, &alen);
 
 	    if (BAD_SOCKET(ssock))
-		gpsd_log(&context.errout, LOG_ERROR,
+		GPSD_LOG(LOG_ERROR, &context.errout,
 			 "accept: %s\n", strerror(errno));
 	    else {
-		gpsd_log(&context.errout, LOG_INF,
+		GPSD_LOG(LOG_INF, &context.errout,
 			 "control socket connect on fd %d\n",
 			 ssock);
 		FD_SET(ssock, &all_fds);
@@ -2316,6 +2377,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* read any commands that came in over the control socket */
+        GPSD_LOG(LOG_RAW + 1, &context.errout, "read control commands");
 	for (cfd = 0; cfd < (int)FD_SETSIZE; cfd++)
 	    if (FD_ISSET(cfd, &control_fds)) {
 		char buf[BUFSIZ];
@@ -2323,12 +2385,12 @@ int main(int argc, char *argv[])
 
 		while ((rd = read(cfd, buf, sizeof(buf) - 1)) > 0) {
 		    buf[rd] = '\0';
-		    gpsd_log(&context.errout, LOG_CLIENT,
+		    GPSD_LOG(LOG_CLIENT, &context.errout,
 			     "<= control(%d): %s\n", cfd, buf);
 		    /* coverity[tainted_data] Safe, never handed to exec */
 		    handle_control(cfd, buf);
 		}
-		gpsd_log(&context.errout, LOG_SPIN,
+		GPSD_LOG(LOG_SPIN, &context.errout,
 			 "close(%d) of control socket\n", cfd);
 		(void)close(cfd);
 		FD_CLR(cfd, &all_fds);
@@ -2338,6 +2400,7 @@ int main(int argc, char *argv[])
 #endif /* CONTROL_SOCKET_ENABLE */
 
 	/* poll all active devices */
+        GPSD_LOG(LOG_RAW + 1, &context.errout, "poll active devices");
 	for (device = devices; device < devices + MAX_DEVICES; device++)
 	    if (allocated_device(device) && device->gpsdata.gps_fd > 0)
 		switch (gpsd_multipoll(FD_ISSET(device->gpsdata.gps_fd, &rfds),
@@ -2386,7 +2449,7 @@ int main(int argc, char *argv[])
 
 		unlock_subscriber(sub);
 
-		gpsd_log(&context.errout, LOG_PROG,
+		GPSD_LOG(LOG_PROG, &context.errout,
 			 "checking client(%d)\n",
 			 sub_index(sub));
 		if ((buflen =
@@ -2396,7 +2459,7 @@ int main(int argc, char *argv[])
 		    if (buf[buflen - 1] != '\n')
 			buf[buflen++] = '\n';
 		    buf[buflen] = '\0';
-		    gpsd_log(&context.errout, LOG_CLIENT,
+		    GPSD_LOG(LOG_CLIENT, &context.errout,
 			     "<= client(%d): %s\n", sub_index(sub), buf);
 
 		    /*
@@ -2414,7 +2477,7 @@ int main(int argc, char *argv[])
 
 		if (!sub->policy.watcher
 		    && time(NULL) - sub->active > COMMAND_TIMEOUT) {
-		    gpsd_log(&context.errout, LOG_WARN,
+		    GPSD_LOG(LOG_WARN, &context.errout,
 			     "client(%d) timed out on command wait.\n",
 			     sub_index(sub));
 		    detach_client(sub);
@@ -2450,15 +2513,15 @@ int main(int argc, char *argv[])
 		    device->lexer.type != BAD_PACKET) {
 		if (device->releasetime == 0) {
 		    device->releasetime = time(NULL);
-		    gpsd_log(&context.errout, LOG_PROG,
+		    GPSD_LOG(LOG_PROG, &context.errout,
 			     "device %d (fd %d) released\n",
 			     (int)(device - devices),
 			     device->gpsdata.gps_fd);
 		} else if (time(NULL) - device->releasetime > RELEASE_TIMEOUT) {
-		    gpsd_log(&context.errout, LOG_PROG,
+		    GPSD_LOG(LOG_PROG, &context.errout,
 			     "device %d closed\n",
 			     (int)(device - devices));
-		    gpsd_log(&context.errout, LOG_RAW,
+		    GPSD_LOG(LOG_RAW, &context.errout,
 			     "unflagging descriptor %d\n",
 			     device->gpsdata.gps_fd);
 		    deactivate_device(device);
@@ -2469,7 +2532,7 @@ int main(int argc, char *argv[])
 		    (device->opentime == 0 ||
 		    time(NULL) - device->opentime > DEVICE_RECONNECT)) {
 		device->opentime = time(NULL);
-		gpsd_log(&context.errout, LOG_INF,
+		GPSD_LOG(LOG_INF, &context.errout,
 			 "reconnection attempt on device %d\n",
 			 (int)(device - devices));
 		(void)awaken(device);
@@ -2499,7 +2562,7 @@ int main(int argc, char *argv[])
 		if (allocated_device(device))
 		    ++devcount;
 	    if (subcount == 0 && devcount == 0) {
-		gpsd_log(&context.errout, LOG_SHOUT,
+		GPSD_LOG(LOG_SHOUT, &context.errout,
 			 "no subscribers or devices, shutting down.\n");
 		goto shutdown;
 	    }
@@ -2511,12 +2574,12 @@ int main(int argc, char *argv[])
     if (SIGHUP == (int)signalled)
 	longjmp(restartbuf, 1);
 
-    gpsd_log(&context.errout, LOG_WARN,
+    GPSD_LOG(LOG_WARN, &context.errout,
 	     "received terminating signal %d.\n", (int)signalled);
 shutdown:
     gpsd_terminate(&context);
 
-    gpsd_log(&context.errout, LOG_WARN, "exiting.\n");
+    GPSD_LOG(LOG_WARN, &context.errout, "exiting.\n");
 
 #ifdef SOCKET_EXPORT_ENABLE
     /*

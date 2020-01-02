@@ -37,7 +37,6 @@
  * with the decimal point and stripped down to an atof()-equivalent.
  */
 
-double safe_atof(const char *string)
 /* Takes a decimal ASCII floating-point number, optionally
  * preceded by white space.  Must have form "-I.FE-X",
  * where I is the integer part of the mantissa, F is
@@ -47,7 +46,10 @@ double safe_atof(const char *string)
  * The decimal point isn't necessary unless F is
  * present.  The "E" may actually be an "e".  E and X
  * may both be omitted (but not just one).
+ *
+ * returns NaN if *string is zero length
  */
+double safe_atof(const char *string)
 {
     static int maxExponent = 511;   /* Largest possible base 10 exponent.  Any
 				     * exponent larger than this will already
@@ -94,7 +96,9 @@ double safe_atof(const char *string)
     while (isspace((unsigned char) *p)) {
 	p += 1;
     }
-    if (*p == '-') {
+    if (*p == '\0') {
+        return NAN;
+    } else if (*p == '-') {
 	sign = true;
 	p += 1;
     } else {
@@ -242,8 +246,11 @@ void gps_clear_fix(struct gps_fix_t *fixp)
 /* stuff a fix structure with recognizable out-of-band values */
 {
     memset(fixp, 0, sizeof(struct gps_fix_t));
-    fixp->altitude = NAN;
+    fixp->altitude = NAN;        // DEPRECATED, undefined
+    fixp->altHAE = NAN;
+    fixp->altMSL = NAN;
     fixp->climb = NAN;
+    fixp->depth = NAN;
     fixp->epc = NAN;
     fixp->epd = NAN;
     fixp->eph = NAN;
@@ -255,10 +262,10 @@ void gps_clear_fix(struct gps_fix_t *fixp)
     fixp->latitude = NAN;
     fixp->longitude = NAN;
     fixp->magnetic_track = NAN;
+    fixp->magnetic_var = NAN;
     fixp->mode = MODE_NOT_SEEN;
     fixp->sep = NAN;
     fixp->speed = NAN;
-    fixp->time = NAN;
     fixp->track = NAN;
     /* clear ECEF too */
     fixp->ecef.x = NAN;
@@ -269,6 +276,15 @@ void gps_clear_fix(struct gps_fix_t *fixp)
     fixp->ecef.vz = NAN;
     fixp->ecef.pAcc = NAN;
     fixp->ecef.vAcc = NAN;
+    fixp->NED.relPosN = NAN;
+    fixp->NED.relPosE = NAN;
+    fixp->NED.relPosD = NAN;
+    fixp->NED.velN = NAN;
+    fixp->NED.velE = NAN;
+    fixp->NED.velD = NAN;
+    fixp->geoid_sep = NAN;
+    fixp->dgps_age = NAN;
+    fixp->dgps_station = -1;
 }
 
 void gps_clear_att(struct attitude_t *attp)
@@ -314,12 +330,27 @@ void gps_merge_fix(struct gps_fix_t *to,
     }
     if ((transfer & MODE_SET) != 0)
 	to->mode = from->mode;
-    if ((transfer & ALTITUDE_SET) != 0)
-	to->altitude = from->altitude;
+    if ((transfer & ALTITUDE_SET) != 0) {
+	if (0 != isfinite(from->altHAE)) {
+	    to->altHAE = from->altHAE;
+	}
+	if (0 != isfinite(from->altMSL)) {
+	    to->altMSL = from->altMSL;
+	}
+	if (0 != isfinite(from->depth)) {
+	    to->depth = from->depth;
+	}
+    }
     if ((transfer & TRACK_SET) != 0)
         to->track = from->track;
-    if ((transfer & MAGNETIC_TRACK_SET) != 0)
-        to->magnetic_track = from->magnetic_track;
+    if ((transfer & MAGNETIC_TRACK_SET) != 0) {
+	if (0 != isfinite(from->magnetic_track)) {
+	    to->magnetic_track = from->magnetic_track;
+	}
+	if (0 != isfinite(from->magnetic_var)) {
+	    to->magnetic_var = from->magnetic_var;
+	}
+    }
     if ((transfer & SPEED_SET) != 0)
 	to->speed = from->speed;
     if ((transfer & CLIMB_SET) != 0)
@@ -340,8 +371,13 @@ void gps_merge_fix(struct gps_fix_t *to,
     if (0 != isfinite(from->eps)) {
 	to->eps = from->eps;
     }
+    /* spherical error probability, not geoid separation */
     if (0 != isfinite(from->sep)) {
 	to->sep = from->sep;
+    }
+    /* geoid separation, not spherical error probability */
+    if (0 != isfinite(from->geoid_sep)) {
+	to->geoid_sep = from->geoid_sep;
     }
     if (0 != isfinite(from->epv)) {
 	to->epv = from->epv;
@@ -360,27 +396,33 @@ void gps_merge_fix(struct gps_fix_t *to,
 	to->ecef.vz = from->ecef.vz;
 	to->ecef.vAcc = from->ecef.vAcc;
     }
+    if ((transfer & NED_SET) != 0) {
+	to->NED.relPosN = from->NED.relPosN;
+	to->NED.relPosE = from->NED.relPosE;
+	to->NED.relPosD = from->NED.relPosD;
+    }
+    if ((transfer & VNED_SET) != 0) {
+	to->NED.velN = from->NED.velN;
+	to->NED.velE = from->NED.velE;
+	to->NED.velD = from->NED.velD;
+    }
     if ('\0' != from->datum[0]) {
         strlcpy(to->datum, from->datum, sizeof(to->datum));
     }
-    if (0 != from->qErr) {
-	to->qErr = from->qErr;
+    if (0 != isfinite(from->dgps_age) &&
+        0 <= from->dgps_station) {
+        /* both, or neither */
+	to->dgps_age = from->dgps_age;
+	to->dgps_station = from->dgps_station;
     }
-}
-
-/* NOTE: timestamp_t is a double, so this is only precise to
- * near microSec.  Do not use near PPS which is nanoSec precise */
-timestamp_t timestamp(void)
-{
-     struct timespec ts;
-     (void)clock_gettime(CLOCK_REALTIME, &ts);
-     return (timestamp_t)(ts.tv_sec + ts.tv_nsec * 1e-9);
 }
 
 /* mkgmtime(tm)
  * convert struct tm, as UTC, to seconds since Unix epoch
  * This differs from mktime() from libc.
  * mktime() takes struct tm as localtime.
+ *
+ * The inverse of gmtime(time_t)
  */
 time_t mkgmtime(struct tm * t)
 {
@@ -411,9 +453,11 @@ time_t mkgmtime(struct tm * t)
     return (result);
 }
 
-timestamp_t iso8601_to_unix(char *isotime)
-/* ISO8601 UTC to Unix UTC, no leapsecond correction. */
+timespec_t iso8601_to_timespec(char *isotime)
+/* ISO8601 UTC to Unix timespec, no leapsecond correction. */
 {
+    timespec_t ret;
+
 #ifndef __clang_analyzer__
 #ifndef USE_QT
     char *dp = NULL;
@@ -481,7 +525,8 @@ timestamp_t iso8601_to_unix(char *isotime)
 	case 6: // Seconds token
 	  sec = safe_atof(pch);
 	  // NB To handle timestamps with leap seconds
-	  if (sec >= 0.0 && sec < 61.5 ) {
+	  if (0 == isfinite(sec) &&
+	      sec >= 0.0 && sec < 61.5 ) {
 	    tm.tm_sec = (unsigned int)sec; // Truncate to get integer value
 	    usec = sec - (unsigned int)sec; // Get the fractional part (if any)
 	  }
@@ -517,7 +562,8 @@ timestamp_t iso8601_to_unix(char *isotime)
      * can be wrong; you have to do a redirect through the IANA historical
      * timezone database to get it right.
      */
-    return (timestamp_t)mkgmtime(&tm) + usec;
+    ret.tv_sec = mkgmtime(&tm);
+    ret.tv_nsec = usec * 1e9;;
 #else
     double usec = 0;
 
@@ -526,50 +572,58 @@ timestamp_t iso8601_to_unix(char *isotime)
     QStringList sl = t.split(".");
     if (sl.size() > 1)
 	usec = sl[1].toInt() / pow(10., (double)sl[1].size());
-    return (timestamp_t)(d.toTime_t() + usec);
+    ret.tv_sec = d.toTime_t();
+    ret.tv_nsec = usec * 1e9;;
 #endif
 #endif /* __clang_analyzer__ */
+    return ret;
 }
 
-/* Unix UTC time to ISO8601, no timezone adjustment */
+/* Unix timespec UTC time to ISO8601, no timezone adjustment */
 /* example: 2007-12-11T23:38:51.033Z */
-char *unix_to_iso8601(timestamp_t fixtime, char isotime[], size_t len)
+char *timespec_to_iso8601(timespec_t fixtime, char isotime[], size_t len)
 {
     struct tm when;
-    double integral, fractional;
-    time_t intfixtime;
     char timestr[30];
-    char fractstr[10];
+    long fracsec;
 
-    if (!isfinite(fixtime)) {
+    if (0 > fixtime.tv_sec) {
+        // Allow 0 for testing of 1970-01-01T00:00:00.000Z
         return strncpy(isotime, "NaN", len);
     }
-    fractional = modf(fixtime, &integral);
-    /* snprintf rounding of %3f can get ugly, so pre-round */
-    if ( 0.999499999 < fractional) {
+    if (999499999 < fixtime.tv_nsec) {
         /* round up */
-        integral++;
-        /* give the fraction a nudge to ensure rounding */
-        fractional += 0.0005;
+        fixtime.tv_sec++;
+        fixtime.tv_nsec = 0;
     }
-    intfixtime = (time_t) integral;
 #ifdef HAVE_GMTIME_R
-    (void)gmtime_r(&intfixtime, &when);
+    (void)gmtime_r(&fixtime.tv_sec, &when);
 #else
     /* Fallback to try with gmtime_s - primarily for Windows */
-    (void)gmtime_s(&when, &intfixtime);
+    (void)gmtime_s(&when, &fixtime.tv_sec);
 #endif
 
-    (void)strftime(timestr, sizeof(timestr), "%Y-%m-%dT%H:%M:%S", &when);
     /*
      * Do not mess casually with the number of decimal digits in the
      * format!  Most GPSes report over serial links at 0.01s or 0.001s
-     * precision.
+     * precision.  Round to 0.001s
      */
-    (void)snprintf(fractstr, sizeof(fractstr), "%.3f", fractional);
-    /* add fractional part, ignore leading 0; "0.2" -> ".2" */
-    (void)snprintf(isotime, len, "%s%sZ",timestr, strchr(fractstr,'.'));
+    fracsec = (fixtime.tv_nsec + 500000) / 1000000;
+
+    (void)strftime(timestr, sizeof(timestr), "%Y-%m-%dT%H:%M:%S", &when);
+    (void)snprintf(isotime, len, "%s.%03ldZ",timestr, fracsec);
+
     return isotime;
+}
+
+/* return time now as ISO8601, no timezone adjustment */
+/* example: 2007-12-11T23:38:51.033Z */
+char *now_to_iso8601(char *tbuf, size_t tbuf_sz)
+{
+    timespec_t ts_now;
+
+    (void)clock_gettime(CLOCK_REALTIME, &ts_now);
+    return timespec_to_iso8601(ts_now, tbuf, tbuf_sz);
 }
 
 #define Deg2Rad(n)	((n) * DEG_2_RAD)

@@ -6,9 +6,6 @@
  *
  */
 
-/* for vsnprintf() FreeBSD wants __ISO_C_VISIBLE >= 1999 */
-#define __ISO_C_VISIBLE 1999
-
 #include "gpsd_config.h"  /* must be before all includes */
 
 /* Python.h insists on setting GNU_SOURCE, _POSIX_C_SOURCE and
@@ -38,8 +35,9 @@ void errout_reset(struct gpsd_errout_t *errout)
     errout->report = basic_report;
 }
 
-void gpsd_log(const struct gpsd_errout_t *errout UNUSED,
-	      int errlevel, const char *fmt, ... )
+void gpsd_log(int errlevel,
+              const struct gpsd_errout_t *errout UNUSED,
+              const char *fmt, ... )
 {
     char buf[BUFSIZ];
     PyObject *args;

@@ -101,7 +101,20 @@ l l l l
 l l l l
 l l l l
 l l l l
+l l l l
+l l l l
+l l l l
+l l l l
+l l l l
 l l l
+l l l l
+l l l l
+l l l l
+l l l l
+l l l l
+l l l l
+l l l l
+l l l l
 l l l l
 l l l l
 l l l l
@@ -163,13 +176,34 @@ Time/date stamp in ISO8601 format, UTC\&. May have a
         is not 2 or 3\&.
 T}
 T{
+altHAE
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Altitude, height above allipsoid, in meters\&.  Probably
+WGS84\&. Present if mode is 3\&.
+T}
+T{
+altMSL
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+MSL Altitude in meters\&.  The geoid used is rarely specified
+and is often inacurate\&.  See the comments below on geoidSep\&.  Present if
+ mode is 3\&.  altMSL is altHAE \- geoidSep\&.
+T}
+T{
 alt
 T}:T{
 No
 T}:T{
 numeric
 T}:T{
-Altitude in meters\&. Present if mode is 3\&.
+Deprecated\&.  Undefined\&.  Use altHAE or altMSL\&.
 T}
 T{
 climb
@@ -189,6 +223,33 @@ T}:T{
 string
 T}:T{
 Current datum\&.
+T}
+T{
+depth
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Depth in meters\&.  Probably depth below the keel\&.\&.
+T}
+T{
+dgpsAge
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Age of DGPS data\&. In seconds
+T}
+T{
+dgpsSta
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Station of DGPS data\&.
 T}
 T{
 epc
@@ -321,6 +382,18 @@ T}:T{
 Course over ground, degrees magnetic\&.
 T}
 T{
+magvar
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Magnetic variation, degrees\&.  Also known as
+the magnetic declination (the direction of the horizontal component of
+the magnetic field measured clockwise from north) in degrees,
+Positive is West variation\&.  Negative is East variation\&.
+T}
+T{
 speed
 T}:T{
 No
@@ -412,9 +485,79 @@ Estimated Spherical (3D) Position Error in meters\&.
          Present if mode is 3D and DOPs can be calculated from the satellite
         view\&. Assumed to be 95% confidence, but many GPS do not specify\&.
 T}
+T{
+relN
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+North component of relative position vector in meters\&.
+T}
+T{
+relE
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+East component of relative position vector in meters\&.
+T}
+T{
+relD
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Down component of relative position vector in meters\&.
+T}
+T{
+velN
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+North velocity component in meters\&.
+T}
+T{
+velE
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+wEast velocity component in meters\&.
+T}
+T{
+velD
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Down velocity component in meters\&.
+T}
+T{
+geoidSep
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Geoid separation is the difference between the WGS84
+reference elipsoid and the geoid (Mean Sea Level) in meters\&.  Almost no
+GNSS receiver specifies how they compute their geoid\&. gpsd interpolates the
+geoid from a 5x5 degree table of EGM2008 values when the receiver does
+not supply a geoid separation\&.  The gpsd computed geoidSep is usually
+within one meter of the "true" value, but can be off as much as 12 meters\&.
+T}
 .TE
 .sp 1
 When the C client library parses a response of this kind, it will assert validity bits in the top\-level set member for each field actually received; see gps\&.h for bitmask names and values\&.
+.sp
+Invalid or known floating point values will be set to NAN\&.
 .sp
 Here\*(Aqs an example:
 .sp
@@ -614,6 +757,8 @@ l l l l
 l l l l
 l l l l
 l l l l
+l l l l
+l l l l
 l l l l.
 T{
 PRN
@@ -628,7 +773,7 @@ T}
 T{
 az
 T}:T{
-Yes
+No
 T}:T{
 numeric
 T}:T{
@@ -637,7 +782,7 @@ T}
 T{
 el
 T}:T{
-Yes
+No
 T}:T{
 numeric
 T}:T{
@@ -646,11 +791,11 @@ T}
 T{
 ss
 T}:T{
-Yes
+No
 T}:T{
 numeric
 T}:T{
-Signal strength in dB\&.
+Signal to Noise ratio in dBHz\&.
 T}
 T{
 used
@@ -692,6 +837,27 @@ numeric
 T}:T{
 The signal ID of this signal\&.  As defined by u\-blox, not
         NMEA\&. See u\-blox doc for details\&.
+T}
+T{
+freqid
+T}:T{
+no
+T}:T{
+numeric
+T}:T{
+For GLONASS satellites only: the frequency ID of the signal\&.
+As defined by u\-blox, range 0 to 13\&.  The freqid is the frequency slot
+plus 7\&.
+T}
+T{
+health
+T}:T{
+no
+T}:T{
+numeric
+T}:T{
+The health of this satellite\&.  0 is unknown, 1 is
+OK, and 2 is unhealthy\&.
 T}
 .TE
 .sp 1
@@ -1833,6 +1999,7 @@ l l l l
 l l l l
 l l l l
 l l l l
+l l l l
 l l l l.
 T{
 class
@@ -1896,6 +2063,16 @@ T}:T{
 numeric
 T}:T{
 NTP style estimate of PPS precision
+T}
+T{
+qErr
+T}:T{
+No
+T}:T{
+numeric
+T}:T{
+Quantization error of the PPS, in pico seconds\&.  Sometimes
+called the "sawtooth" error\&.
 T}
 .TE
 .sp 1
@@ -2060,6 +2237,7 @@ l l l l
 l l l l
 l l l l
 l l l l
+l l l l
 l l l l.
 T{
 class
@@ -2120,12 +2298,20 @@ T}
 T{
 subtype
 T}:T{
-When the daemon sees a delayed response to a probe for
-	subtype or firmware\-version information\&.
+No
 T}:T{
 string
 T}:T{
-Whatever version information the device returned\&.
+Whatever version information the device driver returned\&.
+T}
+T{
+subtype1
+T}:T{
+No
+T}:T{
+string
+T}:T{
+More version information the device driver returned\&.
 T}
 T{
 bps

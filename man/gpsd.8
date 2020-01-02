@@ -31,7 +31,7 @@
 gpsd \- interface daemon for GPS receivers
 .SH "SYNOPSIS"
 .HP \w'\fBgpsd\fR\ 'u
-\fBgpsd\fR [\-b] [\-D\ \fIdebuglevel\fR] [\-F\ \fIcontrol\-socket\fR] [\-G] [\-h] [\-l] [\-n] [\-N] [\-P\ \fIpidfile\fR] [\-r] [\-S\ \fIlistener\-port\fR] [\-V] [[\fIsource\-name\fR]...]
+\fBgpsd\fR [\-b] [\-D\ \fIdebuglevel\fR] [\-F\ \fIcontrol\-socket\fR] [\-f\ \fIframing\fR] [\-G] [\-h] [\-l] [\-n] [\-N] [\-P\ \fIpidfile\fR] [\-r] [\-S\ \fIlistener\-port\fR] [\-s\ \fIspeed\fR] [\-V] [[\fIsource\-name\fR]...]
 .SH "QUICK START"
 .PP
 If you have a GPS attached on the lowest\-numbered USB port of a Linux system, and want to read reports from it on TCP/IP port 2947, it will normally suffice to do this:
@@ -140,6 +140,11 @@ is in the foreground (\-N) or to syslog if in the background\&.
 Create a control socket for device addition and removal commands\&. You must specify a valid pathname on your local filesystem; this will be created as a Unix\-domain socket to which you can write commands that edit the daemon\*(Aqs internal device list\&.
 .RE
 .PP
+\-f
+.RS 4
+Fix the framing to the GNSS device\&. The framing parameter is of the form: [78][ENO][012]\&. Most GNSS are 8N1\&. Some Trimble default to 8O1\&. The default is to search for the correct framing\&.
+.RE
+.PP
 \-G
 .RS 4
 This flag causes
@@ -173,7 +178,7 @@ Don\*(Aqt daemonize; run in foreground\&. This switch is mainly useful for debug
 .PP
 \-r
 .RS 4
-Use GPS time even with no current fix\&. Some GPS\*(Aqs have battery powered Real Time Clocks (RTC\*(Aqs) built in, makeing them a valid time source even before a fix is acquired\&. This can be useful on a Raspberry Pi, or other device that has no battery powered RTC, and thus has no valid time at startup\&.
+Use GPS time even with no current fix\&. Some GPS\*(Aqs have battery powered Real Time Clocks (RTC\*(Aqs) built in, making them a valid time source even before a fix is acquired\&. This can be useful on a Raspberry Pi, or other device that has no battery powered RTC, and thus has no valid time at startup\&.
 .RE
 .PP
 \-P
@@ -184,6 +189,11 @@ Specify the name and path to record the daemon\*(Aqs process ID\&.
 \-S
 .RS 4
 Set TCP/IP port on which to listen for GPSD clients (default is 2947)\&.
+.RE
+.PP
+\-s
+.RS 4
+Fix the speed to the GNSS device\&. The default is to autobaud\&.
 .RE
 .PP
 \-V
@@ -230,7 +240,7 @@ dgpsip://dgps\&.wsrcc\&.com:2101\&.
 .PP
 Remote gpsd feed
 .RS 4
-A URI with the prefix "gpsd://", followed by a hostname and optionally a colony and a port number (if the port is absent the default
+A URI with the prefix "gpsd://", followed by a hostname and optionally a colon and a port number (if the port is absent the default
 gpsd
 port will be used)\&. The daemon will open a socket to the indicated address and port and emulate a
 gpsd
@@ -426,7 +436,7 @@ T}
 gpsd
 maintains an internal list of GPS devices (the "device pool")\&. If you specify devices on the command line, the list is initialized with those pathnames; otherwise the list starts empty\&. Commands to add and remove GPS device paths from the daemon\*(Aqs device list must be written to a local Unix\-domain socket which will be accessible only to programs running as root\&. This control socket will be located wherever the \-F option specifies it\&.
 .PP
-A device may will also be dropped from the pool if GPSD gets a zero length read from it\&. This end\-of\-file condition indicates that the\*(Aq device has been disconnected\&.
+A device may will also be dropped from the pool if GPSD gets a zero length read from it\&. This end\-of\-file condition indicates that the device has been disconnected\&.
 .PP
 When
 gpsd
@@ -581,7 +591,7 @@ sets its group ID to the owning group of this device if no GPS device was specif
 .RS 4
 Optional file containing the device activation/deactivation script\&. Note that while
 /etc/gpsd
-is the default system configuration directory, it is possible to build the GPSD source code with different assumptions\&.
+is the default system configuration directory, it is possible to build the GPSD source code with different assumptions\&. See above for further details on the device\-hook mechanism\&.
 .RE
 .SH "ENVIRONMENT VARIABLES"
 .PP

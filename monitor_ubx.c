@@ -80,15 +80,11 @@ static bool ubx_initialize(void)
 #define TOFF_LINE	1
 #define TOFF_COLUMN	1
     (void)mvwaddstr(ppswin, TOFF_LINE, TOFF_COLUMN, "TOFF: ");
-#ifndef PPS_ENABLE
     (void)mvwaddstr(ppswin, TOFF_LINE, TOFF_COLUMN + 10, "N/A");
-#endif /* PPS_ENABLE */
 #define PPS_LINE	1
 #define PPS_COLUMN	26
     (void)mvwaddstr(ppswin, PPS_LINE, PPS_COLUMN, "PPS: ");
-#ifndef PPS_ENABLE
     (void)mvwaddstr(ppswin, PPS_LINE, PPS_COLUMN + 10, "N/A");
-#endif /* PPS_ENABLE */
     (void)wattrset(ppswin, A_NORMAL);
 
     return true;
@@ -132,7 +128,6 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
     double epx, epy, epz, evx, evy, evz;
     unsigned char navmode;
     struct gps_data_t g;
-    double separation;
 
     if (data_len != 52)
 	return;
@@ -151,7 +146,9 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
     evx = (double)(getles32(buf, 28) / 100.0);
     evy = (double)(getles32(buf, 32) / 100.0);
     evz = (double)(getles32(buf, 36) / 100.0);
-    ecef_to_wgs84fix(&g.fix, &separation, epx, epy, epz, evx, evy, evz);
+    (void)ecef_to_wgs84fix(&g.fix, epx, epy, epz, evx, evy, evz);
+    /* maybe should check the ecef_to_wgs84fix() return code? */
+
     g.fix.epx = g.fix.epy = (double)(getles32(buf, 24) / 100.0);
     g.fix.eps = (double)(getles32(buf, 40) / 100.0);
     g.dop.pdop = (double)(getleu16(buf, 44) / 100.0);
@@ -165,7 +162,7 @@ static void display_nav_sol(unsigned char *buf, size_t data_len)
     (void)wmove(navsolwin, 4, 11);
     (void)wattrset(navsolwin, A_UNDERLINE);
     (void)wprintw(navsolwin, "%12.9f  %13.9f  %8.2fm",
-		  g.fix.latitude, g.fix.longitude, g.fix.altitude);
+		  g.fix.latitude, g.fix.longitude, g.fix.altHAE);
     (void)mvwaddch(navsolwin, 4, 23, ACS_DEGREE);
     (void)mvwaddch(navsolwin, 4, 38, ACS_DEGREE);
     (void)wmove(navsolwin, 5, 11);
@@ -253,13 +250,9 @@ static void ubx_update(void)
 	break;
     }
 
-#ifdef NTP_ENABLE
     toff_update(ppswin, TOFF_LINE, TOFF_COLUMN + 6);
-#endif /* NTP_ENABLE */
 
-#ifdef PPS_ENABLE
     pps_update(ppswin, PPS_LINE, PPS_COLUMN + 5);
-#endif /* PPS_ENABLE */
 }
 
 static int ubx_command(char line[]UNUSED)
