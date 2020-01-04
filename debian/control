@@ -19,6 +19,7 @@ Build-Depends: debhelper (>= 11),
  dh-buildinfo,
  dh-python,
  dh-apparmor,
+ dh-exec,
  pps-tools (>= 0.20120406+g0deb9c7e-2~) [linux-any],
  pkg-config,
  asciidoc
