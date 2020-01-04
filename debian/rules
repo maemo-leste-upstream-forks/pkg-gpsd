@@ -179,12 +179,6 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_missing --fail-missing
 	# use python3
 	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd-clients/usr/bin/*
-	# remove rpaths
-	find debian -type f -exec file {} \; |\
-	    grep ELF |\
-	    grep 'dynamically linked' |\
-	    sed 's,:.*,,' |\
-	    xargs chrpath -d
 	touch $@
 
 
