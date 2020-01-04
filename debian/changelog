@@ -6,8 +6,25 @@ gpsd (3.20-1) unstable; urgency=medium
     Update to upstream version '3.20'
     with Debian dir d2e29602486466a54dcd800a73e727aa3ef129ce
   * [51f56687] Refreshing patches.
+  * [55d0b5b4] Updating changelog
+  * [fd2a44f4] Fix gpsd.docs for asciidoc.
+    Files were converted by upstream
+  * [2da3f0f4] python-gps is gone, remove .install file also
+  * [9759c33a] python3-gps.install: update for new file/module names.
+  * [10f81da8] gpsd-dbg.install: update debug binaries
+  * [f529940a] Updating symbols files
+  * [5c851b49] Ignore the build-time test for xgps deps.
+    We'll deliver them as dependency, no worries.
+  * [32358c88] Use python_libdir instead of a mv hack.
+  * [bf7651e1] Install soelim stubs instead of links for manpages.
+    Seems to work fine, so why keep the extra work?
+  * [7ee82f94] Remove chrpath hack. Not needed anymore it seems.
+  * [55d2d180] Depend on asciidoc.
+  * [c8f81b96] Don't install non-build-related python deps.
+  * [aa045a15] libQgpsmm.3 is not yet compressed at install time
+  * [cfa6a5d3] Fix shebang in the debug scripts
 
- -- Bernd Zeimetz <bzed@debian.org>  Thu, 02 Jan 2020 19:57:38 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 04 Jan 2020 02:32:28 +0100
 
 gpsd (3.19-3) unstable; urgency=medium
 
