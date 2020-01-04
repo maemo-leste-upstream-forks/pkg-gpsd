@@ -23,8 +23,10 @@ gpsd (3.20-1) unstable; urgency=medium
   * [c8f81b96] Don't install non-build-related python deps.
   * [aa045a15] libQgpsmm.3 is not yet compressed at install time
   * [cfa6a5d3] Fix shebang in the debug scripts
+  * [53178b81] Updating changelog
+  * [9133a8a2] Limit the shebang fix to python files only
 
- -- Bernd Zeimetz <bzed@debian.org>  Sat, 04 Jan 2020 02:32:28 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 04 Jan 2020 02:34:41 +0100
 
 gpsd (3.19-3) unstable; urgency=medium
 
