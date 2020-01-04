@@ -170,13 +170,6 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	# install systemd files
 	mkdir -p debian/tmp/lib/systemd/system
 	cp systemd/* debian/tmp/lib/systemd/system
-	# fix various manpages
-	for i in cgps.1 gegps.1 lcdgps.1 xgps.1 xgpsspeed.1 gpxlogger.1; do \
-	    rm -f debian/tmp/usr/share/man/man1/$$i ;\
-	    ln -s gps.1 debian/tmp/usr/share/man/man1/$$i ;\
-	done
-	rm -f debian/tmp/usr/share/man/man3/libQgpsmm.3
-	ln -s libgpsmm.3.gz debian/tmp/usr/share/man/man3/libQgpsmm.3.gz
 	# install everything
 	dh_install
 	# quirk to avoid issues by broken fakeroot misdetecting links as files and
