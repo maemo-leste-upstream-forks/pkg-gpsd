@@ -179,7 +179,7 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_missing --fail-missing
 	# use python3
 	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd-clients/usr/bin/*
-	sed -i 's,^#!python.*,#!/usr/bin/python3,' debian/*/usr/lib/gpsd/debug/*
+	sed -i 's,^#!python.*,#!/usr/bin/python3,' debian/*/usr/lib/gpsd/debug/*.py
 	touch $@
 
 
