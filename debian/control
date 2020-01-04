@@ -23,7 +23,8 @@ Build-Depends: debhelper (>= 11),
  dh-python,
  dh-apparmor,
  pps-tools (>= 0.20120406+g0deb9c7e-2~) [linux-any],
- pkg-config
+ pkg-config,
+ asciidoc
 Standards-Version: 4.2.1
 Homepage: http://www.catb.org/gpsd/
 Vcs-Browser: https://github.com/bzed/pkg-gpsd
