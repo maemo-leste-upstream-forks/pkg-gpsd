@@ -1,0 +1,11 @@
+--- a/SConstruct
++++ b/SConstruct
+@@ -65,7 +65,7 @@ import SCons
+ # package version
+ gpsd_version = "3.20"
+ # client library version
+-libgps_version_current = 25
++libgps_version_current = 26
+ libgps_version_revision = 0
+ libgps_version_age = 0
+ libgps_version = "%d.%d.%d" % (libgps_version_current, libgps_version_age,

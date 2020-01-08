@@ -4,3 +4,4 @@ full-systemd-support
 gpsd_hotplug_rules_disable_generic_serial_converters
 0001-Fix-merging-and-using-of-python-flags.patch
 ignore-test-xgps_deps_check
+fix-soname
