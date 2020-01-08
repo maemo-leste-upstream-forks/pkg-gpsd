@@ -1,3 +1,16 @@
+gpsd (3.20-2) experimental; urgency=medium
+
+  * [4f1c9d4f] Merge branch 'non-linux' into 'master'
+    Build fixes for non-Linux archs
+    See merge request debian-gps-team/pkg-gpsd!2
+  * [7196c903] Updating debian/control from debian/control.in
+  * [2227686a] Redo changes accidentally done in d/control
+  * [f3a7fb54] Add patch to fix soname.
+    Went missing upstream somewhere
+  * [49d89d24] Update gbp.conf for experimental
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 08 Jan 2020 23:21:55 +0100
+
 gpsd (3.20-1) unstable; urgency=medium
 
   * [9edad156] It is /dev/ttyACM[0-9]+, not /dev/ACM[0-9]+.
