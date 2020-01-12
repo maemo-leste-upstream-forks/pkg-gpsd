@@ -1,3 +1,9 @@
+gpsd (3.20-3) unstable; urgency=medium
+
+  * Uploading to unstable.
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 12 Jan 2020 20:16:47 +0100
+
 gpsd (3.20-2) experimental; urgency=medium
 
   * [4f1c9d4f] Merge branch 'non-linux' into 'master'
