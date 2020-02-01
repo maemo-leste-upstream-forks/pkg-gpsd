@@ -1,3 +1,19 @@
+gpsd (3.20-4) unstable; urgency=medium
+
+  [ Christian Ehrhardt ]
+  * [58b18a53] apparmor: fix control socket usage for gpsdctrl (LP: #1790496)
+    The subsequent access of the daemon to the device is covered already.
+      # common serial paths to GPS devices
+      /dev/tty{,S,USB,AMA,ACM}[0-9]*    rw,
+    But gpsdctl itself isn't yet - therefore we see
+      $ sudo gpsdctl add /dev/ttyUSB0
+    triggering:
+      apparmor="DENIED profile="/usr/sbin/gpsd" name="/run/gpsd.sock" requested_mask="r" denied_mask="r"
+    This change adds a rule for that.
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 01 Feb 2020 01:11:24 +0100
+
 gpsd (3.20-3) unstable; urgency=medium
 
   * Uploading to unstable.
