@@ -12,12 +12,19 @@ fi
 
 # socket should be enabled and active after install
 echo "Check socket being active"
-systemctl list-unit-files | grep -e "^gpsd.socket\s*enabled\s*$"
-systemctl show gpsd.socket -p ActiveState | grep '^ActiveState=active$'
+systemctl is-enabled gpsd.socket
+systemctl is-active gpsd.socket
+
 # service is activated indirect (via socket) and inactive after install
 echo "Check service being inactive"
-systemctl list-unit-files | grep -e "^gpsd.service\s*disabled\s*$"
-systemctl show gpsd.service -p ActiveState | grep '^ActiveState=inactive$'
+if systemctl is-active gpsd.service; then
+    echo 'gpsd.service should not be active'
+    exit 1
+fi
+if systemctl is-enabled gpsd.service; then
+    echo 'gpsd.service should not be enabled'
+    exit 1
+fi
 
 # service has to get up on the socket call to respond correctly
 # (not complex enough to use expect)
@@ -47,4 +54,5 @@ grep '"class":"WATCH","enable":false' test.log
 
 # now the service should be active
 echo "Check service being active now"
-systemctl show gpsd.service -p ActiveState | grep '^ActiveState=active$'
+systemctl is-active gpsd.service
+
