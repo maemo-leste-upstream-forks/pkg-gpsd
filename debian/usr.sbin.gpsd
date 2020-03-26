@@ -26,6 +26,9 @@
   network dgram,
   network stream,
 
+  # own binary
+  /usr/sbin/gpsd rmix,
+
   # common serial paths to GPS devices
   /dev/tty{,S,USB,AMA,ACM}[0-9]*    rw,
   /sys/dev/char     r,
@@ -52,6 +55,10 @@
 
   # common config path (by default unused)
   /etc/gpsd/* r,
+  # gpsd will call this on device attach/detach allowing for custom handlers
+  /bin/dash rix,
+  /bin/bash rix,
+  /etc/gpsd/device-hook ix,
 
   # control socket e.g. for gpsdctl
   /{,var/}run/gpsd.sock rw,
