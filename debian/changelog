@@ -1,3 +1,25 @@
+gpsd (3.20-6) unstable; urgency=medium
+
+  [ Bernd Zeimetz ]
+  * [b0d9ef06] Fix autopkgtest for new systemd releases.
+    Thanks to Michael Biebl (Closes: #953760)
+
+  [ Christian Ehrhardt ]
+  * [4c4e5ea1] device-hook apparmor fixes (LP: #1868363)
+    The manpage defines a hook that is called by gpsd which due to current
+    confinement it is unable to run.
+    - d/usr.sbin.gpsd: allow to call the /etc/gpsd/device-hook in the
+      apparmor profile
+    - d/usr.sbin.gpsd: allow to map and execute the own binary as needed
+      in some containers
+    - d/usr.sbin.gpsd: allow to run common shell interpreters bash/dash
+    That hook will run within the confinement of gpsd, so if it is expected
+    to do anything more special a user will have to allow that in
+    /etc/apparmor.d/local/usr.sbin.gpsd
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 28 Mar 2020 22:16:13 +0100
+
 gpsd (3.20-5) unstable; urgency=medium
 
   * [b2aadaf9] Fix device activation via gpsd socket.
