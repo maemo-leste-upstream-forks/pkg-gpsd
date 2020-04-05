@@ -1,3 +1,10 @@
+gpsd (3.20-7) unstable; urgency=medium
+
+  * [4a08d30e] Remove libdbus-glib-1-dev build-dep.
+    Thanks to Simon McVittie (Closes: #955846)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 05 Apr 2020 23:16:32 +0200
+
 gpsd (3.20-6) unstable; urgency=medium
 
   [ Bernd Zeimetz ]
