@@ -1,3 +1,9 @@
+gpsd (3.20-8) unstable; urgency=medium
+
+  * [62aa4951] Remove last traces of python2. (Closes: #936645)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Thu, 09 Apr 2020 11:09:55 +0200
+
 gpsd (3.20-7) unstable; urgency=medium
 
   * [4a08d30e] Remove libdbus-glib-1-dev build-dep.
