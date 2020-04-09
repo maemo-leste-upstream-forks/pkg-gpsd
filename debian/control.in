@@ -35,7 +35,7 @@ Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
  adduser (>= 3.34),
  ${shlibs:Depends}, ${misc:Depends},
  libgpsLIBGPSSONAME (= ${binary:Version})
-Recommends: udev [linux-any], ${python:Depends}, python
+Recommends: udev [linux-any], ${python3:Depends}, python3
 Breaks: ${gpsd:Breaks}
 Suggests: gpsd-clients, dbus, apparmor
 Conflicts: fso-gpsd
@@ -54,7 +54,7 @@ Package: gpsd-dbg
 Architecture: any
 Section: debug
 Suggests: gpsd-dbgsym
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends},
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
  libgpsLIBGPSSONAME (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python3-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
  The gpsd service daemon can monitor one or more GPS devices connected to
@@ -87,8 +87,8 @@ Architecture: any
 Section: python
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}
 Recommends: gpsd
-Provides: ${python:Provides}
-Breaks: ${python:Breaks}
+Provides: ${python3:Provides}
+Breaks: ${python3:Breaks}
 Description: Global Positioning System - Python 3 libraries
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
