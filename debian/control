@@ -35,9 +35,9 @@ Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
  adduser (>= 3.34),
  ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version})
-Recommends: udev [linux-any], ${python3:Depends}, python3
+Recommends: udev [linux-any], ${python3:Depends}, python3, gpsd-clients
 Breaks: ${gpsd:Breaks}
-Suggests: gpsd-clients, dbus, apparmor
+Suggests: gpsd-tools, dbus, apparmor
 Conflicts: fso-gpsd
 Multi-Arch: foreign
 Description: Global Positioning System - daemon
@@ -69,12 +69,27 @@ Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version}),
- python3-gps, python3-gi, python3-cairo, gir1.2-gtk-3.0, python3-serial, python3-gi-cairo, ${python3:Depends},
- python3
 Suggests: gpsd
 Breaks: python-gps
 Replaces: python-gps
 Description: Global Positioning System - clients
+ The gpsd service daemon can monitor one or more GPS devices connected to
+ a host computer, making all data on the location and movements of the
+ sensors available to be queried on TCP port 2947.
+ .
+ This package contains the most common tools 'gpsmon' and 'cgps' used to
+ access a GPS device.
+
+Package: gpsd-tools
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ libgps25 (= ${binary:Version}),
+ python3-gps, python3-gi, python3-cairo, gir1.2-gtk-3.0, python3-serial, python3-gi-cairo, ${python3:Depends},
+ python3
+Suggests: gpsd
+Breaks: python-gps, gpsd-clients (<< 3.20-9)
+Replaces: python-gps, gpsd-clients (<< 3.20-9)
+Description: Global Positioning System - tools
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
