@@ -4,3 +4,5 @@ usr/share/man/man8/*
 lib/systemd/system/*
 [linux-any] usr/bin/ppscheck
 debian/usr.sbin.gpsd /etc/apparmor.d/
+usr/bin/gpsctl
+usr/share/man/man1/gpsctl.1

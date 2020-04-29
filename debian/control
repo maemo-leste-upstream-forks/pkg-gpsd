@@ -36,7 +36,8 @@ Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
  ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version})
 Recommends: udev [linux-any], ${python3:Depends}, python3, gpsd-clients
-Breaks: ${gpsd:Breaks}
+Breaks: ${gpsd:Breaks}, gpsd-clients (<< 3.20-9)
+Replaces: gpsd-clients (<< 3.20-9)
 Suggests: gpsd-tools, dbus, apparmor
 Conflicts: fso-gpsd
 Multi-Arch: foreign
@@ -70,7 +71,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version}),
 Suggests: gpsd
-Breaks: python-gps
+Breaks: python-gps, gpsd (<< 3.20-9)
 Replaces: python-gps
 Description: Global Positioning System - clients
  The gpsd service daemon can monitor one or more GPS devices connected to

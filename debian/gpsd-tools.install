@@ -1,4 +1,3 @@
-usr/bin/gpsctl
 usr/bin/gpspipe
 usr/bin/gpsdecode
 usr/bin/xgps
@@ -16,7 +15,6 @@ usr/bin/gpsrinex
 usr/share/man/man1/gps.1
 usr/share/man/man1/gpspipe.1
 usr/share/man/man1/gpsdecode.1
-usr/share/man/man1/gpsctl.1
 usr/share/man/man1/gegps.1
 usr/share/man/man1/lcdgps.1
 usr/share/man/man1/xgps.1
