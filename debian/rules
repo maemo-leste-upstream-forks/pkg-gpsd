@@ -201,7 +201,7 @@ binary: install-stamp
 	dh_installsystemd -pgpsd --restart-after-upgrade
 	dh_installexamples
 	chmod 755 debian/$(PACKAGE_PY3)/usr/lib/python3*/*-packages/gps/gps.py
-	dh_python3 -Ngpsd -Ngpsd-tools -Ngpsd-dbg
+	dh_python3 -Ngpsd-tools -Ngpsd-dbg
 	dh_python3 -pgpsd-dbg usr/lib/gpsd/debug
 	dh_python3 -pgpsd-tools usr/bin
 	dh_python3 -pgpsd lib/udev/
