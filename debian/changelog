@@ -9,6 +9,11 @@ gpsd (3.20-9) UNRELEASED; urgency=medium
   * Move tools for local HW config into gpsd itself
     - [016cff82] move gpsctl to package gpsd
     - [b78132aa] d/control[.in]: move ubxtool and ntpshmmon to gpsd
+  * python fixups for Lintian warnings
+    - d/control[.in]: add python3 dependency to gpsd-dbg
+    - d/rules: fix the py2/3 fixup applied post build
+    - d/rules: let package gpsd be processed by dh_python3
+    - d/control[.in]: gpsd needs python as depends
 
  -- Christian Ehrhardt <christian.ehrhardt@canonical.com>  Thu, 30 Apr 2020 12:40:23 +0200
 
