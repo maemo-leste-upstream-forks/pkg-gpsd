@@ -4,3 +4,6 @@ DEVICES=""
 
 # Other options you want to pass to gpsd
 GPSD_OPTIONS=""
+
+# Automatically hot add/remove USB GPS devices via gpsdctl
+USBAUTO="true"

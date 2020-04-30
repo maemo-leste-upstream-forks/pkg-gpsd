@@ -61,6 +61,7 @@ endif
 #package names
 PACKAGE_GPSD := gpsd
 PACKAGE_CLIENTS := gpsd-clients
+PACKAGE_TOOLS := gpsd-tools
 PACKAGE_LIB := libgps$(LIB_soname)
 PACKAGE_QTLIB := libqgpsmm$(LIB_soname)
 PACKAGE_LIB_DEV := libgps-dev
@@ -178,8 +179,8 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	rm debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libgps.so.$(LIBGPS_SONAME)
 	dh_missing --fail-missing
 	# use python3
-	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd-clients/usr/bin/*
-	sed -i 's,^#!python.*,#!/usr/bin/python3,' debian/*/usr/lib/gpsd/debug/*.py
+	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd-tools/usr/bin/*
+	sed -i 's,^#!/usr/bin/env python,#!/usr/bin/env python3,' debian/*/usr/lib/gpsd/debug/*.py
 	touch $@
 
 
@@ -200,9 +201,9 @@ binary: install-stamp
 	dh_installsystemd -pgpsd --restart-after-upgrade
 	dh_installexamples
 	chmod 755 debian/$(PACKAGE_PY3)/usr/lib/python3*/*-packages/gps/gps.py
-	dh_python3 -Ngpsd -Ngpsd-clients -Ngpsd-dbg
+	dh_python3 -Ngpsd-tools -Ngpsd-dbg
 	dh_python3 -pgpsd-dbg usr/lib/gpsd/debug
-	dh_python3 -pgpsd-clients usr/bin
+	dh_python3 -pgpsd-tools usr/bin
 	dh_python3 -pgpsd lib/udev/
 	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev

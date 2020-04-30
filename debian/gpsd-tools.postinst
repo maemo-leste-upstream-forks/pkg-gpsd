@@ -1,5 +1,5 @@
 #!/bin/bash
-# postinst script for gpsd-clients
+# postinst script for gpsd-tools
 
 set -e
 
