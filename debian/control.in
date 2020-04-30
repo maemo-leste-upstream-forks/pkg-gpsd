@@ -50,6 +50,9 @@ Description: Global Positioning System - daemon
  without contention or loss of data. Also, gpsd responds to queries with a
  format that is substantially easier to parse than the different standards
  emitted by GPS devices.
+ .
+ This also includes common tools ubxtool and gpsctl for device configuration
+ of the local hardware as well as a ntpshmmon to check generated refclock data.
 
 Package: gpsd-dbg
 Architecture: any
