@@ -59,7 +59,7 @@ Package: gpsd-dbg
 Architecture: any
 Section: debug
 Suggests: gpsd-dbgsym
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
+Depends: ${shlibs:Depends}, ${misc:Depends}, python3, ${python3:Depends},
  libgpsLIBGPSSONAME (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python3-gps (= ${binary:Version})
 Description: Global Positioning System - debugging symbols
  The gpsd service daemon can monitor one or more GPS devices connected to
