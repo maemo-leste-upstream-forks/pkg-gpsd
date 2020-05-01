@@ -1,4 +1,4 @@
-gpsd (3.20-9) unstable; urgency=medium
+gpsd (3.20-9) experimental; urgency=medium
 
   [ Christian Ehrhardt ]
   * [6a21e6bd] d/usr.sbin.gpsd: improve apparmor rules for PPS
