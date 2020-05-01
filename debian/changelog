@@ -1,5 +1,6 @@
-gpsd (3.20-9) UNRELEASED; urgency=medium
+gpsd (3.20-9) unstable; urgency=medium
 
+  [ Christian Ehrhardt ]
   * [6a21e6bd] d/usr.sbin.gpsd: improve apparmor rules for PPS
                usage (LP: #1872175 LP: #1872178)
   * [c8b703b4] d/gpsd.default: add USBAUTO option (LP: #1873415)
@@ -15,7 +16,7 @@ gpsd (3.20-9) UNRELEASED; urgency=medium
     - d/rules: let package gpsd be processed by dh_python3
     - d/control[.in]: gpsd needs python as depends
 
- -- Christian Ehrhardt <christian.ehrhardt@canonical.com>  Thu, 30 Apr 2020 12:40:23 +0200
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 02 May 2020 01:19:11 +0200
 
 gpsd (3.20-8) unstable; urgency=medium
 
