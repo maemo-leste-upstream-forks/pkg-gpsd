@@ -36,10 +36,10 @@ Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
  ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version}),
  ${python3:Depends}, python3
-Recommends: udev [linux-any], gpsd-clients
-Breaks: ${gpsd:Breaks}, gpsd-clients (<< 3.20-9)
-Replaces: gpsd-clients (<< 3.20-9)
-Suggests: gpsd-tools, dbus, apparmor
+Recommends: udev [linux-any], gpsd-tools
+Breaks: ${gpsd:Breaks}, gpsd-tools (<< 3.20-10)
+Replaces: gpsd-tools (<< 3.20-10)
+Suggests: gpsd-clients, dbus, apparmor
 Conflicts: fso-gpsd
 Multi-Arch: foreign
 Description: Global Positioning System - daemon
@@ -70,14 +70,14 @@ Description: Global Positioning System - debugging symbols
  to the debug the behaviour of gpsd. Debug symbols are being shipped
  in the dbgsym package.
 
-Package: gpsd-clients
+Package: gpsd-tools
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version}),
 Suggests: gpsd
 Breaks: python-gps, gpsd (<< 3.20-9)
 Replaces: python-gps
-Description: Global Positioning System - clients
+Description: Global Positioning System - tools
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
@@ -85,17 +85,17 @@ Description: Global Positioning System - clients
  This package contains the most common tools 'gpsmon' and 'cgps' used to
  access a GPS device.
 
-Package: gpsd-tools
+Package: gpsd-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version}),
- gpsd-clients (= ${binary:Version}),
+ gpsd-tools (= ${binary:Version}),
  python3-gps, python3-gi, python3-cairo, gir1.2-gtk-3.0, python3-serial, python3-gi-cairo, ${python3:Depends},
  python3
 Suggests: gpsd
-Breaks: python-gps, gpsd-clients (<< 3.20-9)
-Replaces: python-gps, gpsd-clients (<< 3.20-9)
-Description: Global Positioning System - tools
+Breaks: python-gps, gpsd-tools (<< 3.20-10)
+Replaces: python-gps, gpsd-tools (<< 3.20-10)
+Description: Global Positioning System - clients
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
  sensors available to be queried on TCP port 2947.
