@@ -37,8 +37,8 @@ Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
  libgpsLIBGPSSONAME (= ${binary:Version}),
  ${python3:Depends}, python3
 Recommends: udev [linux-any], gpsd-tools
-Breaks: ${gpsd:Breaks}, gpsd-tools (<< 3.20-10)
-Replaces: gpsd-tools (<< 3.20-10)
+Breaks: ${gpsd:Breaks}, gpsd-tools (<< 3.20-10), gpsd-clients (<< 3.20-9)
+Replaces: gpsd-tools (<< 3.20-10), gpsd-clients (<< 3.20-9)
 Suggests: gpsd-clients, dbus, apparmor
 Conflicts: fso-gpsd
 Multi-Arch: foreign
