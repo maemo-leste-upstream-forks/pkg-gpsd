@@ -1,11 +1,17 @@
-gpsd (3.20-10) UNRELEASED; urgency=medium
+gpsd (3.20-10) unstable; urgency=medium
 
+  [ Christian Ehrhardt ]
   * [7670b61e] exchange gpsd-client/tools content
   * [fb81a96a] examples also need to be in -clients instead of -tools then
   * [7f8d06a8] d/control[.in]: moving gpsctl still breaks gpsd-clients
     (<< 3.20-9) for upgraders never seeing the version in experimental
 
- -- Christian Ehrhardt <christian.ehrhardt@canonical.com>  Thu, 07 May 2020 07:29:21 +0200
+  [ Bernd Zeimetz ]
+  * [b448fb08] Merge branch 'exchange-clients-and-tools' into 'master'
+    exchange gpsd-client/tools content
+    See merge request debian-gps-team/pkg-gpsd!6
+
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 11 May 2020 14:40:08 +0200
 
 gpsd (3.20-9) experimental; urgency=medium
 
