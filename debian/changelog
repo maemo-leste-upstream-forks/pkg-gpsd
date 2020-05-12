@@ -1,3 +1,11 @@
+gpsd (3.20-11) unstable; urgency=medium
+
+  [ Christian Ehrhardt ]
+  * [232c8d73] d/rules: fix ubxtool to use python3 in the gpsd package (LP: #1878158)
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+
+ -- Bernd Zeimetz <bzed@debian.org>  Tue, 12 May 2020 13:49:15 +0200
+
 gpsd (3.20-10) unstable; urgency=medium
 
   [ Christian Ehrhardt ]
