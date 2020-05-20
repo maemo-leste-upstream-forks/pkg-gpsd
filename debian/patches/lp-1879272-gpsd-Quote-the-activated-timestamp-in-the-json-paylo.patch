@@ -1,0 +1,33 @@
+From 733495192307d43c9e3bdd9e1b202045e66d998b Mon Sep 17 00:00:00 2001
+From: Andreas Tobler <andreas.tobler@onway.ch>
+Date: Thu, 14 May 2020 20:30:19 +0200
+Subject: [PATCH] gpsd: Quote the activated timestamp in the json payload
+
+Without the quotes we get this as DECVICE json payload:
+
+{"class":"DEVICE","path":"/dev/pts/9","activateed":2020-05-14T15:36:35.087Z}
+
+This results in a json parse error after the 2020.
+Fix this with quoting the timestamp.
+
+Signed-off-by: Gary E. Miller <gem@rellim.com>
+
+Origin: backport, https://gitlab.com/gpsd/gpsd/-/commit/733495192307d43c9e3bdd9e1b2020
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1879272
+Last-Update: 2020-05-20
+
+---
+ gpsd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -748,7 +748,7 @@ bool gpsd_add_device(const char *device_
+ #ifdef SOCKET_EXPORT_ENABLE
+ 	    notify_watchers(devp, true, false,
+ 			    "{\"class\":\"DEVICE\",\"path\":\"%s\","
+-                            "\"activated\":%s}\r\n",
++                            "\"activated\":\"%s\"}\r\n",
+ 			    devp->gpsdata.dev.path,
+ 		            now_to_iso8601(tbuf, sizeof(tbuf)));
+ #endif /* SOCKET_EXPORT_ENABLE */
