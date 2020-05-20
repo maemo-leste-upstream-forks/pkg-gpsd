@@ -1,3 +1,15 @@
+gpsd (3.20-12) unstable; urgency=medium
+
+  [ Bernd Zeimetz ]
+  * [b7a30c42] Disable reprotest on CI for now.
+    Until somebody comes up with a fix.
+
+  [ Christian Ehrhardt ]
+  * [fccbcc8f] fix json missing quotes on device add (LP: #1879272)
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 20 May 2020 09:04:54 +0200
+
 gpsd (3.20-11) unstable; urgency=medium
 
   [ Christian Ehrhardt ]
