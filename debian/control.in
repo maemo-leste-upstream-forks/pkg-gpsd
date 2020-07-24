@@ -103,7 +103,6 @@ Description: Global Positioning System - clients
  This package contains auxiliary tools and example clients for monitoring,
  testing, latency-profiling, device configuration and simulating gpsd.
 
-
 Package: python3-gps
 Architecture: any
 Section: python
