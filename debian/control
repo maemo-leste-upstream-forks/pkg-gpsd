@@ -31,7 +31,7 @@ X-Python3-Version: >= 3.5
 
 Package: gpsd
 Architecture: any
-Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
+Depends: netbase, lsb-base (>= 3.2-13),
  adduser (>= 3.34),
  ${shlibs:Depends}, ${misc:Depends},
  libgps25 (= ${binary:Version}),
