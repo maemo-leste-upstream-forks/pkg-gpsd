@@ -38,7 +38,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 SCONSOPTS = \
 	prefix=/usr \
-	systemd=yes \
+	systemd=no \
 	nostrip=yes \
 	dbus_export=yes \
 	docdir=/usr/share/doc/gpsd \
@@ -168,7 +168,6 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_testroot
 	dh_prep
 	$(SCONS_ENV) DESTDIR=`pwd`/debian/tmp $(PYTHON3) /usr/bin/scons install $(SCONSOPTS) target_python=$(PYTHON3)
-	$(SCONS_ENV) DESTDIR=`pwd`/debian/tmp $(PYTHON3) /usr/bin/scons systemd_install $(SCONSOPTS) target_python=$(PYTHON3)
 	# install static lib
 	cp libgps.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)
 	cp INSTALL.adoc TROUBLESHOOTING.adoc
@@ -193,10 +192,8 @@ binary: install-stamp
 	dh_installman
 	dh_installmenu
 	dh_apparmor --profile-name=usr.sbin.gpsd -pgpsd
-	dh_installsystemd -pgpsd --restart-after-upgrade gpsdctl@.service gpsd.socket
-	dh_installsystemd -pgpsd --no-enable --no-start gpsd.service
 	dh_installinit --no-start
-	dh_installsystemd -pgpsd --restart-after-upgrade
+	dh_installexamples
 	chmod 755 debian/$(PACKAGE_PY3)/usr/lib/python3*/*-packages/gps/gps.py
 	dh_python3 -Ngpsd-clients
 	dh_python3 -pgpsd-clients usr/bin

@@ -1,6 +1,5 @@
 # helper script, not an actual patch
 # add_patch.sh
 7f30d88d0_gpsd-timebase.c-Don-t-compute-wrong-GPS-rollover-after-2020-10-23
-full-systemd-support
 gpsd_hotplug_rules_disable_generic_serial_converters
 ignore-test-xgps_deps_check

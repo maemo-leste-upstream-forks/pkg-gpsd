@@ -34,7 +34,7 @@ Vcs-Git: https://salsa.debian.org/debian-gps-team/pkg-gpsd.git
 
 Package: gpsd
 Architecture: any
-Depends: netbase | systemd-sysv, lsb-base (>= 3.2-13),
+Depends: netbase, lsb-base (>= 3.2-13),
  adduser (>= 3.34),
  ${shlibs:Depends}, ${misc:Depends},
  libgps28 (= ${binary:Version}),
