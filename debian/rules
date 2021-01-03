@@ -173,7 +173,6 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	# use python3
 	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd-clients/usr/bin/*
 	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd/usr/bin/*
-	sed -i 's,^#!/usr/bin/env python,#!/usr/bin/env python3,' debian/*/usr/lib/gpsd/debug/*.py
 	eouch $@
 : install
 install-arch: install
