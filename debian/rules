@@ -5,7 +5,7 @@ include /usr/share/dpkg/pkg-info.mk
 #uncomment if debhelper should be verbose
 #export DH_VERBOSE=1
 
-LIBGPS_SONAME := $(strip $(shell grep -E '^libgps_version_current' SConstruct | sed 's,.*=[^0-9]*\([0-9]*\).*,\1,'))
+LIBGPS_SONAME := $(strip $(shell grep -E '^libgps_version_current' SConscript | sed 's,.*=[^0-9]*\([0-9]*\).*,\1,'))
 
 export QT_SELECT=qt5
 
@@ -49,6 +49,8 @@ SCONSOPTS = \
 
 ifneq (,$(findstring nodoc,$(DEB_BUILD_OPTIONS)))
 	SCONSOPTS += manbuild=no
+else
+	SCONSOPTS += manbuild=yes
 endif
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -128,9 +130,9 @@ clean: debian/control
 	dh_testroot
 	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) target_python=$(PYTHON3) --clean
 	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) sconsclean || true
-	# revert revision changes in SConstruct
+	# revert revision changes in SConscript
 	if [ -f SConscript.deb_revision ]; then \
-	    mv SConscript.deb_revision SConstruct; \
+	    mv SConscript.deb_revision SConscript; \
 	fi
 	dh_clean
 	rm -rf \
