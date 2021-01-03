@@ -140,6 +140,7 @@ clean: debian/control
 	if [ -f SConstruct.deb_revision ]; then \
 	    mv SConstruct.deb_revision SConstruct; \
 	fi
+	dh_clean
 	rm -rf \
 		gpsd-* \
 	    .sconf_temp \
@@ -155,7 +156,6 @@ clean: debian/control
 	    libgps.a \
 	    $(LIBGPS_DEBIAN_FILE_TARGETS) \
 	    __pycache__
-	dh_clean
 
 install: install-stamp
 install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
