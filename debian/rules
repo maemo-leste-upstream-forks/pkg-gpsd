@@ -95,7 +95,7 @@ debian/control: debian/control.in
 			git commit -m 'Updating debian/control from debian/control.in' debian/control ;\
 		fi ;\
 
-SConscript.deb_revision: SConstruct
+SConscript.deb_revision: SConscript
 	if [ ! -f $@ ]; then \
 		cp $< $@ ;\
 		sed -i '/^revision=/s/%(.*)/%("$(DEB_VERSION)",)/' $< ;\
@@ -105,9 +105,9 @@ SConscript.deb_revision: SConstruct
 build-indep: build
 build-arch: build
 
-build: build-stamp build-static-stamp
-build-stamp: SConscript.deb_revision
-	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) target_python=$(PYTHON3)
+build: build-stamp
+build-stamp: SConscript.deb_revision build-static-stamp
+	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons shared=yes $(SCONSOPTS) target_python=$(PYTHON3)
 ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	# disable tests on hurd due to weird ipv6 errors
 	# http://deb.li/4C46AEAC.7040906@bzed.de
@@ -118,6 +118,7 @@ endif
 	touch $@
 
 build-static-stamp: SConscript.deb_revision
+	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons shared=no $(SCONSOPTS) target_python=$(PYTHON3)
 	cp gpsd-*/libgps_static.a libgps.a
 	touch $@
 
