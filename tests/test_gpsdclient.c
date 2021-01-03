@@ -3,19 +3,21 @@
  *  Consider rounding off also:
  *  dsec = (int)(fdsec * 10000.0 + 0.5);
  *
- * This file is Copyright (c) 2010 by the GPSD project
+ * This file is Copyright 2010 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
 */
 
 /* first so the #defs work */
-#include "../gpsd_config.h"
+#include "../include/gpsd_config.h"
+
 #include <math.h>              /* for nan() */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>            /* for getopt() */
-#include "../gpsdclient.h"
-#include "../revision.h"
+
+#include "../include/compiler.h"       // for FALLTHROUGH
+#include "../include/gpsdclient.h"
 
 struct test {
     double deg;
@@ -175,12 +177,14 @@ struct test2 {
 struct test2 tests2[] = {
     /* maidenhead
      * keep in sync with test_clienthelpers.py */
-    {48.86471, 2.37305, "JN18eu", "Paris"},
-    {41.93498, 12.43652, "JN61fw", "Rome"},
-    {39.9771, -75.1685, "FM29jx", "Philadelphia"},
-    {-23.4028, -50.9766, "GG46mo", "Sao Paulo"},
-    {90, 180, "RR99xx", "North Pole"},
-    {-90, -180, "AA00aa", "South Pole"},
+    {48.86471, 2.37305, "JN18eu47", "Paris"},
+    {41.93498, 12.43652, "JN61fw24", "Rome"},
+    {39.9771, -75.1685, "FM29jx94", "Philadelphia, PA USA"},
+    {44.06878, -121.31424, "CN94ib26", "Bend, OR USA"},
+    {-23.4028, -50.9766, "GG46mo23", "Sao Paulo"},
+    {-33.86881, 151.20929 , "QF56od51", "Sydney, NSW AU"},
+    {90, 180, "RR99xx99", "North Pole"},
+    {-90, -180, "AA00aa00", "South Pole"},
 };
 
 
@@ -197,9 +201,9 @@ int main(int argc, char **argv)
         switch (option) {
         default:
                 fail_count = 1;
-                /* FALLTHROUGH */
+                FALLTHROUGH
         case '?':
-                /* FALLTHROUGH */
+                FALLTHROUGH
         case 'h':
             (void)fputs("usage: test_gpsdclient [-v] [-V]\n", stderr);
             exit(fail_count);
@@ -279,3 +283,4 @@ int main(int argc, char **argv)
     exit(fail_count);
 }
 
+// vim: set expandtab shiftwidth=4

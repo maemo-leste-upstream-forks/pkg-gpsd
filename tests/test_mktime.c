@@ -3,9 +3,12 @@
  * iso8601_to_timespec().
  * mktime() is a libc function, why test it?
  *
- * This file is Copyright (c) 2010-2019 by the GPSD project
+ * This file is Copyright 2010 by the GPSD project
  * SPDX-License-Identifier: BSD-2-clause
  */
+
+#include "../include/gpsd_config.h"  /* must be before all includes */
+
 #include <limits.h>
 #include <math.h>       /* for fabs() */
 #include <stdbool.h>
@@ -14,9 +17,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "../gps.h"
-#include "../compiler.h"
-#include "../timespec.h"
+#include "../include/gps.h"
+#include "../include/compiler.h"
+#include "../include/timespec.h"
 
 static struct
 {
@@ -177,9 +180,8 @@ static struct
     {{2147483647L, 123456000L}, "2038-01-19T03:14:07.123Z"},
 
 #if 4 < SIZEOF_TIME_T
-    /* this next line generates compiler warning if 4 < sizeof(time_t)
-     * if so, the test will fail, and your system will break in 2038 */
-    {{2147483648L, 123456000L}, "2038-01-19T03:14:08.123Z"},
+    /* Test the first value exceeding the 32-bit (signed) time_t */
+    {{2147483648LL, 123456000L}, "2038-01-19T03:14:08.123Z"},
 #endif
 
 };
@@ -259,3 +261,4 @@ int main(int argc UNUSED, char *argv[] UNUSED)
 
 /* end */
 
+// vim: set expandtab shiftwidth=4

@@ -1,66 +1,69 @@
 #!/usr/bin/env python
-#
-# This tool is intended to automate away the drudgery in bring up support
-# for a new AIS message type.  It parses the tabular description of a message
-# and generates various useful code snippets from that.  It can also be used to
-# correct offsets in the tables themselves.
-#
-# Requires the AIVDM.txt file on standard input. Takes a single argument,
-# which must match a string in a //: Type comment.  Things you can generate:
-#
-# * -t: A corrected version of the table.  It will redo all the offsets to be
-#   in conformance with the bit widths. (The other options rely only on the
-#   bit widths). If the old and new tables are different, an error message
-#   describing the corrections will be emitted to standard error.
-#
-# * -s: A structure definition capturing the message info, with member
-#   names extracted from the table and types computed from it.
-#
-# * -c: Bit-extraction code for the AIVDM driver.  Grind out the right sequence
-#   of UBITS, SBITS, and UCHARS macros, and assignments to structure members,
-#   guaranteed correct if the table offsets and widths are.
-#
-# * -d: Code to dump the contents of the unpacked message structure as JSON. If
-#   the structure has float members, you'll get an if/then/else  guarded by
-#   the scaled flag.
-#
-# * -r: A Python initializer stanza for jsongen.py, which is in turn used to
-#   generate the specification structure for a JSON parse that reads JSON
-#   into an instance of the message structure.
-#
-# * -a: Generate all of -s, -d, -c, and -r, and -t, not to stdout but to
-#   files named with 'tablegen' as a distinguishing part of the stem.
-#   The stem name can be overridden with the -o option.
-#
-# This generates almost all the code required to support a new message type.
-# It's not quite "Look, ma, no handhacking!" You'll need to add default
-# values to the Python stanza. If the structure definition contains character
-# arrays, you'll have to fill in the dimensions by hand.  You'll need to add
-# a bit of glue to ais_json.c so that json_ais_read() actually calls the parser
-# handing it the specification structure as a control argument.
-#
-# The -a, -c, -s, -d, and -r modes all take an argument, which should be a
-# structure reference prefix to be prepended (before a dot) to each fieldname.
-# Usually you'll need this to look something like "ais->typeN", but it could be
-# "ais->typeN.FOO" if the generated code has to operate on a union member
-# inside a type 6 or 8, or something similar.
-#
-# The -S and -E options allow you to generate code only for a specified span
-# of fields in the table.  This may be useful for dealing with groups of
-# messages that have a common head section.
-#
-# This code interprets magic comments in the input
-#
-# //: Type
-#    The token following "Type" is the name of the table
-# //: xxxx vocabulary
-#    A subtable describing a controlled vocabulary for field xxxx in the
-#    preceding table.
-#
-# TO-DO: generate code for ais.py.
-#
 # This code runs compatibly under Python 2 and 3.x for x >= 2.
 # Preserve this property!
+
+"""Generate AIS code from text file.
+
+This tool is intended to automate away the drudgery in bring up support
+for a new AIS message type.  It parses the tabular description of a message
+and generates various useful code snippets from that.  It can also be used to
+correct offsets in the tables themselves.
+
+Requires the AIVDM.txt file on standard input. Takes a single argument,
+which must match a string in a //: Type comment.  Things you can generate:
+
+* -t: A corrected version of the table.  It will redo all the offsets to be
+  in conformance with the bit widths. (The other options rely only on the
+  bit widths). If the old and new tables are different, an error message
+  describing the corrections will be emitted to standard error.
+
+* -s: A structure definition capturing the message info, with member
+  names extracted from the table and types computed from it.
+
+* -c: Bit-extraction code for the AIVDM driver.  Grind out the right sequence
+  of UBITS, SBITS, and UCHARS macros, and assignments to structure members,
+  guaranteed correct if the table offsets and widths are.
+
+* -d: Code to dump the contents of the unpacked message structure as JSON. If
+  the structure has float members, you'll get an if/then/else  guarded by
+  the scaled flag.
+
+* -r: A Python initializer stanza for jsongen.py, which is in turn used to
+  generate the specification structure for a JSON parse that reads JSON
+  into an instance of the message structure.
+
+* -a: Generate all of -s, -d, -c, and -r, and -t, not to stdout but to
+  files named with 'tablegen' as a distinguishing part of the stem.
+  The stem name can be overridden with the -o option.
+
+This generates almost all the code required to support a new message type.
+It's not quite "Look, ma, no handhacking!" You'll need to add default
+values to the Python stanza. If the structure definition contains character
+arrays, you'll have to fill in the dimensions by hand.  You'll need to add
+a bit of glue to ais_json.c so that json_ais_read() actually calls the parser
+handing it the specification structure as a control argument.
+
+The -a, -c, -s, -d, and -r modes all take an argument, which should be a
+structure reference prefix to be prepended (before a dot) to each fieldname.
+Usually you'll need this to look something like "ais->typeN", but it could be
+"ais->typeN.FOO" if the generated code has to operate on a union member
+inside a type 6 or 8, or something similar.
+
+The -S and -E options allow you to generate code only for a specified span
+of fields in the table.  This may be useful for dealing with groups of
+messages that have a common head section.
+
+This code interprets magic comments in the input
+
+//: Type
+   The token following "Type" is the name of the table
+//: xxxx vocabulary
+   A subtable describing a controlled vocabulary for field xxxx in the
+   preceding table.
+
+TO-DO: generate code for ais.py.
+"""
+
 from __future__ import absolute_import, print_function, division
 
 import getopt
@@ -68,31 +71,33 @@ import sys
 
 
 def correct_table(wfp):
-    # Writes the corrected table.
+    """Writes the corrected table."""
     print("Total bits:", base, file=sys.stderr)
-    for (i, t) in enumerate(table):
-        if offsets[i].strip():
-            print("|" + offsets[i] + t[owidth+1:].rstrip(), file=wfp)
+    for (idx, t) in enumerate(table):
+        if offsets[idx].strip():
+            print("|" + offsets[idx] + t[owidth+1:].rstrip(), file=wfp)
         else:
             print(t.rstrip(), file=wfp)
 
 
 def make_driver_code(wfp):
-    # Writes calls to bit-extraction macros.
-    # Requires UBITS, SBITS, UCHARS to act as they do in the AIVDM driver.
-    # Also relies on bitlen to be the message bit length, and i to be
-    # available as abn index variable.
+    """Writes calls to bit-extraction macros.
+    Requires UBITS, SBITS, UCHARS to act as they do in the AIVDM driver.
+    Also relies on bitlen to be the message bit length, and i to be
+    available as abn index variable."""
     record = after is None
     arrayname = None
-    base = '\t'
+    lbase = '\t'
     step = " " * 4
-    indent = base
+    indent = lbase
+    last = 0
+
     for (i, t) in enumerate(table):
         if '|' in t:
-            fields = [s.strip() for s in t.split('|')]
-            width = fields[2]
-            name = fields[4]
-            ftype = fields[5]
+            filds = [s.strip() for s in t.split('|')]
+            width = filds[2]
+            name = filds[4]
+            ftype = filds[5]
             if after == name:
                 record = True
                 continue
@@ -143,7 +148,7 @@ def make_driver_code(wfp):
                       (width, ftype), file=wfp)
             last = name
     if arrayname:
-        indent = base
+        indent = lbase
         print(indent + "}", file=wfp)
         if not explicit:
             print(indent + "%s.%s = ind;" %
@@ -153,15 +158,17 @@ def make_driver_code(wfp):
 
 
 def make_structure(wfp):
-    # Write a structure definition correponding to the table.
+    """Write a structure definition corresponding to the table."""
     global structname
     record = after is None
+    last = 0
     baseindent = 8
     step = 4
     inwards = step
     arrayname = None
 
     def tabify(n):
+        """convert to tabs."""
         return ('\t' * (n // 8)) + (" " * (n % 8))
 
     print(tabify(baseindent) + "struct {", file=wfp)
@@ -223,13 +230,14 @@ def make_structure(wfp):
 
 
 def make_json_dumper(wfp):
-    # Write the skeleton of a JSON dump corresponding to the table.
-    # Also, if there are subtables, some initializers
+    """Write the skeleton of a JSON dump corresponding to the table.
+    Also, if there are subtables, some initializers."""
+    last = 0
     if subtables:
         for (name, lines) in subtables:
             wfp.write("    const char *%s_vocabulary[] = {\n" % name)
-            for line in lines:
-                value = line[1]
+            for ln in lines:
+                value = ln[1]
                 if value.endswith(" (default)"):
                     value = value[:-10]
                 wfp.write('        "%s",\n' % value)
@@ -321,22 +329,24 @@ def make_json_dumper(wfp):
         last = name
     startspan = 0
 
-    def scaled(i):
-        return tuples[i][3] is not None
+    def scaled(idx):
+        """Check if scaled."""
+        return tuples[idx][3] is not None
 
-    def tslice(e, i):
-        return [x[i] for x in tuples[startspan:e+1]]
+    def tslice(e, idx):
+        """Missing docstring."""
+        return [x[idx] for x in tuples[startspan:e+1]]
 
-    base = " " * 8
+    lbase = " " * 8
     step = " " * 4
     inarray = None
     header = "(void)snprintf(buf + strlen(buf), buflen - strlen(buf),"
     for (i, (var, uf, uv, sf, sv)) in enumerate(tuples):
         if uf is not None:
-            print(base + "for (i = 0; i < %s.%s; i++) {" % (structname, sv),
+            print(lbase + "for (i = 0; i < %s.%s; i++) {" % (structname, sv),
                   file=wfp)
             inarray = var
-            base = " " * 12
+            lbase = " " * 12
             startspan = i+1
             continue
         # At end of tuples, or if scaled flag changes, or if next op is array,
@@ -351,48 +361,48 @@ def make_json_dumper(wfp):
             endit = None
         if endit:
             if not scaled(i):
-                print(base + header, file=wfp)
+                print(lbase + header, file=wfp)
                 if inarray:
                     prefix = '{"'
                 else:
                     prefix = '"'
-                print(base + step + prefix + ','.join(tslice(i, 1)) + endit,
+                print(lbase + step + prefix + ','.join(tslice(i, 1)) + endit,
                       file=wfp)
                 for (j, t) in enumerate(tuples[startspan:i+1]):
                     if inarray:
                         ref = structname + "." + inarray + "[i]." + t[0]
                     else:
                         ref = structname + "." + t[0]
-                    wfp.write(base + step + t[2] % ref)
+                    wfp.write(lbase + step + t[2] % ref)
                     if j == i - startspan:
                         wfp.write(");\n")
                     else:
                         wfp.write(",\n")
             else:
-                print(base + "if (scaled)", file=wfp)
-                print(base + step + header, file=wfp)
-                print(base + step * 2 + '"' + ','.join(tslice(i, 3)) + endit,
+                print(lbase + "if (scaled)", file=wfp)
+                print(lbase + step + header, file=wfp)
+                print(lbase + step * 2 + '"' + ','.join(tslice(i, 3)) + endit,
                       file=wfp)
                 for (j, t) in enumerate(tuples[startspan:i+1]):
                     if inarray:
                         ref = structname + "." + inarray + "[i]." + t[0]
                     else:
                         ref = structname + "." + t[0]
-                    wfp.write(base + step*2 + t[4] % ref)
+                    wfp.write(lbase + step*2 + t[4] % ref)
                     if j == i - startspan:
                         wfp.write(");\n")
                     else:
                         wfp.write(",\n")
-                print(base + "else", file=wfp)
-                print(base + step + header, file=wfp)
-                print(base + step * 2 + '"' + ','.join(tslice(i, 1)) + endit,
+                print(lbase + "else", file=wfp)
+                print(lbase + step + header, file=wfp)
+                print(lbase + step * 2 + '"' + ','.join(tslice(i, 1)) + endit,
                       file=wfp)
                 for (j, t) in enumerate(tuples[startspan:i+1]):
                     if inarray:
                         ref = structname + "." + inarray + "[i]." + t[0]
                     else:
                         ref = structname + "." + t[0]
-                    wfp.write(base + step*2 + t[2] % ref)
+                    wfp.write(lbase + step*2 + t[2] % ref)
                     if j == i - startspan:
                         wfp.write(");\n")
                     else:
@@ -400,19 +410,20 @@ def make_json_dumper(wfp):
             startspan = i+1
     # If we were looking at a trailing array, close scope
     if inarray:
-        base = " " * 8
-        print(base + "}", file=wfp)
-        print(base + "if (buf[strlen(buf)-1] == ',')", file=wfp)
-        print(base + step + r"buf[strlen(buf)-1] = '\0';", file=wfp)
-        print(base + "(void)strlcat(buf, \"]}\", buflen - strlen(buf));",
+        lbase = " " * 8
+        print(lbase + "}", file=wfp)
+        print(lbase + "if (buf[strlen(buf)-1] == ',')", file=wfp)
+        print(lbase + step + r"buf[strlen(buf)-1] = '\0';", file=wfp)
+        print(lbase + "(void)strlcat(buf, \"]}\", buflen - strlen(buf));",
               file=wfp)
 
 
 def make_json_generator(wfp):
-    # Write a stanza for jsongen.py.in describing how to generate a
-    # JSON parser initializer from this table. You need to fill in
-    # __INITIALIZER__ and default values after this is generated.
+    """Write a stanza for jsongen.py.in describing how to generate a
+    JSON parser initializer from this table. You need to fill in
+    __INITIALIZER__ and default values after this is generated."""
     extra = ""
+    last = 0
     arrayname = None
     record = after is None
     print('''\
@@ -499,16 +510,17 @@ def make_json_generator(wfp):
 
 if __name__ == '__main__':
     try:
+        # FIXME: Convert to argparse
         (options, arguments) = getopt.getopt(sys.argv[1:], "a:tc:s:d:S:E:r:o:")
     except getopt.GetoptError as msg:
         print("tablecheck.py: " + str(msg))
         raise SystemExit(1)
-    generate = maketable = makestruct = makedump = readgen = all = False
+    generate = maketable = makestruct = makedump = readgen = doall = False
     after = before = None
     filestem = "tablegen"
     for (switch, val) in options:
         if switch == '-a':
-            all = True
+            doall = True
             structname = val
         elif switch == '-c':
             generate = True
@@ -532,7 +544,7 @@ if __name__ == '__main__':
             filestem = val
 
     if ((not generate and not maketable and not makestruct and
-         not makedump and not readgen and not all)):
+         not makedump and not readgen and not doall)):
         print("tablecheck.py: no mode selected", file=sys.stderr)
         sys.exit(1)
 
@@ -637,7 +649,7 @@ if __name__ == '__main__':
         offsets[i] += " " * (owidth - len(offsets[i]))
 
     # Here's where we generate useful output.
-    if all:
+    if doall:
         if corrections:
             correct_table(open(filestem + ".txt", "w"))
         make_driver_code(open(filestem + ".c", "w"))

@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
-# This file is Copyright (c)2010 by the GPSD project
-# BSD terms apply: see the file COPYING in the distribution root for details.
+# This file is Copyright 2010 by the GPSD project
+# SPDX-License-Identifier: BSD-2-clause
 
 set -e
 
@@ -15,13 +15,13 @@ if [ ! -x /usr/bin/getbuildlog ]; then
 	exit 1
 fi
 
-TMPDIR=`mktemp -d`
-OLDPWD=`pwd`
+TMPDIR=$(mktemp -d)
+OLDPWD=$(pwd)
 
-cd ${TMPDIR}
-getbuildlog gpsd $logs || true
+cd "${TMPDIR}"
+getbuildlog gpsd "$logs" || true
 grep -c -E -- '--- (./)?test' * | grep -E ':0$' | sed 's,^gpsd_[^_]*_\([^.]*\)\.log:0,\1: no regressions,'
 grep -E -- '--- (./)?test' * | sed 's,\s2013.*,,;s,^gpsd_[^_]*_\([^.]*\)\.log:--- ,\1 ,' | sort -u
-cd ${OLDPWD}
-rm -rf ${TMPDIR}
+cd "${OLDPWD}"
+rm -rf "${TMPDIR}"
 

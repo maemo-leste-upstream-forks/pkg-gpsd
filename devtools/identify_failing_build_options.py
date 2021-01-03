@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
+# This file is Copyright 2010 by the GPSD project
+# SPDX-License-Identifier: BSD-2-Clause
 # This code runs compatibly under Python 2 and 3.x for x >= 2.
 # Preserve this property!
+
+"""Build option tester."""
+
 from __future__ import absolute_import, print_function, division
 
 import os
@@ -84,6 +89,8 @@ knobs = [
 
 
 def main(starting_number_of_options=0):
+    """Main program."""
+
     import itertools
     import multiprocessing
     import shutil
@@ -96,6 +103,7 @@ def main(starting_number_of_options=0):
     dev_null = open('/dev/null', 'w')
 
     def _run(command, phase):
+        """Run subproceses."""
         if subprocess.call(command, stdout=dev_null) == 0:
             return True
         failed_configurations.append(command)
@@ -110,11 +118,11 @@ def main(starting_number_of_options=0):
     for i in range(starting_number_of_options, len(knobs)):
         print('Testing at length {}'.format(i))
 
-        for row in itertools.combinations(knobs, i):
-            print(row)
-            params = static_params + [key + '=on' for key in row]
+        for thisrow in itertools.combinations(knobs, i):
+            print(thisrow)
+            params = static_params + [key + '=on' for key in thisrow]
 
-            # print {'on_params': row, 'scons_params': params}
+            # print {'on_params': thisrow, 'scons_params': params}
 
             # Clean before clearing cached options, in case options
             # affect what's cleaned.

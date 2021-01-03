@@ -36,7 +36,7 @@ Make the Python JSON client as smart as the C JSON client.  Gonna be
 a big job.  The C client checks all the JSON classes for completeness
 and correctness.  For example, a missing JSON field will be replaced
 with a default value.  Also out of bounds values are fixed.  The Python
-client does no checks. it just mushes a JSON sentance into a big Python
+client does no checks. it just mushes a JSON sentence into a big Python
 variable.  No validity checking, no missing fields fixed, etc.  The C
 client uses a generic validator function, fed with templates for each
 JSON message.  Initially harder than a simple procedural parser, Once
@@ -211,11 +211,6 @@ for possibilities.
 Jon Schlueter has one of these on a flock machine, so testing
 shouldn't be difficult.
 
-*** Enable flocktest on the Debian server farm
-
-Debian server farm boxes have a screwy chrooted environment setup.
-flocktest needs to be modified to deal with it.
-
 *** Finish gpssim
 
 It's blocked on skyview computation.
@@ -297,5 +292,5 @@ are not $50 USB mice...
 
 Local variables:
 mode: outline
-paragraph-separate: "[ 	]*$"
+paragraph-separate: "[  ]*$"
 end:

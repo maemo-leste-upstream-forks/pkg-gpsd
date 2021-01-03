@@ -1,39 +1,27 @@
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%global _hardened_build 1
 
 Name: gpsd
-Version: 3.20
-Release: 1%{?dist}
+Version: 3.21.1~dev
+Release: 0%{?dist}
 Summary: Service daemon for mediating access to a GPS
 
-Group: System Environment/Daemons
 License: BSD
-URL: https://gpsd.io
-Source0: http://download-mirror.savannah.gnu.org/releases/gpsd//%{name}-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+URL: https://gpsd.io/
+Source0: http://download-mirror.savannah.gnu.org/releases/gpsd/%{name}-%{version}.tar.xz
 
-BuildRequires: bluez-libs-devel
-BuildRequires: chrpath
-BuildRequires: dbus-devel
-BuildRequires: desktop-file-utils
-BuildRequires: gcc-c++
-BuildRequires: libXaw-devel
-BuildRequires: ncurses-devel
-BuildRequires: python-devel
-BuildRequires: qt-devel
-BuildRequires: scons
-BuildRequires: xmlto
-%if 0%{?fedora} >= 16
-BuildRequires: pps-tools-devel
+BuildRequires:  dbus-devel dbus-glib-devel ncurses-devel xmlto python3-devel
+BuildRequires:  python3-scons  desktop-file-utils bluez-libs-devel /usr/bin/c++
+BuildRequires:  pps-tools-devel systemd
+BuildRequires:  qt-devel
+%ifnarch s390 s390x
+BuildRequires:  libusb1-devel
 %endif
 
+Requires: %{name}-libs%{?_isa} = %{version}-%{release}
 Requires: udev
-Requires(post): /sbin/ldconfig
-Requires(post): /sbin/chkconfig
-Requires(postun): /sbin/ldconfig
-Requires(preun): initscripts
-Requires(preun): /sbin/chkconfig
+%{?systemd_requires}
 
-%description 
+%description
 gpsd is a service daemon that mediates access to a GPS sensor
 connected to the host computer by serial or USB interface, making its
 data on the location/course/velocity of the sensor available to be
@@ -41,58 +29,56 @@ queried on TCP port 2947 of the host computer.  With gpsd, multiple
 GPS client applications (such as navigational and wardriving software)
 can share access to a GPS without contention or loss of data.  Also,
 gpsd responds to queries with a format that is substantially easier to
-parse than NMEA 0183.  
+parse than NMEA 0183.
+
+%package libs
+Summary: Client libraries in C for talking to a running gpsd or GPS
+
+%description libs
+This package contains the gpsd libraries that manage access
+to a GPS for applications.
+
+%package -n python3-%{name}
+Summary: Python libraries and modules for use with gpsd
+Requires: %{name}-libs%{?_isa} = %{version}-%{release}
+%{?python_provide:%python_provide python3-%{name}}
+
+%description -n python3-%{name}
+This package contains the python3 modules that manage access to a GPS for
+applications, and commonly useful python applications for use with gpsd.
 
 %package devel
-Summary: Client libraries in C and Python for talking to a running gpsd or GPS
-Group: Development/Libraries
-Requires: %{name} = %{version}-%{release}
-Requires: pkgconfig
+Summary: Development files for the gpsd library
+Requires: %{name}-libs%{?_isa} = %{version}-%{release}
 
 %description devel
-This package provides C header files and python modules for the gpsd shared 
-libraries that manage access to a GPS for applications
+This package provides C header files for the gpsd shared libraries that
+manage access to a GPS for applications
 
-%package -n libQgpsmm
-Summary: Qt Client libraries for talking to a running gpsd or GPS
-Group: Development/Libraries
-Requires: %{name} = %{version}-%{release}
-Requires: qt
-Requires: pkgconfig
+%package qt
+Summary: C++/Qt5 bindings for the gpsd library
+Requires: %{name}-libs%{?_isa} = %{version}-%{release}
 
-%description -n libQgpsmm
-This package provides Qt shared libraries that manage access to a GPS
-for Qt applications
+%description qt
+This package provide C++ and Qt bindings for use with the libgps library from
+gpsd.
+
+%package qt-devel
+Summary: Development files for the C++/Qt5 bindings for the gpsd library
+Requires: %{name}-libs%{?_isa} = %{version}-%{release}
+Requires: %{name}-qt%{?_isa} = %{version}-%{release}
+
+%description qt-devel
+This package provides the development files for the C++ and Qt bindings for use
+with the libgps library from gpsd.
 
 %package clients
 Summary: Clients for gpsd
-Group: Applications/System
-Requires: clients-x11 = %{version}-%{release}
-Requires: clients-cli = %{version}-%{release}
-
-%package clients-x11
-Summary: Clients for gpsd
-Group: Applications/System
-Requires: xorg-x11-xinit
-
-%package clients-cli
-Summary: Clients for gpsd
-Group: Applications/System
-
-%package clients-httpd
-Summary: Clients for gpsd
-Group: Applications/System
-Requires: httpd
-Requires: perl
-Requires: perl(Net::GPSD3)
-Requires: perl(GD::Graph::Polar)
-Requires: perl(CGI)
-Requires: perl(CGI::Carp)
+Requires: python3-%{name} = %{version}-%{release}
+Requires: python3-pyserial
+Requires: %{name}-libs%{?_isa} = %{version}-%{release}
 
 %description clients
-Installs X11 and Command Line Interface clients.
-
-%description clients-x11
 xgps is a simple test client for gpsd with an X interface. It displays
 current GPS position/time/velocity information and (for GPSes that
 support the feature) the locations of accessible satellites.
@@ -102,218 +88,379 @@ It accepts an -h option and optional argument as for gps, or a -v option
 to dump the package version and exit. Additionally, it accepts -rv
 (reverse video) and -nc (needle color) options.
 
-%description clients-cli
 cgps resembles xgps, but without the pictorial satellite display.  It
 can run on a serial terminal or terminal emulator.
 
-%description clients-httpd
-pgps is a Perl CGI client for gpsd. It displays current GPS
-position/time/velocity information and (for GPSes that support the
-feature) the locations of accessible satellites. This package installs
-the CGI scripts at http://localhost/gpsd/.
+gpsfake can feed data from files to simulate data coming from many
+different gps devices.
+
 
 %prep
 %setup -q
 
-%build
-#Note: prefix must be set to / since the current scons build only supports relative paths
-scons %{_smp_mflags}         \
-   prefix=/                  \
-   bindir=%{_bindir}         \
-   includedir=%{_includedir} \
-   libdir=%{_libdir}         \
-   sbindir=%{_sbindir}       \
-   mandir=%{_mandir}         \
-   docdir=%{_docdir}         \
-   pkgconfigdir=%{_libdir}/pkgconfig
+# fix systemd path
+sed -i 's|systemd_dir =.*|systemd_dir = '\'%{_unitdir}\''|' SConstruct
 
-scons build
+# don't try reloading systemd when installing in the build root
+sed -i 's|systemctl daemon-reload|true|' SConstruct
+
+%build
+export CCFLAGS="%{optflags}"
+export LINKFLAGS="%{__global_ldflags}"
+
+# breaks with %{_smp_mflags}
+echo %{_docdir}
+scons \
+	bindir=%{_bindir} \
+	build packaging \
+	dbus_export=yes \
+	debug=yes \
+	docdir=%{_docdir} \
+	icondir=%{_datadir}/gpsd \
+	includedir=%{_includedir} \
+	leapfetch=no \
+	libdir=%{_libdir} \
+	libQgpsmm=yes \
+	mandir=%{_mandir} \
+	pkgconfigdir=%{_libdir}/pkgconfig \
+	prefix=%{_prefix} \
+	python_libdir=%{python3_sitearch} \
+	python_shebang="/usr/bin/python3" \
+	release=%{release} \
+	sbindir=%{_sbindir} \
+	sysconfdif=%{_sysconfdir} \
+	systemd=yes \
+	target_python=python3 \
+	udevdir=$(dirname %{_udevrulesdir}) \
+	unitdir=%{_unitdir}
+
 
 %install
-rm -rf $RPM_BUILD_ROOT
-export DESTDIR=$RPM_BUILD_ROOT
-scons install
+# avoid rebuilding
+export CCFLAGS="%{optflags}"
+export LINKFLAGS="%{__global_ldflags}"
 
-#Apps need man pages!
-for MAN in gpsprof xgps xgpsspeed gpscat gpxlogger gegps
-do 
-  cp $RPM_BUILD_ROOT%{_mandir}/man1/gps.1 $RPM_BUILD_ROOT%{_mandir}/man1/$MAN.1
-done 
+DESTDIR=%{buildroot} scons install systemd_install udev-install
 
-#httpd client
-%{__install} -d -m 0755 $RPM_BUILD_ROOT%{_var}/www/html/gpsd
-%{__install} -p -m 0755 packaging/rpm/httpd/skyview.cgi $RPM_BUILD_ROOT%{_var}/www/html/gpsd
-%{__install} -p -m 0755 packaging/rpm/httpd/pgps.cgi $RPM_BUILD_ROOT%{_var}/www/html/gpsd
-%{__install} -d -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/httpd/conf.d
-%{__install} -p -m 0644 packaging/rpm/httpd/gpsd.conf $RPM_BUILD_ROOT%{_sysconfdir}/httpd/conf.d/gpsd.conf
+# use the old name for udev rules
+mv %{buildroot}%{_udevrulesdir}/{25,99}-gpsd.rules
 
-# init scripts
-%{__install} -d -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/init.d
-%{__install} -p -m 0755 packaging/rpm/gpsd.init $RPM_BUILD_ROOT%{_sysconfdir}/init.d/gpsd
-
-%{__install} -d -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
-%{__install} -p -m 0644 packaging/rpm/gpsd.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/gpsd
-
-# udev rules
-%{__install} -d -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/udev/rules.d
-%{__install} -p -m 0644 gpsd.rules $RPM_BUILD_ROOT%{_sysconfdir}/udev/rules.d/99-gpsd.rules
-
-# hotplug script
-#%{__install} -d -m 0755 $RPM_BUILD_ROOT/lib/udev
-#%{__install} -p -m 0755 gpsd.hotplug gpsd.hotplug.wrapper $RPM_BUILD_ROOT/lib/udev
-
-# remove .la files
-#rm -f $RPM_BUILD_ROOT%{_libdir}/libgps*.la
-
-# fix non-executable python script
-#%{__chmod} +x $RPM_BUILD_ROOT%{python_sitearch}/gps/gps.py
+%{__install} -d -m 0755 %{buildroot}%{_sysconfdir}/sysconfig
+%{__install} -p -m 0644 packaging/rpm/gpsd.sysconfig \
+    %{buildroot}%{_sysconfdir}/sysconfig/gpsd
 
 # Install the .desktop files
-desktop-file-install --vendor fedora \
-  --dir $RPM_BUILD_ROOT%{_datadir}/applications \
-  --add-category X-Fedora \
-  packaging/X11/xgps.desktop
-desktop-file-install --vendor fedora \
-  --dir $RPM_BUILD_ROOT%{_datadir}/applications \
-  --add-category X-Fedora \
-  packaging/X11/xgpsspeed.desktop
+desktop-file-install \
+    --dir %{buildroot}%{_datadir}/applications \
+    packaging/X11/xgps.desktop
+desktop-file-install \
+    --dir %{buildroot}%{_datadir}/applications \
+    packaging/X11/xgpsspeed.desktop
 
-# Install logo icon for .desktop files
-%{__install} -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/gpsd
-%{__install} -p -m 0644 packaging/X11/gpsd-logo.png $RPM_BUILD_ROOT%{_datadir}/gpsd/gpsd-logo.png
-
-%clean
-rm -rf $RPM_BUILD_ROOT
+# Missed in scons install
+%{__install} -p -m 0755 gpsinit %{buildroot}%{_sbindir}
 
 %post
-/sbin/ldconfig
-/sbin/chkconfig --add %{name}
+%systemd_post gpsd.service gpsd.socket
 
 %preun
-if [ $1 = 0 ]; then
-  /sbin/service %{name} stop > /dev/null 2>&1 || true
-  /sbin/chkconfig --del %{name}
-fi
+%systemd_preun gpsd.service gpsd.socket
 
 %postun
-/sbin/ldconfig
+# Don't restart the service
+%systemd_postun gpsd.service gpsd.socket
+
+%ldconfig_scriptlets libs
+
+%ldconfig_scriptlets qt
 
 %files
-%defattr(-,root,root,-)
-%doc README.adoc INSTALL.adoc COPYING
-%config(noreplace) %{_sysconfdir}/init.d/%{name}
+%doc INSTALL.adoc
+%doc /usr/share/doc/AUTHORS
+%doc /usr/share/doc/COPYING
+%doc /usr/share/doc/NEWS
+%doc /usr/share/doc/README.adoc
+%doc /usr/share/doc/build.adoc
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%config(noreplace) %{_sysconfdir}/udev/rules.d/*
 %{_sbindir}/gpsd
 %{_sbindir}/gpsdctl
-%{_bindir}/gpsprof
+%{_sbindir}/gpsinit
 %{_bindir}/gpsmon
 %{_bindir}/gpsctl
-%{_bindir}/gegps
-%{_bindir}/gps2udp
-%{_libdir}/libgps*.so.*
-#/lib/udev/gpsd*
-%{python_sitearch}/gps*
+%{_bindir}/ntpshmmon
+%{_bindir}/ppscheck
+%{_unitdir}/gpsd.service
+%{_unitdir}/gpsd.socket
+%{_unitdir}/gpsdctl@.service
+%{_udevrulesdir}/*.rules
 %{_mandir}/man8/gpsd.8*
 %{_mandir}/man8/gpsdctl.8*
-%{_mandir}/man8/gpsinit.8.*
-%{_mandir}/man1/gpsprof.1*
+%{_mandir}/man8/gpsinit.8*
+%{_mandir}/man8/ppscheck.8*
 %{_mandir}/man1/gpsmon.1*
-%{_mandir}/man1/gegps.1*
-%{_mandir}/man1/gps2udp.1*
 %{_mandir}/man1/gpsctl.1*
-%{_mandir}/man5/gpsd_json.5*
+%{_mandir}/man1/ntpshmmon.1*
+
+%files libs
+%{_libdir}/libgps.so*
+%{_libdir}/libgpsdpacket.so*
+
+%files -n python3-%{name}
+%{_bindir}/gpsprof
+%{_mandir}/man1/gpsprof.1*
+%{python3_sitearch}/gps*
+%exclude %{python3_sitearch}/gps/fake*
+%exclude %{python3_sitearch}/gps/__pycache__/fake*
 
 %files devel
-%defattr(-,root,root,-)
 %doc TODO
-%{_bindir}/gpsfake
-%{_libdir}/libgps*.so
-%{_libdir}/pkgconfig/*.pc
-%{python_sitearch}/gps/fake*
+%{_libdir}/libgps.so
+%{_libdir}/pkgconfig/libgps.pc
 %{_includedir}/gps.h
 %{_includedir}/libgpsmm.h
-%{_mandir}/man1/gpsfake.1*
 %{_mandir}/man3/libgps.3*
 %{_mandir}/man3/libgpsmm.3*
-%{_mandir}/man5/srec.5*
+%{_mandir}/man5/gpsd_json.5*
 
-%files -n libQgpsmm
-%defattr(-,root,root,-)
-%{_qt4_libdir}/libQgpsmm.so*
-%{_qt4_libdir}/libQgpsmm.prl
+%files qt
+%{_libdir}/libQgpsmm.so*
+
+%files qt-devel
+%{_libdir}/libQgpsmm.prl
+%{_libdir}/pkgconfig/Qgpsmm.pc
 %{_mandir}/man3/libQgpsmm.3*
 
 %files clients
-%defattr(-,root,root,-)
-%{_mandir}/man1/gps.1*
-
-%files clients-x11
-%defattr(-,root,root,-)
+%{_bindir}/cgps
+%{_bindir}/gegps
+%{_bindir}/gps2udp
+%{_bindir}/gpscat
+%{_bindir}/gpscsv
+%{_bindir}/gpsdecode
+%{_bindir}/gpspipe
+%{_bindir}/gpsplot
+%{_bindir}/gpsrinex
+%{_bindir}/gpssubframe
+%{_bindir}/gpxlogger
+%{_bindir}/lcdgps
 %{_bindir}/xgps
 %{_bindir}/xgpsspeed
+%{_bindir}/gpsfake
+%{_bindir}/ubxtool
+%{_bindir}/zerk
+%{_mandir}/man1/gegps.1*
+%{_mandir}/man1/gps.1*
+%{_mandir}/man1/gps2udp.1*
+%{_mandir}/man1/gpsdecode.1*
+%{_mandir}/man1/gpspipe.1*
+%{_mandir}/man1/gpsplot.1*
+%{_mandir}/man1/gpsrinex.1*
+%{_mandir}/man1/gpssubframe.1*
+%{_mandir}/man1/gpxlogger.1*
+%{_mandir}/man1/lcdgps.1*
 %{_mandir}/man1/xgps.1*
 %{_mandir}/man1/xgpsspeed.1*
+%{_mandir}/man1/cgps.1*
+%{_mandir}/man1/gpscat.1*
+%{_mandir}/man1/gpscsv.1*
+%{_mandir}/man1/gpsfake.1*
+%{_mandir}/man1/ubxtool.1*
+%{_mandir}/man1/zerk.1*
 %{_datadir}/applications/*.desktop
 %dir %{_datadir}/gpsd
 %{_datadir}/gpsd/gpsd-logo.png
+%{python3_sitearch}/gps/fake*
+%{python3_sitearch}/gps/__pycache__/fake*
 
-%files clients-cli
-%defattr(-,root,root,-)
-%{_bindir}/cgps
-%{_bindir}/gpscat
-%{_bindir}/gpsdecode
-%{_bindir}/gpspipe
-%{_bindir}/gpxlogger
-%{_bindir}/lcdgps
-%{_mandir}/man1/cgps.1*
-%{_mandir}/man1/gpscat.1*
-%{_mandir}/man1/gpsdecode.1*
-%{_mandir}/man1/gpspipe.1*
-%{_mandir}/man1/lcdgps.1*
-%{_mandir}/man1/gpxlogger.1*
-
-%files clients-httpd
-%defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/httpd/conf.d/gpsd.conf
-%dir %{_var}/www/html/gpsd/
-%attr(0755,root,root) %{_var}/www/html/gpsd/skyview.cgi
-%attr(0755,root,root) %{_var}/www/html/gpsd/pgps.cgi
 
 %changelog
-* Mon Mar 23 00:11:00 EDT 2015Eric S. Raymond <esr@thyrsus.com> 3.15-1
-- We no longer export libgpsd.
+* Thu Aug 06 2020 James Browning <jamesb.fe80@gmail.com> - 3.21-0
+- Rebuilt for upstream inclusion
 
-* Sun Jul 31 2011 Michael R. Davis <mrdvt@cpan.org> 3.0-2
-- Added gegps, gpsdctl
-- Dropped hotplug wrapper
-- Removed tabs to pass rpmlint tests
-- Updated scons install paths
-- Updated scons build paths
+* Thu Oct 03 2019 Miro Hroncok <mhroncok@redhat.com> - 3.19-4
+- Rebuilt for Python 3.8.0rc1 (#1748018)
 
-* Sat Jun 25 2011 Eric S. Raymond <esr@thyrsus.com> 3.0-2
-- Minor changes from the refactoring of the hotplug system. 
+* Mon Aug 19 2019 Miro Hroncok <mhroncok@redhat.com> - 3.19-3
+- Rebuilt for Python 3.8
 
-* Fri May 13 2011 Michael R. Davis <mrdvt@cpan.org> 3.0-1
-- Added httpd Perl client package
-- Separated x11 and cli packages
+* Thu Jul 25 2019 Fedora Release Engineering <releng@fedoraproject.org> - 3.19-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
 
-* Mon Apr 18 2011 Michael R. Davis <mrdvt@cpan.org> 3.0-1
-- Updates to support SCons software construction tool
-- Added httpd Perl client
-- macro _buildrootdir does not exist in EPEL 4 & 5
+* Tue Jul 02 2019 Miroslav Lichvar <mlichvar@redhat.com> - 3.19-1
+- update to 3.19
+- fix systemd scriptlet (#1716467)
 
-* Mon Jul 05 2010 Michael R. Davis <mrdvt@cpan.org> - 2.95-3
-- Updated to move rpm files to packaging/rpm folder
-- Renamed gpsd-qt to libQgpsmm
+* Fri Feb 01 2019 Fedora Release Engineering <releng@fedoraproject.org> - 3.18.1-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
 
-* Sun Jul 04 2010 Michael R. Davis <mrdvt@cpan.org> - 2.95-2
-- missing X11/app-defaults/xgpsspeed
+* Wed Oct 24 2018 Miroslav Lichvar <mlichvar@redhat.com> - 3.18.1-1
+- update to 3.18.1
 
-* Sat Jul 03 2010 Michael R. Davis <mrdvt@cpan.org> - 2.95-1
-- back ported spec to gpsd from Fedora 14
-- updated to 2.95
-- added gpsd-qt package
+* Tue Oct 09 2018 Miroslav Lichvar <mlichvar@redhat.com> - 3.18-3
+- fix paths in systemd unit files
+
+* Tue Oct 09 2018 Miroslav Lichvar <mlichvar@redhat.com> - 3.18-2
+- use python3 scons and fix build requirements for xgps
+
+* Thu Oct 04 2018 Miroslav Lichvar <mlichvar@redhat.com> - 3.18-1
+- update to 3.18
+- drop python2 subpackage (#1633793)
+
+* Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 3.17-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
+
+* Tue Jun 19 2018 Miro Hroncok <mhroncok@redhat.com> - 3.17-4
+- Rebuilt for Python 3.7
+
+* Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 3.17-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
+
+* Tue Jan 30 2018 Miroslav Lichvar <mlichvar@redhat.com> - 3.17-2
+- use macro for systemd scriptlet dependencies
+- use macro for ldconfig scriptlets
+
+* Fri Sep 08 2017 Troy Curtis, Jr <troycurtisjr@gmail.com> - 3.17-1
+- Update to 3.17
+- Build both python2 and python3 files and install into separate subpackages
+- Add Qt5 subpackage
+
+* Wed Aug 02 2017 Fedora Release Engineering <releng@fedoraproject.org> - 3.16-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
+
+* Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 3.16-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
+* Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 3.16-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
+
+* Tue Jul 19 2016 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.16-3
+- https://fedoraproject.org/wiki/Changes/Automatic_Provides_for_Python_RPM_Packages
+
+* Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 3.16-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
+
+* Mon Jan 11 2016 Miroslav Lichvar <mlichvar@redhat.com> - 3.16-1
+- update to 3.16
+
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.15-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
+* Fri Jun 05 2015 Miroslav Lichvar <mlichvar@redhat.com> - 3.15-1
+- update to 3.15
+
+* Tue Apr 21 2015 Miroslav Lichvar <mlichvar@redhat.com> - 3.14-1
+- update to 3.14
+
+* Fri Mar 06 2015 Rex Dieter <rdieter@fedoraproject.org> 3.13-2
+- track library sonames and api files closer, so bumps aren't a surprise
+
+* Mon Mar 02 2015 Miroslav Lichvar <mlichvar@redhat.com> - 3.13-1
+- update to 3.13
+
+* Mon Aug 25 2014 Miroslav Lichvar <mlichvar@redhat.com> - 3.11-1
+- update to 3.11
+
+* Sat Aug 16 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.10-6.20140524gitd6b65b
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
+
+* Wed Jul 02 2014 Miroslav Lichvar <mlichvar@redhat.com> - 3.10-5.20140524gitd6b65b
+- update to 20140524gitd6b65b
+- fix PPS with large offsets
+- set gpsd revision string to include package revision
+
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.10-4.20140127gitf2753b
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Thu Feb 20 2014 Miroslav Lichvar <mlichvar@redhat.com> - 3.10-3.20140127gitf2753b
+- update to 20140127gitf2753b
+- replace udev hotplug script with gpsdctl service (#909563)
+- add dependency on gpsd.socket to gpsd.service
+- reenable dbus export
+
+* Fri Dec 20 2013 Miroslav Lichvar <mlichvar@redhat.com> - 3.10-2
+- use systemd socket activation (#909563)
+- don't use -n in default gpsd service options
+- update gpsd service file
+
+* Mon Nov 25 2013 Miroslav Lichvar <mlichvar@redhat.com> - 3.10-1
+- update to 3.10
+- move udev rules from /etc to /usr/lib (#971851)
+- enable hardened build (#1000643)
+- drop also supplementary groups when dropping privileges
+- set time stamp in chrony SOCK sample correctly
+- remove RPATH from all files
+- don't package INSTALL file
+
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.9-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Thu May 02 2013 Miroslav Lichvar <mlichvar@redhat.com> - 3.9-1
+- update to 3.9
+- move files from /lib
+
+* Wed Feb 27 2013 Miroslav Lichvar <mlichvar@redhat.com> - 3.8-1
+- update to 3.8
+- use systemd macros (#850135)
+- don't set vendor for desktop files
+- make some dependencies arch-specific
+- remove obsolete macros
+
+* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.5-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
+* Thu Jul 19 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.5-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
+* Mon Apr 30 2012 Miroslav Lichvar <mlichvar@redhat.com> - 3.5-1
+- update to 3.5
+
+* Thu Jan 26 2012 Miroslav Lichvar <mlichvar@redhat.com> - 3.4-1
+- update to 3.4
+
+* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.3-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
+* Mon Oct 31 2011 Miroslav Lichvar <mlichvar@redhat.com> - 3.3-1
+- update to 3.3
+
+* Mon Aug 29 2011 Miroslav Lichvar <mlichvar@redhat.com> - 3.1-1
+- update to 3.1
+
+* Tue Aug 23 2011 Miroslav Lichvar <mlichvar@redhat.com> - 3.0-1
+- update to 3.0
+- enable PPSAPI support
+- fix PPS without -N
+- change service type to simple
+- start after chrony
+- fix permissions of systemd unit file
+- fix ldconfig scriptlets
+- package client-howto.txt
+
+* Tue Jul 26 2011 Miroslav Lichvar <mlichvar@redhat.com> - 2.95-7
+- make -libs subpackage (#663124)
+- replace SysV initscript with systemd service (#717419)
+- explicitly set USBAUTO=true in sysconfig file
+
+* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.95-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Wed Sep 29 2010 jkeating - 2.95-5
+- Rebuilt for gcc bug 634757
+
+* Tue Sep 14 2010 Miroslav Lichvar <mlichvar@redhat.com> - 2.95-4
+- don't crash in gpscat when started without arguments (#633117)
+
+* Fri Aug 27 2010 Dan Horak <dan[at]danny.cz> - 2.95-3
+- no USB on s390(x)
+
+* Wed Jul 21 2010 David Malcolm <dmalcolm@redhat.com> - 2.95-2
+- Rebuilt for https://fedoraproject.org/wiki/Features/Python_2.7/MassRebuild
+
+* Thu Jul 15 2010 Miroslav Lichvar <mlichvar@redhat.com> - 2.95-1
+- update to 2.95
+- add /usr/sbin to PATH in gpsd.hotplug.wrapper
+- pass sysconfig variables to gpsd started from udev
+- enable libusb support
 
 * Thu May 06 2010 Miroslav Lichvar <mlichvar@redhat.com> - 2.94-1
 - update to 2.94 (#556642)
@@ -325,7 +472,6 @@ fi
 * Mon Feb 15 2010 Miroslav Lichvar <mlichvar@redhat.com> - 2.39-6
 - fix linking with --no-add-needed (#564662)
 - use %%global macro instead of %%define
-
 * Wed Aug 12 2009 Marek Mahut <mmahut@fedoraproject.org> - 2.39-5
 - RHBZ#505588: gpsd has a broken initscript that fails to launch daemon
 
@@ -333,9 +479,8 @@ fi
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
 
 * Tue Mar 31 2009 Tom "spot" Callaway <tcallawa@redhat.com> - 2.39-3
-- some of the gpsd client bits went into gpsdclient.h, but that file wasn't 
-  getting installed
-- specifically, viking needs that header to build. 
+- some of the gpsd client bits went into gpsdclient.h, but that file wasn't getting installed
+  specifically, viking needs that header to build.
 
 * Wed Mar 25 2009 Douglas E. Warner <silfreed@silfreed.net> - 2.39-2
 - adding patch to try to fix parallel make errors
@@ -376,7 +521,7 @@ fi
 - Lots of little fixes to various packet parsers
 - Always keep the device open: "-n" is not optional any more
 - xgpsspeed no longer depends on Motif
-- gpsctl can now ship arbitrary payloads to a device; 
+- gpsctl can now ship arbitrary payloads to a device;
   It's possible to send binary through the control channel with the
   new "&" command
 - Experimental new driver for Novatel SuperStarII
@@ -411,7 +556,7 @@ fi
 
 * Sat Jun 30 2007 Matthew Truch <matt at truch.net> - 2.34-7
 - Make sure the logo is actually included (via the spec file).
-  I need to wake up before I try even trivial updates.  
+  I need to wake up before I try even trivial updates.
 
 * Sat Jun 30 2007 Matthew Truch <matt at truch.net> - 2.34-6
 - Learn how to use search and replace (aka fix all instances of
@@ -427,7 +572,7 @@ fi
 - Bump release for FE5 -> Fedora 7 upgrade path.
 
 * Tue Feb 27 2007 Matthew Truch <matt at truch.net> - 2.34-2
-- BR python-devel instead of python to make it build.  
+- BR python-devel instead of python to make it build.
 
 * Tue Feb 27 2007 Matthew Truch <matt at truch.net> - 2.34-1
 - Upgrade to 2.34.
@@ -462,7 +607,7 @@ fi
 
 * Sun Apr 9 2006 Matthew Truch <matt at truch.net> - 2.32-3
 - Include xmlto and python in buildrequires so things build right.
-- Don't package static library file.  
+- Don't package static library file.
 
 * Wed Apr 5 2006 Matthew Truch <matt at truch.net> - 2.32-2
 - Use ye olde %%{?dist} tag.

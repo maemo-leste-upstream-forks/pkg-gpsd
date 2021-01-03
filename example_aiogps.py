@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019 Grand Joldes (grandwork2@yahoo.com).
+# Copyright 2019 Grand Joldes (grandwork2@yahoo.com).
 #
-# This file is Copyright (c) 2019 by the GPSD project
+# This file is Copyright 2019 by the GPSD project
 #
 # SPDX-License-Identifier: BSD-2-clause
 
 # This code run compatibly under Python 3.x for x >= 6.
 
-"""
-Example of using the asyncio Python interface to GPSD. This example
-demonstrates error handling by the application code when aiogps is not
-configured to handle automatic re-connection.
+"""Example of using the asyncio Python interface to GPSD.
+
+This example demonstrates error handling by the application code when
+aiogps is not configured to handle automatic re-connection.
 """
 
 import asyncio
@@ -21,13 +21,13 @@ import gps.aiogps
 
 
 async def get_gps_updates(gpsd: gps.aiogps.aiogps) -> None:
-    """ Receives and prints messages from GPSD.
+    """Receives and prints messages from GPSD..
 
     The GPS status information is updated within aiogps every time a new
     message is received.
     This function also demonstrates what error messages can be expected when
     auto reconnection is not used in aiogps (reconnect = 0).
-    """
+"""
     while True:
         try:
             async for msg in gpsd:
@@ -46,7 +46,7 @@ async def get_gps_updates(gpsd: gps.aiogps.aiogps) -> None:
 
 
 async def print_gps_info(gpsd: gps.aiogps.aiogps) -> None:
-    """ Prints GPS status every 5s """
+    """Prints GPS status every 5s."""
     while True:
         try:
             await asyncio.sleep(5)
@@ -58,7 +58,8 @@ async def print_gps_info(gpsd: gps.aiogps.aiogps) -> None:
 
 
 async def main():
-    """ Main coroutine - executes 2 asyncio tasks in parralel """
+    """Main coroutine - executes 2 asyncio tasks in parallel."""
+
     try:
         # Example of using custom connection configuration
         async with gps.aiogps.aiogps(
@@ -113,3 +114,5 @@ def run():
             loop.run_until_complete(loop.shutdown_asyncgens())
             asyncio.events.set_event_loop(None)
             loop.close()
+
+# vim: set expandtab shiftwidth=4
