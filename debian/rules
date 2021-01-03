@@ -119,7 +119,7 @@ endif
 
 build-static-stamp: SConscript.deb_revision
 	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons shared=no $(SCONSOPTS) target_python=$(PYTHON3)
-	cp gpsd-*/libgps_static.a libgps.a
+	cp gpsd-*/libgps.a libgps.a
 	rm -rf gpsd-*
 	touch $@
 
