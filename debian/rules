@@ -96,7 +96,7 @@ debian/control: debian/control.in
 			git commit -m 'Updating debian/control from debian/control.in' debian/control ;\
 		fi ;\
 
-SConstruct.deb_revision: SConstruct
+SConscript.deb_revision: SConstruct
 	if [ ! -f $@ ]; then \
 		cp $< $@ ;\
 		sed -i '/^revision=/s/%(.*)/%("$(DEB_VERSION)",)/' $< ;\
@@ -107,7 +107,7 @@ build-indep: build
 build-arch: build
 
 build: build-stamp build-static-stamp
-build-stamp: SConstruct.deb_revision
+build-stamp: SConscript.deb_revision
 	set -e; \
 	    for py in $(PYTHONS); do \
 	    	$(SCONS_ENV) $${py} /usr/bin/scons $(SCONSOPTS) target_python=$${py} ; \
@@ -121,7 +121,7 @@ endif
 endif
 	touch $@
 
-build-static-stamp: SConstruct.deb_revision
+build-static-stamp: SConscript.deb_revision
 	cp libgps_static.a libgps.a
 	touch $@
 
@@ -134,8 +134,8 @@ clean: debian/control
 	    done
 	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) sconsclean || true
 	# revert revision changes in SConstruct
-	if [ -f SConstruct.deb_revision ]; then \
-	    mv SConstruct.deb_revision SConstruct; \
+	if [ -f SConscript.deb_revision ]; then \
+	    mv SConscript.deb_revision SConstruct; \
 	fi
 	dh_clean
 	rm -rf \
@@ -154,8 +154,7 @@ clean: debian/control
 	    libgps.a \
 	    $(LIBGPS_DEBIAN_FILE_TARGETS) \
 	    __pycache__
-
-install: install-stamp
+: install-stamp
 install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_testdir
 	dh_testroot
@@ -181,10 +180,8 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd-clients/usr/bin/*
 	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd/usr/bin/*
 	sed -i 's,^#!/usr/bin/env python,#!/usr/bin/env python3,' debian/*/usr/lib/gpsd/debug/*.py
-	touch $@
-
-
-install-indep: install
+	eouch $@
+: install
 install-arch: install
 
 binary: install-stamp
