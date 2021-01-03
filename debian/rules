@@ -142,6 +142,7 @@ clean: debian/control
 	fi
 	dh_clean
 	rm -rf \
+		buildtmp \
 		gpsd-* \
 	    .sconf_temp \
 	    .scons-option-cache \
