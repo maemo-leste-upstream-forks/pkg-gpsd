@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 
+# Codacy D203 and D211 conflict, I choose D203
+# Codacy D212 and D213 conflict, I choose D212
+
+# This file is Copyright 2010 by the GPSD project
+# SPDX-License-Identifier: BSD-2-Clause
 # This code runs compatibly under Python 2 and 3.x for x >= 2.
 # Preserve this property!
+
+"""Uninstall cleanup."""
+
 from __future__ import absolute_import, print_function, division
 
 import glob
@@ -20,7 +28,7 @@ if bytes is str:
 else:  # Otherwise we do something real
 
     def polystr(o):
-        "Convert bytes or str to str with proper encoding."
+        """Convert bytes or str to str with proper encoding."""
         if isinstance(o, str):
             return o
         if isinstance(o, bytes):
@@ -29,7 +37,7 @@ else:  # Otherwise we do something real
 
 
 def DoCommand(cmd_list):
-    "Perform external command, returning exit code and stdout."
+    """Perform external command, returning exit code and stdout."""
     pipe = subprocess.PIPE
     proc = subprocess.Popen(cmd_list, stdin=pipe, stdout=pipe)
     result, _ = proc.communicate()
@@ -37,7 +45,8 @@ def DoCommand(cmd_list):
 
 
 class PythonCommand(object):
-    "Object for one system Python command."
+    """Object for one system Python command."""
+
     PYTHON_GLOB = 'python*'
     TEXT_PREFIX = b'#!'
     PATH_ENV = 'PATH'
@@ -50,13 +59,13 @@ class PythonCommand(object):
     instances = []
 
     def __init__(self, command):
-        "Set up PythonCommand."
+        """Set up PythonCommand."""
         self.command = command
 
     @classmethod
-    def FindPythons(cls, dir):
-        "Create PythonCommand objects by scanning directory."
-        pattern = dir + os.path.sep + cls.PYTHON_GLOB
+    def FindPythons(cls, pdir):
+        """Create PythonCommand objects by scanning directory."""
+        pattern = pdir + os.path.sep + cls.PYTHON_GLOB
         pythons = glob.glob(pattern)
         for python in pythons:
             with open(python, 'rb') as f:
@@ -67,14 +76,14 @@ class PythonCommand(object):
 
     @classmethod
     def FindAllPythons(cls):
-        "Create PythonCommand objects by scanning command PATH."
+        """Create PythonCommand objects by scanning command PATH."""
         paths = os.getenv(cls.PATH_ENV)
-        for dir in paths.split(cls.PATH_ENV_SEP):
-            cls.FindPythons(dir)
+        for pdir in paths.split(cls.PATH_ENV_SEP):
+            cls.FindPythons(pdir)
         return cls.instances
 
     def GetExecutable(self):
-        "Obtain executable path from this Python."
+        """Obtain executable path from this Python."""
         command = [self.command, '-c', ';'.join(self.PYTHON_EXE_COMMANDS)]
         status, result = DoCommand(command)
         if status:
@@ -83,7 +92,8 @@ class PythonCommand(object):
 
 
 class PythonExecutable(object):
-    "Object for one Python executable, deduped."
+    """Object for one Python executable, deduped."""
+
     PYTHON_LIBDIR_COMMANDS = [
         'from distutils import sysconfig',
         'print(sysconfig.get_python_lib())',
@@ -92,7 +102,7 @@ class PythonExecutable(object):
     _by_path = {}
 
     def __new__(cls, command):
-        "Create or update one PythonExecutable from PythonCommand."
+        """Create or update one PythonExecutable from PythonCommand."""
         path = command.GetExecutable()
         existing = cls._by_path.get(path)
         if existing:
@@ -106,18 +116,18 @@ class PythonExecutable(object):
         return self
 
     def __lt__(self, other):
-        "Allow sorting."
+        """Allow sorting."""
         return self.path < other.path
 
     @classmethod
     def GetAllExecutables(cls, command_list):
-        "Build list of executables from list of commands."
+        """Build list of executables from list of commands."""
         for command in command_list:
             cls(command)
         return sorted(cls._by_path.values())
 
     def GetLibdir(self):
-        "Obtain libdir path from this Python."
+        """Obtain libdir path from this Python."""
         if self.libdir:
             return self.libdir
         command = [self.path, '-c', ';'.join(self.PYTHON_LIBDIR_COMMANDS)]
@@ -127,26 +137,26 @@ class PythonExecutable(object):
         return result.strip()
 
     def CleanLib(self, name):
-        "Clean up given package from this Python."
-        dir = os.path.join(self.GetLibdir(), name)
-        if not name or not os.path.exists(dir):
+        """Clean up given package from this Python."""
+        libdir = os.path.join(self.GetLibdir(), name)
+        if not name or not os.path.exists(libdir):
             return
         try:
-            os.rmdir(dir)
+            os.rmdir(libdir)
         except OSError:
-            print('Unable to remove %s' % dir)
+            print('Unable to remove %s' % libdir)
         else:
-            print('Removed empty %s' % dir)
+            print('Removed empty %s' % libdir)
 
     @classmethod
     def CleanAllLibs(cls, name):
-        "Clean up given package from all executables."
+        """Clean up given package from all executables."""
         for exe in cls._by_path.values():
             exe.CleanLib(name)
 
 
-def main(argv):
-    "Main function."
+def main():
+    """Main function."""
     commands = PythonCommand.FindAllPythons()
     PythonExecutable.GetAllExecutables(commands)
     PythonExecutable.CleanAllLibs(GPS_LIB_NAME)
@@ -154,4 +164,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    sys.exit(main())

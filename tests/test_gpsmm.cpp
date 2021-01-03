@@ -5,16 +5,17 @@
  * file "COPYING" in the top-level directory of the distribution for details.
  *
  */
-
 /* This simple program shows the basic functionality of the C++ wrapper class */
-#include <iostream>
+
+#include "../include/gpsd_config.h"  /* must be before all includes */
 
 #include <getopt.h>
+#include <iostream>
 
-#include "../libgpsmm.h"
-#include "../timespec.h"
-#include "../timespec_str.c"
-#include "../gpsdclient.c"
+#include "../include/libgpsmm.h"
+#include "../include/timespec.h"
+#include "../libgps/timespec_str.c"
+#include "../libgps/gpsdclient.c"
 /*     YES   --->  ^^^^
  Using .c rather than the .h to embed gpsd_source_spec() source here
   so that it is compiled in C++ rather than C of the gps library
@@ -65,10 +66,10 @@ static void libgps_dump_state(struct gps_data_t *collect)
     if (collect->set & CLIMB_SET)
         (void)fprintf(stdout, "CLIMB: climb: %lf\n", collect->fix.climb);
     if (collect->set & STATUS_SET)
-        (void)fprintf(stdout, "STATUS: status: %d\n", collect->status);
+        (void)fprintf(stdout, "STATUS: status: %d\n", collect->fix.status);
     if (collect->set & MODE_SET)
         (void)fprintf(stdout, "MODE: mode: %d\n", collect->fix.mode);
-    if (collect->set & DOP_SET)
+    if (collect->set & SATELLITE_SET)
         (void)fprintf(stdout,
                       "DOP: satellites %d, pdop=%lf, hdop=%lf, vdop=%lf\n",
                       collect->satellites_used, collect->dop.pdop,

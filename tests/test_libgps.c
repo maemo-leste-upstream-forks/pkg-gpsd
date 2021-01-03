@@ -3,21 +3,22 @@
  * Not really useful for anything but debugging.
  * SPDX-License-Identifier: BSD-2-clause
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <errno.h>
-#include <stdarg.h>
+#include "../include/gpsd_config.h"  /* must be before all includes */
+
 #include <ctype.h>
-
-#include "../gps.h"
-#include "../libgps.h"
-#include "../gpsdclient.h"
-
-#include <unistd.h>
+#include <errno.h>
 #include <getopt.h>
 #include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "../include/gps.h"
+#include "../include/libgps.h"
+#include "../include/gpsdclient.h"
 
 static void onsig(int sig)
 {
@@ -39,9 +40,7 @@ int main(int argc, char *argv[])
     bool batchmode = false;
     bool forwardmode = false;
     char *fmsg = NULL;
-#ifdef CLIENTDEBUG_ENABLE
     int debug = 0;
-#endif
 
     (void)signal(SIGSEGV, onsig);
 #ifdef SIGBUS
@@ -59,9 +58,9 @@ int main(int argc, char *argv[])
 	    break;
 	case 's':
 	    (void)
-		printf("Sizes: fix=%zd gpsdata=%zd rtcm2=%zd rtcm3=%zd "
-                       "ais=%zd compass=%zd raw=%zd devices=%zd policy=%zd "
-                       "version=%zd, noise=%zd\n",
+		printf("Sizes: fix=%zu gpsdata=%zu rtcm2=%zu rtcm3=%zu "
+                       "ais=%zu compass=%zu raw=%zu devices=%zu policy=%zu "
+                       "version=%zu, noise=%zu\n",
 		 sizeof(struct gps_fix_t),
 		 sizeof(struct gps_data_t), sizeof(struct rtcm2_t),
 		 sizeof(struct rtcm3_t), sizeof(struct ais_t),
@@ -69,11 +68,9 @@ int main(int argc, char *argv[])
 		 sizeof(collect.devices), sizeof(struct gps_policy_t),
 		 sizeof(struct version_t), sizeof(struct gst_t));
 	    exit(EXIT_SUCCESS);
-#ifdef CLIENTDEBUG_ENABLE
 	case 'D':
 	    debug = atoi(optarg);
 	    break;
-#endif
 	case '?':
 	case 'h':
 	default:
@@ -88,17 +85,13 @@ int main(int argc, char *argv[])
     } else
 	gpsd_source_spec(NULL, &source);
 
-#ifdef CLIENTDEBUG_ENABLE
     gps_enable_debug(debug, stdout);
-#endif
     if (batchmode) {
 #ifdef SOCKET_EXPORT_ENABLE
 	while (fgets(buf, sizeof(buf), stdin) != NULL) {
 	    if (buf[0] == '{' || isalpha( (int) buf[0])) {
 		gps_unpack(buf, &gpsdata);
-#ifdef LIBGPS_DEBUG
 		libgps_dump_state(&gpsdata);
-#endif
 	    }
 	}
 #endif
@@ -119,9 +112,7 @@ int main(int argc, char *argv[])
 			errno, gps_errstr(errno));
 	}
 #ifdef SOCKET_EXPORT_ENABLE
-#ifdef LIBGPS_DEBUG
 	libgps_dump_state(&collect);
-#endif
 #endif
 	(void)gps_close(&collect);
     } else {
@@ -141,9 +132,7 @@ int main(int argc, char *argv[])
 	    (void)gps_send(&collect, buf);
 	    (void)gps_read(&collect, NULL, 0);
 #ifdef SOCKET_EXPORT_ENABLE
-#ifdef LIBGPS_DEBUG
 	    libgps_dump_state(&collect);
-#endif
 #endif
 	}
 	(void)gps_close(&collect);

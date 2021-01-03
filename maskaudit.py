@@ -1,19 +1,25 @@
 #!/usr/bin/env python
 #
-# This file is Copyright (c) 2010 by the GPSD project
+# This file is Copyright 2010 by the GPSD project
 # SPDX-License-Identifier: BSD-2-clause
 #
-# With -p, dump a Python status mask list translated from the C one.
-#
-# With -c, generate C code to dump masks for debugging purposes.
-#
-# With -t, tabulate usage of defines to find unused ones.  Requires -c or -d.
-
 # This code runs compatibly under Python 2 and 3.x for x >= 2.
 # Preserve this property!
+# Codacy D203 and D211 conflict, I choose D203
+# Codacy D212 and D213 conflict, I choose D212
+
+"""Program to generate code for gpsd masks.
+
+With -p, dump a Python status mask list translated from the C one.
+
+With -c, generate C code to dump masks for debugging purposes.
+
+With -t, tabulate usage of defines to find unused ones.  Requires -c or -d.
+"""
+
 from __future__ import absolute_import, print_function, division
 
-import getopt
+import argparse
 import glob
 import sys
 
@@ -24,7 +30,11 @@ except ImportError:
 
 
 class SourceExtractor(object):
+
+    """SourceExtractor Class."""
+
     def __init__(self, sourcefile, clientside):
+        """Init for SourceExtractor."""
         self.sourcefile = sourcefile
         self.clientside = clientside
         self.daemonfiles = [
@@ -32,9 +42,9 @@ class SourceExtractor(object):
             "libgpsd_core.c",
             "pseudonmea.c",
             "drivers.c",
-            "gpsmon.c",
+            "gpsmon/gpsmon.c",
             "subframe.c"
-        ] + glob.glob("driver_*.c") + glob.glob("monitor_*.c")
+        ] + glob.glob("driver_*.c") + glob.glob("gpsmon/monitor_*.c")
         self.masks = []
         self.primitive_masks = []
         for line in open(self.sourcefile):
@@ -46,65 +56,121 @@ class SourceExtractor(object):
                      fields[2].startswith("INTERNAL_SET"))):
                     self.primitive_masks.append((fields[1], fields[2]))
 
-    def in_library(self, flag):
+    def in_library(self, flg):
+        """Grep in library."""
         (status, _output) = getstatusoutput(
-            "grep '%s' libgps_core.c libgps_json.c gpsctl.c" % flag)
+            "grep '%s' libgps/libgps_core.c libgps/libgps_json.c gpsctl.c" %
+            flg)
         return status == 0
 
-    def in_daemon(self, flag):
+    def in_daemon(self, flg):
+        """Grep in daemon."""
         (status, _output) = getstatusoutput(
-            "grep '%s' %s" % (flag, " ".join(self.daemonfiles)))
+            "grep '%s' %s" % (flg, " ".join(self.daemonfiles)))
         return status == 0
 
-    def relevant(self, flag):
+    def relevant(self, flg):
+        """Relevant??"""
         if self.clientside:
-            return self.in_library(flag)
+            return self.in_library(flg)
 
-        return self.in_daemon(flag)
+        return self.in_daemon(flg)
 
 
 if __name__ == '__main__':
+    description = 'Create dynamic plots from gpsd with matplotlib.'
+    usage = '%(prog)s [OPTIONS] [host[:port[:device]]]'
+    epilog = ('BSD terms apply: see the file COPYING in the distribution root'
+              ' for details.')
+
+    parser = argparse.ArgumentParser(
+        description=description,
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        usage=usage)
+    parser.add_argument(
+        '-?',
+        action="help",
+        help='show this help message and exit'
+    )
+    parser.add_argument(
+        '-d',
+        '--daemongen',
+        action="store_true",
+        default=False,
+        dest='daemongen',
+        help=('Generate C code to dump masks for debugging'
+              ' [Default %(default)s]'),
+    )
+    parser.add_argument(
+        '-c',
+        '--clientgen',
+        action="store_true",
+        default=False,
+        dest='clientgen',
+        help=('Generate C code to dump masks for debugging'
+              ' [Default %(default)s]'),
+    )
+    parser.add_argument(
+        '-p',
+        '--pythonize',
+        action="store_true",
+        default=False,
+        dest='pythonize',
+        help=('Dump a Python status mask list. [Default %(default)s]'),
+    )
+    parser.add_argument(
+        '-t',
+        '--tabulate',
+        action="store_true",
+        default=False,
+        dest='tabulate',
+        help=('Tabulate usage of defines to find unused ones. '
+              ' Requires -c or -d. [Default %(default)s]'),
+    )
+    # parser.add_argument(
+    #     '-V', '--version',
+    #     action='version',
+    #     help='Output version to stderr, then exit',
+    #     version="%(prog)s: Version " + gps_version + "\n",
+    # )
+    parser.add_argument(
+        'arguments',
+        help='Source Directory',
+        nargs='?',
+    )
+    options = parser.parse_args()
+
+    if not options.arguments:
+        srcdir = '.'
+    else:
+        srcdir = options.arguments
+
+    clientside = SourceExtractor(srcdir + "/include/gps.h",
+                                 clientside=True)
+    daemonside = SourceExtractor(srcdir + "/include/gpsd.h",
+                                 clientside=False)
+    if options.clientgen:
+        source = clientside
+        banner = "Library"
+    elif options.daemongen:
+        source = daemonside
+        banner = "Daemon"
+    else:
+        sys.stderr.write("maskaudit: need -c or -d option\n")
+        sys.exit(1)
+
     try:
-        (options, arguments) = getopt.getopt(sys.argv[1:], "cdpt")
-        pythonize = tabulate = False
-        clientgen = daemongen = False
-        for (switch, val) in options:
-            if switch == '-p':
-                pythonize = True
-            if switch == '-c':
-                clientgen = True
-            if switch == '-d':
-                daemongen = True
-            if switch == '-t':
-                tabulate = True
-
-        if not arguments:
-            srcdir = '.'
-        else:
-            srcdir = arguments[0]
-
-        clientside = SourceExtractor(srcdir + "/gps.h", clientside=True)
-        daemonside = SourceExtractor(srcdir + "/gpsd.h", clientside=False)
-        if clientgen:
-            source = clientside
-            banner = "Library"
-        elif daemongen:
-            source = daemonside
-            banner = "Daemon"
-        else:
-            sys.stderr.write("maskaudit: need -c or -d option\n")
-            sys.exit(1)
-
-        if tabulate:
-            print("%-14s	%8s" % (" ", banner))
+        if options.tabulate:
+            print("%-14s        %8s" % (" ", banner))
             for (flag, value) in source.masks:
-                print("%-14s	%8s" % (flag, source.relevant(flag)))
-        if pythonize:
+                print("%-14s    %8s" % (flag, source.relevant(flag)))
+        if options.pythonize:
             for (d, v) in source.masks:
                 if v[-1] == 'u':
                     v = v[:-1]
                 print("%-15s\t= %s" % (d, v))
-        if not pythonize and not tabulate:
+        if not options.pythonize and not options.tabulate:
             maxout = 0
             for (d, v) in source.primitive_masks:
                 if source.relevant(d):
@@ -114,19 +180,20 @@ if __name__ == '__main__':
                     if stem.endswith("_IS"):
                         stem = stem[:-3]
                     maxout += len(stem) + 1
-            print("""/* This code is generated.  Do not hand-hack it! */
+            print("""
+// This code is generated by maskaudit.py.  Do not hand-hack it!
 
 /*
  * Also, beware that it is something of a CPU hog when called on every packet.
  * Try to write guards so it is only called at higher log levels.
  */
 
-#include \"gpsd_config.h\"  /* must be before all includes */
+#include \"../include/gpsd_config.h\"  /* must be before all includes */
 
 #include <stdio.h>
 #include <string.h>
 
-#include \"gpsd.h\"
+#include \"../include/gpsd.h\"
 
 const char *gps_maskdump(gps_mask_t set)
 {
@@ -166,3 +233,4 @@ const char *gps_maskdump(gps_mask_t set)
 # Local Variables:
 # mode:python
 # End:
+# vim: set expandtab shiftwidth=4

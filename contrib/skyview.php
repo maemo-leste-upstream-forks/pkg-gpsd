@@ -1,13 +1,13 @@
 <?php
 
-# Copyright (c) 2006,2007 Chris Kuethe <chris.kuethe@gmail.com>
+# Copyright 2006,2007 Chris Kuethe <chris.kuethe@gmail.com>
 # Updated 2015 by Sanjeev Gupta <ghane0@gmail.com>
 #
-# This file is Copyright (c) 2010-2019 by the GPSD project
+# This file is Copyright 2010 by the GPSD project
 # SPDX-License-Identifier: BSD-2-clause
 
 // This program originally read a logfile of filtered gpsd messages,
-// type Y.  The gpsd protocal changed in 2.90, since when this became
+// type Y.  The gpsd protocol changed in 2.90, since when this became
 // non-functional.
 //
 // The program has been updated (the first while loop) to read messages
@@ -206,7 +206,7 @@ function azel2xy($az, $el, $sz){
 }
 
 function cellplot($im, $sz, $C, $cellsize, $e){
-	list($sv, $el, $az, $snr, $u) = $e;
+	list($sv, $el, $az, $snr, $_) = $e;
 
 	if ((0 == $sv) || (0 == $az + $el + $snr) ||
 	    ($az < 0) || ($el < 0))
@@ -251,7 +251,7 @@ function cellplot($im, $sz, $C, $cellsize, $e){
 }
 
 function splot($im, $sz, $C, $r, $filled, $e){
-	list($sv, $az, $el, $snr, $u) = $e;
+	list($sv, $az, $el, $snr, $_) = $e;
 
 	if ((0 == $sv) || (0 == $az + $el + $snr))
 		return;
