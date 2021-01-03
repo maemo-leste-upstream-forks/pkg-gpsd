@@ -128,8 +128,6 @@ build-static-stamp: SConscript.deb_revision
 clean: debian/control
 	dh_testdir
 	dh_testroot
-	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) target_python=$(PYTHON3) --clean
-	$(SCONS_ENV) $(PYTHON3) /usr/bin/scons $(SCONSOPTS) sconsclean || true
 	# revert revision changes in SConscript
 	if [ -f SConscript.deb_revision ]; then \
 	    mv SConscript.deb_revision SConscript; \
