@@ -56,21 +56,6 @@ Description: Global Positioning System - daemon
  This also includes common tools ubxtool and gpsctl for device configuration
  of the local hardware as well as a ntpshmmon to check generated refclock data.
 
-Package: gpsd-dbg
-Architecture: any
-Section: debug
-Suggests: gpsd-dbgsym
-Depends: ${shlibs:Depends}, ${misc:Depends}, python3, ${python3:Depends},
- libgpsLIBGPSSONAME (= ${binary:Version}) | gpsd (= ${binary:Version}) | gpsd-clients (= ${binary:Version}) | python3-gps (= ${binary:Version})
-Description: Global Positioning System - debugging symbols
- The gpsd service daemon can monitor one or more GPS devices connected to
- a host computer, making all data on the location and movements of the
- sensors available to be queried on TCP port 2947.
- .
- This package contains the python debug modules and some test tools
- to the debug the behaviour of gpsd. Debug symbols are being shipped
- in the dbgsym package.
-
 Package: gpsd-tools
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
