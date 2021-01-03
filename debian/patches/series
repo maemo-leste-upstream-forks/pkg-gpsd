@@ -3,3 +3,4 @@
 full-systemd-support
 gpsd_hotplug_rules_disable_generic_serial_converters
 ignore-test-xgps_deps_check
+disable-xsltproc-check
