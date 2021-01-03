@@ -122,7 +122,7 @@ endif
 	touch $@
 
 build-static-stamp: SConscript.deb_revision
-	cp libgps_static.a libgps.a
+	cp gpsd-*/libgps_static.a libgps.a
 	touch $@
 
 clean: debian/control
