@@ -1,3 +1,15 @@
+gpsd (3.21.1~dev-1~1.gbp00b752) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @00b752628cb7571e03a7f8ed23a1c7157c0d1ada **
+
+  * [7936993f] Fixing git URLs
+  * [3296cd58] removing extra linebreak
+  * [8faaf157] Updating debian/control from debian/control.in
+  * [c5247232] Updating gbp.conf for experimental
+  * [4e2f5ac1] New upstream version 3.21.1~dev
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 03 Jan 2021 20:03:32 +0100
+
 gpsd (3.20-12) unstable; urgency=medium
 
   [ Bernd Zeimetz ]
