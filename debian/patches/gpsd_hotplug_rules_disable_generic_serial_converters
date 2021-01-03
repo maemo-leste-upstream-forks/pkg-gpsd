@@ -2,26 +2,25 @@ Disable hotplugging of ftdi/pl2302 usb<>serial adapters.
 These adapters are too common to hit them with the gpsd hotplug script.
 Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=550964
 Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=696020
---- a/gpsd.rules.in
-+++ b/gpsd.rules.in
-@@ -22,13 +22,18 @@
+Index: pkg-gpsd/gpsd.rules.in
+===================================================================
+--- pkg-gpsd.orig/gpsd.rules.in
++++ pkg-gpsd/gpsd.rules.in
+@@ -23,13 +23,15 @@
  SUBSYSTEM!="tty", GOTO="gpsd_rules_end"
  
  # Prolific Technology, Inc. PL2303 Serial Port [linux module: pl2303]
--ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", SYMLINK+="gps%n", @udevcommand@
+-ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", SYMLINK+="gps%n", @UDEVCOMMAND@
 +# rule disabled in Debian as it matches too many other devices
-+#ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", SYMLINK+="gps%n", @udevcommand@
-+
++# ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", SYMLINK+="gps%n", @UDEVCOMMAND@
  # ATEN International Co., Ltd UC-232A Serial Port [linux module: pl2303]
- ATTRS{idVendor}=="0557", ATTRS{idProduct}=="2008", SYMLINK+="gps%n", @udevcommand@
+ ATTRS{idVendor}=="0557", ATTRS{idProduct}=="2008", SYMLINK+="gps%n", @UDEVCOMMAND@
  # PS-360 OEM (GPS sold with MS Street and Trips 2005) [linux module: pl2303]
- ATTRS{idVendor}=="067b", ATTRS{idProduct}=="aaa0", SYMLINK+="gps%n", @udevcommand@
-+
+ ATTRS{idVendor}=="067b", ATTRS{idProduct}=="aaa0", SYMLINK+="gps%n", @UDEVCOMMAND@
  # FTDI 8U232AM / FT232 [linux module: ftdi_sio]
--ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="gps%n", @udevcommand@
+-ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="gps%n", @UDEVCOMMAND@
 +# rule disabled in Debian as it matches too many other devices
-+#ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="gps%n", @udevcommand@
-+
++# ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="gps%n", @UDEVCOMMAND@
  # Cypress M8/CY7C64013 (Delorme uses these) [linux module: cypress_m8]
- ATTRS{idVendor}=="1163", ATTRS{idProduct}=="0100", SYMLINK+="gps%n", @udevcommand@
+ ATTRS{idVendor}=="1163", ATTRS{idProduct}=="0100", SYMLINK+="gps%n", @UDEVCOMMAND@
  # Cypress M8/CY7C64013 (DeLorme LT-40)

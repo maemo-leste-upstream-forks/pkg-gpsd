@@ -1,50 +1,54 @@
---- a/SConstruct
-+++ b/SConstruct
-@@ -1266,38 +1266,6 @@ else:
-         else:
-             config.env['aiogps'] = True
+Index: pkg-gpsd/SConscript
+===================================================================
+--- pkg-gpsd.orig/SConscript
++++ pkg-gpsd/SConscript
+@@ -1607,40 +1607,6 @@ if not cleaning and not helping and conf
  
--        # check for pyserial
--        try:
--            imp.find_module('serial')
--            announce("Python module serial (pyserial) found.")
--        except ImportError:
--            # no pycairo, don't build xgps, xgpsspeed
--            announce("WARNING: Python module serial (pyserial) not found.")
--            config.env['xgps'] = False
--
--        if config.env['xgps']:
--            # check for pycairo
--            try:
--                imp.find_module('cairo')
--                announce("Python module cairo (pycairo) found.")
--            except ImportError:
--                # no pycairo, don't build xgps, xgpsspeed
--                announce("WARNING: Python module cairo (pycairo) not found.")
--                config.env['xgps'] = False
--
--            # check for pygobject
--            try:
--                imp.find_module('gi')
--                announce("Python module gi (pygobject) found.")
--            except ImportError:
--                # no pygobject, don't build xgps, xgpsspeed
--                announce("WARNING: Python module gi (pygobject) not found.")
--                config.env['xgps'] = False
--
--            if not config.CheckPKG('gtk+-3.0'):
--                config.env['xgps'] = False
--
--
- if config.env['python']:  # May have been turned off by error
-     config.env['PYTHON'] = polystr(target_python_path)
-     # For regress-driver
-@@ -2468,7 +2436,7 @@ else:
-     test_xgps_deps = UtilityWithHerald(
-         'Testing xgps/xgpsspeed dependencies (since xgps=yes)...',
-         'test-xgps-deps', [], [
--            '$PYTHON $SRCDIR/test_xgps_deps.py'])
-+            '/bin/true'])
+         config.env['xgps_deps'] = True
  
- # Run a valgrind audit on the daemon  - not in normal tests
- valgrind_audit = Utility('valgrind-audit', [
+-        # check for pycairo
+-        if not config.GetPythonValue('module cairo (pycairo)',
+-                                     'import cairo', '"found"'):
+-            # no pycairo, used by xgps, xgpsspeed
+-            config.env['xgps_deps'] = False
+-            announce("WARNING: Python module cairo (pycairo) not found.")
+-
+-        # check for pygobject
+-        if not config.GetPythonValue('module gi (pygobject)',
+-                                     'import gi', '"found"'):
+-            # no pygobject, used by xgps, xgpsspeed
+-            config.env['xgps_deps'] = False
+-            announce("WARNING: Python module gi (pygobject) not found.")
+-
+-        # gtk+ needed by pygobject
+-        if not config.CheckPKG('gtk+-3.0'):
+-            config.env['xgps_deps'] = False
+-            announce("WARNING: gtk+-3.0 not found.")
+-
+-        if not config.env['xgps_deps']:
+-            announce("WARNING: xgps and xgpsspeed are missing runtime "
+-                     "dependencies", end=True)
+-
+-        if not env['xgps']:
+-            # xgps* turned off by option
+-            config.env['xgps_deps'] = False
+-
+-        # check for matplotlib
+-        if not config.GetPythonValue('module matplotlib',
+-                                     'import matplotlib', '"found"'):
+-            # no matplotlib, used by gpsplot
+-            announce("WARNING: gpsplot is missing required "
+-                     "runtime module matplotlib", end=True)
+-
+         config.env['PYTHON'] = target_python_path
+         # For regress-driver
+         config.env['ENV']['PYTHON'] = target_python_path
+@@ -2089,7 +2055,7 @@ python_misc = [
+     "maskaudit.py",
+     "tests/test_clienthelpers.py",
+     "tests/test_misc.py",
+-    "tests/test_xgps_deps.py",
++    "/bin/true",
+     "www/gpscap.py",
+     "valgrind-audit.py"
+ ]

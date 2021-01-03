@@ -1,27 +1,25 @@
-Debianize gpsd.service
-Index: pkg-gpsd/systemd/gpsd.service
+Debianize gpsd.service.in
+Index: pkg-gpsd/systemd/gpsd.service.in
 ===================================================================
---- pkg-gpsd.orig/systemd/gpsd.service
-+++ pkg-gpsd/systemd/gpsd.service
-@@ -7,8 +7,7 @@ After=chronyd.service
+--- pkg-gpsd.orig/systemd/gpsd.service.in
++++ pkg-gpsd/systemd/gpsd.service.in
+@@ -7,7 +7,6 @@ After=chronyd.service
  [Service]
  Type=forking
  EnvironmentFile=-/etc/default/gpsd
 -EnvironmentFile=-/etc/sysconfig/gpsd
--ExecStart=/usr/local/sbin/gpsd $GPSD_OPTIONS $OPTIONS $DEVICES
-+ExecStart=/usr/sbin/gpsd $GPSD_OPTIONS $DEVICES
+ ExecStart=@SBINDIR@/gpsd $GPSD_OPTIONS $OPTIONS $DEVICES
  
  [Install]
- WantedBy=multi-user.target
-Index: pkg-gpsd/systemd/gpsdctl@.service
+Index: pkg-gpsd/systemd/gpsdctl@.service.in
 ===================================================================
---- pkg-gpsd.orig/systemd/gpsdctl@.service
-+++ pkg-gpsd/systemd/gpsdctl@.service
-@@ -10,5 +10,5 @@ Environment="GPSD_SOCKET=/var/run/gpsd.s
+--- pkg-gpsd.orig/systemd/gpsdctl@.service.in
++++ pkg-gpsd/systemd/gpsdctl@.service.in
+@@ -8,7 +8,6 @@ After=dev-%i.device
+ Type=oneshot
+ Environment="GPSD_SOCKET=@RUNDIR@/gpsd.sock"
  EnvironmentFile=-/etc/default/gpsd
- EnvironmentFile=-/etc/sysconfig/gpsd
+-EnvironmentFile=-/etc/sysconfig/gpsd
  RemainAfterExit=yes
--ExecStart=/bin/sh -c "[ \"$USBAUTO\" = true ] && /usr/local/sbin/gpsdctl add /dev/%I || :"
--ExecStop=/bin/sh -c "[ \"$USBAUTO\" = true ] && /usr/local/sbin/gpsdctl remove /dev/%I || :"
-+ExecStart=/bin/sh -c "[ \"$USBAUTO\" = true ] && /usr/sbin/gpsdctl add /dev/%I || :"
-+ExecStop=/bin/sh -c "[ \"$USBAUTO\" = true ] && /usr/sbin/gpsdctl remove /dev/%I || :"
+ ExecStart=/bin/sh -c "[ \"$USBAUTO\" = true ] && @SBINDIR@/gpsdctl add /dev/%I || :"
+ ExecStop=/bin/sh -c "[ \"$USBAUTO\" = true ] && @SBINDIR@/gpsdctl remove /dev/%I || :"
