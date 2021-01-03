@@ -141,6 +141,7 @@ clean: debian/control
 	    mv SConstruct.deb_revision SConstruct; \
 	fi
 	rm -rf \
+		gpsd-* \
 	    .sconf_temp \
 	    .scons-option-cache \
 	    .sconsign.dblite \
