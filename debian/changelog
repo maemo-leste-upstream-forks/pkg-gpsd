@@ -1,6 +1,5 @@
-gpsd (3.21.99~rc1-1~1.gbpaa48a0) UNRELEASED; urgency=medium
+gpsd (3.21.99~rc1-1) experimental; urgency=medium
 
-  ** SNAPSHOT build @aa48a01b1e49cbced2c7999b7a538781d47ad65f **
 
   * [7936993f] Fixing git URLs
   * [3296cd58] removing extra linebreak
@@ -57,8 +56,19 @@ gpsd (3.21.99~rc1-1~1.gbpaa48a0) UNRELEASED; urgency=medium
   * [88af2338] fix symbols
   * [5d4c7e4f] mark one more symbol as missing
   * [1814e3c1] New upstream version 3.21.99~rc1
+  * [58d93d7d] Remove patch that is not needed anymore
+  * [92242a31] snapshot changelog
+  * [155be863] Updating debian/control from debian/control.in
+  * [f2668dc0] try to build reverse-dep automatically
+  * [44310e1a] gitlab ci fixes
+  * [74f7bf91] actually enable job
+  * [84eed5c3] assume yes for apt
+  * [d557db05] remove old X-Python settings
+  * [19770775] fix python3 shebangs
+  * [dde6ae6a] add some more -y for apt
+  * [f142e929] remove python2 shebang replacements
 
- -- Bernd Zeimetz <bzed@debian.org>  Mon, 04 Jan 2021 11:17:35 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 04 Jan 2021 17:05:16 +0100
 
 gpsd (3.20-12) unstable; urgency=medium
 
