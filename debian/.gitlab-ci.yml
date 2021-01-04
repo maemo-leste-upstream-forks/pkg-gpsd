@@ -14,6 +14,26 @@ variables:
  SALSA_CI_DISABLE_BUILD_PACKAGE_ANY: 0
  SALSA_CI_ENABLE_REVERSE_DEPENDENCY_BUILD: 1
 
+.build-before-script: &build-before-script |
+   # Reported in https://salsa.debian.org/salsa-ci-team/pipeline/issues/104,
+   # GitLab can only expand variables once. So at the beginning CCACHE_WORK_DIR
+   # was assigned to `${WORKING_DIR}/.ccache`, and it will be expanded as
+   # `$CI_PROJECT_DIR/debian/output/.ccache`, so it creates a folder named
+   # "\$CI_PROJECT_DIR", which is then saved as build cache. To allow smooth
+   # transition, that wrongly named folder has to be removed:
+   rm -rf '$CI_PROJECT_DIR'
+
+   # salsa-ci-team/pipeline#107
+   rm -rf ${CI_PROJECT_DIR}/debian/output/.ccache
+
+   mkdir -p ${WORKING_DIR} ${CCACHE_WORK_DIR}
+
+   # https://salsa.debian.org/salsa-ci-team/pipeline/-/merge_requests/230
+   rm -rf ${CCACHE_TMP_DIR}
+
+   mv ${CCACHE_WORK_DIR} ${CCACHE_TMP_DIR}
+   add_extra_repository.sh -v -e "${SALSA_CI_EXTRA_REPOSITORY}" -k "${SALSA_CI_EXTRA_REPOSITORY_KEY}"
+
 
 .rdep-build-script: &rdep-build-script |
    export CCACHE_DIR=${CCACHE_TMP_DIR}
@@ -55,9 +75,9 @@ variables:
     key: "${REVERSE_DEP}-build"
     paths:
       - .ccache
-    except:
-  variables:
-    - $SALSA_CI_ENABLE_REVERSE_DEPENDENCY_BUILD =~ /^(1|yes|true)$/
+  except:
+    variables:
+      - $SALSA_CI_ENABLE_REVERSE_DEPENDENCY_BUILD =~ /^(1|yes|true)$/
   variables:
     CCACHE_TMP_DIR: ${CI_PROJECT_DIR}/../.ccache
     CCACHE_WORK_DIR: ${CI_PROJECT_DIR}/.ccache
