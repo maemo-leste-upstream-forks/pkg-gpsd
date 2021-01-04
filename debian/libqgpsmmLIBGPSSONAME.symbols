@@ -157,6 +157,6 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
 #MISSING: 3.20# unix_to_iso8601@Base 3.3
  datum_code_string@Base 3.19
 #MISSING: 3.21.1# nanowait(int, timespec*)@Base 3.21.1
- QString::QString(QString const&)@Base 3.21.1
- QString::QString(QString const&)@Base 3.21.1
+ (c++)"QString::QString(QString const&)@Base" 3.21.1
+ (c++)"QString::QString(QString const&)@Base" 3.21.1
  gpsd_version@Base 3.21.1
