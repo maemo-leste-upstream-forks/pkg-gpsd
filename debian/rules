@@ -193,7 +193,7 @@ binary: install-stamp
 	dh_python3 -Ngpsd-clients
 	dh_python3 -pgpsd-clients usr/bin
 	dh_python3 -pgpsd lib/udev/
-	cp $(CURDIR)/gpsd.rules $(CURDIR)/debian/gpsd.udev
+	cp $(CURDIR)/gpsd-*/gpsd.rules $(CURDIR)/debian/gpsd.udev
 	dh_installudev
 	dh_link
 	dh_strip --dbgsym-migration='gpsd-dbg (<< 3.16-4~)'
