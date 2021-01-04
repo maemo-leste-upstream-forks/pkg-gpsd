@@ -155,14 +155,12 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	dh_testroot
 	dh_prep
 	$(SCONS_ENV) DESTDIR=`pwd`/debian/tmp $(PYTHON3) /usr/bin/scons install $(SCONSOPTS) target_python=$(PYTHON3)
+	$(SCONS_ENV) DESTDIR=`pwd`/debian/tmp $(PYTHON3) /usr/bin/scons systemd_install $(SCONSOPTS) target_python=$(PYTHON3)
 	# install static lib
 	cp libgps.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)
 	cp INSTALL.adoc TROUBLESHOOTING.adoc
 	# we collect our own documentation
 	rm -rf debian/tmp/usr/share/doc/gpsd
-	# install systemd files
-	mkdir -p debian/tmp/lib/systemd/system
-	cp systemd/* debian/tmp/lib/systemd/system
 	# install everything
 	dh_install
 	# quirk to avoid issues by broken fakeroot misdetecting links as files and

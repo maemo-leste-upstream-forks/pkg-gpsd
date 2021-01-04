@@ -10,7 +10,3 @@ usr/bin/ubxtool
 usr/share/man/man1/ubxtool.1
 usr/bin/ntpshmmon
 usr/share/man/man1/ntpshmmon.1
-gpsd-*/systemd/gpsdctl@.service /lib/systemd/system
-gpsd-*/systemd/gpsd.service /lib/systemd/system
-gpsd-*/systemd/gpsd.socket /lib/systemd/system
-
