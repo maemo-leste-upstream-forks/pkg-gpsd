@@ -12,3 +12,64 @@ variables:
  SALSA_CI_DISABLE_REPROTEST: 1
  SALSA_CI_DISABLE_BUILD_PACKAGE_ALL: 0
  SALSA_CI_DISABLE_BUILD_PACKAGE_ANY: 0
+ SALSA_CI_ENABLE_REVERSE_DEPENDENCY_BUILD: 1
+
+
+.rdep-build-script: &rdep-build-script |
+   export CCACHE_DIR=${CCACHE_TMP_DIR}
+   # Add deb-src entries
+   sed -n '/^deb\s/s//deb-src /p' /etc/apt/sources.list > /etc/apt/sources.list.d/deb-src.list
+   apt-get update && eatmydata apt-get install --no-install-recommends -y \
+     aptitude \
+     devscripts \
+     ccache \
+     equivs \
+     build-essential
+   apt build-dep ${REVERSE_DEP}
+   # install built packages
+   dpkg -i ${WORKING_DIR}/*.deb || apt -f install
+   # download source
+   cd ${WORKING_DIR}
+   # Generate ccache links
+   dpkg-reconfigure ccache
+   PATH="/usr/lib/ccache/:${PATH}"
+   # Reset ccache stats
+   ccache -z
+   # Create salsaci user and fix permissions
+   useradd salsaci
+   chown -R salsaci. ${WORKING_DIR} ${CCACHE_DIR}
+   # Define buildlog filename
+   BUILD_LOGFILE="${WORKING_DIR}/${REVERSE_DEP}.build"
+   # Build package as user salsaci
+   su salsaci -c "eatmydata apt source -b ${REVERSE_DEP}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
+   # Restore PWD to ${WORKING_DIR}
+   cd ${WORKING_DIR}
+   rm -rf ${WORKING_DIR}/${REVERSE_DEP}*
+   # Print ccache stats on job log
+   ccache -s
+
+.rdep-build-definition: &rdep-build-definition
+  stage: test
+  image: $SALSA_CI_IMAGES_BASE
+  cache:
+    key: "${REVERSE_DEP}-build"
+    paths:
+      - .ccache
+    except:
+  variables:
+    - $SALSA_CI_ENABLE_REVERSE_DEPENDENCY_BUILD =~ /^(1|yes|true)$/
+  variables:
+    CCACHE_TMP_DIR: ${CI_PROJECT_DIR}/../.ccache
+    CCACHE_WORK_DIR: ${CI_PROJECT_DIR}/.ccache
+  script:
+    - *build-before-script
+    - *rdep-build-script
+    - mv ${CCACHE_TMP_DIR} ${CCACHE_WORK_DIR}
+  needs:
+    - job: build
+      artifacts: true
+
+build-rdep-collectd:
+  variables:
+    REVERSE_DEP: collectd
+  extends: .rdep-build-definition
