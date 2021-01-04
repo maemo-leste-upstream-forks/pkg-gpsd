@@ -1,0 +1,159 @@
+'\" t
+.\"     Title: gpsplot
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 7 December 2020
+.\"    Manual: GPSD Documentation
+.\"    Source: The GPSD Project
+.\"  Language: English
+.\"
+.TH "GPSPLOT" "1" "7 December 2020" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+gpsplot \- tool to dynamically dump plot data from gpsd
+.SH "SYNOPSIS"
+.HP \w'\fBgpsplot\fR\ 'u
+\fBgpsplot\fR [\-?] [\-\-count\ \fICOUNT\fR] [\-\-debug\ \fILVL\fR] [\-\-device\ \fIDEVICE\fR] [\-\-fields\ \fIFIELDS\fR] [\-\-file\ \fIFILE\fR] [\-\-help] [\-\-host\ \fIHOST\fR] [\-\-plottype\ \fIPLOTTYPE\fR] [\-\-port\ \fIPORT\fR] [\-\-seconds\ \fISECONDS\fR] [\-\-units\ \fIUNITS\fR] [\-\-version] [\-D\ \fILVL\fR] [\-h] [\-n\ \fICOUNT\fR] [\-u\ \fIUNITS\fR] [\-V] [\-x\ \fISECONDS\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.SH "DESCRIPTION"
+.PP
+gpsplot
+is a tool to connect to
+gpsd
+and dynamically plot data to the users screen\&. Plot types include scatterplots and stripcharts\&.
+.PP
+Plotting requires the Python Matplot lib module, and its many dependencies be installed on the display host, but not on the host that is running the
+gpsd
+instance\&.
+.SH "OPTIONS"
+.PP
+\fB\-?\fR, \fB\-h\fR, \fB\-\-help\fR
+.RS 4
+Print a usage message and exit\&.
+.RE
+.PP
+\fB\-d LVL\fR, \fB\-\-debug LVL\fR
+.RS 4
+Set debug level to LVL\&.
+.RE
+.PP
+\fB\-\-device DEVICE\fR
+.RS 4
+The DEVICE on the
+gpsd
+to connect to\&. Defaults to all\&.
+.RE
+.PP
+\fB\-\-fields FIELDS\fR
+.RS 4
+The code for the fields to plot\&. FIELDS is one of: llh (lat/lon/altHAE) or llm (lat/lon/altMSL)\&.
+.RE
+.PP
+\fB\-\-file FILE\fR
+.RS 4
+Read JSON from FILE instead of from gpsd\&.\&.
+.RE
+.PP
+\fB\-\-host HOST\fR
+.RS 4
+Connect to the
+gpsd
+on HOST (server)\&. Defaults to localhost\&.
+.RE
+.PP
+\fB\-\-plottype PLOTTYPE\fR
+.RS 4
+The type of plot to make\&. PLOTTYPE is one of \*(Aqscatterplot\*(Aq or\*(Aqstripchart\*(Aq\&.
+.RE
+.PP
+\fB\-n COUNT\fR, \fB\-\-count COUNT\fR
+.RS 4
+Exit after COUNT plot messages\&.
+.RE
+.PP
+\fB\-p PORT\fR, \fB\-\-port PORT\fR
+.RS 4
+Use PORT to connect to
+gpsd\&. Defaults to 2947\&.
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+Print the program version and exit\&.
+.RE
+.PP
+\fB\-x SECONDS\fR, \fB\-\-seconds SECONDS\fR
+.RS 4
+Wait for SECONDS seconds before exiting\&. Set to zero to diable\&. Default 0\&.
+.RE
+.SH "EXAMPLES"
+.PP
+Generate a scatterplot of Latitude, Longitude and the Altitude above Mean Sea Level (altMSL)\&. Stop after 60 seconds:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+gpsplot \-\-seconds 60 \-\-fields llm
+   
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Generate a scatterplot of Latitude, Longitude and the Height Above Ellipsoid (altHAE)\&. Stop after 60 fixes:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+gpsplot \-\-count 60 \-\-plottype stripchart
+   
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Generate a scatterplot locally of Latitude, Longitude and altMSL from a remote
+gpsd
+instannce at host "example\&.com" and the remote device "/dev/ttyS0"\&. Stop after 60 fixes:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+gpsplot \-\-count 60 \-\-fields llm example\&.com::/dev/ttyS0
+   
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.SH "SEE ALSO"
+.PP
+\fBgpsd\fR(8),
+\fBgps\fR(1),
+\fBgpscat\fR(1)\&.
+\fBgpsfake\fR(1),
+\fBgpsprof\fR(1),
+.SH "AUTHOR"
+.PP
+Gary E\&. Miller
+<gem@rellim\&.com>\&.

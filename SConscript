@@ -269,7 +269,7 @@ api_version_major = 3
 api_version_minor = 14
 
 # client library version
-libgps_version_current = 27
+libgps_version_current = 28
 libgps_version_revision = 0
 libgps_version_age = 0
 libgps_version = "%d.%d.%d" % (libgps_version_current, libgps_version_age,
@@ -812,7 +812,7 @@ docbook_html_uri = docbook_url_stem + 'html/docbook.xsl'
 
 def CheckXsltproc(context):
     context.Message('Checking that xsltproc can make man pages... ')
-    # ofp = open(env['SRCDIR'] + "/man/xmltest.xml", "w")
+    # open() happens in variantdir
     ofp = open("xmltest.xml", "w")
     ofp.write('''
        <refentry id="foo.1">
@@ -828,10 +828,12 @@ def CheckXsltproc(context):
     </refentry>
 ''')
     ofp.close()
-    probe = ("xsltproc --encoding UTF-8 --output man/foo.1 --nonet "
-             "--noout '%s' xmltest.xml" % (docbook_man_uri,))
+    probe = ("xsltproc --encoding UTF-8 --output %s/man/foo.1 --nonet "
+             "--noout '%s' %s/xmltest.xml" %
+             (variantdir, docbook_man_uri, variantdir))
     (ret, out) = context.TryAction(probe)
     # out should be empty, don't bother to test.
+    # next 3 lines happen in variantdir
     os.remove("xmltest.xml")
     if os.path.exists("man/foo.1"):
         os.remove("man/foo.1")
@@ -2438,10 +2440,18 @@ for glb in webpages_x_list:
 webpages = htmlpages + asciidocs + wwwpage_targets + webpages_in + webpages_x
 www = env.Alias('www', webpages)
 
+# On the Mac (at least), some X11 programs launch the X11 server even when
+# they're not actually using the display.  Clearing DISPLAY in the
+# environment avoids this.  We leave the main environment untouched just in
+# case it might be needed.
+nox11_env = env['ENV'].copy()
+nox11_env['DISPLAY'] = ''
+
 # The diagram editor dia is required in order to edit the diagram masters
 if have_dia:
-    Utility("www/cycle.svg", ["www/cycle.dia"],
-            ["cd %s; dia -e www/cycle.svg www/cycle.dia" % variantdir])
+    env.Command("www/cycle.svg", ["www/cycle.dia"],
+                ["cd %s; dia -e www/cycle.svg www/cycle.dia" % variantdir],
+                ENV=nox11_env)
 
 packing = [
     'packaging/deb/etc_default_gpsd',
@@ -2556,8 +2566,6 @@ python_compilation_regress = Utility('python-compilation-regress',
 # get version from each python prog
 # this ensures they can run and gps_versions match
 vchk = ''
-verenv = env['ENV'].copy()
-verenv['DISPLAY'] = ''  # Avoid launching X11 in X11 progs
 pp = []
 for p in python_progs:
     if not env['xgps_deps']:
@@ -2569,7 +2577,7 @@ for p in python_progs:
     tgt = Utility(
         'version-%s' % p, p,
         'cd %s; $PYTHON %s -V' % (variantdir, p),
-        ENV=verenv)
+        ENV=nox11_env)
     pp.append(tgt)
 python_versions = env.Alias('python-versions', pp)
 

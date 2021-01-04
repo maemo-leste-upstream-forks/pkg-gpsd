@@ -13,7 +13,7 @@ except ImportError:  # No setuptools in Python 2
 
 setup(
     name='gps',
-    version='3.21.1~dev',
+    version='3.21.99~rc1',
     description='gpsd Python modules for additional Pythons',
     long_description='''# README
 

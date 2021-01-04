@@ -1,0 +1,196 @@
+'\" t
+.\"     Title: gps
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 6 December 2020
+.\"    Manual: GPSD Documentation
+.\"    Source: The GPSD Project
+.\"  Language: English
+.\"
+.TH "GPS" "1" "6 December 2020" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+cgps, gegps, gps, lcdgps \- simple clients for gpsd
+.SH "SYNOPSIS"
+.HP \w'\fBcgps\fR\ 'u
+\fBcgps\fR [\-?] [\-\-debug\ \fILVL\fR] [\-\-help] [\-\-llfmt\ [[d]\ |\ [m]\ |\ [s]]] [\-\-magtrack] [\-\-silent] [\-\-units\ [[i]\ |\ [n]\ |\ [m]]] [\-\-version] [\-D\ \fILVL\fR] [\-h] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-m] [\-s] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.HP \w'\fBgegps\fR\ 'u
+\fBgegps\fR [\-?] [\-\-debug\ \fILVL\fR] [\-\-device\ \fIDEVICE\fR] [\-\-help] [\-\-host\ \fIHOST\fR] [\-\-initialize] [\-\-kmldir\ \fIDIRECTORY\fR] [\-\-port\ \fIPORT\fR] [\-\-version] [\-D\ \fIDEBUG\fR] [\-d\ \fIDIRECTORY\fR] [\-h] [\-i] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.HP \w'\fBlcdgps\fR\ 'u
+\fBlcdgps\fR [\-?] [\-\-help] [\-\-sleep] [\-\-version] [\-h] [\-j] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-s] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.SH "DESCRIPTION"
+.PP
+These are some simple clients shipped with
+gpsd\&. They have some common options:
+.PP
+\fB\-?\fR, \fB\-h\fR, \fB\-\-help\fR
+.RS 4
+Print a summary of options and then exit\&.
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+Print the package version and exit\&.
+.RE
+.PP
+By default, clients collect data from all compatible devices on localhost, using the default GPSD port 2947\&. An optional argument to any client may specify a server to get data from\&. A colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a specific device name to be watched\&. However, if the server specification contains square brackets, the part inside them is taken as an IPv6 address and port/device suffixes are only parsed after the trailing bracket\&. Possible cases look like this:
+.PP
+localhost:/dev/ttyS1
+.RS 4
+Look at the default port of localhost, trying both IPv4 and IPv6 and watching output from serial device 1\&.
+.RE
+.PP
+example\&.com:2317
+.RS 4
+Look at port 2317 on example\&.com, trying both IPv4 and IPv6\&.
+.RE
+.PP
+71\&.162\&.241\&.5:2317:/dev/ttyS3
+.RS 4
+Look at port 2317 at the specified IPv4 address, collecting data from attached serial device 3\&.
+.RE
+.PP
+[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:2317:/dev/ttyS5
+.RS 4
+Look at port 2317 at the specified IPv6 address, collecting data from attached serial device 5\&.
+.RE
+.SS "cgps"
+.PP
+cgps
+is a client resembling
+xgps, but without the pictorial satellite display and able to run on a serial terminal or terminal emulator\&.
+.PP
+\fB\-D LVL\fR, \fB\-\-debug LVL\fR
+.RS 4
+Sets the debug level; it is primarily for use by GPSD developers\&. It enables various progress messages to standard error\&.
+.RE
+.PP
+\fB\-l FMT\fR, \fB\-\-llfmt FMT\fR
+.RS 4
+Sets the format of latitude and longitude reports\&. The value \*(Aqd\*(Aq produces decimal degrees and is the default\&. The value \*(Aqm\*(Aq produces degrees and decimal minutes\&. The value \*(Aqs\*(Aq produces degrees, minutes, and decimal seconds\&.
+.RE
+.PP
+\fB\-s\fR, \fB\-\-silent\fR
+.RS 4
+Prevents
+cgps
+from displaying the data coming from the daemon\&. This display can also be toggled with the s command\&.
+.RE
+.PP
+\fB\-m\fR, \fB\-\-magtrack\fR
+.RS 4
+Display your magnetic track (as opposed to your true track)\&. This is a calculated value, not a measured value\&. Magnetic variation is always potentially subject to large errors, but is usually better than two degrees\&.
+.RE
+.PP
+\fB\-u UNITS\fR, \fB\-\-units UNITS\fR
+.RS 4
+Set the system units for display; follow the keyword with \*(Aqi\*(Aq for \*(Aqimperial\*(Aq for American units (International Feet in altitude and error estimates, miles per hour in speeds), \*(Aqn\*(Aq for \*(Aqnautical\*(Aq (feet in altitude and error estimates, knots in speed) or \*(Aqm\*(Aq for \*(Aqmetric\*(Aq (meters in altitude and error estimates, kilometers per hour in speeds)\&.
+.sp
+Note: The USA Survey Foot is not supported\&.
+.RE
+.PP
+cgps
+terminates when you send it a SIGHUP or SIGINT; given default terminal settings this will happen when you type Ctrl\-C at it\&. It will also terminate on \*(Aqq\*(Aq
+.SS "gegps"
+.PP
+This program collects fixes from
+gpsd
+and feeds them to a running instance of Google Earth for live location tracking\&.
+.PP
+\fB\-d DIR\fR, \fB\-\-kmldir DIR\fR
+.RS 4
+Specify the location of the Google Earth installation directory\&. If not specified, it defaults to the current directory\&.
+.RE
+.PP
+\fB\-D LVL\fR, \fB\-\-debug LVL\fR
+.RS 4
+Sets the debug level; it is primarily for use by GPSD developers\&. It enables various progress messages to standard error\&.
+.RE
+.PP
+\fB\-\-device DEVICE\fR
+.RS 4
+Connect to device DEVICE on gpsd host\&.
+.RE
+.PP
+\fB\-\-host HOST\fR
+.RS 4
+Connect to gpsd on host HOST\&.
+.RE
+.PP
+\fB\-i\fR, \fB\-\-initialize\fR
+.RS 4
+If you have the free (non\-subscription) version, start by running with the
+\fB\-i\fR
+option to drop a clue in the Google Earth installation directory, as \*(AqOpen_in_Google_Earth_RT_GPS\&.kml\*(Aq, then open that file in Places (File > Open\&.\&.\&.)\&. Run
+gegps
+in the normal way after that\&.
+.RE
+.PP
+\fB\-\-port PORT\fR
+.RS 4
+Connect to gpsd on port PORT\&.
+.RE
+.SS "lcdgps"
+.PP
+A client that passes
+gpsd
+data to
+lcdproc, turning your car computer into a very expensive and nearly feature\-free GPS receiver\&. Currently assumes a 4x40 LCD and writes data formatted to fit that size screen\&. Also displays 4\- or 6\-character Maidenhead grid square output\&.
+.PP
+\fB\-s\fR, \fB\-\-sleep\fR
+.RS 4
+Sleep for 10 seconds before starting\&.
+.RE
+.SH "ENVIRONMENT"
+.PP
+The environment variable
+\fBGPSD_UNITS\fR
+is checked if no unit system is specified on the command line\&. It may be set to \*(Aqi\*(Aq\&. \*(Aqimperial\*(Aq, \*(Aqm\*(Aq, \*(Aqmetric\*(Aq, or \*(Aqn\*(Aq, \*(Aqnautical\*(Aq\&.
+.PP
+\fBLC_MEASUREMENT\fR
+and then
+\fBLANG\fR
+are checked if no unit system has been specified on the command line, or in
+\fBGPSD_UNITS\fR\&. If the value is \*(AqC\*(Aq, \*(AqPOSIX\*(Aq, or begins with \*(Aqen_US\*(Aq the unit system is set to imperial\&. The default if no system has been selected defaults to metric\&.
+.SH "SEE ALSO"
+.PP
+\fBgpsd\fR(8),
+\fBlibgps\fR(3),
+\fBlibgpsmm\fR(3),
+\fBgpsfake\fR(1),
+\fBgpsctl\fR(1),
+\fBgpscat\fR(1),
+\fBgpsprof\fR(1)\&.
+\fBgpspipe\fR(1)\&.
+\fBgpsmon\fR(1)\&.
+\fBgpxlogger\fR(1)\&.
+\fBxgps\fR(1)\&.
+\fBxgpsspeed\fR(1)\&.
+.SH "AUTHORS"
+.PP
+Remco Treffcorn, Derrick Brashear, Russ Nelson & Eric S\&. Raymond, Jeff Francis (cgps), Chen Wei
+<weichen302@aol\&.com>
+(gegps & xgpsspeed), Robin Wittler
+<real@the\-real\&.org>
+(xgpsspeed)\&.
+.PP
+This manual page by Eric S\&. Raymond
+<esr@thyrsus\&.com>

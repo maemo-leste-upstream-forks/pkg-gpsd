@@ -1,0 +1,219 @@
+'\" t
+.\"     Title: xgps
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 6 December 2020
+.\"    Manual: GPSD Documentation
+.\"    Source: The GPSD Project
+.\"  Language: English
+.\"
+.TH "XGPS" "1" "6 December 2020" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xgps, xgpsspeed \- sample clients for gpsd
+.SH "SYNOPSIS"
+.HP \w'\fBxgps\fR\ 'u
+\fBxgps\fR [\-?] [\-\-help] [\-\-debug\ \fIDEBUG\-LEVEL\fR] [\-\-device\ \fIDEVICE\fR] [\-\-host\ \fIHOST\fR] [\-\-llfmt\ [[d]\ |\ [m]\ |\ [s]]] [\-\-port\ \fIPORT\fR] [\-\-rotate\ \fIDEGREES\fR] [\-\-sats\ \fINSATS\fR] [\-\-units\ [[i]\ |\ [n]\ |\ [m]]] [\-\-version] [\-D\ \fILVL\fR] [\-h] [\-l\ [[d]\ |\ [m]\ |\ [s]]] [\-r\ \fIDEGREES\fR] [\-s\ \fINSATS\fR] [\-u\ [[i]\ |\ [n]\ |\ [m]]] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.HP \w'\fBxgpsspeed\fR\ 'u
+\fBxgpsspeed\fR [\-?] [\-\-debug\ \fIDEBUG\-LEVEL\fR] [\-\-device\ \fIDEVICE\fR] [\-\-help] [\-\-host\ \fIHOST\fR] [\-\-landspeed] [\-\-maxspeed\ \fIMAXSPEED\fR] [\-\-nautical] [\-\-port\ \fIPORT\fR] [\-\-rotate\ \fIDEGREES\fR] [\-\-speedunits\ {[mph]\ |\ [kmh]\ |\ [knots]}] [\-\-version] [\-D\ \fILVL\fR] [\-h] [\-r\ \fIDEGREES\fR] [\-V] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.SH "DESCRIPTION"
+.PP
+These are two sample clients shipped with
+gpsd\&. They have some common options:
+.PP
+\fB\-?\fR, \fB\-h\fR, \fB\-\-help\fR
+.RS 4
+Causes the client to emit a summary of its options and then exit\&.
+.RE
+.PP
+\fB\-device DEVICE\fR
+.RS 4
+The device on the host to connect to\&. The default is empty (any)\&.
+.RE
+.PP
+\fB\-D LVL\fR, \fB\-\-debug LVL\fR
+.RS 4
+Sets the debug level; it is primarily for use by GPSD developers\&. It enables various progress messages to standard error\&.
+.RE
+.PP
+\fB\-\-host HOST\fR
+.RS 4
+The host (server) to connect to\&. The default is localhost\&.
+.RE
+.PP
+\fB\-p PORT\fR, \fB\-\-port PORT\fR
+.RS 4
+The port to connect to\&. The default is 2947\&.
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+The
+\fB\-V, \-\-version\fR
+option causes each client to dump the package version and exit\&.
+.RE
+.PP
+By default, clients collect data from all compatible devices on localhost, using the default GPSD port 2947\&. An optional argument to any client may specify a server to get data from\&. A colon\-separated suffix is taken as a port number\&. If there is a second colon\-separated suffix, that is taken as a specific device name to be watched\&. However, if the server specification contains square brackets, the part inside them is taken as an IPv6 address and port/device suffixes are only parsed after the trailing bracket\&. Possible cases look like this:
+.PP
+The options for xgps can be placed in the XGPSOPTS environment variable\&. XGPSOPTS is processed before the CLI options\&.
+.PP
+localhost:/dev/ttyS1
+.RS 4
+Look at the default port of localhost, trying both IPv4 and IPv6 and watching output from serial device 1\&.
+.RE
+.PP
+example\&.com:2317
+.RS 4
+Look at port 2317 on example\&.com, trying both IPv4 and IPv6\&.
+.RE
+.PP
+71\&.162\&.241\&.5:2317:/dev/ttyS3
+.RS 4
+Look at port 2317 at the specified IPv4 address, collecting data from attached serial device 3\&.
+.RE
+.PP
+[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:2317:/dev/ttyS5
+.RS 4
+Look at port 2317 at the specified IPv6 address, collecting data from attached serial device 5\&.
+.RE
+.SS "xgps"
+.PP
+xgps
+is a simple sample client for
+gpsd
+with an X interface\&. It displays current GPS position/time/velocity information and (for GPSes that support the feature) the locations of accessible satellites\&.
+.PP
+In the sky view, satellites are color\-coded to indicate quality of signal; consult the data display to the left for exact figures in dB\&. Diamond\-shaped icons indicate GLONASS satellites, squares are used for SBAS (e\&.g\&. WAAS, EGNOS), circles indicate GPS, and down\-, up\-, right\-, and left\-pointing triangles, respectively, indicate Galileo, BeiDou, QZSS, and other systems\*(Aq satellites (e\&.g\&. IMES, IRNSS, as well as unknown systems)\&. Filled icons were used in the current fix, outline icons were not\&. Hovering over a symbol with the mouse pointer will temporarily display a small popup window with the satellite details from the Satellite List pane\&.
+.PP
+\fB\-l FMT\fR, \fB\-\-llfmt FMT\fR
+.RS 4
+Set the format of latitude and longitude reports\&. The value \*(Aqd\*(Aq produces decimal degrees and is the default\&. The value \*(Aqm\*(Aq produces degrees and decimal minutes\&. The value \*(Aqs\*(Aq produces degrees, minutes, and decimal seconds\&.
+.RE
+.PP
+\fB\-r DEG\fR, \fB\-\-rotate DEG\fR
+.RS 4
+Accepts an argument in degrees, to rotate the skyview counterclockwise\&.
+.RE
+.PP
+xgps
+looks at variables in the environment to figure out the units for display \(em imperial, nautical, or metric\&. Here are the variables and values checked:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+    GPSD_UNITS one of:
+              i          = miles/feet
+              imperial   = miles/feet
+              n          = knots/feet
+              nautical   = knots/feet
+              m          = km/meters
+              metric     = km/meters
+    LC_MEASUREMENT
+              en_US      = miles/feet
+              C          = miles/feet
+              POSIX      = miles/feet
+              [other]    = km/meters
+    LANG
+              en_US      = miles/feet
+              C          = miles/feet
+              POSIX      = miles/feet
+              [other]    = km/meters
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+These preferences may be overridden by the
+\fB\-u, \-\-units\fR
+option\&.
+.PP
+The
+\fB\-u\fR
+option can be used to set the system units for display; follow the keyword with \*(Aqi\*(Aq for \*(Aqimperial\*(Aq for American units (International Feet in altitude and error estimates, miles per hour in speeds), \*(Aqn\*(Aq for \*(Aqnautical\*(Aq (feet in altitude and error estimates, knots in speed) or \*(Aqm\*(Aq for \*(Aqmetric\*(Aq (meters in altitude and error estimates, kilometers per hour in speeds)\&.
+.PP
+Note: The USA Survey Foot is not supported\&.
+.SS "xgpsspeed"
+.PP
+xgpsspeed
+is a speedometer that uses position information from the GPS\&.
+.PP
+The default display mode is a speed and track presentation modeled after a marine navigation display; for backward compatibility the
+\fB\-\-nautical\fR
+option forces this mode\&. The
+\fB\-\-landspeed\fR
+option produces a simple speedometer\&.
+.PP
+The
+\fB\-\-speedunits\fR
+option can be used to set the speed units for display; follow the keyword with "knots" for nautical miles per hour, "kmh" for kilometers per hour, or "mph" for miles per hour\&. The default is miles per hour\&.
+.PP
+In the nautical mode only,
+\fB\-\-maxspeed\fR
+sets the maximum on the speedometer\&.
+.SH "ENVIRONMENT"
+.PP
+The environment variable
+\fBGPSD_UNITS\fR
+is checked if no unit system is specified on the command line or in
+\fBXPGSOPTS\fR
+it may be set to \*(Aqi\*(Aq\&. \*(Aqimperial\*(Aq, \*(Aqm\*(Aq, \*(Aqmetric\*(Aq, or \*(Aqn\*(Aq, \*(Aqnautical\*(Aq\&.
+.PP
+\fBLC_MEASUREMENT\fR
+and then
+\fBLANG\fR
+are checked if no unit system has been specified on the command line, in
+\fBXPGSOPTS\fR
+or in
+\fBGPSD_UNITS\fR\&. If the value is \*(AqC\*(Aq, \*(AqPOSIX\*(Aq, or begins with \*(Aqen_US\*(Aq the unit system is set to imperial\&. The default if no system has been selected defaults to metric\&.
+.PP
+The
+\fBXGPSOPTS>\fR
+environment variable may be set to pass commonly used command line options to
+\fBxgps\fR
+and
+\fBxgpsspeed\fR\&. This is often used to set the
+\fB\-u\fR
+option for locale specific units\&.
+\fBXGPSOPTS\fR
+is processed before the CLI options\&.
+.SH "SEE ALSO"
+.PP
+\fBgpsd\fR(8),
+\fBlibgps\fR(3),
+\fBlibgpsmm\fR(3),
+\fBgpsfake\fR(1),
+\fBgpsctl\fR(1),
+\fBgpscat\fR(1),
+\fBgpsprof\fR(1)\&.
+\fBgpspipe\fR(1)\&.
+\fBgpsmon\fR(1)\&.
+\fBgpxlogger\fR(1)\&.
+.SH "AUTHORS"
+.PP
+Remco Treffcorn, Derrick Brashear, Russ Nelson & Eric S\&. Raymond, Chen Wei
+<weichen302@aol\&.com>
+(xgpsspeed), Robin Wittler
+<real@the\-real\&.org>
+(xgpsspeed)\&.
+.PP
+This manual page by Eric S\&. Raymond
+<esr@thyrsus\&.com>

@@ -1,0 +1,308 @@
+'\" t
+.\"     Title: gpscsv
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 7 December 2020
+.\"    Manual: GPSD Documentation
+.\"    Source: The GPSD Project
+.\"  Language: English
+.\"
+.TH "GPSCSV" "1" "7 December 2020" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+gpscsv \- dump the JSON output from gpsd as CSV
+.SH "SYNOPSIS"
+.HP \w'\fBgpscsv\fR\ 'u
+\fBgpscsv\fR [\-?] [\-\-class\fI\ MCLASS\fR] [\-\-count\fI\ COUNT\fR] [\-\-cvt\-isotime] [\-\-debug\fI\ LVL\fR] [\-\-device\fI\ DEVICE\fR] [\-\-fields\fI\ FIELDS\fR] [\-\-file\ \fIFILE\fR] [\-\-header\fI\ HEADER\fR] [\-\-help] [\-\-host\fI\ HOST\fR] [\-\-port\fI\ PORT\fR] [\-\-seconds\fI\ FIELDS\fR] [\-\-separator\fI\ SEPARATOR\fR] [\-\-version] [\-c\fI\ MCLASS\fR] [\-D\ \fI\ LVL\fR] [\-f\ \fI\ FIELDS\fR] [\-h] [\-n\fI\ COUNT\fR] [\-V] [\-x\fI\ FIELDS\fR] \fI[host[:port[:device]]]\fR
+.SH "DESCRIPTION"
+.PP
+gpscsv
+is a simple Python program for reading a
+gpsd
+JSON data streams and outputting them in Comma Separated Values (CSV) format\&. It takes input from a specified
+gpsd
+and reports to standard output\&. The program runs until the
+gpsd
+dies, "\fB\-n COUNT\fR" messages are processed, "\fB\-x SECONDS\fR" have passed, or it is interrupted by ^C or other means\&.
+.PP
+One good use of
+gpscsv
+is to create CSV files for use with the
+gnuplot
+program\&.
+.SH "OPTIONS"
+.PP
+The program accepts the following options:
+.PP
+\fB\-?\fR, \fB\-h\fR, \fB\-\-help\fR
+.RS 4
+Show help information and exit\&.
+.RE
+.PP
+\fB\-c MCLASS\fR, \fB\-\-class MCLASS\fR
+.RS 4
+Select the JSON class messages of type MCLASS\&. Default is TPV\&. \&.
+.RE
+.PP
+\fB\-\-cvt\-isotime\fR
+.RS 4
+Convert fields named "time" from ISO time to UNIX time\&.
+.RE
+.PP
+\fB\-D LVL\fR, \fB\-\-debug LVL\fR
+.RS 4
+Set debug level to LVL\&. Default 0\&. Higher arguments than 0 produce more debug output\&.
+.RE
+.PP
+\fB\-\-device DEVICE\fR
+.RS 4
+The DEVICE on the
+gpsd
+to connect to\&. Defaults to all\&.
+.RE
+.PP
+\fB\-f FIELDS\fR, \fB\-fields FIELDS\fR
+.RS 4
+The FIELDS from the JSON message to dump to the output\&. Set FIELD to empty (\*(Aq\*(Aq) for all fields Default varies by CLASS\&.
+.RE
+.PP
+\fB\-\-file FILE\fR
+.RS 4
+Read JSON from FILE instead of from gpsd\&.\&.
+.RE
+.PP
+\fB\-\-header HEADER\fR
+.RS 4
+Set header style to HEADER\&. 0 for no header, 1 output fields as header, 2 send fields as a comment (\*(Aq#\*(Aq)\&. Defaults to 1\&.
+.RE
+.PP
+\fB\-\-host HOST\fR
+.RS 4
+Connect to the
+gpsd
+on HOST\&. Defaults to localhost\&.
+.RE
+.PP
+\fB\-n COUNT\fR, \fB\-\-count COUNT\fR
+.RS 4
+Exit after outputting COUNT records\&. Set COUNT to 0 to disable\&. Default is 0
+.RE
+.PP
+\fB\-\-port PORT\fR
+.RS 4
+Use PORT to connect to
+gpsd\&. Defaults to 2947\&.
+.RE
+.PP
+\fB\-\-separator SEPARATOR\fR
+.RS 4
+Use SEPARATOR as the field separator\&. Default separator is a comma (\*(Aq,\*(Aq)\&.
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+Show
+gpscsv
+version, and exit\&.
+.RE
+.PP
+\fB\-x SECONDS\fR, \fB\-\-seconds SECONDS\fR
+.RS 4
+Exit after SECONDS number of seconds have passed\&. Set SECONDS to 0 to disable\&. Default is 0
+.RE
+.SH "EXAMPLES"
+.PP
+Some basic examples, do them in exact order shown:
+.PP
+Grab 100 samples of time,lat,lon,altHAE:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  $ gpscsv \-n 100 \-\-cvt\-isotime  > tpv\&.dat
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Grab 100 samples of time,epx,epy,epv,eph,sep
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  $ gpscsv \-n 100 \-\-cvt\-isotime \-f time,epx,epy,epv,eph,sep > ep\&.dat
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Grab 100 samples of time,xdop,ydop,vdop,tdop,hdop,gdop,pdop
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  $ gpscsv \-n 100 \-\-cvt\-isotime \-c SKY  > sky\&.dat
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Grab 100 samples of time,nSat,uSat
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  $ gpscsv \-n 100 \-\-cvt\-isotime \-c SKY \-f time,nSat,uSat  > sat\&.dat
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+start gnuplot in interactive mode:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  $ gnuplot
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Some gnuplot housekeeping:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  # this are csv files
+  gnuplot> set datafile separator \*(Aq,\*(Aq
+  # use the first line as title
+  gnuplot> set key autotitle columnhead
+  # X axis is UNIT time in seconds\&.
+  gnuplot> set xdata time
+  gnuplot> set timefmt "%s"
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Now to plot time vs latitude:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  gnuplot> plot \*(Aqtpv\&.dat\*(Aq using 1:2
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Then to plot longitude and altHAE, in separate plots:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  gnuplot> plot \*(Aqtpv\&.dat\*(Aq using 1:3
+  gnuplot> plot \*(Aqtpv\&.dat\*(Aq using 1:4
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Put both latitude and longitude on one plot:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  gnuplot> set y2tics
+  gnuplot> plot \*(Aqtpv\&.dat\*(Aq using 1:2, \*(Aq\*(Aq using 1:3 axes x1y2
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Plot epx, epy, epv, eph, and sep in one plot:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  gnuplot> plot \*(Aqep\&.dat\*(Aq using 1:2, \*(Aq\*(Aq using 1:3, \e
+           \*(Aq\*(Aq using 1:4, \*(Aq\*(Aq using 1:5, \*(Aq\*(Aq using 1:6
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Plot all the DOPs on one plot:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  gnuplot> plot \*(Aqsky\&.dat\*(Aq using 1:2, \*(Aq\*(Aq using 1:3, \*(Aq\*(Aq using 1:4, \e
+           \*(Aq\*(Aq using 1:5, \*(Aq\*(Aq using 1:6, \*(Aq\*(Aq using 1:7, \*(Aq\*(Aq using 1:8
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Plot nSat and uSat together:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  gnuplot> plot \*(Aqsat\&.dat\*(Aq using 1:2, \*(Aq\*(Aq using 1:3
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Lat/lon scatter plot:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  # x is no longer time
+  gnuplot> set xdata
+  gnuplot> plot \*(Aqtpv\&.dat\*(Aq using 3:2 title \*(Aqfix\*(Aq
+.fi
+.if n \{\
+.RE
+.\}
+.SH "SEE ALSO"
+.PP
+\fBgpsd\fR(8),
+.SH "AUTHOR"
+.PP
+Gary E\&. Miller
+<gem@rellim\&.com>\&.
