@@ -1,14 +1,64 @@
-gpsd (3.21.1~dev-1~1.gbp00b752) UNRELEASED; urgency=medium
+gpsd (3.21.99~rc1-1~1.gbpaa48a0) UNRELEASED; urgency=medium
 
-  ** SNAPSHOT build @00b752628cb7571e03a7f8ed23a1c7157c0d1ada **
+  ** SNAPSHOT build @aa48a01b1e49cbced2c7999b7a538781d47ad65f **
 
   * [7936993f] Fixing git URLs
   * [3296cd58] removing extra linebreak
   * [8faaf157] Updating debian/control from debian/control.in
   * [c5247232] Updating gbp.conf for experimental
   * [4e2f5ac1] New upstream version 3.21.1~dev
+  * [e01b4392] refreshing patches
+  * [82d5b474] Addint matplotlib as dependency
+  * [b905b4a6] snapshot changelog
+  * [d415ffbd] remove gpsd build dir
+  * [2a2d7e26] move dh_clean in order
+  * [792171ef] Remove debian/source/options
+  * [45c11a24] also remove buildtmp symlink
+  * [b72ada42] add asciidoctor as build-dep
+  * [704c85c4] Updating debian/control from debian/control.in
+  * [8fa23322] remove gpsd-dbg package
+  * [bf066735] Updating debian/control from debian/control.in
+  * [18cf7d90] things happen in Sconscript, not sconstruct
+  * [13d41b86] copy files from build dir
+  * [448b12a0] Really ignore xgps deps check
+  * [6b612ecf] add all the python stuff as build-dep
+    tools are executed at build time
+  * [61c389fe] Updating debian/control from debian/control.in
+  * [04d323b3] python modules are pure python now
+    no need to build for each python release
+  * [c428275b] Build static library first, then the shared version
+  * [a60bae70] add libsystemd-dev as build-dep
+  * [5d5b5749] Updating debian/control from debian/control.in
+  * [0ef4040b] add libudev-dev as build-dep
+  * [3c09ab29] Updating debian/control from debian/control.in
+  * [4cc239f6] tidy build-dir after static build
+  * [a3991765] Fix filename of static library
+  * [943cdb1e] No python c modules anymore
+  * [7a0a4c1a] more fixes for SConstruct -> SConscript migration
+  * [cf9802b0] scons fails to check xsltproc.
+    force it
+  * [520d0fb6] Don't call scons for clean.
+    Just remove the builddir.
+  * [3d6ad4ee] Remove upstream installed documentation
+  * [01a55541] Install new gpsd-client tools.
+  * [8ea6798e] install libgpsdpacket into python3-gps
+  * [24703969] no python debug build anymore
+  * [525cd475] Fix typo
+  * [cf8b732e] install systemd service files
+  * [1a5ac994] Update gpsd-clients.examples
+  * [6ac6556e] install examples with dh_install
+    dh_installexamples doesn't support #!/usr/bin/dh-exec....
+  * [8bcc5152] Fix udev source location
+  * [b317fad6] Updating symbols file
+  * [90e3c370] Updating libgps symbols file.
+    Also sorting it.
+  * [112fdad9] Use scons systemd_install
+  * [c2de2379] Add missing "" for c++ symbols
+  * [88af2338] fix symbols
+  * [5d4c7e4f] mark one more symbol as missing
+  * [1814e3c1] New upstream version 3.21.99~rc1
 
- -- Bernd Zeimetz <bzed@debian.org>  Sun, 03 Jan 2021 20:03:32 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Mon, 04 Jan 2021 11:17:35 +0100
 
 gpsd (3.20-12) unstable; urgency=medium
 
