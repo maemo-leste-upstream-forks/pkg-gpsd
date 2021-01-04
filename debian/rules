@@ -13,7 +13,8 @@ LIBGPS_DEBIAN_FILE_SOURCES := $(strip $(shell ls -1 debian/*LIBGPSSONAME* ))
 LIBGPS_DEBIAN_FILE_TARGETS := $(strip $(shell echo $(LIBGPS_DEBIAN_FILE_SOURCES) | sed 's,LIBGPSSONAME,$(LIBGPS_SONAME),g'))
 
 #python versions
-PYTHON3 := $(shell py3versions -d)
+#PYTHON3 := $(shell py3versions -d)
+PYTHON3 := python3
 
 #debhelper version and settings needed for udev
 DH_VERSION := $(shell dpkg -s debhelper | grep '^Version' | awk '{print $$2}')
