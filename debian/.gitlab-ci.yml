@@ -1,6 +1,7 @@
 include:
  - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/salsa-ci.yml
  - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/pipeline-jobs.yml
+ - https://bzed.pages.debian.net/reverse-dependency-ci/gpsd.yml
 
 variables:
  RELEASE: 'unstable'
@@ -14,82 +15,3 @@ variables:
  SALSA_CI_DISABLE_BUILD_PACKAGE_ANY: 0
  SALSA_CI_ENABLE_REVERSE_DEPENDENCY_BUILD: 1
 
-.build-before-script: &build-before-script |
-   # Reported in https://salsa.debian.org/salsa-ci-team/pipeline/issues/104,
-   # GitLab can only expand variables once. So at the beginning CCACHE_WORK_DIR
-   # was assigned to `${WORKING_DIR}/.ccache`, and it will be expanded as
-   # `$CI_PROJECT_DIR/debian/output/.ccache`, so it creates a folder named
-   # "\$CI_PROJECT_DIR", which is then saved as build cache. To allow smooth
-   # transition, that wrongly named folder has to be removed:
-   rm -rf '$CI_PROJECT_DIR'
-
-   # salsa-ci-team/pipeline#107
-   rm -rf ${CI_PROJECT_DIR}/debian/output/.ccache
-
-   mkdir -p ${WORKING_DIR} ${CCACHE_WORK_DIR}
-
-   # https://salsa.debian.org/salsa-ci-team/pipeline/-/merge_requests/230
-   rm -rf ${CCACHE_TMP_DIR}
-
-   mv ${CCACHE_WORK_DIR} ${CCACHE_TMP_DIR}
-   add_extra_repository.sh -v -e "${SALSA_CI_EXTRA_REPOSITORY}" -k "${SALSA_CI_EXTRA_REPOSITORY_KEY}"
-
-
-.rdep-build-script: &rdep-build-script |
-   export CCACHE_DIR=${CCACHE_TMP_DIR}
-   # Add deb-src entries
-   sed -n '/^deb\s/s//deb-src /p' /etc/apt/sources.list > /etc/apt/sources.list.d/deb-src.list
-   apt-get update && eatmydata apt-get install --no-install-recommends -y \
-     aptitude \
-     devscripts \
-     ccache \
-     equivs \
-     build-essential
-   apt -y build-dep ${REVERSE_DEP}
-   # install built packages
-   dpkg -i ${WORKING_DIR}/*.deb || apt -y -f install
-   # download source
-   cd ${WORKING_DIR}
-   # Generate ccache links
-   dpkg-reconfigure ccache
-   PATH="/usr/lib/ccache/:${PATH}"
-   # Reset ccache stats
-   ccache -z
-   # Create salsaci user and fix permissions
-   useradd salsaci
-   chown -R salsaci. ${WORKING_DIR} ${CCACHE_DIR}
-   # Define buildlog filename
-   BUILD_LOGFILE="${WORKING_DIR}/${REVERSE_DEP}.build"
-   # Build package as user salsaci
-   su salsaci -c "eatmydata apt source -b ${REVERSE_DEP}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
-   # Restore PWD to ${WORKING_DIR}
-   cd ${WORKING_DIR}
-   rm -rf ${WORKING_DIR}/${REVERSE_DEP}*
-   # Print ccache stats on job log
-   ccache -s
-
-.rdep-build-definition: &rdep-build-definition
-  stage: test
-  image: $SALSA_CI_IMAGES_BASE
-  cache:
-    key: "${REVERSE_DEP}-build"
-    paths:
-      - .ccache
-  except:
-    variables:
-      - $SALSA_CI_ENABLE_REVERSE_DEPENDENCY_BUILD !~ /^(1|yes|true)$/
-  variables:
-    CCACHE_TMP_DIR: ${CI_PROJECT_DIR}/../.ccache
-    CCACHE_WORK_DIR: ${CI_PROJECT_DIR}/.ccache
-  script:
-    - *build-before-script
-    - *rdep-build-script
-    - mv ${CCACHE_TMP_DIR} ${CCACHE_WORK_DIR}
-  needs:
-    - job: build
-      artifacts: true
-
-build-rdep-collectd:
-  variables:
-    REVERSE_DEP: collectd
-  extends: .rdep-build-definition
