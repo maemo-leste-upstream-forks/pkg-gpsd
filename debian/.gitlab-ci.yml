@@ -47,7 +47,7 @@ variables:
      build-essential
    apt build-dep ${REVERSE_DEP}
    # install built packages
-   dpkg -i ${WORKING_DIR}/*.deb || apt -f install
+   dpkg -i ${WORKING_DIR}/*.deb || apt -y -f install
    # download source
    cd ${WORKING_DIR}
    # Generate ccache links
