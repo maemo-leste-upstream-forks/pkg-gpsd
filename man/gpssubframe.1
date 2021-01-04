@@ -1,0 +1,166 @@
+'\" t
+.\"     Title: gpssubframe
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 6 December 2020
+.\"    Manual: GPSD Documentation
+.\"    Source: The GPSD Project
+.\"  Language: English
+.\"
+.TH "GPSSUBFRAME" "1" "6 December 2020" "The GPSD Project" "GPSD Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+gpssubframe \- tool to dump subframe sentences from gpsd
+.SH "SYNOPSIS"
+.HP \w'\fBgpssubframe\fR\ 'u
+\fBgpssubframe\fR [\-?] [\-\-count\ \fICOUNT\fR] [\-\-debug\ \fILVL\fR] [\-\-desc] [\-\-device\ \fIDEVICE\fR] [\-\-file\ \fIFILE\fR] [\-\-help] [\-\-host\ \fIHOST\fR] [\-\-load\ \fIFILE\fR] [\-\-port\ \fIPORT\fR] [\-\-progress] [\-\-satpos] [\-\-save\ \fIFILE\fR] [\-\-seconds\ \fISECONDS\fR] [\-\-test] [\-\-time\ \fISECONDS\fR] [\-\-version] [\-D\ \fILVL\fR] [\-f\ \fIFILE\fR] [\-h] [\-n\ \fICOUNT\fR] [\-V] [\-x\ \fISECONDS\fR] [\fIserver\fR [\fI:port\fR [\fI:device\fR]]]
+.SH "DESCRIPTION"
+.PP
+gpssubframe
+is a tool to connect to
+gpsd
+and dump decoded subframe data to stdout\&. This is only useful if your GNSS receiver can output GPS subframe messages, and is configured to do so\&. A working knowledge of IS\-GPS\-200 is also required\&. Keep your copy close at hand\&.
+.PP
+gpssubframe
+does not require root privileges, and can be run concurrently with other tools connecting to the local
+gpsd
+without causing problems\&.
+.PP
+The program will accumulate subframe message and output them by GPS satellite number on exit\&. By default the program never exits unless the user selects the number of seconds to run or number of messages to capture\&.
+.PP
+By default
+gpssubframe
+connects to a
+gpsd
+running on the local host\&. Optionally a host, TCP/IP port number and remote device can be given\&.
+.SH "OPTIONS"
+.PP
+\fB\-?\fR, \fB\-h\fR, \fB\-\-help\fR
+.RS 4
+\-Print a usage message and exit\&.
+.RE
+.PP
+\fB\-c COUNT\fR, \fB\-\-count COUNT\fR
+.RS 4
+Exit after COUNT subframe messages\&.
+.RE
+.PP
+\fB\-\-device DEVICE\fR
+.RS 4
+Connect to device DEVICE on gpsd host\&.
+.RE
+.PP
+\fB\-D LVL\fR, \fB\-\-debug LVL\fR
+.RS 4
+Set debug level to LVL\&.
+.RE
+.PP
+\fB\-\-file FILE\fR
+.RS 4
+Read JSON from FILE instead of from gpsd\&.\&.
+.RE
+.PP
+\fB\-\-host HOST\fR
+.RS 4
+Connect to gpsd on host HOST\&.
+.RE
+.PP
+\fB\-\-port PORT\fR
+.RS 4
+Connect to gpsd on port PORT\&.
+.RE
+.PP
+\fB\-\-progress\fR
+.RS 4
+Print progress reports as messages are received\&.
+.RE
+.PP
+\fB\-\-satpos\fR
+.RS 4
+Compute GPS satellite positions before exit\&.
+.RE
+.PP
+\fB\-\-time SEC\fR
+.RS 4
+Compute satellite position at time SEC in POSIX seconds\&.
+.RE
+.PP
+\fB\-\-test\fR
+.RS 4
+Run
+\fB\-\-satpos\fR
+selftest code\&.
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+Print the program version, then exit\&.
+.RE
+.PP
+\fB\-x SEC\fR, \fB\-\-seconds SEC\fR
+.RS 4
+Seconds of messages to parse\&. 0 to disable\&.
+.RE
+.SH "EXAMPLES"
+.PP
+First connfigure a u\-blox 9\-series to output subframe messages\&. Then have
+gpssubframe
+gather one complete set of subframes, then print the data organized by GPS satellite number\&. Then calculate and print the known satellite positions as well as the azimuth, elevation, and range from the current position:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ubxtool \-P 22 \-e SFRBX
+gpssubframe \-x 750 \-\-satpos
+   
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+If staring at a blank screen for 12\&.5 minutes is too stressful, then enable progress messages:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+gpssubframe \-x 750 \-\-satpos \-\-progress
+   
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.SH "SEE ALSO"
+.PP
+\fBgpsd\fR(8),
+\fBgps\fR(1),
+\fBgpsprof\fR(1),
+\fBgpsfake\fR(1),
+\fBgpsctl\fR(1),
+\fBgpscat\fR(1)\&.
+.PP
+IS\-GPS\-200 "NAVSTAR GPS Space Segment/Navigation User Segment Interfaces"
+.SH "AUTHOR"
+.PP
+Gary E\&. Miller
+<gem@rellim\&.com>\&.
