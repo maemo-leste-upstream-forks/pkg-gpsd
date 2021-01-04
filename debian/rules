@@ -169,9 +169,6 @@ install-stamp: build-stamp build-static-stamp $(LIBGPS_DEBIAN_FILE_TARGETS)
 	ln -s libgps.so.$(LIBGPS_SONAME).0.0 debian/libgps$(LIBGPS_SONAME)/usr/lib/$(DEB_HOST_MULTIARCH)/libgps.so.$(LIBGPS_SONAME)
 	rm debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libgps.so.$(LIBGPS_SONAME)
 	dh_missing --fail-missing
-	# use python3
-	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd-clients/usr/bin/*
-	sed -i 's,/usr/bin/env python,/usr/bin/env python3,' debian/gpsd/usr/bin/*
 	touch $@
 : install
 install-arch: install
