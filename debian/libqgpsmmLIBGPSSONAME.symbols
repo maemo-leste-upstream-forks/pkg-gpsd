@@ -26,7 +26,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
 #MISSING:" 3.12# (c++)"gps_sock_waiting(gps_data_t const*, int)@Base" 3.3
  gps_sock_waiting@Base 3.12
  (c++)"gpsmm::is_open()@Base" 3.10+dev1~
- (c++|optional)"QList<QString>::detach_helper(int)@Base" 3.3
+#MISSING:" 3.21.1 (c++|optional)"QList<QString>::detach_helper(int)@Base" 3.3
  (c++)"gpsmm::enable_debug(int, _IO_FILE*)@Base" 3.3
  (c++)"gpsmm::gps_inner_open(char const*, char const*)@Base" 3.3
  (c++)"gpsmm::data()@Base" 3.3
@@ -96,6 +96,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  gps_clear_att@Base 3.18
  gps_clear_dop@Base 3.3
  gps_clear_fix@Base 3.3
+ gps_clear_log@Base 3.21.1
  gps_close@Base 3.3
  gps_data@Base 3.3
  gps_enable_debug@Base 3.3
@@ -122,7 +123,9 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  json_enable_debug@Base 3.3
  json_error_string@Base 3.3
  json_oscillator_read@Base 3.17
+ json_policy_to_watch@Base 3.21.1
  json_pps_read@Base 3.10
+ json_quote@Base 3.21.1
  json_read_array@Base 3.3
  json_read_object@Base 3.3
  json_rtcm2_read@Base 3.3
@@ -153,3 +156,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
 #MISSING: 3.5# true2magnetic@Base 3.3
 #MISSING: 3.20# unix_to_iso8601@Base 3.3
  datum_code_string@Base 3.19
+#MISSING: 3.21.1# nanowait(int, timespec*)@Base 3.21.1
+ QString::QString(QString const&)@Base 3.21.1
+ QString::QString(QString const&)@Base 3.21.1
+ gpsd_version@Base 3.21.1
