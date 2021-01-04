@@ -1,3 +1,4 @@
+#!/usr/bin/dh-exec
 usr/bin/gpspipe
 usr/bin/gpsdecode
 usr/bin/xgps
@@ -34,3 +35,10 @@ usr/share/man/man1/gpssubframe.1
 packaging/X11/xgps.desktop usr/share/applications
 packaging/X11/xgpsspeed.desktop usr/share/applications
 usr/share/gpsd/icons/gpsd-logo.png
+contrib/*.c /usr/share/doc/gpsd-clients/examples
+contrib/*.php /usr/share/doc/gpsd-clients/examples
+contrib/*.pl /usr/share/doc/gpsd-clients/examples
+gpsd-*/contrib/ntpshmviz /usr/share/doc/gpsd-clients/examples
+gpsd-*/contrib/skyview2svg.py /usr/share/doc/gpsd-clients/examples
+gpsd-*/contrib/webgps /usr/share/doc/gpsd-clients/examples
+gpsd-*/clients/gpsd.php /usr/share/doc/gpsd-clients/examples

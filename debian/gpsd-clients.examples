@@ -1,8 +1,0 @@
-#!/usr/bin/dh-exec
-contrib/*.c
-contrib/*.php
-contrib/*.pl
-gpsd-*/contrib/ntpshmviz
-gpsd-*/contrib/skyview2svg.py
-gpsd-*/contrib/webgps
-gpsd-*/clients/gpsd.php
