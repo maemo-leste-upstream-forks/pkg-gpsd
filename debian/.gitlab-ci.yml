@@ -45,7 +45,7 @@ variables:
      ccache \
      equivs \
      build-essential
-   apt build-dep ${REVERSE_DEP}
+   apt -y build-dep ${REVERSE_DEP}
    # install built packages
    dpkg -i ${WORKING_DIR}/*.deb || apt -y -f install
    # download source
