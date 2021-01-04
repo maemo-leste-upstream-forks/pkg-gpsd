@@ -34,7 +34,7 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  gps_clear_att@Base 3.18
  gps_clear_dop@Base 3.3
  gps_clear_fix@Base 3.3
- gps_clear_log@Base 3.21.1
+ gps_clear_log@Base 3.21.1~dev
  gps_close@Base 3.3
  gps_data@Base 3.3
  gps_dbus_mainloop@Base 3.3
@@ -63,7 +63,7 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  gpsd_packetdump@Base 3.9
  gpsd_source_spec@Base 3.3
  gpsd_units@Base 3.3
- gpsd_version@Base 3.21.1
+ gpsd_version@Base 3.21.1~dev
  hex_escapes@Base 3.3
  iso8601_to_timespec@Base 3.20
 #MISSING: 3.20# iso8601_to_unix@Base 3.3
@@ -72,7 +72,7 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  json_enable_debug@Base 3.3
  json_error_string@Base 3.3
  json_oscillator_read@Base 3.17
- json_policy_to_watch@Base 3.21.1
+ json_policy_to_watch@Base 3.21.1~dev
  json_pps_read@Base 3.10
  json_quote@Base 3.21
  json_read_array@Base 3.3
