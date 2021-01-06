@@ -25,8 +25,8 @@ Build-Depends: debhelper (>= 11),
  pkg-config,
  asciidoc,
  asciidoctor,
- libsystemd-dev,
- libudev-dev,
+ libsystemd-dev [linux-any],
+ libudev-dev [linux-any],
 Standards-Version: 4.2.1
 Homepage: http://www.catb.org/gpsd/
 Vcs-Browser: https://salsa.debian.org/debian-gps-team/pkg-gpsd/
