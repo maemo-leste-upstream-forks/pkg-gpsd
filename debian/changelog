@@ -1,10 +1,11 @@
-gpsd (3.21.99~rc1-2) experimental; urgency=medium
+gpsd (3.21.99~rc1-2) unstable; urgency=medium
 
+  * Uploading to unstable
   * [ac4c2cbe] add automatically generated rdep builder
   * [3420d64b] Revert "Updating gbp.conf for experimental"
     This reverts commit c524723236f6334db4605752172412707e7f2cb3.
 
- -- Bernd Zeimetz <bzed@debian.org>  Tue, 05 Jan 2021 17:14:57 +0100
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 06 Jan 2021 01:36:36 +0100
 
 gpsd (3.21.99~rc1-1) experimental; urgency=medium
 
