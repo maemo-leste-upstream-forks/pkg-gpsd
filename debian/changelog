@@ -1,3 +1,16 @@
+gpsd (3.22-1) unstable; urgency=medium
+
+  [ Pino Toscano ]
+  * [d78fef17] Limit libsystemd-dev & libudev-dev build-deps as linux-any
+
+  [ Bernd Zeimetz ]
+  * [5afe80fe] New upstream version 3.22
+  * [d23d0669] Updating debian/control from debian/control.in
+  * [fde91987] libgps-dev: mark as M-A: same.
+    Thanks to Lisandro Damián Nicanor Pérez Meyer (Closes: #912580)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sat, 09 Jan 2021 22:42:25 +0100
+
 gpsd (3.21.99~rc1-2) unstable; urgency=medium
 
   * Uploading to unstable
