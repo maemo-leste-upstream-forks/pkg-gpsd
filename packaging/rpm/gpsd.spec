@@ -1,7 +1,7 @@
 %global _hardened_build 1
 
 Name: gpsd
-Version: 3.21.99~rc1
+Version: 3.22
 Release: 0%{?dist}
 Summary: Service daemon for mediating access to a GPS
 
