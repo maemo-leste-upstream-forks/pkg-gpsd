@@ -86,6 +86,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"getled64(char const*, int)@Base" 3.9
  (c++)"getlef32(char const*, int)@Base" 3.9
  (c++)"putbef32(char*, int, float)@Base" 3.9
+ (c++)"nanowait(int, timespec*)@Base" 3.22
 #MISSING: 3.21.1~dev# (c++)"nanowait(int, int)@Base" 3.19
 #MISSING: 3.5# deg_to_str@Base 3.3
  earth_distance@Base 3.3
