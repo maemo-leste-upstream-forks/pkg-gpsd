@@ -1,11 +1,29 @@
-# vim:syntax=apparmor
 # ------------------------------------------------------------------
 #
 # Copyright (C) 2018 Canonical Ltd.
+# This file is Copyright 2020 by the GPSD project
+# SPDX-License-Identifier: BSD-2-clause
 #
 # This software is distributed under a BSD-style license. See the
 # file "COPYING" in the top-level directory of the distribution for details.
 #
+# Apparmor profiles are meant to cover and allow for the most common use
+# cases and that is what this profile tries to cover. Due to the nature of
+# the program there are various different use-cases and if you trigger
+# apparmor denies (see dmesg and journal) it is recommended to add matching
+# local overrides for your use-case. See:
+# gitlab.com/apparmor/apparmor/-/blob/master/profiles/apparmor.d/local/README
+# This way your changes do not conflict with further updates of the program.
+#
+# If you consider this use case common please report a bug upstream so that
+# the rule can be added to the default profile.
+#
+# If instead you are just frustrated and want to get it silenced it is
+# recommended to set it to complain mode:
+#  $ sudo aa-complain usr.sbin.gpsd
+# That way nothing will be blocked anymore, but you will be able to see and
+# report the denials of your use case. That way there is a chance to update
+# the default profile for it.
 # ------------------------------------------------------------------
 
 #include <tunables/global>
@@ -14,6 +32,7 @@
   #include <abstractions/base>
   #include <abstractions/nameservice>
 
+  # For shmctl()
   capability ipc_lock,
   capability net_bind_service,
   capability sys_nice,
@@ -25,6 +44,8 @@
   # for all the remote connection options
   network dgram,
   network stream,
+  network bluetooth,
+  network can raw,
 
   # own binary
   /usr/sbin/gpsd rmix,
@@ -33,6 +54,10 @@
   /dev/tty{,S,USB,AMA,ACM}[0-9]*    rw,
   /sys/dev/char     r,
   /sys/dev/char/**  r,
+
+  # Bluetooth devices, for Bluetooth GNSS receivers
+  /dev/rfcomm* rw,
+  owner /dev/rfcomm* w,
 
   # pps related devices
   /dev/pps[0-9]*              rw,
@@ -70,6 +95,9 @@
   /{,var/}run/chrony.tty{,S,USB,AMA}[0-9]*.sock rw,
   /tmp/chrony.tty{,S,USB,AMA}[0-9]*.sock rw,
 
+  # for gpsfake:
+  /tmp/gpsfake-*.sock rw,
+
   # logging
   /{,var/}run/systemd/journal/dev-log w,
 
@@ -98,3 +126,4 @@
   # Site-specific additions and overrides. See local/README for details.
   #include <local/usr.sbin.gpsd>
 }
+# vim:syntax=apparmor
