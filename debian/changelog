@@ -1,3 +1,15 @@
+gpsd (3.22-2) unstable; urgency=medium
+
+  [ Bernd Zeimetz ]
+  * [66691096] Update Apparmor profile from upstream git HEAD.
+    Thanks to Christian Ehrhardt (Closes: #976152) (LP: #1894330)
+
+  [ Christian Ehrhardt ]
+  * [63f0cbf0] symbols: nanowait came back as (int, timespec*)
+    Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+
+ -- Bernd Zeimetz <bzed@debian.org>  Wed, 13 Jan 2021 19:20:14 +0100
+
 gpsd (3.22-1) unstable; urgency=medium
 
   [ Pino Toscano ]
