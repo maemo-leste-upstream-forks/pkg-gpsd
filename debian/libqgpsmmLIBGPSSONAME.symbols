@@ -61,9 +61,7 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"export_list(_IO_FILE*)@Base" 3.5
  (c++)"export_lookup(char const*)@Base" 3.5
 #MISSING: 3.12# (c++)"gps_dbus_mainloop(gps_data_t*, int, void (*)(gps_data_t*))@Base" 3.5
- gps_dbus_mainloop@Base 3.12
 #MISSING: 3.12# (c++)"gps_dbus_open(gps_data_t*)@Base" 3.5
- gps_dbus_open@Base 3.12
 #MISSING: 3.12# (c++|optional)"gpsd_hexdump(char*, unsigned int)@Base" 3.5
 #MISSING: 3.12# (c++|optional)"gpsd_hexdump(char*, unsigned int, char*, unsigned int)@Base" 3.10
 #MISSING: 3.12# (c++|optional)"gpsd_hexdump(char*, unsigned long)@Base" 3.5
