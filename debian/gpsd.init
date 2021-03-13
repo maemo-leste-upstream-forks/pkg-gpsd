@@ -1,0 +1,41 @@
+#!/sbin/openrc-run
+
+depend() {
+	after dbus
+	before ntpd
+}
+
+PIDFILE=/var/run/${SVCNAME}.pid
+DAEMON=/usr/sbin/gpsd
+
+checkconfig() {
+	if [ -z "$GPSD_DEVICES" ]; then
+		ewarn "No GPS devices configured in conf.d"
+		return 1
+	fi
+
+	case $(gconftool-2 -g /system/nokia/location/disclaimer-accepted) in
+	true)
+		return 0
+		;;
+	esac
+
+	eerror "Privacy disclaimer not accepted."
+	eerror "Please start a liblocation client first."
+	return 1
+}
+
+start() {
+	checkconfig || exit 1
+	ebegin "Starting gpsd"
+	start-stop-daemon --start --quiet --pidfile ${PIDFILE} --exec ${DAEMON} -- \
+		-P ${PIDFILE} ${GPSD_DEVICES}
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping gpsd"
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile ${PIDFILE}
+	eend $?
+	rm -f ${PIDFILE}
+}
