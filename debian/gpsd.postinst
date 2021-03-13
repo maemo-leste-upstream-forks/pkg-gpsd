@@ -24,4 +24,8 @@ fi
 
 #DEBHELPER#
 
+# In Leste we don't want gpsd to autostart,
+# so we'll remove it from the runlevel.
+rc-update del gpsd default || true
+
 exit 0
