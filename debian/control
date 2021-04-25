@@ -63,8 +63,8 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libgps28 (= ${binary:Version}),
 Suggests: gpsd
-Breaks: python-gps, gpsd (<< 3.20-9)
-Replaces: python-gps
+Breaks: python-gps, gpsd (<< 3.20-9), gpsd-clients (<< 3.20-10)
+Replaces: python-gps, gpsd-clients (<< 3.20-10)
 Description: Global Positioning System - tools
  The gpsd service daemon can monitor one or more GPS devices connected to
  a host computer, making all data on the location and movements of the
