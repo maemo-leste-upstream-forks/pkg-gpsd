@@ -1,3 +1,16 @@
+gpsd (3.22-3) unstable; urgency=medium
+
+  * [c6838e37] Remove duplicate lines from symbol files.
+    Thanks to Matthias Klose (Closes: #985930)
+  * [5c240253] Mark String::QString(QString const&)@Base as optional.
+    Required for backporting.
+  * [2dfbaa07] Updating debian/control from debian/control.in
+  * [c582b2aa] gpsd-tools: add missing Breaks+Replaces
+    gpsd-tools needs Breaks/Replaces for gpsd-clients (<< 3.20-10)
+    Thanks to Andreas Beckmann (Closes: #987208)
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 25 Apr 2021 12:17:57 +0200
+
 gpsd (3.22-2) unstable; urgency=medium
 
   [ Bernd Zeimetz ]
