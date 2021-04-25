@@ -9,8 +9,6 @@ libgps.so.LIBGPSSONAME libgpsLIBGPSSONAME #MINVER#
  (c++)"gpsmm::stream(int)@Base" 3.3
  (c++)"gpsmm::waiting(int)@Base" 3.3
  (c++)"gpsmm::~gpsmm()@Base" 3.3
- (c++)"gpsmm::~gpsmm()@Base" 3.3
- (c++)"gpsmm::~gpsmm()@Base" 3.3
  (c++)"typeinfo for gpsmm@Base" 3.3
  (c++)"typeinfo name for gpsmm@Base" 3.3
  (c++)"vtable for gpsmm@Base" 3.3

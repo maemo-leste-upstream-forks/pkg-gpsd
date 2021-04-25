@@ -36,18 +36,12 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
  (c++)"gpsmm::waiting(int)@Base" 3.3
  (c++)"gpsmm::clear_fix()@Base" 3.3
  (c++)"gpsmm::~gpsmm()@Base" 3.3
- (c++)"gpsmm::~gpsmm()@Base" 3.3
- (c++)"gpsmm::~gpsmm()@Base" 3.3
-#MISSING: 3.18# (c++|optional)"QDebug::~QDebug()@Base" 3.3
 #MISSING: 3.18# (c++|optional)"QDebug::~QDebug()@Base" 3.3
  (c++|optional)"QString::~QString()@Base" 3.3
- (c++|optional)"QString::~QString()@Base" 3.3
- (c++|optional)"QList<QString>::~QList()@Base" 3.5
  (c++|optional)"QList<QString>::~QList()@Base" 3.5
  (c++)"typeinfo for gpsmm@Base" 3.3
  (c++)"typeinfo name for gpsmm@Base" 3.3
  (c++)"vtable for gpsmm@Base" 3.3
-#MISSING: 3.18# (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
 #MISSING: 3.18# (c++|optional)"QByteArray::~QByteArray()@Base" 3.3
  (c++)"shiftleft(unsigned char*, int, unsigned short)@Base" 3.12
 #MISSING: 3.17# (c++)"shm_get(int, bool, bool)@Base" 3.15
@@ -158,6 +152,5 @@ libQgpsmm.so.LIBGPSSONAME libqgpsmmLIBGPSSONAME #MINVER#
 #MISSING: 3.20# unix_to_iso8601@Base 3.3
  datum_code_string@Base 3.19
 #MISSING: 3.21.1~dev# nanowait(int, timespec*)@Base 3.21.1
- (c++)"QString::QString(QString const&)@Base" 3.21.1~dev
  (c++)"QString::QString(QString const&)@Base" 3.21.1~dev
  gpsd_version@Base 3.21.1~dev
