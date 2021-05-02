@@ -14,15 +14,21 @@ checkconfig() {
 		return 1
 	fi
 
-	case $(gconftool-2 -g /system/nokia/location/disclaimer-accepted) in
-	true)
-		return 0
+	case $(sudo -u user gconftool-2 -g /system/nokia/location/disclaimer-accepted) in
+	false)
+		eerror "Privacy disclaimer not accepted. Please start a liblocation client first."
+		return 1
 		;;
 	esac
 
-	eerror "Privacy disclaimer not accepted."
-	eerror "Please start a liblocation client first."
-	return 1
+	case $(sudo -u user gconftool-2 -g /system/nokia/location/gps-disabled) in
+	true)
+		eerror "GPS is disabled in settings. Please enable it."
+		return 1
+		;;
+	esac
+
+	return 0
 }
 
 start() {
