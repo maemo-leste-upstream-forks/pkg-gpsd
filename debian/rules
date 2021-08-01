@@ -115,6 +115,18 @@ ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	# disable tests on hurd due to weird ipv6 errors
 	# http://deb.li/4C46AEAC.7040906@bzed.de
 ifeq (,$(findstring hurd,$(DEB_HOST_ARCH_OS)))
+
+	# remove those binary tests we can't patch with quilt.
+	rm -f test/daemon/garmin18x-bin.log
+	rm -f test/daemon/sirfstarv.log
+	rm -f test/daemon/trimble-lasseniq-bin2d.log
+	rm -f test/daemon/ublox-ned-m8t-sbfrx3.log
+	rm -f test/daemon/ublox-neo-m8t-s.log
+	rm -f test/daemon/ublox-neo-m8t.log
+	rm -f test/daemon/ublox-zed-f9p-hp.log
+	rm -f test/daemon/ublox-zed-f9p_hpg1.11.log
+	rm -f test/daemon/ublox-zed-f9t-rtcm3.log
+
 	-$(SCONS_ENV) $(PYTHON3) /usr/bin/scons check
 endif
 endif

@@ -1,0 +1,576 @@
+Index: pkg-gpsd/NEWS
+===================================================================
+--- pkg-gpsd.orig/NEWS
++++ pkg-gpsd/NEWS
+@@ -1,6 +1,9 @@
+                         GPSD project news
+ 
+-3.22: 2020-01-08
++3.22.1~dev: unreleased
++ (gpsd/timebase.c" Don't compute wrong GPS rollover after 2020-10-23.)
++
++3.22: 2021-01-08
+   Added client/gpscsv to convert gpsd JSON to csv.
+   Added client/gpsplot to dynamically plot gpsd JSON.
+   Added client/gpssubframe to decode gpsd SUBFRAME JSON.
+Index: pkg-gpsd/drivers/drivers.c
+===================================================================
+--- pkg-gpsd.orig/drivers/drivers.c
++++ pkg-gpsd/drivers/drivers.c
+@@ -24,15 +24,17 @@ ssize_t generic_get(struct gps_device_t
+     return packet_get(session->gpsdata.gps_fd, &session->lexer);
+ }
+ 
++// This handles only bad, comment, and maybe NMEA packets.
+ gps_mask_t generic_parse_input(struct gps_device_t *session)
+ {
+-    if (session->lexer.type == BAD_PACKET)
+-        return 0;
+-    else if (session->lexer.type == COMMENT_PACKET) {
+-        gpsd_set_century(session);
++    if (BAD_PACKET == session->lexer.type ||
++        COMMENT_PACKET == session->lexer.type) {
++        // ignore bad packets and comment packets
+         return 0;
++    }
++
+ #ifdef NMEA0183_ENABLE
+-    } else if (session->lexer.type == NMEA_PACKET) {
++    if (NMEA_PACKET == session->lexer.type) {
+         const struct gps_type_t **dp;
+         gps_mask_t st = 0;
+         char *sentence = (char *)session->lexer.outbuffer;
+@@ -65,13 +67,13 @@ gps_mask_t generic_parse_input(struct gp
+             }
+         }
+         return st;
+-#endif /* NMEA0183_ENABLE */
+-    } else {
+-        GPSD_LOG(LOG_SHOUT, &session->context->errout,
+-                 "packet type %d fell through (should never happen): %s.\n",
+-                 session->lexer.type, gpsd_prettydump(session));
+-        return 0;
+     }
++#endif /* NMEA0183_ENABLE */
++
++    GPSD_LOG(LOG_SHOUT, &session->context->errout,
++             "packet type %d fell through (should never happen): %s.\n",
++             session->lexer.type, gpsd_prettydump(session));
++    return 0;
+ }
+ 
+ /**************************************************************************
+Index: pkg-gpsd/gps/fake.py
+===================================================================
+--- pkg-gpsd.orig/gps/fake.py
++++ pkg-gpsd/gps/fake.py
+@@ -185,7 +185,7 @@ class TestLoad(object):
+                 commentlen += len(packet)
+                 # Some comments are magic
+                 if b"Serial:" in packet:
+-                    # Change serial parameters
++                    # "#Serial:' -- Change serial parameters
+                     packet = packet[1:].strip()
+                     try:
+                         (_xx, baud, params) = packet.split()
+@@ -207,10 +207,13 @@ class TestLoad(object):
+                                             self.name)
+                     self.serial = (baud, databits, parity, stopbits)
+                 elif b"Transport: UDP" in packet:
++                    # "#Transport:'
+                     self.sourcetype = "UDP"
+                 elif b"Transport: TCP" in packet:
++                    # "#Transport:'
+                     self.sourcetype = "TCP"
+                 elif b"Delay-Cookie:" in packet:
++                    # "#Delay-Cookie:'
+                     if packet.startswith(b"#"):
+                         packet = packet[1:]
+                     try:
+@@ -221,6 +224,10 @@ class TestLoad(object):
+                         raise TestLoadError("bad Delay-Cookie line in %s" %
+                                             self.name)
+                     self.resplit = True
++                elif b"Date:" in packet:
++                    # "# Date: yyyy-mm-dd' -- preset date
++                    self.sentences.append(packet)
++                # drop all other comments silently
+             else:
+                 if type_latch is None:
+                     type_latch = ptype
+Index: pkg-gpsd/gpsd/libgpsd_core.c
+===================================================================
+--- pkg-gpsd.orig/gpsd/libgpsd_core.c
++++ pkg-gpsd/gpsd/libgpsd_core.c
+@@ -1514,65 +1514,80 @@ gps_mask_t gpsd_poll(struct gps_device_t
+             session->gpsdata.online.tv_nsec = 0;
+         }
+         return NODATA_IS;
+-    } else /* (newlen > 0) */ {
+-        GPSD_LOG(LOG_RAW, &session->context->errout,
+-                 "packet sniff on %s finds type %d\n",
+-                 session->gpsdata.dev.path, session->lexer.type);
+-        if (session->lexer.type == COMMENT_PACKET) {
+-            if (strcmp((const char *)session->lexer.outbuffer, "# EOF\n") == 0) {
+-                GPSD_LOG(LOG_PROG, &session->context->errout,
+-                         "synthetic EOF\n");
+-                return EOF_IS;
+-            }
+-            else
+-                GPSD_LOG(LOG_PROG, &session->context->errout,
+-                         "comment, sync lock deferred\n");
+-            /* FALL THROUGH */
+-        } else if (session->lexer.type > COMMENT_PACKET) {
+-            if (session->device_type == NULL)
+-                driver_change = true;
+-            else {
+-                int newtype = session->lexer.type;
+-                /*
+-                 * Are we seeing a new packet type? Then we probably
+-                 * want to change drivers.
+-                 */
+-                bool new_packet_type =
+-                    (newtype != session->device_type->packet_type);
+-                /*
+-                 * Possibly the old driver has a mode-switcher method, in
+-                 * which case we know it can handle NMEA itself and may
+-                 * want to do special things (like tracking whether a
+-                 * previous mode switch to binary succeeded in suppressing
+-                 * NMEA).
+-                 */
+-                bool dependent_nmea = (newtype == NMEA_PACKET &&
+-                                   session->device_type->mode_switcher != NULL);
++    }
++    // else (0 < newlen)
+ 
+-                /*
+-                 * Compute whether to switch drivers.
+-                 * If the previous driver type was sticky and this one
+-                 * isn't, we'll revert after processing the packet.
+-                 */
+-                driver_change = new_packet_type && !dependent_nmea;
+-            }
+-            if (driver_change) {
+-                const struct gps_type_t **dp;
++    GPSD_LOG(LOG_RAW, &session->context->errout,
++             "packet sniff on %s finds type %d\n",
++             session->gpsdata.dev.path, session->lexer.type);
++    if (COMMENT_PACKET == session->lexer.type) {
++        // deal with regression test helper macros
++        const char date_str[] = "# Date: ";
++        if (0 == strcmp((const char *)session->lexer.outbuffer,
++                        "# EOF\n")) {
++            // undocumented, used by gpsfake to signal EOF
++            GPSD_LOG(LOG_PROG, &session->context->errout,
++                     "synthetic EOF\n");
++            return EOF_IS;
++        }
++        if (0 == strncmp((const char *)session->lexer.outbuffer,
++                         date_str, sizeof(date_str) - 1)) {
++            // # Date: yyyy-mm-dd
++            // used by regression tests to correct
++            // change start time, gps weeks, etc.
++            gpsd_set_century(session);
++
++            GPSD_LOG(LOG_PROG, &session->context->errout,
++                     "start_time %lld\n",
++                     (long long)session->context->start_time);
++        }
++        GPSD_LOG(LOG_PROG, &session->context->errout,
++                 "comment, sync lock deferred: >%s<\n",
++                 session->lexer.outbuffer);
++    } else if (COMMENT_PACKET < session->lexer.type) {
++        if (NULL == session->device_type) {
++            driver_change = true;
++        } else {
++            int newtype = session->lexer.type;
++            /*
++             * Are we seeing a new packet type? Then we probably
++             * want to change drivers.
++             */
++            bool new_packet_type =
++                (newtype != session->device_type->packet_type);
++            /*
++             * Possibly the old driver has a mode-switcher method, in
++             * which case we know it can handle NMEA itself and may
++             * want to do special things (like tracking whether a
++             * previous mode switch to binary succeeded in suppressing
++             * NMEA).
++             */
++            bool dependent_nmea = (NMEA_PACKET == newtype &&
++                               NULL != session->device_type->mode_switcher);
+ 
+-                for (dp = gpsd_drivers; *dp; dp++)
+-                    if (session->lexer.type == (*dp)->packet_type) {
+-                        GPSD_LOG(LOG_PROG, &session->context->errout,
+-                                 "switching to match packet type %d: %s\n",
+-                                 session->lexer.type, gpsd_prettydump(session));
+-                        (void)gpsd_switch_driver(session, (*dp)->type_name);
+-                        break;
+-                    }
+-            }
+-            session->badcount = 0;
+-            session->gpsdata.dev.driver_mode =
+-                (session->lexer.type > NMEA_PACKET) ? MODE_BINARY : MODE_NMEA;
+-            /* FALL THROUGH */
+-        } else if (hunt_failure(session) && !gpsd_next_hunt_setting(session)) {
++            /*
++             * Compute whether to switch drivers.
++             * If the previous driver type was sticky and this one
++             * isn't, we'll revert after processing the packet.
++             */
++            driver_change = new_packet_type && !dependent_nmea;
++        }
++        if (driver_change) {
++            const struct gps_type_t **dp;
++
++            for (dp = gpsd_drivers; *dp; dp++)
++                if (session->lexer.type == (*dp)->packet_type) {
++                    GPSD_LOG(LOG_PROG, &session->context->errout,
++                             "switching to match packet type %d: %s\n",
++                             session->lexer.type, gpsd_prettydump(session));
++                    (void)gpsd_switch_driver(session, (*dp)->type_name);
++                    break;
++                }
++        }
++        session->badcount = 0;
++        session->gpsdata.dev.driver_mode =
++            (session->lexer.type > NMEA_PACKET) ? MODE_BINARY : MODE_NMEA;
++    } else if (hunt_failure(session) && !gpsd_next_hunt_setting(session)) {
+             (void)clock_gettime(CLOCK_REALTIME, &ts_now);
+             TS_SUB(&delta, &ts_now, &session->gpsdata.online);
+             GPSD_LOG(LOG_INF, &session->context->errout,
+Index: pkg-gpsd/gpsd/timebase.c
+===================================================================
+--- pkg-gpsd.orig/gpsd/timebase.c
++++ pkg-gpsd/gpsd/timebase.c
+@@ -199,8 +199,8 @@ SPDX-License-Identifier: BSD-2-clause
+ 
+ #include "../include/gpsd.h"
+ 
++// initialize the GPS context's time fields
+ void gpsd_time_init(struct gps_context_t *context, time_t starttime)
+-/* initialize the GPS context's time fields */
+ {
+     /*
+      * gpsd can't work with 'right' timezones (leapseconds inserted in
+@@ -220,7 +220,8 @@ void gpsd_time_init(struct gps_context_t
+     context->century = BUILD_CENTURY;
+     context->start_time = starttime;
+ 
+-    context->rollovers = (int)((context->start_time-GPS_EPOCH) / GPS_ROLLOVER);
++    context->rollovers = (int)((context->start_time - GPS_EPOCH) /
++                               GPS_ROLLOVER);
+ 
+     if (GPS_EPOCH > context->start_time) {
+         GPSD_LOG(LOG_ERROR, &context->errout,
+@@ -246,27 +247,56 @@ void gpsd_time_init(struct gps_context_t
+     }
+ }
+ 
+-void gpsd_set_century(struct gps_device_t *session)
+ /*
+- * Interpret "Date: yyyy-mm-dd", setting the session context
+- * century from the year.  We do this so the behavior of the
+- * regression tests won't depend on what century the daemon
+- * started up in.
++ * Interpret "#Date: yyyy-mm-dd", setting the session context
++ * start time.  We do this so the behavior of the
++ * regression tests won't depend on current system time.
+  */
++void gpsd_set_century(struct gps_device_t *session)
+ {
+-    char *end;
+-    if (strstr((char *)session->lexer.outbuffer, "Date:") != NULL) {
+-        int year;
+-        unsigned char *cp = session->lexer.outbuffer + 5;
+-        while (isspace(*cp))
+-            ++cp;
+-        year = (int)strtol((char *)cp, &end, 10);
+-        session->context->century = year - (year % 100);
++    int ret;
++    unsigned year = 0;
++    unsigned month = 0;
++    unsigned day = 0;
++    struct gps_context_t *context = session->context;
++    struct tm date = {0};
++
++    ret = sscanf((const char *)session->lexer.outbuffer, "# Date: %u-%u-%u",
++                 &year, &month, &day);
++    if (1 > ret) {
++        // give up unless we at least got a year
++        return;
++    }
++
++    if (1968 > year || 2200 < year) {
++        // bad year
++        return;
+     }
++
++    context->century = year - (year % 100);
++
++    date.tm_year = year - 1900;                // year, 1999..2099
++    if (1 > month || 12 < month) {
++        month = 1;
++    }
++    date.tm_mon = month;                       // month 1..12
++    if (1 > day || 31 < day) {
++        day = 1;
++    }
++    date.tm_mday = day;                        // day 1..31
++    context->start_time = mkgmtime(&date);
++    context->rollovers = (int)((context->start_time - GPS_EPOCH) /
++                               GPS_ROLLOVER);
++
++    GPSD_LOG(LOG_PROG, &context->errout,
++             "Setting century: %d rollovers %d %d-%d-%d\n",
++             context->century, context->rollovers, year, month, day);
++
++    gpsd_time_init(context, context->start_time);
+ }
+ 
+ #ifdef NMEA0183_ENABLE
+-/* resolve a UTC date, checking for rollovers */
++// resolve a UTC date, checking for rollovers
+ timespec_t gpsd_utc_resolve(struct gps_device_t *session)
+ {
+     /*
+@@ -308,19 +338,9 @@ timespec_t gpsd_utc_resolve(struct gps_d
+     }
+ 
+     /*
+-     * If the GPS is reporting a time from before the daemon started, we've
+-     * had a rollover event while the daemon was running.
++     * If the GPS is reporting a time from before the daemon started,
++     * maybe we've had a rollover event while the daemon was running.
+      */
+-#ifdef __UNUSED__
+-    // 5 Dec 2019
+-    // This fails ALL regression tests as start time after regression added
+-    if (t.tv_sec < (time_t)session->context->start_time) {
+-        (void)timespec_to_iso8601(t, scr, sizeof(scr));
+-        GPSD_LOG(LOG_WARN, &session->context->errout,
+-                 "GPS week rollover makes time %s (%lld) invalid\n",
+-                 scr, (long long)t.tv_sec);
+-    }
+-#endif  // __UNUSED__
+ 
+     return t;
+ }
+@@ -352,8 +372,7 @@ void gpsd_century_update(struct gps_devi
+ }
+ #endif /* NMEA0183_ENABLE */
+ 
+-/* gpsd_gpstime_resolv() convert week/tow to UTC as a timespec
+- */
++// gpsd_gpstime_resolv() convert GPS week/tow to UTC as a timespec
+ timespec_t gpsd_gpstime_resolv(struct gps_device_t *session,
+                                unsigned week, timespec_t tow)
+ {
+@@ -383,19 +402,12 @@ timespec_t gpsd_gpstime_resolv(struct gp
+     if (week < 1024)
+         week += session->context->rollovers * 1024;
+ 
+-    /* sanity check week number, GPS epoch, against leap seconds
+-     * Does not work well with regressions because the leap_sconds
+-     * could be from the receiver, or from BUILD_LEAPSECONDS. */
+-    if (0 < session->context->leap_seconds &&
+-        19 > session->context->leap_seconds &&
+-        2180 < week) {
+-        /* assume leap second = 19 by 31 Dec 2022
+-         * so week > 2180 is way in the future, do not allow it */
+-        week -= 1024;
+-        GPSD_LOG(LOG_WARN, &session->context->errout,
+-                 "GPS week confusion. Adjusted week %u for leap %d\n",
+-                 week, session->context->leap_seconds);
+-    }
++    /* This used to sanity check week number, GPS epoch, against leap
++     * seconds.  Did not work well with regressions because the leap_sconds
++     * could be from the receiver, or from BUILD_LEAPSECONDS.
++     * Maybe if the regressions files provided BUILD_LEAPSECONDS this
++     * could be tried again.
++     */
+ 
+     // gcc needs the (time_t)week to not overflow. clang got it right.
+     // if time_t is 32-bits, then still 2038 issues
+Index: pkg-gpsd/test/daemon/ais-nmea.log
+===================================================================
+--- pkg-gpsd.orig/test/daemon/ais-nmea.log
++++ pkg-gpsd/test/daemon/ais-nmea.log
+@@ -1,5 +1,5 @@
+ # From: Владимир Калачихин  <v.kalachikhin@gmail.com>
+-# Date: 8 APril 2020
++# Date: 2020-04-08
+ # Note: NMEA 0183 and AIS data
+ #
+ $GPGSA,A,3,11,32,14,28,22,03,10,08,17,,,,2.02,1.03,1.74*00
+Index: pkg-gpsd/test/daemon/nmea-fuzzy-cases.log
+===================================================================
+--- pkg-gpsd.orig/test/daemon/nmea-fuzzy-cases.log
++++ pkg-gpsd/test/daemon/nmea-fuzzy-cases.log
+@@ -1,6 +1,6 @@
+ # Name: NMEA cases causing "fuzzy arithmetic" problems (+1 non-failure).
+ # Submitter: Fred Wright <fw@fwright.net>
+-# Date: 29 June 2020
++# Date: 2020-06-29
+ # Note: Lifted from nmea-rtk.log (Trimble NMEA with RTK-4 fix).
+ #
+ # This file is Copyright 2020 by the GPSD project
+Index: pkg-gpsd/test/daemon/nmea-rtk.log
+===================================================================
+--- pkg-gpsd.orig/test/daemon/nmea-rtk.log
++++ pkg-gpsd/test/daemon/nmea-rtk.log
+@@ -1,7 +1,7 @@
+ # Name: Trimble NMEA with RTK-4 fix.
+ # Chipset: Trimble
+ # Submitter: "pisymbol ." <pisymbol@gmail.com>
+-# Date: 18 March 2020
++# Date: 2020-03-18
+ # Note: Part of the file is just 3D Fix.  Part is RTK fix.
+ #
+ # This file is Copyright 2020 by the GPSD project
+Index: pkg-gpsd/test/daemon/quectel.log
+===================================================================
+--- pkg-gpsd.orig/test/daemon/quectel.log
++++ pkg-gpsd/test/daemon/quectel.log
+@@ -1,6 +1,6 @@
+ # Chipset: Quectel EC2526EC21
+ # Submitter: Tom Isaacson <tom.isaacson@teknique.com> 
+-# Date: 8 October 2020
++# Date: 2020-10-08
+ # Location: Auckland, NZ  36.44 S, 174.44E
+ #
+ # Note: Odd signal loss behavior with $GPGGA and $GPRMC.
+Index: pkg-gpsd/test/daemon/quectelLC79D-1.log
+===================================================================
+--- pkg-gpsd.orig/test/daemon/quectelLC79D-1.log
++++ pkg-gpsd/test/daemon/quectelLC79D-1.log
+@@ -1,6 +1,6 @@
+ # Chipset: Quectel LC79D
+ # Submitter: Filip Jan Kubicz <filip.kubicz@tier.app>
+-# Date: 30 November 2020
++# Date: 2020-11-30
+ # Location: Kamien, Poland, 50.02457296N 19.58828604E
+ #
+ # Note: Odd PRN 103 in GAGSA and GAGSV.
+Index: pkg-gpsd/test/daemon/quectelLC79D.log
+===================================================================
+--- pkg-gpsd.orig/test/daemon/quectelLC79D.log
++++ pkg-gpsd/test/daemon/quectelLC79D.log
+@@ -1,6 +1,6 @@
+ # Chipset: Quectel LC79D
+ # Submitter: Filip Jan Kubicz <filip.kubicz@tier.app>
+-# Date: 30 November 2020
++# Date: 2020-11-30
+ # Location: Kamien, Poland, 50.02457296N 19.58828604E
+ #
+ # Note: Odd PRN 102 in GAGSV.
+Index: pkg-gpsd/test/daemon/trimble-lassen_iq-3dfix.log.chk
+===================================================================
+--- pkg-gpsd.orig/test/daemon/trimble-lassen_iq-3dfix.log.chk
++++ pkg-gpsd/test/daemon/trimble-lassen_iq-3dfix.log.chk
+@@ -8,22 +8,22 @@ $GPRMC,,V,,S,,W,,,,,*35
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+ {"class":"TPV","mode":1}
+ $GPGSV,1,1,01,19,26,250,29*48
+-{"class":"SKY","time":"2019-04-07T06:57:22.584Z","vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":1,"uSat":1,"satellites":[]}
++{"class":"SKY","time":"1999-08-22T06:57:22.584Z","vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":1,"uSat":1,"satellites":[]}
+ $GPGSV,1,1,02,19,26,250,29,18,26,096,35*7F
+-{"class":"SKY","time":"2019-04-07T06:57:22.584Z","vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":2,"uSat":2,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19}]}
++{"class":"SKY","time":"1999-08-22T06:57:22.584Z","vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":2,"uSat":2,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19}]}
+ $GPGSV,1,1,03,19,26,250,29,18,26,096,35,01,29,221,26*41
+-{"class":"SKY","time":"2019-04-07T06:57:22.584Z","vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":3,"uSat":3,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19}]}
++{"class":"SKY","time":"1999-08-22T06:57:22.584Z","vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":3,"uSat":3,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19}]}
+ $GPGSV,1,1,04,19,26,250,29,18,26,096,35,01,29,221,26,11,24,307,29*7F
+-{"class":"SKY","time":"2019-04-07T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":4,"uSat":4,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18}]}
++{"class":"SKY","time":"1999-08-22T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":4,"uSat":4,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18}]}
+ $GPGSV,2,1,05,19,26,250,29,18,26,096,35,01,29,221,26,11,24,307,29*7D
+ $GPGSV,2,2,05,03,08,225,28*48
+-{"class":"SKY","time":"2019-04-07T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":5,"uSat":5,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18},{"PRN":1,"el":29.1,"az":221.2,"ss":26.0,"used":true,"gnssid":0,"svid":1}]}
++{"class":"SKY","time":"1999-08-22T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":5,"uSat":5,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18},{"PRN":1,"el":29.1,"az":221.2,"ss":26.0,"used":true,"gnssid":0,"svid":1}]}
+ $GPGSV,2,1,06,19,26,250,29,18,26,096,35,01,29,221,26,11,24,307,29*7E
+ $GPGSV,2,2,06,03,08,225,28,22,65,094,38*7E
+-{"class":"SKY","time":"2019-04-07T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":6,"uSat":6,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18},{"PRN":1,"el":29.1,"az":221.2,"ss":26.0,"used":true,"gnssid":0,"svid":1},{"PRN":11,"el":24.4,"az":307.3,"ss":29.0,"used":true,"gnssid":0,"svid":11}]}
++{"class":"SKY","time":"1999-08-22T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":6,"uSat":6,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18},{"PRN":1,"el":29.1,"az":221.2,"ss":26.0,"used":true,"gnssid":0,"svid":1},{"PRN":11,"el":24.4,"az":307.3,"ss":29.0,"used":true,"gnssid":0,"svid":11}]}
+ $GPGSV,2,1,07,19,26,250,29,18,26,096,35,01,29,221,26,11,24,307,29*7F
+ $GPGSV,2,2,07,03,08,225,28,22,65,094,38,09,24,045,38*4A
+-{"class":"SKY","time":"2019-04-07T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":7,"uSat":7,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18},{"PRN":1,"el":29.1,"az":221.2,"ss":26.0,"used":true,"gnssid":0,"svid":1},{"PRN":11,"el":24.4,"az":307.3,"ss":29.0,"used":true,"gnssid":0,"svid":11},{"PRN":3,"el":7.9,"az":225.4,"ss":28.0,"used":true,"gnssid":0,"svid":3}]}
++{"class":"SKY","time":"1999-08-22T06:57:22.584Z","xdop":0.72,"ydop":2.76,"vdop":2.56,"tdop":1.47,"hdop":1.43,"gdop":3.28,"pdop":2.93,"nSat":7,"uSat":7,"satellites":[{"PRN":19,"el":26.0,"az":249.7,"ss":29.0,"used":true,"gnssid":0,"svid":19},{"PRN":18,"el":26.3,"az":95.6,"ss":35.0,"used":true,"gnssid":0,"svid":18},{"PRN":1,"el":29.1,"az":221.2,"ss":26.0,"used":true,"gnssid":0,"svid":1},{"PRN":11,"el":24.4,"az":307.3,"ss":29.0,"used":true,"gnssid":0,"svid":11},{"PRN":3,"el":7.9,"az":225.4,"ss":28.0,"used":true,"gnssid":0,"svid":3}]}
+ $GPRMC,,V,,S,,W,,,,,*35
+ $GPGSA,A,1,19,18,1,11,3,22,9,,,,,,,,,*08
+ {"class":"TPV","mode":1}
+Index: pkg-gpsd/test/daemon/trimble-lassen_iq-playacar.log.chk
+===================================================================
+--- pkg-gpsd.orig/test/daemon/trimble-lassen_iq-playacar.log.chk
++++ pkg-gpsd/test/daemon/trimble-lassen_iq-playacar.log.chk
+@@ -1,38 +1,38 @@
+-$GPRMC,040929.00,V,,S,,W,0.0000,0.000,120419,,*22
++$GPRMC,040929.00,V,,S,,W,0.0000,0.000,270899,,*20
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{"class":"TPV","mode":1,"time":"2019-04-12T04:09:29.000Z","ept":0.005}
+-$GPRMC,040930.00,V,2037.7075,N,08704.0535,W,,,120419,-2.0,W*6A
++{"class":"TPV","mode":1,"time":"1999-08-27T04:09:29.000Z","ept":0.005}
++$GPRMC,040930.00,V,2037.7075,N,08704.0535,W,,,270899,-2.0,W*68
+ $GPGSA,A,1,,,,,,,,,,,,,2.9,2.3,1.7*3C
+-{"class":"TPV","mode":0,"time":"2019-04-12T04:09:30.000Z","ept":0.005}
++{"class":"TPV","mode":0,"time":"1999-08-27T04:09:30.000Z","ept":0.005}
+ $GPGGA,040930.00,2037.7075,N,08704.0535,W,1,05,2.34,27.90,M,-15.010,M,,*6F
+-$GPRMC,040930.00,A,2037.7075,N,08704.0535,W,0.0000,0.000,120419,-2.0,W*4D
++$GPRMC,040930.00,A,2037.7075,N,08704.0535,W,0.0000,0.000,270899,-2.0,W*4F
+ $GPGSA,A,3,,,,,,,,,,,,,2.9,2.3,1.7*3E
+-{"class":"TPV","mode":3,"time":"2019-04-12T04:09:30.000Z","ept":0.005,"lat":20.628457567,"lon":-87.067558169,"altHAE":12.8922,"altMSL":27.9021,"alt":27.9021,"epv":39.373,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.000,"climb":0.000,"velN":0.000,"velE":0.000,"velD":-0.000,"geoidSep":-15.010,"eph":44.377,"sep":55.020}
+-$GPRMC,040931.00,V,2037.7075,N,08704.0535,W,,,120419,-2.0,W*6B
++{"class":"TPV","mode":3,"time":"1999-08-27T04:09:30.000Z","ept":0.005,"lat":20.628457567,"lon":-87.067558169,"altHAE":12.8922,"altMSL":27.9021,"alt":27.9021,"epv":39.373,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.000,"climb":0.000,"velN":0.000,"velE":0.000,"velD":0.000,"geoidSep":-15.010,"eph":44.377,"sep":55.020}
++$GPRMC,040931.00,V,2037.7075,N,08704.0535,W,,,270899,-2.0,W*69
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{"class":"TPV","mode":1,"time":"2019-04-12T04:09:31.000Z","ept":0.005}
++{"class":"TPV","mode":1,"time":"1999-08-27T04:09:31.000Z","ept":0.005}
+ $GPGGA,040931.00,2037.7075,N,08704.0535,W,1,05,2.34,27.90,M,-15.010,M,,*6E
+-$GPRMC,040931.00,A,2037.7075,N,08704.0535,W,0.0000,0.000,120419,-2.0,W*4C
++$GPRMC,040931.00,A,2037.7075,N,08704.0535,W,0.0000,0.000,270899,-2.0,W*4E
+ $GPGSA,A,3,,,,,,,,,,,,,2.9,2.3,1.7*3E
+-{"class":"TPV","mode":3,"time":"2019-04-12T04:09:31.000Z","ept":0.005,"lat":20.628457697,"lon":-87.067558187,"altHAE":12.8941,"altMSL":27.9039,"alt":27.9039,"epv":39.384,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.000,"climb":0.000,"epc":78.76,"velN":0.000,"velE":0.000,"velD":-0.000,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
+-$GPZDA,040932.00,12,04,2019,00,00*67
++{"class":"TPV","mode":3,"time":"1999-08-27T04:09:31.000Z","ept":0.005,"lat":20.628457697,"lon":-87.067558187,"altHAE":12.8941,"altMSL":27.9039,"alt":27.9039,"epv":39.384,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.000,"climb":0.000,"epc":78.76,"velN":0.000,"velE":0.000,"velD":0.000,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
++$GPZDA,040932.00,27,08,1999,00,00*6F
+ $GPGGA,040932.00,2037.7075,N,08704.0535,W,1,05,2.34,27.91,M,-15.010,M,,*6C
+-$GPRMC,040932.00,A,2037.7075,N,08704.0535,W,0.0308,,120419,-2.0,W*6A
++$GPRMC,040932.00,A,2037.7075,N,08704.0535,W,0.0308,,270899,-2.0,W*68
+ $GPGSA,A,3,,,,,,,,,,,,,2.9,2.3,1.7*3E
+-{"class":"TPV","mode":3,"time":"2019-04-12T04:09:32.000Z","ept":0.005,"lat":20.628457840,"lon":-87.067558197,"altHAE":12.8959,"altMSL":27.9058,"alt":27.9058,"epv":39.384,"magvar":-2.0,"speed":0.016,"climb":0.002,"epc":78.77,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
++{"class":"TPV","mode":3,"time":"1999-08-27T04:09:32.000Z","ept":0.005,"lat":20.628457840,"lon":-87.067558197,"altHAE":12.8959,"altMSL":27.9058,"alt":27.9058,"epv":39.384,"magvar":-2.0,"speed":0.016,"climb":0.002,"epc":78.77,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
+ $GPGGA,040932.00,2037.7075,N,08704.0535,W,1,05,2.34,27.91,M,-15.010,M,,*6C
+-$GPRMC,040932.00,A,2037.7075,N,08704.0535,W,0.0308,0.000,120419,-2.0,W*44
++$GPRMC,040932.00,A,2037.7075,N,08704.0535,W,0.0308,0.000,270899,-2.0,W*46
+ $GPGSA,A,3,,,,,,,,,,,,,2.9,2.3,1.7*3E
+-{"class":"TPV","mode":3,"time":"2019-04-12T04:09:32.000Z","ept":0.005,"lat":20.628457840,"lon":-87.067558197,"altHAE":12.8959,"altMSL":27.9058,"alt":27.9058,"epv":39.384,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.016,"climb":0.002,"epc":78.77,"velN":0.000,"velE":0.000,"velD":-0.000,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
+-$GPZDA,040933.00,12,04,2019,00,00*66
++{"class":"TPV","mode":3,"time":"1999-08-27T04:09:32.000Z","ept":0.005,"lat":20.628457840,"lon":-87.067558197,"altHAE":12.8959,"altMSL":27.9058,"alt":27.9058,"epv":39.384,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.016,"climb":0.002,"epc":78.77,"velN":0.000,"velE":0.000,"velD":0.000,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
++$GPZDA,040933.00,27,08,1999,00,00*6E
+ $GPGGA,040933.00,2037.7075,N,08704.0535,W,1,05,2.34,27.91,M,-15.010,M,,*6D
+-$GPRMC,040933.00,A,2037.7075,N,08704.0535,W,0.0324,,120419,-2.0,W*65
++$GPRMC,040933.00,A,2037.7075,N,08704.0535,W,0.0324,,270899,-2.0,W*67
+ $GPGSA,A,3,,,,,,,,,,,,,2.9,2.3,1.7*3E
+-{"class":"TPV","mode":3,"time":"2019-04-12T04:09:33.000Z","ept":0.005,"lat":20.628457990,"lon":-87.067558204,"altHAE":12.8974,"altMSL":27.9073,"alt":27.9073,"epv":39.384,"magvar":-2.0,"speed":0.017,"climb":0.002,"epc":78.77,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
++{"class":"TPV","mode":3,"time":"1999-08-27T04:09:33.000Z","ept":0.005,"lat":20.628457990,"lon":-87.067558204,"altHAE":12.8974,"altMSL":27.9073,"alt":27.9073,"epv":39.384,"magvar":-2.0,"speed":0.017,"climb":0.002,"epc":78.77,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
+ $GPGGA,040937.53,2037.7075,N,08704.0535,W,1,05,2.34,27.91,M,-15.010,M,,*6F
+ $GPRMC,040937.53,A,2037.7075,N,08704.0535,W,0.0324,0.000,221206,-2.0,W*43
+ $GPGSA,A,3,,,,,,,,,,,,,2.9,2.3,1.7*3E
+-{"class":"TPV","mode":3,"time":"2006-12-22T04:09:37.531Z","leapseconds":14,"ept":0.005,"lat":20.628457990,"lon":-87.067558204,"altHAE":12.8974,"altMSL":27.9073,"alt":27.9073,"epv":39.384,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.017,"climb":0.002,"epc":78.77,"velN":0.000,"velE":0.000,"velD":-0.000,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
++{"class":"TPV","mode":3,"time":"2006-12-22T04:09:37.531Z","leapseconds":14,"ept":0.005,"lat":20.628457990,"lon":-87.067558204,"altHAE":12.8974,"altMSL":27.9073,"alt":27.9073,"epv":39.384,"track":0.0000,"magtrack":358.0076,"magvar":-2.0,"speed":0.017,"climb":0.002,"epc":0.00,"velN":0.000,"velE":0.000,"velD":0.000,"geoidSep":-15.010,"eph":44.392,"sep":55.038}
+ $GPZDA,040938.00,22,12,2006,00,00*67
+ $GPGGA,040938.00,2037.7075,N,08704.0535,W,1,05,2.34,27.91,M,-15.010,M,,*66
+ $GPRMC,040938.00,A,2037.7075,N,08704.0535,W,0.0730,,221206,-2.0,W*65
+Index: pkg-gpsd/test/daemon/ublox-zed-f9p-nmea.log
+===================================================================
+--- pkg-gpsd.orig/test/daemon/ublox-zed-f9p-nmea.log
++++ pkg-gpsd/test/daemon/ublox-zed-f9p-nmea.log
+@@ -1,7 +1,7 @@
+ # Name: ZED-F9P NMEA
+ # Chipset: u-blox  ZED-F9P, firmware hpg1.11
+ # Submitter: Luke Reid <luke@geocam.xyz>
+-# Date: 2019-April 12
++# Date: 2019-04-12
+ # Location: 45.877591500S 170.500124833E
+ #           Dunedin, New Zealand
+ #
