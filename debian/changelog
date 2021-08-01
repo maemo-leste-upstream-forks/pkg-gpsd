@@ -1,3 +1,11 @@
+gpsd (3.22-4) unstable; urgency=high
+
+  * [2df40c76] Fix: GPSD time will jump back 1024 weeks at after week=2180
+    (Closes: #991739)
+  * [c6af361a] Fix patch
+
+ -- Bernd Zeimetz <bzed@debian.org>  Sun, 01 Aug 2021 21:58:54 +0200
+
 gpsd (3.22-3) unstable; urgency=medium
 
   * [c6838e37] Remove duplicate lines from symbol files.
