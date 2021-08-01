@@ -142,16 +142,7 @@ Index: pkg-gpsd/gpsd/libgpsd_core.c
 -                                   session->device_type->mode_switcher != NULL);
 +    }
 +    // else (0 < newlen)
- 
--                /*
--                 * Compute whether to switch drivers.
--                 * If the previous driver type was sticky and this one
--                 * isn't, we'll revert after processing the packet.
--                 */
--                driver_change = new_packet_type && !dependent_nmea;
--            }
--            if (driver_change) {
--                const struct gps_type_t **dp;
++
 +    GPSD_LOG(LOG_RAW, &session->context->errout,
 +             "packet sniff on %s finds type %d\n",
 +             session->gpsdata.dev.path, session->lexer.type);
@@ -200,6 +191,25 @@ Index: pkg-gpsd/gpsd/libgpsd_core.c
 +            bool dependent_nmea = (NMEA_PACKET == newtype &&
 +                               NULL != session->device_type->mode_switcher);
  
+-                /*
+-                 * Compute whether to switch drivers.
+-                 * If the previous driver type was sticky and this one
+-                 * isn't, we'll revert after processing the packet.
+-                 */
+-                driver_change = new_packet_type && !dependent_nmea;
+-            }
+-            if (driver_change) {
+-                const struct gps_type_t **dp;
++            /*
++             * Compute whether to switch drivers.
++             * If the previous driver type was sticky and this one
++             * isn't, we'll revert after processing the packet.
++             */
++            driver_change = new_packet_type && !dependent_nmea;
++        }
++        if (driver_change) {
++            const struct gps_type_t **dp;
+ 
 -                for (dp = gpsd_drivers; *dp; dp++)
 -                    if (session->lexer.type == (*dp)->packet_type) {
 -                        GPSD_LOG(LOG_PROG, &session->context->errout,
@@ -214,16 +224,6 @@ Index: pkg-gpsd/gpsd/libgpsd_core.c
 -                (session->lexer.type > NMEA_PACKET) ? MODE_BINARY : MODE_NMEA;
 -            /* FALL THROUGH */
 -        } else if (hunt_failure(session) && !gpsd_next_hunt_setting(session)) {
-+            /*
-+             * Compute whether to switch drivers.
-+             * If the previous driver type was sticky and this one
-+             * isn't, we'll revert after processing the packet.
-+             */
-+            driver_change = new_packet_type && !dependent_nmea;
-+        }
-+        if (driver_change) {
-+            const struct gps_type_t **dp;
-+
 +            for (dp = gpsd_drivers; *dp; dp++)
 +                if (session->lexer.type == (*dp)->packet_type) {
 +                    GPSD_LOG(LOG_PROG, &session->context->errout,
@@ -240,6 +240,14 @@ Index: pkg-gpsd/gpsd/libgpsd_core.c
              (void)clock_gettime(CLOCK_REALTIME, &ts_now);
              TS_SUB(&delta, &ts_now, &session->gpsdata.online);
              GPSD_LOG(LOG_INF, &session->context->errout,
+@@ -1580,7 +1595,6 @@ gps_mask_t gpsd_poll(struct gps_device_t
+                      session->gpsdata.dev.path,
+                      timespec_str(&delta, ts_buf, sizeof(ts_buf)));
+             return ERROR_SET;
+-        }
+     }
+ 
+     if (session->lexer.outbuflen == 0) {      /* got new data, but no packet */
 Index: pkg-gpsd/gpsd/timebase.c
 ===================================================================
 --- pkg-gpsd.orig/gpsd/timebase.c
